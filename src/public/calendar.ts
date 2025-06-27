@@ -288,16 +288,13 @@ function renderCalendar(): void {
 	startDate.setDate(startDate.getDate() - firstDay.getDay());
 	
 	let html = `
-		<div class="calendar-header">
-			<div class="calendar-weekday">Sun</div>
-			<div class="calendar-weekday">Mon</div>
-			<div class="calendar-weekday">Tue</div>
-			<div class="calendar-weekday">Wed</div>
-			<div class="calendar-weekday">Thu</div>
-			<div class="calendar-weekday">Fri</div>
-			<div class="calendar-weekday">Sat</div>
-		</div>
-		<div class="calendar-days">
+		<div class="weekday-header">Sun</div>
+		<div class="weekday-header">Mon</div>
+		<div class="weekday-header">Tue</div>
+		<div class="weekday-header">Wed</div>
+		<div class="weekday-header">Thu</div>
+		<div class="weekday-header">Fri</div>
+		<div class="weekday-header">Sat</div>
 	`;
 	
 	// Generate 6 weeks of calendar
@@ -336,7 +333,6 @@ function renderCalendar(): void {
 		}
 	}
 	
-	html += '</div>';
 	calendarGrid.innerHTML = html;
 }
 
