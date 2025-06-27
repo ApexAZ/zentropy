@@ -109,9 +109,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			mockCalendarEntryModel.delete.mockResolvedValue(true);
 
 			// Step 1: Get users for the calendar interface
-			const usersResponse = await request(app)
-				.get("/api/users")
-				.expect(200);
+			const usersResponse = await request(app).get("/api/users").expect(200);
 
 			expect(usersResponse.body).toHaveLength(2);
 			expect(usersResponse.body[0].first_name).toBe("John");
@@ -131,10 +129,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				all_day: true
 			};
 
-			const createResponse = await request(app)
-				.post("/api/calendar-entries")
-				.send(createData)
-				.expect(201);
+			const createResponse = await request(app).post("/api/calendar-entries").send(createData).expect(201);
 
 			expect(createResponse.body.id).toBe("entry1");
 			expect(createResponse.body.title).toBe("Vacation");
@@ -150,9 +145,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			});
 
 			// Step 3: Read the created entry
-			const readResponse = await request(app)
-				.get("/api/calendar-entries/entry1")
-				.expect(200);
+			const readResponse = await request(app).get("/api/calendar-entries/entry1").expect(200);
 
 			expect(readResponse.body.id).toBe("entry1");
 			expect(readResponse.body.title).toBe("Vacation");
@@ -169,10 +162,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				all_day: true
 			};
 
-			const updateResponse = await request(app)
-				.put("/api/calendar-entries/entry1")
-				.send(updateData)
-				.expect(200);
+			const updateResponse = await request(app).put("/api/calendar-entries/entry1").send(updateData).expect(200);
 
 			expect(updateResponse.body.title).toBe("Updated Vacation");
 			expect(mockCalendarEntryModel.update).toHaveBeenCalledWith("entry1", {
@@ -187,9 +177,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			});
 
 			// Step 5: Delete the entry
-			await request(app)
-				.delete("/api/calendar-entries/entry1")
-				.expect(204);
+			await request(app).delete("/api/calendar-entries/entry1").expect(204);
 
 			expect(mockCalendarEntryModel.delete).toHaveBeenCalledWith("entry1");
 		});
@@ -204,9 +192,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			mockCalendarEntryModel.findByTeam.mockResolvedValue([teamEntries[0], teamEntries[1]]);
 
 			// Get entries for specific team
-			const response = await request(app)
-				.get("/api/calendar-entries?team_id=team1")
-				.expect(200);
+			const response = await request(app).get("/api/calendar-entries?team_id=team1").expect(200);
 
 			expect(response.body).toHaveLength(2);
 			expect(response.body[0].team_id).toBe("team1");
@@ -242,14 +228,11 @@ describe("Calendar Workflow Integration Tests", () => {
 				role: "team_member"
 			};
 
-			const response = await request(app)
-				.post("/api/users")
-				.send(userData)
-				.expect(201);
+			const response = await request(app).post("/api/users").send(userData).expect(201);
 
 			// Verify password was hashed
 			expect(mockBcrypt.hash).toHaveBeenCalledWith("password123", 10);
-			
+
 			// Verify user was created with hashed password
 			expect(mockUserModel.create).toHaveBeenCalledWith({
 				email: "newuser@example.com",
@@ -286,10 +269,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				last_name: "User"
 			};
 
-			const response = await request(app)
-				.post("/api/users")
-				.send(userData)
-				.expect(409);
+			const response = await request(app).post("/api/users").send(userData).expect(409);
 
 			expect(response.body.message).toBe("Email already in use");
 			expect(mockUserModel.create).not.toHaveBeenCalled();
@@ -309,10 +289,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				all_day: true
 			};
 
-			const response = await request(app)
-				.post("/api/calendar-entries")
-				.send(invalidData)
-				.expect(400);
+			const response = await request(app).post("/api/calendar-entries").send(invalidData).expect(400);
 
 			expect(response.body.message).toBe("End date must be after start date");
 			expect(mockCalendarEntryModel.create).not.toHaveBeenCalled();
@@ -320,14 +297,11 @@ describe("Calendar Workflow Integration Tests", () => {
 
 		it("should validate required fields in calendar entries", async () => {
 			const incompleteData = {
-				team_id: "team1",
+				team_id: "team1"
 				// Missing user_id, entry_type, title, dates
 			};
 
-			const response = await request(app)
-				.post("/api/calendar-entries")
-				.send(incompleteData)
-				.expect(400);
+			const response = await request(app).post("/api/calendar-entries").send(incompleteData).expect(400);
 
 			expect(response.body.message).toBe("Missing required fields");
 			expect(mockCalendarEntryModel.create).not.toHaveBeenCalled();
@@ -360,10 +334,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				all_day: true
 			};
 
-			const response = await request(app)
-				.put("/api/calendar-entries/entry1")
-				.send(invalidUpdateData)
-				.expect(400);
+			const response = await request(app).put("/api/calendar-entries/entry1").send(invalidUpdateData).expect(400);
 
 			expect(response.body.message).toBe("End date must be after start date");
 			expect(mockCalendarEntryModel.update).not.toHaveBeenCalled();
@@ -385,10 +356,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				all_day: true
 			};
 
-			const response = await request(app)
-				.post("/api/calendar-entries")
-				.send(validData)
-				.expect(500);
+			const response = await request(app).post("/api/calendar-entries").send(validData).expect(500);
 
 			expect(response.body.message).toBe("Failed to create calendar entry");
 		});
@@ -397,9 +365,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			const dbError = new Error("Database connection failed");
 			mockUserModel.findAll.mockRejectedValue(dbError);
 
-			const response = await request(app)
-				.get("/api/users")
-				.expect(500);
+			const response = await request(app).get("/api/users").expect(500);
 
 			expect(response.body.message).toBe("Failed to fetch users");
 		});
@@ -409,16 +375,12 @@ describe("Calendar Workflow Integration Tests", () => {
 			mockUserModel.findById.mockResolvedValue(null);
 
 			// Test non-existent calendar entry
-			const entryResponse = await request(app)
-				.get("/api/calendar-entries/nonexistent")
-				.expect(404);
+			const entryResponse = await request(app).get("/api/calendar-entries/nonexistent").expect(404);
 
 			expect(entryResponse.body.message).toBe("Calendar entry not found");
 
 			// Test non-existent user
-			const userResponse = await request(app)
-				.get("/api/users/nonexistent")
-				.expect(404);
+			const userResponse = await request(app).get("/api/users/nonexistent").expect(404);
 
 			expect(userResponse.body.message).toBe("User not found");
 		});
@@ -447,9 +409,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			mockCalendarEntryModel.findByTeam.mockResolvedValue(entries);
 
 			// Get team calendar entries (simulating capacity calculation request)
-			const response = await request(app)
-				.get("/api/calendar-entries?team_id=team1")
-				.expect(200);
+			const response = await request(app).get("/api/calendar-entries?team_id=team1").expect(200);
 
 			expect(response.body).toHaveLength(1);
 			expect(response.body[0].entry_type).toBe("pto");
@@ -494,10 +454,7 @@ describe("Calendar Workflow Integration Tests", () => {
 					all_day: true
 				};
 
-				const response = await request(app)
-					.post("/api/calendar-entries")
-					.send(entryData)
-					.expect(201);
+				const response = await request(app).post("/api/calendar-entries").send(entryData).expect(201);
 
 				expect(response.body.entry_type).toBe(type);
 				expect(response.body.title).toBe(title);
@@ -519,7 +476,7 @@ describe("Calendar Workflow Integration Tests", () => {
 					updated_at: new Date()
 				},
 				{
-					id: "user2", 
+					id: "user2",
 					email: "user2@example.com",
 					password_hash: "secret_hash_2",
 					first_name: "User",
@@ -534,9 +491,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			mockUserModel.findById.mockResolvedValue(usersWithPasswords[0]);
 
 			// Test GET /users
-			const allUsersResponse = await request(app)
-				.get("/api/users")
-				.expect(200);
+			const allUsersResponse = await request(app).get("/api/users").expect(200);
 
 			expect(allUsersResponse.body).toHaveLength(2);
 			allUsersResponse.body.forEach((user: Record<string, unknown>) => {
@@ -547,9 +502,7 @@ describe("Calendar Workflow Integration Tests", () => {
 			});
 
 			// Test GET /users/:id
-			const singleUserResponse = await request(app)
-				.get("/api/users/user1")
-				.expect(200);
+			const singleUserResponse = await request(app).get("/api/users/user1").expect(200);
 
 			expect(singleUserResponse.body).not.toHaveProperty("password_hash");
 			expect(singleUserResponse.body.email).toBe("user1@example.com");
@@ -585,10 +538,7 @@ describe("Calendar Workflow Integration Tests", () => {
 
 			// Current behavior: API accepts invalid dates and creates entry
 			// (This highlights need for better date validation in the future)
-			const response = await request(app)
-				.post("/api/calendar-entries")
-				.send(malformedData)
-				.expect(201);
+			const response = await request(app).post("/api/calendar-entries").send(malformedData).expect(201);
 
 			expect(response.body.id).toBe("test1");
 		});

@@ -45,11 +45,9 @@ describe("UserModel", () => {
 			const result = await UserModel.emailExists(mockUser.email);
 
 			expect(result).toBe(true);
-			AssertionHelpers.expectDatabaseCall(
-				mockPool.query,
-				"SELECT 1 FROM users WHERE email = $1",
-				[mockUser.email]
-			);
+			AssertionHelpers.expectDatabaseCall(mockPool.query, "SELECT 1 FROM users WHERE email = $1", [
+				mockUser.email
+			]);
 		});
 
 		it("should return false when email does not exist", async () => {
@@ -100,7 +98,12 @@ describe("UserModel", () => {
 
 			DomainAssertionHelpers.expectValidUser(result);
 			AssertionHelpers.expectHasProperties(result, [
-				"id", "email", "first_name", "last_name", "role", "is_active"
+				"id",
+				"email",
+				"first_name",
+				"last_name",
+				"role",
+				"is_active"
 			]);
 		});
 
@@ -129,7 +132,7 @@ describe("UserModel", () => {
 			// Validate that sensitive data is preserved in model layer
 			expect(result).toHaveProperty("password_hash");
 			expect(result!.password_hash).toBe(mockUser.password_hash);
-			
+
 			// Validate all required fields are present
 			DomainAssertionHelpers.expectValidUser(result!);
 		});

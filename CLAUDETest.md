@@ -278,7 +278,111 @@ import { UserModel } from "../../models/User";
 1. **Red**: Write a failing test that describes the desired functionality
 2. **Green**: Write minimal code to make the test pass
 3. **Refactor**: Improve code while keeping tests green
-4. **Repeat**: Continue cycle for each small increment
+4. **Lint**: Ensure code quality with ESLint checks
+5. **Repeat**: Continue cycle for each small increment
+
+### **Code Quality Integration (ESLint + Tests)**
+ESLint is an integral part of the test suite and must pass for code to be considered complete:
+
+```bash
+# Complete TDD workflow with linting
+npm test                    # Run tests (must pass)
+npm run lint                # Check code quality (must pass)
+npm run type-check          # Verify TypeScript safety (must pass)
+
+# Combined quality check (recommended)
+npm run test:quality        # Run tests + lint + format + type-check together
+```
+
+**ESLint Standards Enforced:**
+- **Type Safety**: No `any` types without proper ESLint disable comments
+- **Error Handling**: Consistent error patterns and null checking
+- **Function Signatures**: Explicit return types required
+- **Security**: No unsafe DOM access or global variable pollution
+- **Consistency**: Consistent code formatting and naming conventions
+
+### **ESLint Error Resolution Strategy**
+
+#### **When ESLint Fails During TDD**
+ESLint errors must be resolved as part of the TDD cycle, not bypassed:
+
+```bash
+# 1. NEVER override ESLint without understanding the issue
+# ❌ WRONG: Adding eslint-disable comments to bypass errors
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
+# 2. ALWAYS fix the underlying issue
+# ✅ CORRECT: Replace unsafe any types with proper interfaces
+interface ApiResponse<T> {
+    data?: T;
+    message?: string;
+}
+const response = await fetch('/api') as ApiResponse<User>;
+```
+
+#### **Common ESLint Issues and Solutions**
+
+1. **Unsafe `any` Types**:
+   ```typescript
+   // ❌ WRONG: Bypassing type safety
+   const data = response.json() as any;
+   
+   // ✅ CORRECT: Proper type definition
+   interface ApiResponse { data: User[]; message: string; }
+   const data = response.json() as ApiResponse;
+   ```
+
+2. **Global Window Assignments**:
+   ```typescript
+   // ❌ WRONG: Global pollution
+   (window as any).myFunction = myFunction;
+   
+   // ✅ CORRECT: Event delegation
+   document.addEventListener('click', (event) => {
+       const target = event.target as HTMLElement;
+       if (target.dataset.action === 'my-action') {
+           myFunction();
+       }
+   });
+   ```
+
+3. **Missing Return Types**:
+   ```typescript
+   // ❌ WRONG: Implicit return type
+   function processData(data) { 
+       return data.map(item => item.id);
+   }
+   
+   // ✅ CORRECT: Explicit return type
+   function processData(data: DataItem[]): string[] {
+       return data.map(item => item.id);
+   }
+   ```
+
+#### **When ESLint Disable Comments Are Acceptable**
+Only disable ESLint rules in these specific scenarios:
+
+```typescript
+// ✅ ACCEPTABLE: Error logging in catch blocks
+catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Database operation failed:', error);
+}
+
+// ✅ ACCEPTABLE: Global functions for HTML onclick (with refactoring plan)
+// TODO: Refactor to use event delegation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).legacyFunction = legacyFunction;
+
+// ✅ ACCEPTABLE: Third-party library compatibility
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const chart = new LegacyChartLibrary(data);
+```
+
+**CRITICAL**: Each ESLint disable comment must include:
+1. **Why** the disable is necessary
+2. **When** it will be fixed (if temporary)
+3. **What** the proper solution would be
 
 ### **Test Structure (Arrange-Act-Assert)**
 ```typescript
@@ -788,20 +892,33 @@ npm test  # Should show 3 passing tests (add, subtract, multiply)
 }
 ```
 
-**`vitest.config.js`:**
-```javascript
+**`vitest.config.ts`:**
+```typescript
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
         environment: 'jsdom', // For frontend tests
-        setupFiles: ['src/test-setup.ts'],
         globals: true,
         include: ['src/**/*.{test,spec}.{js,ts}'],
-        exclude: ['node_modules', 'dist']
+        exclude: ['node_modules', 'dist'],
+        // Parallel execution for performance
+        pool: 'threads',
+        poolOptions: {
+            threads: {
+                singleThread: false,
+            },
+        },
     }
 });
 ```
+
+**Vitest Test Execution Features**:
+- **Parallel Execution**: Tests run in parallel threads for performance
+- **JSDOM Environment**: Simulates browser environment for frontend tests
+- **TypeScript Support**: Direct TypeScript test execution without compilation
+- **Watch Mode**: Real-time test execution during development
+- **Mock System**: Built-in vi.mock() for dependency mocking
 
 #### **WSL-Specific Considerations**
 - Extensions must be installed separately in WSL vs Windows environment
@@ -879,6 +996,26 @@ curl http://localhost:3000/health
 # Database schema automatically loaded from src/database/init.sql
 ```
 
+**Database Test Configuration**:
+```yaml
+# docker-compose.yml test database
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: capacity_planner_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
+```
+
+**Test Database Features**:
+- Automatic schema initialization from `src/database/init.sql`
+- Connection pooling with proper cleanup between tests
+- Isolated test transactions for data consistency
+- Full CRUD operation testing with real PostgreSQL constraints
+
 #### **Development Server Setup**
 ```bash
 # Complete development workflow
@@ -906,6 +1043,21 @@ process.env.LOG_LEVEL = 'silent'; // Reduce test noise
 ```
 
 ## Capacity Planning Domain Testing
+
+### **Sprint Capacity Planning Test Context**
+**Business Domain**: Sprint Capacity Planning Tool for agile teams
+- **Target Users**: Team Leads and Team Members in agile development teams  
+- **Core Functionality**: Automated sprint capacity calculation based on team velocity and calendar availability
+- **Phase 1 MVP**: Basic team management, calendar system, and capacity calculation
+- **Phase 2**: Advanced features including React migration, multi-team support, and Azure deployment
+
+**Key Business Rules to Test**:
+- Team velocity baseline validation (must be > 0)
+- Sprint length validation (must be > 0 days)
+- Working days per week configuration (team-specific)
+- PTO/holiday impact on sprint capacity
+- Real-time capacity calculation updates
+- Multi-team calendar coordination (future)
 
 ### **Working Days Calculator Testing**
 **Business Logic Coverage (21 comprehensive tests):**
@@ -936,6 +1088,54 @@ describe("WorkingDaysCalculator", () => {
 - Holiday and weekend exclusion logic
 - Team configuration integration
 - Business rule enforcement (working days per week)
+
+### **Capacity Planning Business Logic Testing**
+
+**Core Business Logic (21 Tests)**:
+```typescript
+describe("Capacity Planning Business Rules", () => {
+    it("should calculate team capacity based on velocity and availability", () => {
+        // velocity_baseline * working_days_available / sprint_length_days
+    });
+    
+    it("should account for PTO impact on individual capacity", () => {
+        // Reduce individual capacity when PTO overlaps sprint dates
+    });
+    
+    it("should handle team working days configuration", () => {
+        // Use team.working_days_per_week for capacity calculations
+    });
+    
+    it("should validate sprint length boundaries", () => {
+        // Sprint length must be between 1-28 days (business rule)
+    });
+});
+```
+
+**Key Testing Patterns for Capacity Planning**:
+- Team velocity integration with calendar availability
+- Sprint date range validation and boundary testing  
+- Holiday and PTO exclusion from capacity calculations
+- Cross-team capacity coordination (future feature)
+- Real-time capacity updates when calendar entries change
+
+### **Calendar Entry Business Logic Testing**
+**Capacity Impact Calculation**:
+```typescript
+describe("Calendar Entry Capacity Impact", () => {
+    it("should calculate capacity reduction for PTO entries", () => {
+        // PTO days / total sprint days = capacity reduction percentage
+    });
+    
+    it("should handle overlapping calendar entries", () => {
+        // Detect conflicts between team member calendar entries
+    });
+    
+    it("should update team capacity in real-time", () => {
+        // Calendar changes immediately reflect in capacity calculations
+    });
+});
+```
 
 ### **Team Management Testing**
 **Comprehensive Coverage (142 tests across all layers):**
@@ -1097,8 +1297,17 @@ describe("Calendar Entry Management (Vertical Slice)", () => {
 | Working Days Calculator | 21 | Unit + Integration |
 | Team Management | 142 | Unit + API + Integration |
 | Calendar Entry Management | 100+ | Backend + Frontend + Integration |
+| Static File Management | 15+ | Integration + Build Process |
 | Error Handling | 15+ | Specialized helpers across all layers |
 | **Total** | **214** | **100% passing** |
+
+### **Test Suite Evolution Metrics**
+**Optimization History**:
+- **Initial State**: 288 tests (included redundancy and obsolete tests)
+- **Streamlined State**: 214 tests (26% reduction while maintaining coverage)
+- **Quality Improvement**: Eliminated duplicate test files and overlapping coverage
+- **Type Safety**: Removed all 'as any' usage patterns from test code
+- **Error Handling**: Standardized with 15+ specialized error testing helpers
 
 ### **Quality Improvements Achieved**
 
@@ -1223,9 +1432,18 @@ npm run test:watch         # Run tests in watch mode
 npm run test:coverage      # Run tests with coverage report
 npm run test:ui            # Run tests with Vitest UI (if configured)
 
+# Code quality integration with testing
+npm run test:quality        # Run tests + lint + format + type-check (RECOMMENDED)
+npm run quality             # Run lint + format + type-check (without tests)
+npm run lint                # ESLint code quality check with automatic fixes
+npm run lint:check          # ESLint check without fixing
+npm run type-check          # TypeScript type checking
+npm run format              # Prettier code formatting with fixes
+npm run format:check        # Prettier check without fixing
+
 # Development workflow
 npm run dev                # Start dev server with test setup
-npm run build              # Build TypeScript + copy static files
+npm run build              # Build TypeScript + copy static files + lint check
 npm run dev:copy           # Manual static file copy
 npm run check-static       # Verify/restore static files
 
@@ -1247,10 +1465,18 @@ npm run type-check         # TypeScript type checking
 
 ### **Test Execution Patterns**
 ```bash
+# Run test files by layer (recommended approach)
+npm test src/__tests__/models/                                   # Model layer tests (business logic)
+npm test src/__tests__/api/                                      # API layer tests (routes/security)
+npm test src/__tests__/frontend/                                 # Frontend tests (DOM/utilities)
+npm test src/__tests__/integration/                              # Integration tests (workflows)
+npm test src/__tests__/services/                                 # Service layer tests (calculations)
+
 # Run specific test files
-npm test src/__tests__/models/User.test.ts
-npm test src/__tests__/api/users.test.ts
-npm test src/__tests__/integration/
+npm test src/__tests__/services/working-days-calculator.test.ts  # Core business logic (21 tests)
+npm test src/__tests__/models/Team.test.ts                       # Team management logic
+npm test src/__tests__/api/calendar-entries.test.ts             # Calendar API endpoints
+npm test src/__tests__/integration/calendar-workflow.test.ts    # End-to-end workflows
 
 # Run tests with specific patterns
 npm test -- --reporter=verbose
@@ -1272,10 +1498,13 @@ npm test -- --grep="specific test name"
 5. curl http://localhost:3000/health      # Verify server health
 
 # Before committing changes
-1. npm run lint                           # Check code quality
-2. npm run type-check                     # Verify TypeScript
-3. npm test                               # Ensure all tests pass
+1. npm test                               # Ensure all tests pass (FIRST)
+2. npm run lint                           # Check code quality (SECOND)
+3. npm run type-check                     # Verify TypeScript (THIRD)
 4. git add . && git commit -m "message"   # Commit changes
+
+# Alternative: Combined quality check
+npm run test:quality                      # Run tests + lint + type-check together
 ```
 
 ### **Troubleshooting Commands**
@@ -1349,6 +1578,43 @@ npx vitest --ui            # Visual test interface (if available)
 - Integrated debugging capabilities
 
 ---
+
+## ESLint Integration Results
+
+### **Successful Integration Achieved**
+ESLint is now fully integrated into the test suite workflow:
+
+```bash
+# Complete quality check now available
+npm run test:quality    # Tests: ✅ 214/214 passing, ESLint: 54 issues to resolve
+```
+
+**Integration Benefits:**
+- **Catches Quality Issues**: ESLint runs after tests to catch code quality problems
+- **Prevents Technical Debt**: Type safety and security issues are flagged immediately  
+- **Enforces Standards**: Consistent code patterns and best practices
+- **Blocks Unsafe Code**: No more `any` types or global pollution without proper justification
+
+**Current Status:** All tests pass ✅, ESLint integration working ✅, 54 code quality issues identified for resolution following TDD principles.
+
+### **Example Refactoring Success**
+The window global assignment refactoring demonstrates the value of not overriding ESLint:
+
+```typescript
+// ❌ OLD: Technical debt with ESLint overrides
+/* eslint-disable @typescript-eslint/no-explicit-any */
+(window as any).editEntry = editEntry;
+
+// ✅ NEW: Proper event delegation pattern
+document.addEventListener('click', (event: Event) => {
+    const target = event.target as HTMLElement;
+    if (target.dataset.action === 'edit-entry') {
+        editEntry(target.dataset.entryId || '');
+    }
+});
+```
+
+**Result:** Eliminated type safety issues, improved security, maintained functionality, all tests still pass.
 
 ## Summary
 

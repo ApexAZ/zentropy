@@ -54,7 +54,7 @@
 				<div class="empty-content">
 					<h3>No Teams Yet</h3>
 					<p>Create your first team to start planning sprint capacity.</p>
-					<button class="btn btn-primary" onclick="showCreateTeamModal()">Create Team</button>
+					<button class="btn btn-primary" data-action="show-create-team-modal">Create Team</button>
 				</div>
 			</div>
 		</section>
@@ -64,7 +64,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h3 id="modal-title">Create New Team</h3>
-					<button class="modal-close" onclick="closeTeamModal()">&times;</button>
+					<button class="modal-close" data-action="close-team-modal">&times;</button>
 				</div>
 
 				<form id="team-form" class="form-container">
@@ -124,7 +124,7 @@
 					</div>
 
 					<div class="modal-actions">
-						<button type="button" class="btn btn-secondary" onclick="closeTeamModal()">Cancel</button>
+						<button type="button" class="btn btn-secondary" data-action="close-team-modal">Cancel</button>
 						<button type="submit" id="save-team-btn" class="btn btn-primary">
 							<span class="btn-text">Create Team</span>
 							<span class="btn-spinner" style="display: none;"></span>
@@ -139,7 +139,7 @@
 			<div class="modal-content modal-small">
 				<div class="modal-header">
 					<h3>Delete Team</h3>
-					<button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+					<button class="modal-close" data-action="close-delete-modal">&times;</button>
 				</div>
 				
 				<div class="modal-body">
@@ -148,7 +148,7 @@
 				</div>
 
 				<div class="modal-actions">
-					<button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-action="close-delete-modal">Cancel</button>
 					<button type="button" id="confirm-delete-btn" class="btn btn-danger">
 						<span class="btn-text">Delete Team</span>
 						<span class="btn-spinner" style="display: none;"></span>
@@ -162,7 +162,7 @@
 	<div id="toast" class="toast" style="display: none;">
 		<div class="toast-content">
 			<span id="toast-message"></span>
-			<button class="toast-close" onclick="hideToast()">&times;</button>
+			<button class="toast-close" data-action="hide-toast">&times;</button>
 		</div>
 	</div>
 

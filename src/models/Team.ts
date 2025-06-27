@@ -73,7 +73,9 @@ export class TeamModel {
 	// Update team
 	static async update(id: string, updateData: Partial<CreateTeamData>): Promise<Team | null> {
 		const fields = Object.keys(updateData);
-		if (fields.length === 0) {return null;}
+		if (fields.length === 0) {
+			return null;
+		}
 
 		const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(", ");
 		const query = `

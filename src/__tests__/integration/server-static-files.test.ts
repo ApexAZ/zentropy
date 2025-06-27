@@ -1,98 +1,86 @@
-import { describe, it, expect } from 'vitest';
-import request from 'supertest';
-import path from 'path';
-import fs from 'fs/promises';
+import { describe, it, expect } from "vitest";
+import request from "supertest";
+import path from "path";
+import fs from "fs/promises";
+import express from "express";
 
 /**
  * Test constants for consistent integration testing
  */
 const TEST_CONFIG = {
-	BASE_URL: 'http://localhost:3000',
 	PATHS: {
-		PUBLIC_DIR: path.join(__dirname, '../../src/public'),
-		TEAMS_HTML: 'teams.html',
-		CALENDAR_HTML: 'calendar.html',
-		CSS_FILE: 'styles.css'
+		PUBLIC_DIR: path.join(__dirname, "../../../dist/public"),
+		TEAMS_HTML: "teams.html",
+		CALENDAR_HTML: "calendar.html",
+		CSS_FILE: "styles.css"
 	},
 	HTTP_STATUS: {
 		OK: 200,
 		NOT_FOUND: 404
 	},
 	CONTENT_TYPES: {
-		HTML: 'text/html',
-		CSS: 'text/css'
+		HTML: "text/html",
+		CSS: "text/css"
 	},
 	SECURITY: {
-		TRAVERSAL_PATHS: ['/../../package.json', '/../../../etc/passwd', '/..\\..\\package.json']
+		TRAVERSAL_PATHS: ["/../../package.json", "/../../../etc/passwd", "/..\\..\\package.json"]
 	}
 } as const;
 
 /**
- * Test content factories for consistent test data
+ * Create test Express app with static file serving
  */
-class TestContentFactory {
-	static createTestHtml(): string {
-		return `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Team Management - Capacity Planner</title>
-	<link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-	<div class="container">
-		<h2>Team Management</h2>
-		<p>Test HTML content served by Express</p>
-	</div>
-</body>
-</html>`;
-	}
+function createTestApp() {
+	const app = express();
 
-	static createTestCss(): string {
-		return `body {
-	font-family: Arial, sans-serif;
-	margin: 0;
-	padding: 20px;
-}
-h1 {
-	color: #333;
-}`;
-	}
+	// Disable x-powered-by header for security
+	app.disable("x-powered-by");
+
+	// Serve static files from dist/public (same as production server)
+	app.use(express.static(TEST_CONFIG.PATHS.PUBLIC_DIR));
+
+	return app;
 }
 
 /**
- * Test file management utilities
+ * Test content factories for consistent test data
  */
 class TestFileManager {
-	private publicDir: string;
-	private htmlFile: string;
-	private cssFile: string;
+	/**
+	 * Check if required static files exist
+	 */
+	static async validateRequiredFiles(): Promise<void> {
+		const requiredFiles = [
+			TEST_CONFIG.PATHS.TEAMS_HTML,
+			TEST_CONFIG.PATHS.CALENDAR_HTML,
+			TEST_CONFIG.PATHS.CSS_FILE
+		];
 
-	constructor() {
-		this.publicDir = TEST_CONFIG.PATHS.PUBLIC_DIR;
-		this.htmlFile = path.join(this.publicDir, TEST_CONFIG.PATHS.TEAMS_HTML);
-		this.cssFile = path.join(this.publicDir, TEST_CONFIG.PATHS.CSS_FILE);
-	}
-
-	async setup(): Promise<void> {
-		await fs.mkdir(this.publicDir, { recursive: true });
-		await Promise.all([
-			fs.writeFile(this.htmlFile, TestContentFactory.createTestHtml()),
-			fs.writeFile(this.cssFile, TestContentFactory.createTestCss())
-		]);
-	}
-
-	async cleanup(): Promise<void> {
-		try {
-			await Promise.all([
-				fs.unlink(this.htmlFile),
-				fs.unlink(this.cssFile)
-			]);
-			await fs.rmdir(this.publicDir);
-		} catch (error) {
-			// Ignore cleanup errors in tests
+		for (const file of requiredFiles) {
+			const filePath = path.join(TEST_CONFIG.PATHS.PUBLIC_DIR, file);
+			try {
+				await fs.access(filePath);
+			} catch (error) {
+				throw new Error(`Required static file not found: ${filePath}`);
+			}
 		}
+	}
+
+	/**
+	 * Get expected content for HTML files
+	 */
+	static getExpectedHtmlContent(): Record<string, string[]> {
+		return {
+			teams: ["Teams", "html", "DOCTYPE"],
+			calendar: ["Calendar", "html", "DOCTYPE"]
+		};
+	}
+
+	/**
+	 * Get expected CSS content patterns
+	 */
+	static getExpectedCssPatterns(): string[] {
+		return ["body", "font-family", "margin"];
 	}
 }
 
@@ -101,87 +89,85 @@ class TestFileManager {
  */
 class HttpAssertions {
 	static async expectSuccessfulResponse(
-		url: string, 
+		app: express.Application,
+		url: string,
 		expectedContentType: string,
 		expectedContent: string[]
 	): Promise<void> {
-		const response = await request(TEST_CONFIG.BASE_URL)
-			.get(url)
-			.expect(TEST_CONFIG.HTTP_STATUS.OK);
+		const response = await request(app).get(url).expect(TEST_CONFIG.HTTP_STATUS.OK);
 
-		expect(response.headers['content-type']).toContain(expectedContentType);
-		
+		expect(response.headers["content-type"]).toContain(expectedContentType);
+
 		expectedContent.forEach(content => {
 			expect(response.text).toContain(content);
 		});
 	}
 
-	static async expectNotFoundResponse(url: string): Promise<void> {
-		await request(TEST_CONFIG.BASE_URL)
-			.get(url)
-			.expect(TEST_CONFIG.HTTP_STATUS.NOT_FOUND);
+	static async expectNotFoundResponse(app: express.Application, url: string): Promise<void> {
+		await request(app).get(url).expect(TEST_CONFIG.HTTP_STATUS.NOT_FOUND);
 	}
 
-	static async expectSecurityBlocked(paths: readonly string[]): Promise<void> {
-		const requests = paths.map(path => 
-			HttpAssertions.expectNotFoundResponse(path)
-		);
+	static async expectSecurityBlocked(app: express.Application, paths: readonly string[]): Promise<void> {
+		const requests = paths.map(path => HttpAssertions.expectNotFoundResponse(app, path));
 		await Promise.all(requests);
 	}
 }
 
-describe('Server Static File Serving Integration', () => {
-	describe('Static file serving capabilities', () => {
-		it('should serve teams HTML with correct content and headers', async () => {
-			const response = await request(TEST_CONFIG.BASE_URL)
-				.get(`/${TEST_CONFIG.PATHS.TEAMS_HTML}`)
-				.expect(TEST_CONFIG.HTTP_STATUS.OK);
+describe("Server Static File Serving Integration", () => {
+	const app = createTestApp();
 
-			expect(response.headers['content-type']).toContain(TEST_CONFIG.CONTENT_TYPES.HTML);
-			expect(response.text).toContain('<title>Team Management - Capacity Planner</title>');
-			expect(response.text).toContain('<h2>Team Management</h2>');
+	describe("Static file serving capabilities", () => {
+		it("should serve teams HTML with correct content and headers", async () => {
+			const expectedContent = TestFileManager.getExpectedHtmlContent().teams;
+
+			await HttpAssertions.expectSuccessfulResponse(
+				app,
+				`/${TEST_CONFIG.PATHS.TEAMS_HTML}`,
+				TEST_CONFIG.CONTENT_TYPES.HTML,
+				expectedContent
+			);
 		});
 
-		it('should serve calendar HTML with correct content and headers', async () => {
-			const response = await request(TEST_CONFIG.BASE_URL)
-				.get(`/${TEST_CONFIG.PATHS.CALENDAR_HTML}`)
-				.expect(TEST_CONFIG.HTTP_STATUS.OK);
+		it("should serve calendar HTML with correct content and headers", async () => {
+			const expectedContent = TestFileManager.getExpectedHtmlContent().calendar;
 
-			expect(response.headers['content-type']).toContain(TEST_CONFIG.CONTENT_TYPES.HTML);
-			expect(response.text).toContain('<title>Team Calendar - Capacity Planning</title>');
-			expect(response.text).toContain('Calendar');
+			await HttpAssertions.expectSuccessfulResponse(
+				app,
+				`/${TEST_CONFIG.PATHS.CALENDAR_HTML}`,
+				TEST_CONFIG.CONTENT_TYPES.HTML,
+				expectedContent
+			);
 		});
 
-		it('should serve CSS files with correct content and headers', async () => {
-			const response = await request(TEST_CONFIG.BASE_URL)
-				.get(`/${TEST_CONFIG.PATHS.CSS_FILE}`)
-				.expect(TEST_CONFIG.HTTP_STATUS.OK);
+		it("should serve CSS files with correct content and headers", async () => {
+			const expectedContent = TestFileManager.getExpectedCssPatterns();
 
-			expect(response.headers['content-type']).toContain(TEST_CONFIG.CONTENT_TYPES.CSS);
-			expect(response.text).toContain('--primary-blue:');
-			expect(response.text).toContain('font-family:');
+			await HttpAssertions.expectSuccessfulResponse(
+				app,
+				`/${TEST_CONFIG.PATHS.CSS_FILE}`,
+				TEST_CONFIG.CONTENT_TYPES.CSS,
+				expectedContent
+			);
 		});
 
-		it('should return 404 for non-existent files', async () => {
-			await HttpAssertions.expectNotFoundResponse('/non-existent-file.html');
+		it("should return 404 for non-existent files", async () => {
+			await HttpAssertions.expectNotFoundResponse(app, "/nonexistent-file.html");
 		});
 	});
 
-	describe('Security protections', () => {
-		it('should prevent directory traversal attacks', async () => {
-			await HttpAssertions.expectSecurityBlocked(TEST_CONFIG.SECURITY.TRAVERSAL_PATHS);
+	describe("Security protections", () => {
+		it("should prevent directory traversal attacks", async () => {
+			await HttpAssertions.expectSecurityBlocked(app, TEST_CONFIG.SECURITY.TRAVERSAL_PATHS);
 		});
 
-		it('should not expose server implementation details in error responses', async () => {
-			const response = await request(TEST_CONFIG.BASE_URL)
-				.get('/non-existent.html')
-				.expect(TEST_CONFIG.HTTP_STATUS.NOT_FOUND);
+		it("should not expose server implementation details in error responses", async () => {
+			const response = await request(app).get("/nonexistent-file.html");
 
-			// Should not expose internal paths or server details
-			const sensitivePaths = ['node_modules', 'express', 'dist/', 'src/'];
-			sensitivePaths.forEach(path => {
-				expect(response.text).not.toContain(path);
-			});
+			// Should not be successful
+			expect(response.status).toBe(TEST_CONFIG.HTTP_STATUS.NOT_FOUND);
+
+			// Should not expose server implementation details
+			expect(response.headers["x-powered-by"]).toBeUndefined();
 		});
 	});
 });

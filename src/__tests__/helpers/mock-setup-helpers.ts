@@ -10,40 +10,40 @@ import type { CalendarEntry } from "../../models/CalendarEntry";
  * Type-safe mock definitions for better testing
  */
 export type MockedDatabasePool = {
-	query: Mock<[string, any[]], Promise<{ rows: any[]; rowCount?: number }>>;
+	query: Mock;
 };
 
 export type MockedUserModel = {
-	findAll: Mock<[], Promise<User[]>>;
-	findById: Mock<[string], Promise<User | null>>;
-	findByEmail: Mock<[string], Promise<User | null>>;
-	create: Mock<[any], Promise<User>>;
-	update: Mock<[string, any], Promise<User | null>>;
-	delete: Mock<[string], Promise<boolean>>;
+	findAll: Mock;
+	findById: Mock;
+	findByEmail: Mock;
+	create: Mock;
+	update: Mock;
+	delete: Mock;
 };
 
 export type MockedTeamModel = {
-	findAll: Mock<[], Promise<Team[]>>;
-	findById: Mock<[string], Promise<Team | null>>;
-	create: Mock<[any], Promise<Team>>;
-	update: Mock<[string, any], Promise<Team | null>>;
-	delete: Mock<[string], Promise<boolean>>;
-	getMembers: Mock<[string], Promise<User[]>>;
-	addMember: Mock<[string, string], Promise<void>>;
-	removeMember: Mock<[string, string], Promise<boolean>>;
+	findAll: Mock;
+	findById: Mock;
+	create: Mock;
+	update: Mock;
+	delete: Mock;
+	getMembers: Mock;
+	addMember: Mock;
+	removeMember: Mock;
 };
 
 export type MockedCalendarEntryModel = {
-	findAll: Mock<[], Promise<CalendarEntry[]>>;
-	findById: Mock<[string], Promise<CalendarEntry | null>>;
-	findByUser: Mock<[string], Promise<CalendarEntry[]>>;
-	findByTeam: Mock<[string], Promise<CalendarEntry[]>>;
-	findByDateRange: Mock<[Date, Date, string?], Promise<CalendarEntry[]>>;
-	create: Mock<[any], Promise<CalendarEntry>>;
-	update: Mock<[string, any], Promise<CalendarEntry | null>>;
-	delete: Mock<[string], Promise<boolean>>;
-	findConflicts: Mock<[string, Date, Date, string?], Promise<CalendarEntry[]>>;
-	calculateWorkingDaysImpact: Mock<[string, Date, Date], Promise<number>>;
+	findAll: Mock;
+	findById: Mock;
+	findByUser: Mock;
+	findByTeam: Mock;
+	findByDateRange: Mock;
+	create: Mock;
+	update: Mock;
+	delete: Mock;
+	findConflicts: Mock;
+	calculateWorkingDaysImpact: Mock;
 };
 
 export class MockSetupHelpers {
@@ -68,9 +68,9 @@ export class MockSetupHelpers {
 			 */
 			mockSuccessfulQuery: (returnValue: any[] | any) => {
 				const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-				mockPool.query.mockResolvedValue({ 
-					rows, 
-					rowCount: rows.length 
+				mockPool.query.mockResolvedValue({
+					rows,
+					rowCount: rows.length
 				});
 			},
 
@@ -85,9 +85,9 @@ export class MockSetupHelpers {
 			 * Mock empty database query result
 			 */
 			mockEmptyQuery: () => {
-				mockPool.query.mockResolvedValue({ 
-					rows: [], 
-					rowCount: 0 
+				mockPool.query.mockResolvedValue({
+					rows: [],
+					rowCount: 0
 				});
 			},
 
@@ -95,9 +95,9 @@ export class MockSetupHelpers {
 			 * Mock successful delete operation
 			 */
 			mockDeleteSuccess: (rowCount: number = 1) => {
-				mockPool.query.mockResolvedValue({ 
-					rows: [], 
-					rowCount 
+				mockPool.query.mockResolvedValue({
+					rows: [],
+					rowCount
 				});
 			},
 
@@ -105,9 +105,9 @@ export class MockSetupHelpers {
 			 * Mock failed delete operation (no rows affected)
 			 */
 			mockDeleteFailure: () => {
-				mockPool.query.mockResolvedValue({ 
-					rows: [], 
-					rowCount: 0 
+				mockPool.query.mockResolvedValue({
+					rows: [],
+					rowCount: 0
 				});
 			},
 
@@ -249,13 +249,10 @@ export class MockSetupHelpers {
 	/**
 	 * Apply standard mock configurations
 	 */
-	static applyMockConfiguration<T extends Record<string, Mock>>(
-		mocks: T,
-		config: Record<keyof T, any>
-	): void {
+	static applyMockConfiguration<T extends Record<string, Mock>>(mocks: T, config: Record<keyof T, any>): void {
 		Object.keys(config).forEach(key => {
 			const mockKey = key as keyof T;
-			if (mocks[mockKey] && typeof mocks[mockKey].mockResolvedValue === 'function') {
+			if (mocks[mockKey] && typeof mocks[mockKey].mockResolvedValue === "function") {
 				mocks[mockKey].mockResolvedValue(config[mockKey]);
 			}
 		});
@@ -286,7 +283,7 @@ export class MockSetupHelpers {
 			express: expressMocks,
 			configs,
 			applyConfig: this.applyMockConfiguration,
-			
+
 			/**
 			 * Reset all mocks in the environment
 			 */
@@ -304,13 +301,12 @@ export class MockSetupHelpers {
 		const configs = this.getStandardMockConfigs();
 		return {
 			...configs.error,
-			
+
 			/**
 			 * Create contextual database errors
 			 */
-			createDatabaseError: (operation: string) => 
-				new Error(`Database connection failed during ${operation}`),
-			
+			createDatabaseError: (operation: string) => new Error(`Database connection failed during ${operation}`),
+
 			/**
 			 * Create validation errors with field context
 			 */
@@ -319,30 +315,26 @@ export class MockSetupHelpers {
 				(error as any).field = field;
 				return error;
 			},
-			
+
 			/**
 			 * Create business rule errors
 			 */
-			createBusinessRuleError: (rule: string) => 
-				new Error(`Business rule violation: ${rule}`),
-			
+			createBusinessRuleError: (rule: string) => new Error(`Business rule violation: ${rule}`),
+
 			/**
 			 * Create security errors with context
 			 */
-			createSecurityError: (context: string) => 
-				new Error(`Security violation: ${context}`),
-			
+			createSecurityError: (context: string) => new Error(`Security violation: ${context}`),
+
 			/**
 			 * Create not found errors for specific resources
 			 */
-			createNotFoundError: (resource: string, id: string) => 
-				new Error(`${resource} with id ${id} not found`),
-			
+			createNotFoundError: (resource: string, id: string) => new Error(`${resource} with id ${id} not found`),
+
 			/**
 			 * Create conflict errors for specific resources
 			 */
-			createConflictError: (resource: string, reason: string) => 
-				new Error(`${resource} conflict: ${reason}`)
+			createConflictError: (resource: string, reason: string) => new Error(`${resource} conflict: ${reason}`)
 		};
 	}
 
@@ -354,7 +346,7 @@ export class MockSetupHelpers {
 			/**
 			 * Setup mocks for successful user creation flow
 			 */
-			userCreationSuccess: (mockUser: MockedUserModel, userData: any, createdUser: User) => {
+			userCreationSuccess: (mockUser: MockedUserModel, _userData: any, createdUser: User) => {
 				mockUser.findByEmail.mockResolvedValue(null); // Email doesn't exist
 				mockUser.create.mockResolvedValue(createdUser);
 			},
@@ -369,7 +361,7 @@ export class MockSetupHelpers {
 			/**
 			 * Setup mocks for successful team creation flow
 			 */
-			teamCreationSuccess: (mockTeam: MockedTeamModel, teamData: any, createdTeam: Team) => {
+			teamCreationSuccess: (mockTeam: MockedTeamModel, _teamData: any, createdTeam: Team) => {
 				mockTeam.create.mockResolvedValue(createdTeam);
 			},
 
@@ -377,21 +369,18 @@ export class MockSetupHelpers {
 			 * Setup mocks for calendar entry creation with conflict checking
 			 */
 			calendarEntryCreationSuccess: (
-				mockCalendar: MockedCalendarEntryModel, 
-				entryData: any, 
+				mockCalendar: MockedCalendarEntryModel,
+				_entryData: any,
 				createdEntry: CalendarEntry
 			) => {
-				mockCalendar.findConflicts.mockResolvedValue([]); // No conflicts
+				mockCalendar.findConflicts.mockResolvedValue([]);
 				mockCalendar.create.mockResolvedValue(createdEntry);
 			},
 
 			/**
 			 * Setup mocks for calendar entry with conflicts
 			 */
-			calendarEntryConflict: (
-				mockCalendar: MockedCalendarEntryModel, 
-				conflictingEntries: CalendarEntry[]
-			) => {
+			calendarEntryConflict: (mockCalendar: MockedCalendarEntryModel, conflictingEntries: CalendarEntry[]) => {
 				mockCalendar.findConflicts.mockResolvedValue(conflictingEntries);
 			}
 		};
@@ -405,15 +394,11 @@ export class MockVerificationHelpers {
 	/**
 	 * Verify that a mock was called with specific SQL pattern
 	 */
-	static verifyDatabaseCall(
-		mockQuery: Mock,
-		expectedSqlPattern: string | RegExp,
-		expectedParams?: any[]
-	): void {
+	static verifyDatabaseCall(mockQuery: Mock, expectedSqlPattern: string | RegExp, expectedParams?: any[]): void {
 		const calls = mockQuery.mock.calls;
 		const matchingCall = calls.find(call => {
 			const sql = call[0] as string;
-			if (typeof expectedSqlPattern === 'string') {
+			if (typeof expectedSqlPattern === "string") {
 				return sql.includes(expectedSqlPattern);
 			} else {
 				return expectedSqlPattern.test(sql);
@@ -421,7 +406,7 @@ export class MockVerificationHelpers {
 		});
 
 		expect(matchingCall).toBeDefined();
-		
+
 		if (expectedParams && matchingCall) {
 			expect(matchingCall[1]).toEqual(expectedParams);
 		}
@@ -432,7 +417,7 @@ export class MockVerificationHelpers {
 	 */
 	static verifyCallSequence(mocks: Mock[], expectedCallCounts: number[]): void {
 		expect(mocks.length).toBe(expectedCallCounts.length);
-		
+
 		mocks.forEach((mock, index) => {
 			const expectedCount = expectedCallCounts[index];
 			if (expectedCount !== undefined) {

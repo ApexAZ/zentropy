@@ -54,7 +54,7 @@ describe("TeamModel", () => {
 			const result = await TeamModel.create(teamData);
 
 			DomainAssertionHelpers.expectValidTeam(result);
-			
+
 			// Validate business rule defaults
 			expect(result.velocity_baseline).toBeGreaterThan(0);
 			expect(result.sprint_length_days).toBeGreaterThan(0);
@@ -89,7 +89,7 @@ describe("TeamModel", () => {
 			expect(result.velocity_baseline).toBe(30);
 			expect(result.sprint_length_days).toBe(10);
 			expect(result.working_days_per_week).toBe(5);
-			
+
 			// Business rule: working days should not exceed 7
 			expect(result.working_days_per_week).toBeLessThanOrEqual(7);
 		});
@@ -108,11 +108,7 @@ describe("TeamModel", () => {
 
 			await TeamModel.addMember(team.id, user.id);
 
-			AssertionHelpers.expectDatabaseCall(
-				mockPool.query,
-				"INSERT INTO team_memberships",
-				[team.id, user.id]
-			);
+			AssertionHelpers.expectDatabaseCall(mockPool.query, "INSERT INTO team_memberships", [team.id, user.id]);
 		});
 
 		it("should retrieve team members with user details", async () => {
@@ -164,10 +160,7 @@ describe("TeamModel", () => {
 		it("should handle database errors gracefully", async () => {
 			mockFailedQuery();
 
-			await AssertionHelpers.expectAsyncError(
-				TeamModel.findById("nonexistent"),
-				"Database connection failed"
-			);
+			await AssertionHelpers.expectAsyncError(TeamModel.findById("nonexistent"), "Database connection failed");
 		});
 
 		it("should handle member removal for non-existent relationships", async () => {

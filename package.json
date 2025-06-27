@@ -23,7 +23,8 @@
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
     "test:integration": "vitest tests/integration/",
-    "test:all": "vitest"
+    "test:all": "vitest",
+    "test:quality": "npm test && npm run quality"
   },
   "keywords": [],
   "author": "",

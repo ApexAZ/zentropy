@@ -18,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "../public")));
 
 // API Routes
-app.use('/api/calendar-entries', calendarEntriesRouter);
-app.use('/api/users', usersRouter);
+app.use("/api/calendar-entries", calendarEntriesRouter);
+app.use("/api/users", usersRouter);
 
 // Basic route
 app.get("/", (_req: Request, res: Response) => {
@@ -49,9 +49,9 @@ app.get("/api/teams", async (_req: Request, res: Response) => {
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error fetching teams:", error);
-		res.status(500).json({ 
-			message: "Failed to fetch teams", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+		res.status(500).json({
+			message: "Failed to fetch teams",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
@@ -64,21 +64,21 @@ app.get("/api/teams/:id", async (req: Request, res: Response): Promise<void> => 
 			res.status(400).json({ message: "Team ID is required" });
 			return;
 		}
-		
+
 		const team = await TeamModel.findById(id);
-		
+
 		if (!team) {
 			res.status(404).json({ message: "Team not found" });
 			return;
 		}
-		
+
 		res.json(team);
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error fetching team:", error);
-		res.status(500).json({ 
-			message: "Failed to fetch team", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+		res.status(500).json({
+			message: "Failed to fetch team",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
@@ -88,26 +88,25 @@ app.post("/api/teams", async (req: Request, res: Response): Promise<void> => {
 	try {
 		// Validate input data
 		const teamData = validateTeamInput(req.body);
-		
+
 		const newTeam = await TeamModel.create(teamData);
 		res.status(201).json(newTeam);
-		
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error creating team:", error);
-		
+
 		if (error instanceof ValidationError) {
-			res.status(400).json({ 
-				message: "Validation error", 
+			res.status(400).json({
+				message: "Validation error",
 				field: error.field,
-				details: error.message 
+				details: error.message
 			});
 			return;
 		}
-		
-		res.status(500).json({ 
-			message: "Failed to create team", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+
+		res.status(500).json({
+			message: "Failed to create team",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
@@ -120,41 +119,40 @@ app.put("/api/teams/:id", async (req: Request, res: Response): Promise<void> => 
 			res.status(400).json({ message: "Team ID is required" });
 			return;
 		}
-		
+
 		// Check if team exists
 		const existingTeam = await TeamModel.findById(id);
 		if (!existingTeam) {
 			res.status(404).json({ message: "Team not found" });
 			return;
 		}
-		
+
 		// Validate input data
 		const updateData = validateTeamInput(req.body, true);
-		
+
 		const updatedTeam = await TeamModel.update(id, updateData);
 		if (!updatedTeam) {
 			res.status(404).json({ message: "Team not found after update" });
 			return;
 		}
-		
+
 		res.json(updatedTeam);
-		
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error updating team:", error);
-		
+
 		if (error instanceof ValidationError) {
-			res.status(400).json({ 
-				message: "Validation error", 
+			res.status(400).json({
+				message: "Validation error",
 				field: error.field,
-				details: error.message 
+				details: error.message
 			});
 			return;
 		}
-		
-		res.status(500).json({ 
-			message: "Failed to update team", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+
+		res.status(500).json({
+			message: "Failed to update team",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
@@ -167,21 +165,20 @@ app.delete("/api/teams/:id", async (req: Request, res: Response): Promise<void> 
 			res.status(400).json({ message: "Team ID is required" });
 			return;
 		}
-		
+
 		const deleted = await TeamModel.delete(id);
 		if (!deleted) {
 			res.status(404).json({ message: "Team not found" });
 			return;
 		}
-		
+
 		res.json({ message: "Team deleted successfully" });
-		
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error deleting team:", error);
-		res.status(500).json({ 
-			message: "Failed to delete team", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+		res.status(500).json({
+			message: "Failed to delete team",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
@@ -194,44 +191,42 @@ app.get("/api/teams/:id/members", async (req: Request, res: Response): Promise<v
 			res.status(400).json({ message: "Team ID is required" });
 			return;
 		}
-		
+
 		// Check if team exists
 		const team = await TeamModel.findById(id);
 		if (!team) {
 			res.status(404).json({ message: "Team not found" });
 			return;
 		}
-		
+
 		const members = await TeamModel.getMembers(id);
 		res.json(members);
-		
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error fetching team members:", error);
-		res.status(500).json({ 
-			message: "Failed to fetch team members", 
-			error: error instanceof Error ? error.message : "Unknown error" 
+		res.status(500).json({
+			message: "Failed to fetch team members",
+			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}
 });
 
-
 // Legacy team configuration endpoints (for backwards compatibility)
 app.post("/api/team/basic", (_req: Request, res: Response) => {
-	res.status(410).json({ 
-		message: "This endpoint is deprecated. Use POST /api/teams instead." 
+	res.status(410).json({
+		message: "This endpoint is deprecated. Use POST /api/teams instead."
 	});
 });
 
 app.post("/api/team/velocity", (_req: Request, res: Response) => {
-	res.status(410).json({ 
-		message: "This endpoint is deprecated. Use PUT /api/teams/:id instead." 
+	res.status(410).json({
+		message: "This endpoint is deprecated. Use PUT /api/teams/:id instead."
 	});
 });
 
 app.post("/api/team/members", (_req: Request, res: Response) => {
-	res.status(410).json({ 
-		message: "This endpoint is deprecated. Team member management coming soon." 
+	res.status(410).json({
+		message: "This endpoint is deprecated. Team member management coming soon."
 	});
 });
 

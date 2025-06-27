@@ -59,7 +59,9 @@ function getOptionalEnv(key: string, defaultValue: string): string {
  */
 function getEnvAsInt(key: string, defaultValue: number): number {
 	const value = process.env[key];
-	if (!value) {return defaultValue;}
+	if (!value) {
+		return defaultValue;
+	}
 
 	const parsed = parseInt(value, 10);
 	if (isNaN(parsed)) {
@@ -73,7 +75,9 @@ function getEnvAsInt(key: string, defaultValue: number): number {
  */
 function getEnvAsBoolean(key: string, defaultValue: boolean): boolean {
 	const value = process.env[key];
-	if (!value) {return defaultValue;}
+	if (!value) {
+		return defaultValue;
+	}
 
 	return value.toLowerCase() === "true";
 }

@@ -104,7 +104,9 @@ export class CalendarEntryModel {
 	// Update calendar entry
 	static async update(id: string, updateData: Partial<CreateCalendarEntryData>): Promise<CalendarEntry | null> {
 		const fields = Object.keys(updateData);
-		if (fields.length === 0) {return null;}
+		if (fields.length === 0) {
+			return null;
+		}
 
 		const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(", ");
 		const query = `
@@ -164,8 +166,8 @@ export class CalendarEntryModel {
 		// This is a simplified calculation - in a real app you'd account for weekends, holidays, etc.
 		let totalDaysImpacted = 0;
 		for (const entry of result.rows as CalendarEntry[]) {
-			const entryStart = new Date(Math.max((entry.start_date).getTime(), startDate.getTime()));
-			const entryEnd = new Date(Math.min((entry.end_date).getTime(), endDate.getTime()));
+			const entryStart = new Date(Math.max(entry.start_date.getTime(), startDate.getTime()));
+			const entryEnd = new Date(Math.min(entry.end_date.getTime(), endDate.getTime()));
 			const daysDiff = Math.ceil((entryEnd.getTime() - entryStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 			totalDaysImpacted += daysDiff;
 		}

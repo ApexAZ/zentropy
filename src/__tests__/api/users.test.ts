@@ -68,9 +68,7 @@ describe("Users API - Route Layer Specifics", () => {
 
 			mockUserModel.findById.mockResolvedValue(mockUserWithPassword);
 
-			const response = await request(app)
-				.get("/api/users/1")
-				.expect(200);
+			const response = await request(app).get("/api/users/1").expect(200);
 
 			// Critical security requirement: password_hash must never be exposed
 			expect(response.body).not.toHaveProperty("password_hash");
@@ -82,7 +80,7 @@ describe("Users API - Route Layer Specifics", () => {
 			const hashedPassword = "hashed_password_123";
 			mockBcrypt.hash.mockResolvedValue(hashedPassword);
 			mockUserModel.findByEmail.mockResolvedValue(null); // Email doesn't exist
-			
+
 			const createdUser = {
 				id: "new-user-123",
 				email: "new@example.com",
@@ -93,7 +91,7 @@ describe("Users API - Route Layer Specifics", () => {
 				created_at: new Date(),
 				updated_at: new Date()
 			};
-			
+
 			mockUserModel.create.mockResolvedValue(createdUser);
 
 			const response = await request(app)
@@ -116,7 +114,7 @@ describe("Users API - Route Layer Specifics", () => {
 				last_name: "User",
 				role: "team_member"
 			});
-			
+
 			// Response should not contain password_hash
 			expect(response.body).not.toHaveProperty("password_hash");
 		});
@@ -161,7 +159,7 @@ describe("Users API - Route Layer Specifics", () => {
 				last_name: "User",
 				role: "team_member" as const
 			};
-			
+
 			mockUserModel.findByEmail.mockResolvedValue(existingUser);
 
 			const response = await request(app)
@@ -218,9 +216,7 @@ describe("Users API - Route Layer Specifics", () => {
 		it("should handle model-level deletion properly", async () => {
 			mockUserModel.delete.mockResolvedValue(true);
 
-			await request(app)
-				.delete("/api/users/user-123")
-				.expect(204);
+			await request(app).delete("/api/users/user-123").expect(204);
 
 			expect(mockUserModel.delete).toHaveBeenCalledWith("user-123");
 		});
@@ -228,9 +224,7 @@ describe("Users API - Route Layer Specifics", () => {
 		it("should handle model deletion failure", async () => {
 			mockUserModel.delete.mockResolvedValue(false);
 
-			const response = await request(app)
-				.delete("/api/users/nonexistent-123")
-				.expect(404);
+			const response = await request(app).delete("/api/users/nonexistent-123").expect(404);
 
 			expect(response.body).toEqual({ message: "User not found" });
 		});

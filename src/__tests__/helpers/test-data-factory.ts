@@ -126,7 +126,7 @@ export class TestDataFactory {
 	 * Create multiple test users with sequential data
 	 */
 	static createMultipleTestUsers(count: number, baseOverrides: Partial<User> = {}): User[] {
-		return Array.from({ length: count }, (_, index) => 
+		return Array.from({ length: count }, (_, index) =>
 			this.createTestUser({
 				email: `test${index + 1}@example.com`,
 				first_name: `Test${index + 1}`,
@@ -139,7 +139,7 @@ export class TestDataFactory {
 	 * Create multiple test teams with sequential data
 	 */
 	static createMultipleTestTeams(count: number, baseOverrides: Partial<Team> = {}): Team[] {
-		return Array.from({ length: count }, (_, index) => 
+		return Array.from({ length: count }, (_, index) =>
 			this.createTestTeam({
 				name: `Test Team ${index + 1}`,
 				...baseOverrides
@@ -150,13 +150,18 @@ export class TestDataFactory {
 	/**
 	 * Create multiple test calendar entries with sequential dates
 	 */
-	static createMultipleTestCalendarEntries(count: number, userId: string, teamId: string, baseOverrides: Partial<CalendarEntry> = {}): CalendarEntry[] {
+	static createMultipleTestCalendarEntries(
+		count: number,
+		userId: string,
+		teamId: string,
+		baseOverrides: Partial<CalendarEntry> = {}
+	): CalendarEntry[] {
 		return Array.from({ length: count }, (_, index) => {
 			const baseDate = new Date("2024-07-01T00:00:00.000Z");
-			baseDate.setDate(baseDate.getDate() + (index * 7)); // One week apart
+			baseDate.setDate(baseDate.getDate() + index * 7); // One week apart
 			const endDate = new Date(baseDate);
 			endDate.setDate(endDate.getDate() + 2); // 3-day entries
-			
+
 			return this.createTestCalendarEntry({
 				user_id: userId,
 				team_id: teamId,
@@ -177,7 +182,7 @@ export class TestDataFactory {
 		startDate.setDate(startDate.getDate() + startOffset);
 		const endDate = new Date(baseDate);
 		endDate.setDate(endDate.getDate() + endOffset);
-		
+
 		return { startDate, endDate };
 	}
 

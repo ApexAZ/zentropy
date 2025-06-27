@@ -12,7 +12,7 @@ import {
 describe("ValidationError", () => {
 	it("should create error with message, field, and value", () => {
 		const error = new ValidationError("Test error", "testField", "testValue");
-		
+
 		expect(error.message).toBe("Test error");
 		expect(error.field).toBe("testField");
 		expect(error.value).toBe("testValue");
@@ -22,7 +22,7 @@ describe("ValidationError", () => {
 
 	it("should create error with message only", () => {
 		const error = new ValidationError("Test error");
-		
+
 		expect(error.message).toBe("Test error");
 		expect(error.field).toBeUndefined();
 		expect(error.value).toBeUndefined();
@@ -45,14 +45,7 @@ describe("isValidEmail", () => {
 	});
 
 	it("should return false for invalid email addresses", () => {
-		const invalidEmails = [
-			"",
-			"invalid",
-			"@example.com",
-			"test@",
-			"test@example",
-			"test@.com"
-		];
+		const invalidEmails = ["", "invalid", "@example.com", "test@", "test@example", "test@.com"];
 
 		invalidEmails.forEach(email => {
 			expect(isValidEmail(email)).toBe(false);
@@ -77,36 +70,28 @@ describe("validateString", () => {
 	});
 
 	it("should throw error for null/undefined when required", () => {
-		expect(() => validateString(null, "test", { required: true }))
-			.toThrow(ValidationError);
-		expect(() => validateString(undefined, "test", { required: true }))
-			.toThrow(ValidationError);
+		expect(() => validateString(null, "test", { required: true })).toThrow(ValidationError);
+		expect(() => validateString(undefined, "test", { required: true })).toThrow(ValidationError);
 	});
 
 	it("should throw error for non-string values", () => {
-		expect(() => validateString(123, "test"))
-			.toThrow(ValidationError);
-		expect(() => validateString({}, "test"))
-			.toThrow(ValidationError);
+		expect(() => validateString(123, "test")).toThrow(ValidationError);
+		expect(() => validateString({}, "test")).toThrow(ValidationError);
 	});
 
 	it("should validate minimum length", () => {
-		expect(() => validateString("hi", "test", { minLength: 5 }))
-			.toThrow(ValidationError);
+		expect(() => validateString("hi", "test", { minLength: 5 })).toThrow(ValidationError);
 		expect(validateString("hello", "test", { minLength: 5 })).toBe("hello");
 	});
 
 	it("should validate maximum length", () => {
-		expect(() => validateString("toolong", "test", { maxLength: 5 }))
-			.toThrow(ValidationError);
+		expect(() => validateString("toolong", "test", { maxLength: 5 })).toThrow(ValidationError);
 		expect(validateString("ok", "test", { maxLength: 5 })).toBe("ok");
 	});
 
 	it("should throw error for empty string when required", () => {
-		expect(() => validateString("", "test", { required: true }))
-			.toThrow(ValidationError);
-		expect(() => validateString("   ", "test", { required: true }))
-			.toThrow(ValidationError);
+		expect(() => validateString("", "test", { required: true })).toThrow(ValidationError);
+		expect(() => validateString("   ", "test", { required: true })).toThrow(ValidationError);
 	});
 });
 
@@ -117,18 +102,15 @@ describe("validateEmail", () => {
 	});
 
 	it("should throw error for invalid email format", () => {
-		expect(() => validateEmail("invalid-email"))
-			.toThrow(ValidationError);
+		expect(() => validateEmail("invalid-email")).toThrow(ValidationError);
 	});
 
 	it("should throw error for empty email", () => {
-		expect(() => validateEmail(""))
-			.toThrow(ValidationError);
+		expect(() => validateEmail("")).toThrow(ValidationError);
 	});
 
 	it("should throw error for non-string email", () => {
-		expect(() => validateEmail(123))
-			.toThrow(ValidationError);
+		expect(() => validateEmail(123)).toThrow(ValidationError);
 	});
 
 	it("should use custom field name in error", () => {
@@ -149,32 +131,25 @@ describe("validatePositiveInteger", () => {
 	});
 
 	it("should throw error for negative numbers", () => {
-		expect(() => validatePositiveInteger(-1, "test"))
-			.toThrow(ValidationError);
+		expect(() => validatePositiveInteger(-1, "test")).toThrow(ValidationError);
 	});
 
 	it("should throw error for non-integer values", () => {
-		expect(() => validatePositiveInteger(3.14, "test"))
-			.toThrow(ValidationError);
-		expect(() => validatePositiveInteger("abc", "test"))
-			.toThrow(ValidationError);
+		expect(() => validatePositiveInteger(3.14, "test")).toThrow(ValidationError);
+		expect(() => validatePositiveInteger("abc", "test")).toThrow(ValidationError);
 	});
 
 	it("should throw error for null/undefined", () => {
-		expect(() => validatePositiveInteger(null, "test"))
-			.toThrow(ValidationError);
-		expect(() => validatePositiveInteger(undefined, "test"))
-			.toThrow(ValidationError);
+		expect(() => validatePositiveInteger(null, "test")).toThrow(ValidationError);
+		expect(() => validatePositiveInteger(undefined, "test")).toThrow(ValidationError);
 	});
 
 	it("should validate min/max constraints", () => {
 		expect(validatePositiveInteger(5, "test", { min: 3, max: 10 })).toBe(5);
-		
-		expect(() => validatePositiveInteger(2, "test", { min: 3 }))
-			.toThrow(ValidationError);
-		
-		expect(() => validatePositiveInteger(15, "test", { max: 10 }))
-			.toThrow(ValidationError);
+
+		expect(() => validatePositiveInteger(2, "test", { min: 3 })).toThrow(ValidationError);
+
+		expect(() => validatePositiveInteger(15, "test", { max: 10 })).toThrow(ValidationError);
 	});
 });
 
@@ -191,17 +166,13 @@ describe("validateDate", () => {
 	});
 
 	it("should throw error for invalid dates", () => {
-		expect(() => validateDate("invalid-date", "test"))
-			.toThrow(ValidationError);
-		expect(() => validateDate(new Date("invalid"), "test"))
-			.toThrow(ValidationError);
+		expect(() => validateDate("invalid-date", "test")).toThrow(ValidationError);
+		expect(() => validateDate(new Date("invalid"), "test")).toThrow(ValidationError);
 	});
 
 	it("should throw error for null/undefined", () => {
-		expect(() => validateDate(null, "test"))
-			.toThrow(ValidationError);
-		expect(() => validateDate(undefined, "test"))
-			.toThrow(ValidationError);
+		expect(() => validateDate(null, "test")).toThrow(ValidationError);
+		expect(() => validateDate(undefined, "test")).toThrow(ValidationError);
 	});
 });
 
@@ -209,30 +180,27 @@ describe("validateDateRange", () => {
 	it("should validate valid date ranges", () => {
 		const startDate = new Date("2024-01-01");
 		const endDate = new Date("2024-01-02");
-		
-		expect(() => validateDateRange(startDate, endDate))
-			.not.toThrow();
+
+		expect(() => validateDateRange(startDate, endDate)).not.toThrow();
 	});
 
 	it("should throw error when end date is before start date", () => {
 		const startDate = new Date("2024-01-02");
 		const endDate = new Date("2024-01-01");
-		
-		expect(() => validateDateRange(startDate, endDate))
-			.toThrow(ValidationError);
+
+		expect(() => validateDateRange(startDate, endDate)).toThrow(ValidationError);
 	});
 
 	it("should throw error when dates are equal", () => {
 		const date = new Date("2024-01-01");
-		
-		expect(() => validateDateRange(date, date))
-			.toThrow(ValidationError);
+
+		expect(() => validateDateRange(date, date)).toThrow(ValidationError);
 	});
 
 	it("should use custom field names in error", () => {
 		const startDate = new Date("2024-01-02");
 		const endDate = new Date("2024-01-01");
-		
+
 		try {
 			validateDateRange(startDate, endDate, "customStart", "customEnd");
 		} catch (error) {

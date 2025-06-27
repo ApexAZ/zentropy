@@ -23,9 +23,9 @@ function createTestApp() {
 			const teams = await TeamModel.findAll();
 			res.json(teams);
 		} catch (error) {
-			res.status(500).json({ 
-				message: "Failed to fetch teams", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to fetch teams",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -47,9 +47,9 @@ function createTestApp() {
 
 			res.json(team);
 		} catch (error) {
-			res.status(500).json({ 
-				message: "Failed to fetch team", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to fetch team",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -60,10 +60,10 @@ function createTestApp() {
 			// Basic validation for testing
 			if (!req.body.name || req.body.name.trim().length < 2) {
 				const error = new ValidationError("Name must be at least 2 characters", "name");
-				res.status(400).json({ 
-					message: "Validation error", 
+				res.status(400).json({
+					message: "Validation error",
 					field: error.field,
-					details: error.message 
+					details: error.message
 				});
 				return;
 			}
@@ -72,17 +72,17 @@ function createTestApp() {
 			res.status(201).json(newTeam);
 		} catch (error) {
 			if (error instanceof ValidationError) {
-				res.status(400).json({ 
-					message: "Validation error", 
+				res.status(400).json({
+					message: "Validation error",
 					field: error.field,
-					details: error.message 
+					details: error.message
 				});
 				return;
 			}
 
-			res.status(500).json({ 
-				message: "Failed to create team", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to create team",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -111,17 +111,17 @@ function createTestApp() {
 			res.json(updatedTeam);
 		} catch (error) {
 			if (error instanceof ValidationError) {
-				res.status(400).json({ 
-					message: "Validation error", 
+				res.status(400).json({
+					message: "Validation error",
 					field: error.field,
-					details: error.message 
+					details: error.message
 				});
 				return;
 			}
 
-			res.status(500).json({ 
-				message: "Failed to update team", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to update team",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -143,9 +143,9 @@ function createTestApp() {
 
 			res.json({ message: "Team deleted successfully" });
 		} catch (error) {
-			res.status(500).json({ 
-				message: "Failed to delete team", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to delete team",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -168,9 +168,9 @@ function createTestApp() {
 			const members = await TeamModel.getMembers(id);
 			res.json(members);
 		} catch (error) {
-			res.status(500).json({ 
-				message: "Failed to fetch team members", 
-				error: error instanceof Error ? error.message : "Unknown error" 
+			res.status(500).json({
+				message: "Failed to fetch team members",
+				error: error instanceof Error ? error.message : "Unknown error"
 			});
 		}
 	});
@@ -205,7 +205,7 @@ describe("Team API Integration Tests", () => {
 				},
 				{
 					id: "2",
-					name: "Backend Team", 
+					name: "Backend Team",
 					description: "API Development",
 					velocity_baseline: 30,
 					sprint_length_days: 14,
@@ -217,9 +217,7 @@ describe("Team API Integration Tests", () => {
 
 			mockTeamModel.findAll.mockResolvedValue(mockTeams);
 
-			const response = await request(app)
-				.get("/api/teams")
-				.expect(200);
+			const response = await request(app).get("/api/teams").expect(200);
 
 			expect(response.body).toMatchObject(
 				mockTeams.map(team => ({
@@ -235,9 +233,7 @@ describe("Team API Integration Tests", () => {
 			const dbError = new Error("Database connection failed");
 			mockTeamModel.findAll.mockRejectedValue(dbError);
 
-			const response = await request(app)
-				.get("/api/teams")
-				.expect(500);
+			const response = await request(app).get("/api/teams").expect(500);
 
 			expect(response.body).toMatchObject({
 				message: "Failed to fetch teams",
@@ -248,9 +244,7 @@ describe("Team API Integration Tests", () => {
 		it("should return empty array when no teams exist", async () => {
 			mockTeamModel.findAll.mockResolvedValue([]);
 
-			const response = await request(app)
-				.get("/api/teams")
-				.expect(200);
+			const response = await request(app).get("/api/teams").expect(200);
 
 			expect(response.body).toEqual([]);
 		});
@@ -271,9 +265,7 @@ describe("Team API Integration Tests", () => {
 
 			mockTeamModel.findById.mockResolvedValue(mockTeam);
 
-			const response = await request(app)
-				.get("/api/teams/1")
-				.expect(200);
+			const response = await request(app).get("/api/teams/1").expect(200);
 
 			expect(response.body).toMatchObject({
 				...mockTeam,
@@ -286,9 +278,7 @@ describe("Team API Integration Tests", () => {
 		it("should return 404 for non-existent team", async () => {
 			mockTeamModel.findById.mockResolvedValue(null);
 
-			const response = await request(app)
-				.get("/api/teams/999")
-				.expect(404);
+			const response = await request(app).get("/api/teams/999").expect(404);
 
 			expect(response.body).toMatchObject({
 				message: "Team not found"
@@ -299,9 +289,7 @@ describe("Team API Integration Tests", () => {
 			const dbError = new Error("Database error");
 			mockTeamModel.findById.mockRejectedValue(dbError);
 
-			const response = await request(app)
-				.get("/api/teams/1")
-				.expect(500);
+			const response = await request(app).get("/api/teams/1").expect(500);
 
 			expect(response.body).toMatchObject({
 				message: "Failed to fetch team",
@@ -329,10 +317,7 @@ describe("Team API Integration Tests", () => {
 
 			mockTeamModel.create.mockResolvedValue(createdTeam);
 
-			const response = await request(app)
-				.post("/api/teams")
-				.send(teamData)
-				.expect(201);
+			const response = await request(app).post("/api/teams").send(teamData).expect(201);
 
 			expect(response.body).toMatchObject({
 				...createdTeam,
@@ -360,10 +345,7 @@ describe("Team API Integration Tests", () => {
 
 			mockTeamModel.create.mockResolvedValue(createdTeam);
 
-			const response = await request(app)
-				.post("/api/teams")
-				.send(minimalData)
-				.expect(201);
+			const response = await request(app).post("/api/teams").send(minimalData).expect(201);
 
 			expect(response.body).toMatchObject({
 				id: createdTeam.id,
@@ -381,10 +363,7 @@ describe("Team API Integration Tests", () => {
 				name: "A" // Too short
 			};
 
-			const response = await request(app)
-				.post("/api/teams")
-				.send(invalidData)
-				.expect(400);
+			const response = await request(app).post("/api/teams").send(invalidData).expect(400);
 
 			expect(response.body).toMatchObject({
 				message: "Validation error",
@@ -398,10 +377,7 @@ describe("Team API Integration Tests", () => {
 				description: "Team without name"
 			};
 
-			const response = await request(app)
-				.post("/api/teams")
-				.send(invalidData)
-				.expect(400);
+			const response = await request(app).post("/api/teams").send(invalidData).expect(400);
 
 			expect(response.body).toMatchObject({
 				message: "Validation error",
@@ -417,10 +393,7 @@ describe("Team API Integration Tests", () => {
 			const dbError = new Error("Database constraint violation");
 			mockTeamModel.create.mockRejectedValue(dbError);
 
-			const response = await request(app)
-				.post("/api/teams")
-				.send(teamData)
-				.expect(500);
+			const response = await request(app).post("/api/teams").send(teamData).expect(500);
 
 			expect(response.body).toMatchObject({
 				message: "Failed to create team",
@@ -456,10 +429,7 @@ describe("Team API Integration Tests", () => {
 			mockTeamModel.findById.mockResolvedValue(existingTeam);
 			mockTeamModel.update.mockResolvedValue(updatedTeam);
 
-			const response = await request(app)
-				.put("/api/teams/1")
-				.send(updateData)
-				.expect(200);
+			const response = await request(app).put("/api/teams/1").send(updateData).expect(200);
 
 			expect(response.body).toMatchObject({
 				...updatedTeam,
@@ -473,10 +443,7 @@ describe("Team API Integration Tests", () => {
 		it("should return 404 for non-existent team", async () => {
 			mockTeamModel.findById.mockResolvedValue(null);
 
-			const response = await request(app)
-				.put("/api/teams/999")
-				.send({ name: "Updated Name" })
-				.expect(404);
+			const response = await request(app).put("/api/teams/999").send({ name: "Updated Name" }).expect(404);
 
 			expect(response.body).toMatchObject({
 				message: "Team not found"
@@ -488,9 +455,7 @@ describe("Team API Integration Tests", () => {
 		it("should delete existing team", async () => {
 			mockTeamModel.delete.mockResolvedValue(true);
 
-			const response = await request(app)
-				.delete("/api/teams/1")
-				.expect(200);
+			const response = await request(app).delete("/api/teams/1").expect(200);
 
 			expect(response.body).toMatchObject({
 				message: "Team deleted successfully"
@@ -501,9 +466,7 @@ describe("Team API Integration Tests", () => {
 		it("should return 404 for non-existent team", async () => {
 			mockTeamModel.delete.mockResolvedValue(false);
 
-			const response = await request(app)
-				.delete("/api/teams/999")
-				.expect(404);
+			const response = await request(app).delete("/api/teams/999").expect(404);
 
 			expect(response.body).toMatchObject({
 				message: "Team not found"
@@ -542,9 +505,7 @@ describe("Team API Integration Tests", () => {
 			mockTeamModel.findById.mockResolvedValue(mockTeam);
 			mockTeamModel.getMembers.mockResolvedValue(mockMembers);
 
-			const response = await request(app)
-				.get("/api/teams/1/members")
-				.expect(200);
+			const response = await request(app).get("/api/teams/1/members").expect(200);
 
 			expect(response.body).toMatchObject(
 				mockMembers.map(member => ({
@@ -560,9 +521,7 @@ describe("Team API Integration Tests", () => {
 		it("should return 404 when team not found", async () => {
 			mockTeamModel.findById.mockResolvedValue(null);
 
-			const response = await request(app)
-				.get("/api/teams/999/members")
-				.expect(404);
+			const response = await request(app).get("/api/teams/999/members").expect(404);
 
 			expect(response.body).toMatchObject({
 				message: "Team not found"
@@ -597,11 +556,7 @@ describe("Team API Integration Tests", () => {
 
 			mockTeamModel.create.mockResolvedValue(mockTeam);
 
-			const response = await request(app)
-				.post("/api/teams")
-				.type("form")
-				.send("name=Test Team")
-				.expect(201);
+			const response = await request(app).post("/api/teams").type("form").send("name=Test Team").expect(201);
 
 			// Form data should work since Express parses it correctly
 			expect(response.status).toBe(201);

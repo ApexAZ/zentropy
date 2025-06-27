@@ -58,9 +58,7 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 
 			mockCalendarEntryModel.findByTeam.mockResolvedValue(mockEntries);
 
-			await request(app)
-				.get("/api/calendar-entries?team_id=team1")
-				.expect(200);
+			await request(app).get("/api/calendar-entries?team_id=team1").expect(200);
 
 			expect(mockCalendarEntryModel.findByTeam).toHaveBeenCalledWith("team1");
 			expect(mockCalendarEntryModel.findAll).not.toHaveBeenCalled();
@@ -69,9 +67,7 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 
 		it("should handle unknown query parameters gracefully", async () => {
 			// Route only supports team_id, not user_id
-			const response = await request(app)
-				.get("/api/calendar-entries?user_id=user1")
-				.expect(200);
+			const response = await request(app).get("/api/calendar-entries?user_id=user1").expect(200);
 
 			// Should return empty array for unknown query params
 			expect(response.body).toEqual([]);
@@ -81,9 +77,7 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 		});
 
 		it("should return empty array when no team_id provided", async () => {
-			const response = await request(app)
-				.get("/api/calendar-entries")
-				.expect(200);
+			const response = await request(app).get("/api/calendar-entries").expect(200);
 
 			// Route returns empty array when no team_id is provided
 			expect(response.body).toEqual([]);
@@ -211,10 +205,7 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			const createdEntry = { id: "new-123", ...entryWithoutDescription };
 			mockCalendarEntryModel.create.mockResolvedValue(createdEntry);
 
-			await request(app)
-				.post("/api/calendar-entries")
-				.send(entryWithoutDescription)
-				.expect(201);
+			await request(app).post("/api/calendar-entries").send(entryWithoutDescription).expect(201);
 
 			// Verify model is called with description: undefined when not provided
 			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];
@@ -237,10 +228,7 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			const createdEntry = { id: "new-123", ...entryWithoutAllDay, all_day: true };
 			mockCalendarEntryModel.create.mockResolvedValue(createdEntry);
 
-			await request(app)
-				.post("/api/calendar-entries")
-				.send(entryWithoutAllDay)
-				.expect(201);
+			await request(app).post("/api/calendar-entries").send(entryWithoutAllDay).expect(201);
 
 			// Verify model receives default all_day: true when not specified
 			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];

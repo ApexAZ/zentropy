@@ -13,7 +13,7 @@ interface CalendarEntry {
 	id: string;
 	team_id: string;
 	user_id: string;
-	entry_type: 'pto' | 'holiday' | 'sick' | 'personal';
+	entry_type: "pto" | "holiday" | "sick" | "personal";
 	title: string;
 	start_date: string;
 	end_date: string;
@@ -70,7 +70,7 @@ function getEntriesForDate(date: Date, calendarEntries: CalendarEntry[]): Calend
  */
 function getEntryTitle(entry: CalendarEntry, users: User[]): string {
 	const user = users.find(u => u.id === entry.user_id);
-	const userName = user ? `${user.first_name} ${user.last_name}` : 'Unknown';
+	const userName = user ? `${user.first_name} ${user.last_name}` : "Unknown";
 	const typeLabel = getEntryTypeLabel(entry.entry_type);
 	return `${userName} - ${typeLabel}`;
 }
@@ -80,10 +80,10 @@ function getEntryTitle(entry: CalendarEntry, users: User[]): string {
  */
 function getEntryTypeLabel(type: string): string {
 	const labels: Record<string, string> = {
-		'pto': 'PTO / Vacation',
-		'holiday': 'Holiday',
-		'sick': 'Sick Leave',
-		'personal': 'Personal Time'
+		pto: "PTO / Vacation",
+		holiday: "Holiday",
+		sick: "Sick Leave",
+		personal: "Personal Time"
 	};
 	return labels[type] || type;
 }
@@ -93,31 +93,31 @@ function getEntryTypeLabel(type: string): string {
  */
 function validateEntryData(data: CreateCalendarEntryData): { isValid: boolean; errors: string[] } {
 	const errors: string[] = [];
-	
+
 	if (!data.team_id) {
-		errors.push('Please select a team');
+		errors.push("Please select a team");
 	}
-	
+
 	if (!data.user_id) {
-		errors.push('Please select a team member');
+		errors.push("Please select a team member");
 	}
-	
+
 	if (!data.start_date) {
-		errors.push('Start date is required');
+		errors.push("Start date is required");
 	}
-	
+
 	if (!data.end_date) {
-		errors.push('End date is required');
+		errors.push("End date is required");
 	}
-	
+
 	if (data.start_date && data.end_date && new Date(data.start_date) > new Date(data.end_date)) {
-		errors.push('End date must be after start date');
+		errors.push("End date must be after start date");
 	}
-	
+
 	if (data.description && data.description.length > 500) {
-		errors.push('Description must be less than 500 characters');
+		errors.push("Description must be less than 500 characters");
 	}
-	
+
 	return {
 		isValid: errors.length === 0,
 		errors
@@ -130,7 +130,7 @@ function validateEntryData(data: CreateCalendarEntryData): { isValid: boolean; e
 function calculateWorkingDays(startDate: Date, endDate: Date): number {
 	let workingDays = 0;
 	const current = new Date(startDate);
-	
+
 	while (current <= endDate) {
 		const dayOfWeek = current.getDay();
 		// Monday-Friday are working days (1-5)
@@ -139,18 +139,22 @@ function calculateWorkingDays(startDate: Date, endDate: Date): number {
 		}
 		current.setDate(current.getDate() + 1);
 	}
-	
+
 	return workingDays;
 }
 
 /**
  * Calculate capacity impact for a team
  */
-function calculateCapacityImpact(team: Team, startDate: Date, endDate: Date): { workingDays: number; percentage: number } {
+function calculateCapacityImpact(
+	team: Team,
+	startDate: Date,
+	endDate: Date
+): { workingDays: number; percentage: number } {
 	const workingDays = calculateWorkingDays(startDate, endDate);
 	const sprintWorkingDays = (team.sprint_length_days / 7) * team.working_days_per_week;
 	const percentage = Math.round((workingDays / sprintWorkingDays) * 100);
-	
+
 	return {
 		workingDays,
 		percentage
@@ -161,7 +165,7 @@ function calculateCapacityImpact(team: Team, startDate: Date, endDate: Date): { 
  * Escape HTML to prevent XSS attacks
  */
 function escapeHtml(text: string): string {
-	const div = document.createElement('div');
+	const div = document.createElement("div");
 	div.textContent = text;
 	return div.innerHTML;
 }
@@ -171,10 +175,10 @@ function escapeHtml(text: string): string {
  */
 function formatDate(dateString: string): string {
 	const date = new Date(dateString);
-	return date.toLocaleDateString('en-US', { 
-		year: 'numeric', 
-		month: 'short', 
-		day: 'numeric' 
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "short",
+		day: "numeric"
 	});
 }
 
@@ -183,8 +187,8 @@ function formatDate(dateString: string): string {
  */
 function formatDateForInput(date: Date): string {
 	const year = date.getFullYear();
-	const month = (date.getMonth() + 1).toString().padStart(2, '0');
-	const day = date.getDate().toString().padStart(2, '0');
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	const day = date.getDate().toString().padStart(2, "0");
 	return `${year}-${month}-${day}`;
 }
 
@@ -194,12 +198,14 @@ function formatDateForInput(date: Date): string {
 function getEntriesForMonth(calendarEntries: CalendarEntry[], selectedMonth: Date): CalendarEntry[] {
 	const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
 	const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
-	
-	return calendarEntries.filter(entry => {
-		const startDate = new Date(entry.start_date);
-		const endDate = new Date(entry.end_date);
-		return (startDate <= monthEnd && endDate >= monthStart);
-	}).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+	return calendarEntries
+		.filter(entry => {
+			const startDate = new Date(entry.start_date);
+			const endDate = new Date(entry.end_date);
+			return startDate <= monthEnd && endDate >= monthStart;
+		})
+		.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 }
 
 describe("Calendar Frontend Functions", () => {
@@ -290,7 +296,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should return entries that overlap with the given date", () => {
 			const testDate = new Date("2024-07-16T00:00:00"); // Within the vacation range
 			const result = getEntriesForDate(testDate, mockCalendarEntries);
-			
+
 			expect(result).toHaveLength(1);
 			expect(result[0].id).toBe("entry1");
 			expect(result[0].title).toBe("Vacation");
@@ -311,10 +317,10 @@ describe("Calendar Frontend Functions", () => {
 				updated_at: "2024-07-01T00:00:00Z"
 			};
 			const entriesWithOverlap = [...mockCalendarEntries, overlappingEntry];
-			
+
 			const testDate = new Date("2024-07-16T00:00:00");
 			const result = getEntriesForDate(testDate, entriesWithOverlap);
-			
+
 			expect(result).toHaveLength(2);
 			expect(result.map(e => e.id)).toContain("entry1");
 			expect(result.map(e => e.id)).toContain("entry4");
@@ -323,17 +329,17 @@ describe("Calendar Frontend Functions", () => {
 		it("should return empty array when no entries overlap with the given date", () => {
 			const testDate = new Date("2024-06-01T00:00:00"); // Date with no entries
 			const result = getEntriesForDate(testDate, mockCalendarEntries);
-			
+
 			expect(result).toHaveLength(0);
 		});
 
 		it("should include entries on start and end dates", () => {
 			const startDate = new Date("2024-07-15T00:00:00"); // Start date of vacation
 			const endDate = new Date("2024-07-20T00:00:00"); // End date of vacation
-			
+
 			const startResult = getEntriesForDate(startDate, mockCalendarEntries);
 			const endResult = getEntriesForDate(endDate, mockCalendarEntries);
-			
+
 			expect(startResult).toHaveLength(1);
 			expect(startResult[0].id).toBe("entry1");
 			expect(endResult).toHaveLength(1);
@@ -345,7 +351,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should format entry title with user name and type label", () => {
 			const entry = mockCalendarEntries[0]; // John Doe's vacation
 			const result = getEntryTitle(entry, mockUsers);
-			
+
 			expect(result).toBe("John Doe - PTO / Vacation");
 		});
 
@@ -355,14 +361,14 @@ describe("Calendar Frontend Functions", () => {
 				user_id: "unknown_user"
 			};
 			const result = getEntryTitle(entryWithUnknownUser, mockUsers);
-			
+
 			expect(result).toBe("Unknown - PTO / Vacation");
 		});
 
 		it("should format different entry types correctly", () => {
 			const holidayEntry = mockCalendarEntries[1]; // Jane's holiday
 			const result = getEntryTitle(holidayEntry, mockUsers);
-			
+
 			expect(result).toBe("Jane Smith - Holiday");
 		});
 	});
@@ -394,7 +400,7 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should validate correct entry data", () => {
 			const result = validateEntryData(validEntryData);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -402,7 +408,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should require team_id", () => {
 			const invalidData = { ...validEntryData, team_id: "" };
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Please select a team");
 		});
@@ -410,7 +416,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should require user_id", () => {
 			const invalidData = { ...validEntryData, user_id: "" };
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Please select a team member");
 		});
@@ -418,7 +424,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should require start_date", () => {
 			const invalidData = { ...validEntryData, start_date: "" };
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Start date is required");
 		});
@@ -426,19 +432,19 @@ describe("Calendar Frontend Functions", () => {
 		it("should require end_date", () => {
 			const invalidData = { ...validEntryData, end_date: "" };
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("End date is required");
 		});
 
 		it("should validate that end date is after start date", () => {
-			const invalidData = { 
-				...validEntryData, 
-				start_date: "2024-07-20", 
-				end_date: "2024-07-15" 
+			const invalidData = {
+				...validEntryData,
+				start_date: "2024-07-20",
+				end_date: "2024-07-15"
 			};
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("End date must be after start date");
 		});
@@ -447,7 +453,7 @@ describe("Calendar Frontend Functions", () => {
 			const longDescription = "x".repeat(501); // 501 characters
 			const invalidData = { ...validEntryData, description: longDescription };
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Description must be less than 500 characters");
 		});
@@ -456,7 +462,7 @@ describe("Calendar Frontend Functions", () => {
 			const validDescription = "x".repeat(500); // Exactly 500 characters
 			const validData = { ...validEntryData, description: validDescription };
 			const result = validateEntryData(validData);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -472,7 +478,7 @@ describe("Calendar Frontend Functions", () => {
 				description: "x".repeat(501)
 			};
 			const result = validateEntryData(invalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toHaveLength(5);
 			expect(result.errors).toContain("Please select a team");
@@ -489,7 +495,7 @@ describe("Calendar Frontend Functions", () => {
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-19T00:00:00"); // Friday
 			const result = calculateWorkingDays(startDate, endDate);
-			
+
 			expect(result).toBe(5);
 		});
 
@@ -498,7 +504,7 @@ describe("Calendar Frontend Functions", () => {
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-21T00:00:00"); // Sunday
 			const result = calculateWorkingDays(startDate, endDate);
-			
+
 			expect(result).toBe(5);
 		});
 
@@ -506,7 +512,7 @@ describe("Calendar Frontend Functions", () => {
 			// Single working day
 			const workingDay = new Date("2024-07-16T00:00:00"); // Tuesday
 			const weekendDay = new Date("2024-07-14T00:00:00"); // Sunday
-			
+
 			expect(calculateWorkingDays(workingDay, workingDay)).toBe(1);
 			expect(calculateWorkingDays(weekendDay, weekendDay)).toBe(0);
 		});
@@ -516,14 +522,14 @@ describe("Calendar Frontend Functions", () => {
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-26T00:00:00"); // Friday (2 weeks later)
 			const result = calculateWorkingDays(startDate, endDate);
-			
+
 			expect(result).toBe(10);
 		});
 
 		it("should handle same start and end date", () => {
 			const date = new Date("2024-07-16T00:00:00"); // Tuesday
 			const result = calculateWorkingDays(date, date);
-			
+
 			expect(result).toBe(1);
 		});
 	});
@@ -533,9 +539,9 @@ describe("Calendar Frontend Functions", () => {
 			const team = mockTeams[0]; // Frontend team: 14 days sprint, 5 working days per week
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-19T00:00:00"); // Friday (5 working days)
-			
+
 			const result = calculateCapacityImpact(team, startDate, endDate);
-			
+
 			// Sprint working days: (14/7) * 5 = 10
 			// Working days affected: 5
 			// Percentage: (5/10) * 100 = 50%
@@ -547,9 +553,9 @@ describe("Calendar Frontend Functions", () => {
 			const team = mockTeams[1]; // Backend team: 10 days sprint, 5 working days per week
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-17T00:00:00"); // Wednesday (3 working days)
-			
+
 			const result = calculateCapacityImpact(team, startDate, endDate);
-			
+
 			// Sprint working days: (10/7) * 5 = 7.14, but let's calculate: approx 7.14
 			// Working days affected: 3
 			// Percentage: (3/7.14) * 100 ≈ 42%
@@ -568,9 +574,9 @@ describe("Calendar Frontend Functions", () => {
 			};
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-16T00:00:00"); // Tuesday (2 working days)
-			
+
 			const result = calculateCapacityImpact(team, startDate, endDate);
-			
+
 			// Sprint working days: (7/7) * 5 = 5
 			// Working days affected: 2
 			// Percentage: (2/5) * 100 = 40%
@@ -596,7 +602,7 @@ describe("Calendar Frontend Functions", () => {
 			const date1 = new Date("2024-07-15T00:00:00");
 			const date2 = new Date("2024-01-01T00:00:00");
 			const date3 = new Date("2024-12-31T00:00:00");
-			
+
 			expect(formatDateForInput(date1)).toBe("2024-07-15");
 			expect(formatDateForInput(date2)).toBe("2024-01-01");
 			expect(formatDateForInput(date3)).toBe("2024-12-31");
@@ -612,7 +618,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should return entries that overlap with the selected month", () => {
 			const july2024 = new Date("2024-07-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, july2024);
-			
+
 			// Should include the vacation (July 15-20) and holiday (July 4)
 			expect(result).toHaveLength(2);
 			expect(result.map(e => e.id)).toContain("entry1");
@@ -622,7 +628,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should exclude entries from other months", () => {
 			const august2024 = new Date("2024-08-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, august2024);
-			
+
 			// Should only include the sick day (August 5)
 			expect(result).toHaveLength(1);
 			expect(result[0].id).toBe("entry3");
@@ -631,14 +637,14 @@ describe("Calendar Frontend Functions", () => {
 		it("should return empty array for months with no entries", () => {
 			const june2024 = new Date("2024-06-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, june2024);
-			
+
 			expect(result).toHaveLength(0);
 		});
 
 		it("should sort entries by start date", () => {
 			const july2024 = new Date("2024-07-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, july2024);
-			
+
 			// Holiday (July 4) should come before vacation (July 15)
 			expect(result[0].id).toBe("entry2"); // Holiday
 			expect(result[1].id).toBe("entry1"); // Vacation
@@ -659,13 +665,13 @@ describe("Calendar Frontend Functions", () => {
 				updated_at: "2024-07-01T00:00:00Z"
 			};
 			const entriesWithSpanning = [...mockCalendarEntries, spanningEntry];
-			
+
 			const july2024 = new Date("2024-07-01T00:00:00");
 			const august2024 = new Date("2024-08-01T00:00:00");
-			
+
 			const julyResult = getEntriesForMonth(entriesWithSpanning, july2024);
 			const augustResult = getEntriesForMonth(entriesWithSpanning, august2024);
-			
+
 			// Spanning entry should appear in both months
 			expect(julyResult.map(e => e.id)).toContain("entry_spanning");
 			expect(augustResult.map(e => e.id)).toContain("entry_spanning");

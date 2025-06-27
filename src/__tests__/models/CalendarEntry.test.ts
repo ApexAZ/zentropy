@@ -80,9 +80,7 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.create(entryData);
 
 			// Validate date order business rule
-			expect(new Date(result.end_date).getTime()).toBeGreaterThanOrEqual(
-				new Date(result.start_date).getTime()
-			);
+			expect(new Date(result.end_date).getTime()).toBeGreaterThanOrEqual(new Date(result.start_date).getTime());
 		});
 	});
 
@@ -113,11 +111,12 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.findConflicts(userId, startDate, endDate, excludeId);
 
 			expect(result).toHaveLength(0);
-			AssertionHelpers.expectDatabaseCall(
-				mockPool.query,
-				"AND id != $4",
-				[userId, startDate, endDate, excludeId]
-			);
+			AssertionHelpers.expectDatabaseCall(mockPool.query, "AND id != $4", [
+				userId,
+				startDate,
+				endDate,
+				excludeId
+			]);
 		});
 	});
 
@@ -220,14 +219,14 @@ describe("CalendarEntryModel", () => {
 
 		it("should validate entry types", async () => {
 			const entryTypes = ["pto", "holiday", "sick", "personal"] as const;
-			
+
 			for (const entryType of entryTypes) {
 				const entryData = TestDataFactory.createCalendarEntryData({ entry_type: entryType });
 				const createdEntry = TestDataFactory.createTestCalendarEntry(entryData);
 				mockSuccessfulQuery(createdEntry);
 
 				const result = await CalendarEntryModel.create(entryData);
-				
+
 				expect(result.entry_type).toBe(entryType);
 				expect(entryTypes).toContain(result.entry_type);
 			}
@@ -257,11 +256,9 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.delete("entry123");
 
 			expect(result).toBe(true);
-			AssertionHelpers.expectDatabaseCall(
-				mockPool.query,
-				"DELETE FROM calendar_entries WHERE id = $1",
-				["entry123"]
-			);
+			AssertionHelpers.expectDatabaseCall(mockPool.query, "DELETE FROM calendar_entries WHERE id = $1", [
+				"entry123"
+			]);
 		});
 
 		it("should handle delete failure when entry not found", async () => {
