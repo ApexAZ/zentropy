@@ -755,26 +755,369 @@ await AssertionHelpers.expectAsyncError(
 );
 ```
 
-## Environment Configuration
+## Project-Specific Setup and Configuration
 
-### **Test Environment Setup**
-```typescript
-// Vitest configuration
+### **Initial TDD Framework Validation**
+```bash
+# Baseline validation that established TDD workflow
+npm test  # Should show 3 passing tests (add, subtract, multiply)
+```
+
+**Foundation Tests Created:**
+- `calculator.test.js` with 3 passing tests to validate TDD framework
+- `calculator.js` with basic math functions for validation
+- Confirmed VS Code Test Explorer integration working in WSL
+
+### **VS Code Integration Setup**
+
+#### **Required Extensions**
+- **Vitest Test Explorer** - Real-time test execution and results
+- **Error Lens** - Inline error display
+- **ESLint** - Code quality enforcement
+- **TypeScript** - Language support
+- **Thunder Client** - API testing (optional)
+
+#### **Configuration Files**
+**`.vscode/settings.json`:**
+```json
+{
+    "vitest.enable": true,
+    "vitest.commandLine": "npm run test",
+    "vitest.exclude": ["**/node_modules/**", "**/dist/**"],
+    "typescript.preferences.includePackageJsonAutoImports": "on"
+}
+```
+
+**`vitest.config.js`:**
+```javascript
+import { defineConfig } from 'vitest/config';
+
 export default defineConfig({
     test: {
         environment: 'jsdom', // For frontend tests
         setupFiles: ['src/test-setup.ts'],
-        globals: true
+        globals: true,
+        include: ['src/**/*.{test,spec}.{js,ts}'],
+        exclude: ['node_modules', 'dist']
     }
 });
 ```
 
-### **Mock Environment Variables**
-```typescript
-// Test-specific environment setup
-process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+#### **WSL-Specific Considerations**
+- Extensions must be installed separately in WSL vs Windows environment
+- Test Explorer appears in VS Code Activity Bar after proper configuration
+- File path mapping works correctly with src/ and __tests__/ directories
+
+### **Database Testing Environment**
+
+#### **Docker PostgreSQL Setup**
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: capacity_planner_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/database/init.sql:/docker-entrypoint-initdb.d/init.sql
 ```
+
+#### **Environment Configuration**
+**`.env.example`:**
+```bash
+NODE_ENV=test
+DATABASE_URL=postgresql://test:test@localhost:5432/capacity_planner_test
+PORT=3000
+```
+
+**Test-specific environment setup:**
+```typescript
+// In test files
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/capacity_planner_test';
+```
+
+### **Static File Management in Tests**
+
+#### **Build Process Integration**
+```bash
+# Development commands that handle static files
+npm run build      # TypeScript compilation + static file copy
+npm run dev        # Development server with static file setup
+npm run dev:copy   # Manual static file copy when needed
+npm run check-static  # Verify/restore static files
+```
+
+#### **File Structure for Testing**
+```
+src/public/          → dist/public/
+├── calendar.html    → ├── calendar.html
+├── styles.css       → ├── styles.css
+└── team-configuration.html → └── team-configuration.html
+```
+
+**Important:** TypeScript compiler clears `dist/` directory on full builds, so static files are automatically restored via build scripts.
+
+## Environment Configuration
+
+### **Complete Development Environment Setup**
+
+#### **Database Setup**
+```bash
+# 1. Start PostgreSQL container
+docker-compose up -d
+
+# 2. Verify database connection
+curl http://localhost:3000/health
+
+# 3. Check database initialization
+# Database schema automatically loaded from src/database/init.sql
+```
+
+#### **Development Server Setup**
+```bash
+# Complete development workflow
+npm install                    # Install dependencies
+npm run build                 # Build TypeScript + copy static files
+npm run dev                   # Start development server
+npm test                      # Run test suite
+```
+
+#### **Health Check Endpoints**
+```bash
+# Verify all systems operational
+curl http://localhost:3000/health                    # Server health
+curl http://localhost:3000/teams.html               # Teams page
+curl http://localhost:3000/calendar.html            # Calendar page
+```
+
+### **Test Environment Variables**
+```typescript
+// Complete test environment setup
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/capacity_planner_test';
+process.env.PORT = '3000';
+process.env.LOG_LEVEL = 'silent'; // Reduce test noise
+```
+
+## Capacity Planning Domain Testing
+
+### **Working Days Calculator Testing**
+**Business Logic Coverage (21 comprehensive tests):**
+```typescript
+describe("WorkingDaysCalculator", () => {
+    // Core business rules
+    it("should calculate working days excluding weekends", () => {
+        // Monday to Friday = 5 working days
+    });
+    
+    it("should exclude configured holidays", () => {
+        // Handle holiday exclusions with date validation
+    });
+    
+    it("should handle cross-month date ranges", () => {
+        // Boundary testing for month transitions
+    });
+    
+    // Integration with team data
+    it("should integrate with team working days configuration", () => {
+        // Use team.working_days_per_week setting
+    });
+});
+```
+
+**Key Testing Patterns:**
+- Date range boundary validation
+- Holiday and weekend exclusion logic
+- Team configuration integration
+- Business rule enforcement (working days per week)
+
+### **Team Management Testing**
+**Comprehensive Coverage (142 tests across all layers):**
+
+**Model Layer Tests:**
+```typescript
+describe("TeamModel", () => {
+    it("should validate team creation with business rules", () => {
+        // velocity_baseline > 0, sprint_length_days > 0, etc.
+    });
+    
+    it("should handle team membership operations", () => {
+        // Add/remove members with role validation
+    });
+});
+```
+
+**API Layer Tests:**
+```typescript
+describe("Teams API", () => {
+    it("should handle team CRUD operations", () => {
+        // RESTful API endpoint testing
+    });
+    
+    it("should validate team member capacity calculations", () => {
+        // Integration with calendar and working days
+    });
+});
+```
+
+**Integration Layer Tests:**
+```typescript
+describe("Team Workflow Integration", () => {
+    it("should complete team creation to capacity calculation workflow", () => {
+        // End-to-end team management workflow
+    });
+});
+```
+
+### **Calendar Integration Testing**
+**Full Stack Coverage (100+ tests added):**
+
+**Calendar Entry Validation:**
+```typescript
+describe("CalendarEntry", () => {
+    it("should detect PTO conflicts for team members", () => {
+        // Business rule: overlapping PTO detection
+    });
+    
+    it("should calculate capacity impact on sprint planning", () => {
+        // Integration with working days calculator
+    });
+    
+    it("should handle different entry types", () => {
+        // PTO, holiday, sick, personal time validation
+    });
+});
+```
+
+**Real-time Capacity Updates:**
+```typescript
+describe("Capacity Impact Calculation", () => {
+    it("should update team capacity when calendar entries change", () => {
+        // Live capacity calculation testing
+    });
+    
+    it("should handle cross-team calendar interactions", () => {
+        // Multi-team calendar coordination
+    });
+});
+```
+
+### **Vertical Slice Testing Architecture**
+
+Following **INVEST Principles**, each feature must include:
+
+#### **Independent Testing**
+- Each slice tested in isolation
+- No dependencies on incomplete features
+- Self-contained test scenarios
+
+#### **Valuable Testing**
+- Tests cover complete user workflows
+- End-to-end functionality validation
+- Real business scenario testing
+
+#### **Complete Stack Testing**
+```typescript
+// Example: Calendar Entry Vertical Slice
+describe("Calendar Entry Management (Vertical Slice)", () => {
+    describe("Database Layer", () => {
+        // Model CRUD operations, business rules
+    });
+    
+    describe("API Layer", () => {
+        // Route handling, validation, security
+    });
+    
+    describe("Frontend Layer", () => {
+        // UI logic, form validation, DOM manipulation
+    });
+    
+    describe("Integration Layer", () => {
+        // Complete workflow from UI to database
+    });
+});
+```
+
+## Testing Evolution and Achievements
+
+### **Project Testing Milestones**
+
+#### **Phase 1: Foundation (Completed)**
+```bash
+# Initial TDD validation
+✅ Basic calculator app: 3 passing tests
+✅ VS Code Test Explorer: Working in WSL
+✅ Vitest configuration: Complete
+✅ Test command: `npm test` operational
+```
+
+#### **Phase 2: Core Features (Completed)**
+```bash
+# Working Days Calculator
+✅ Business logic: 21 comprehensive tests
+✅ Date validation: Boundary and edge cases
+✅ Holiday handling: Configurable exclusions
+✅ Team integration: Working days per week
+
+# Team Management  
+✅ Full CRUD: 142 tests (Unit + Integration + API)
+✅ Role validation: Team lead vs team member
+✅ Member capacity: Integration with calendar
+✅ API security: Password handling, validation
+```
+
+#### **Phase 3: Calendar Implementation (Completed)**
+```bash
+# TDD Compliance Restoration
+✅ Calendar tests: 100+ tests added
+✅ Full coverage: Backend + Frontend + Integration
+✅ Error scenarios: Database, validation, edge cases
+✅ Security testing: XSS prevention, input validation
+```
+
+#### **Phase 4: Test Optimization (Completed)**
+```bash
+# Test Suite Streamlining
+✅ Reduced redundancy: 288 → 214 tests (26% reduction)
+✅ Eliminated overlap: Removed duplicate test files
+✅ Enhanced patterns: 15+ specialized error helpers
+✅ Type safety: Removed all 'as any' usage
+```
+
+### **Test Coverage by Feature**
+
+| Feature | Tests | Coverage Type |
+|---------|-------|---------------|
+| Working Days Calculator | 21 | Unit + Integration |
+| Team Management | 142 | Unit + API + Integration |
+| Calendar Entry Management | 100+ | Backend + Frontend + Integration |
+| Error Handling | 15+ | Specialized helpers across all layers |
+| **Total** | **214** | **100% passing** |
+
+### **Quality Improvements Achieved**
+
+#### **TDD Compliance**
+- **MANDATORY**: All features now have tests written BEFORE implementation
+- **STRICTLY ENFORCED**: Red-Green-Refactor workflow
+- **NON-NEGOTIABLE**: Quality standards maintained
+
+#### **Error Handling Standardization**
+- Database error testing with context
+- Validation error testing with field specificity  
+- Security error testing with threat context
+- Business rule error testing with domain rules
+
+#### **Type Safety Enhancement**
+- Eliminated all 'as any' usage patterns
+- Proper mock type definitions
+- Interface compliance for test data
+- DOM type safety for frontend tests
 
 ## Performance Guidelines
 
@@ -789,6 +1132,165 @@ process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
 - Coverage reporting for visibility
 - Performance benchmarks to detect regressions
 - Automated test execution on all changes
+
+## Architecture-Specific Testing Patterns
+
+### **Express API Testing**
+```typescript
+// RESTful API endpoint testing patterns
+describe("API Endpoints", () => {
+    const app = express();
+    app.use(express.json());
+    app.use("/api/users", usersRouter);
+    
+    it("should handle JSON API requests", async () => {
+        const response = await request(app)
+            .post("/api/users")
+            .send(userData)
+            .expect(201);
+            
+        AssertionHelpers.expectUserResponse(response.body, expectedUser);
+    });
+});
+```
+
+### **PostgreSQL Integration Testing**
+```typescript
+// Database integration patterns
+describe("Database Integration", () => {
+    beforeAll(async () => {
+        // Start Docker container if not running
+        await exec("docker-compose up -d postgres");
+    });
+    
+    it("should handle database operations", async () => {
+        // Test with real database connection
+        const user = await UserModel.create(userData);
+        expect(user.id).toBeDefined();
+    });
+    
+    afterAll(async () => {
+        // Cleanup test data
+        await pool.query("TRUNCATE users CASCADE");
+    });
+});
+```
+
+### **Static File Testing**
+```typescript
+// Static file availability testing
+describe("Static Files", () => {
+    it("should serve HTML files correctly", async () => {
+        const response = await request(app)
+            .get("/calendar.html")
+            .expect(200)
+            .expect("Content-Type", /html/);
+            
+        expect(response.text).toContain("Team Calendar");
+    });
+    
+    it("should handle file copying during build", () => {
+        // Verify static files exist after build
+        expect(fs.existsSync("dist/public/calendar.html")).toBe(true);
+        expect(fs.existsSync("dist/public/styles.css")).toBe(true);
+    });
+});
+```
+
+### **TypeScript Compilation Testing**
+```typescript
+// Build process integration testing
+describe("TypeScript Build Process", () => {
+    it("should compile TypeScript without errors", async () => {
+        const result = await exec("npx tsc --noEmit");
+        expect(result.stderr).toBe("");
+    });
+    
+    it("should preserve static files after compilation", async () => {
+        await exec("npm run build");
+        expect(fs.existsSync("dist/public/calendar.html")).toBe(true);
+    });
+});
+```
+
+## Development Command Reference
+
+### **Essential Testing Commands**
+```bash
+# Core testing workflow
+npm test                    # Run complete test suite (214 tests)
+npm run test:watch         # Run tests in watch mode
+npm run test:coverage      # Run tests with coverage report
+npm run test:ui            # Run tests with Vitest UI (if configured)
+
+# Development workflow
+npm run dev                # Start dev server with test setup
+npm run build              # Build TypeScript + copy static files
+npm run dev:copy           # Manual static file copy
+npm run check-static       # Verify/restore static files
+
+# Database operations
+docker-compose up -d       # Start PostgreSQL test database
+docker-compose down        # Stop database container
+docker-compose logs        # View database logs
+
+# Health checks
+curl http://localhost:3000/health           # Server health check
+curl http://localhost:3000/teams.html       # Teams page availability
+curl http://localhost:3000/calendar.html    # Calendar page availability
+
+# Code quality
+npm run lint               # ESLint code quality check
+npm run format             # Prettier code formatting
+npm run type-check         # TypeScript type checking
+```
+
+### **Test Execution Patterns**
+```bash
+# Run specific test files
+npm test src/__tests__/models/User.test.ts
+npm test src/__tests__/api/users.test.ts
+npm test src/__tests__/integration/
+
+# Run tests with specific patterns
+npm test -- --reporter=verbose
+npm test -- --coverage
+npm test -- --watch
+
+# Debug failing tests
+npm test -- --reporter=verbose --bail
+npm test -- --grep="specific test name"
+```
+
+### **Development Workflow Integration**
+```bash
+# Complete development cycle
+1. docker-compose up -d                    # Start database
+2. npm run build                          # Build project
+3. npm test                               # Verify all tests pass
+4. npm run dev                            # Start development server
+5. curl http://localhost:3000/health      # Verify server health
+
+# Before committing changes
+1. npm run lint                           # Check code quality
+2. npm run type-check                     # Verify TypeScript
+3. npm test                               # Ensure all tests pass
+4. git add . && git commit -m "message"   # Commit changes
+```
+
+### **Troubleshooting Commands**
+```bash
+# Common issues and solutions
+npm run check-static       # Fix missing static files
+docker-compose restart     # Restart database if connection issues
+rm -rf node_modules && npm install  # Reset dependencies
+npm run build && npm test  # Full rebuild and test
+
+# Test debugging
+npm test -- --verbose      # Detailed test output
+npm test -- --reporter=dot # Minimal test output
+npx vitest --ui            # Visual test interface (if available)
+```
 
 ## Maintenance Practices
 
@@ -884,5 +1386,21 @@ This comprehensive test plan ensures:
 4. **Always provide context** for error testing to aid in debugging
 5. **Follow the testing pyramid** - many unit tests, some API tests, few integration tests
 6. **Document new patterns** when introducing testing approaches not covered here
+7. **Reference this document** for all testing decisions and implementation approaches
+8. **Update this document** when new patterns or standards are established
 
-By following these guidelines, the test suite will remain robust, maintainable, type-safe, and valuable throughout the project's lifecycle. All future development should reference this document to maintain the established quality standards and consistency patterns.
+### **Document Completeness**
+This TEST-PLAN.md now contains **complete testing knowledge** from the project, including:
+- ✅ All testing patterns and standards from CLAUDE.md
+- ✅ Project-specific setup and configuration procedures
+- ✅ Domain-specific testing approaches for capacity planning
+- ✅ Complete development command reference and workflow
+- ✅ Architecture-specific testing patterns
+- ✅ Testing evolution history and achievements
+- ✅ Type safety and error handling standards
+- ✅ VS Code integration and tool setup
+- ✅ Database and infrastructure testing patterns
+
+**No additional testing information** exists in CLAUDE.md that is not covered in this comprehensive guide.
+
+By following these guidelines, the test suite will remain robust, maintainable, type-safe, and valuable throughout the project's lifecycle. This document serves as the **single source of truth** for all testing approaches, standards, and practices for the Capacity Planner project.
