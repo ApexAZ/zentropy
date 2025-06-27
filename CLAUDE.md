@@ -12,6 +12,39 @@
 - Follow consistent code formatting
 - Add comments only when explicitly requested
 
+## Coding Standards & Patterns
+### Import Standards
+- Use ES6 import syntax consistently: `import { item } from 'module'`
+- Use relative paths for internal modules: `import { pool } from '../database/connection'`
+- Avoid namespace imports (`import * as`) unless necessary
+
+### TypeScript Standards
+- Use proper union types: `(Date | string)[]` instead of `any[]`
+- Consistent interface naming: `CreateXData` for creation interfaces
+- Use optional properties with `?` for nullable fields
+- Consistent null handling: `|| null` for database inserts, `|| 0` for numbers
+
+### Error Handling Standards
+- Wrap all database operations in try-catch blocks
+- Log errors with descriptive context: `console.error('Error creating user:', error)`
+- Always re-throw errors to preserve stack traces: `throw error`
+- Use consistent null safety: `(result.rowCount || 0) > 0`
+
+### Database Model Standards
+- Use static class methods for all CRUD operations
+- Consistent method naming: `create`, `findById`, `findAll`, `update`, `delete`
+- Always use parameterized queries with `$1, $2, etc.`
+- Return `Promise<T>` for single items, `Promise<T[]>` for arrays
+- Return `Promise<boolean>` for delete operations
+- Use `RETURNING *` for insert/update operations
+
+### Code Style Standards
+- Use tabs for indentation (as per user preference)
+- Double quotes for strings (as per user preference)
+- Semicolons required (as per user preference)
+- Consistent query formatting with proper indentation
+- Use descriptive variable names: `setClause`, `values`, `result`
+
 ## Project Structure
 - Main project directory: capacity-planner/
 
@@ -79,59 +112,62 @@
 
 ## Current Development Tasks
 
-### **Layer 1: Project Structure (ACTIVE)**
+### **Layer 1: Project Structure** ✅ **COMPLETED**
+- [x] **1.1 Folder Organization**: Backend/frontend structure created
+- [x] **1.2 TypeScript Configuration**: Updated for web app with path mapping
+- [x] **1.3 Package Dependencies**: Added Express, PostgreSQL, development tools
+- [x] **1.4 Build Scripts**: TypeScript compilation, dev server, production build
+- [x] **1.5 Environment Configuration**: Created .env template and configuration
+- [x] **1.6 Git/GitHub Integration**: Repository initialized, connected to GitHub
 
-#### **1.1 Folder Organization** 
-- **Status**: ✅ Completed
-- **Dependencies**: None
-- **Tasks**:
-  - [x] Create backend structure: `src/server/`, `src/models/`, `src/routes/`
-  - [x] Create frontend structure: `src/client/`, `src/public/`
-  - [x] Create shared utilities: `src/shared/`
-  - [x] Create test structure: `src/__tests__/` or parallel test files
-  - [x] Document folder structure purpose in README
+### **Layer 2: Core Data Models** ✅ **COMPLETED** 
+- [x] **2.1 Database Setup**: Docker Compose with PostgreSQL container
+- [x] **2.2 Database Schema**: Complete schema with Users, Teams, Calendar, Sprints tables
+- [x] **2.3 Connection Pool**: Database connection management with graceful shutdown
+- [x] **2.4 User Model**: Full CRUD operations with role-based access
+- [x] **2.5 Team Model**: Team management with member relationships
+- [x] **2.6 Calendar Entry Model**: PTO/holiday tracking with conflict detection
+- [x] **2.7 Basic Server**: Express server with health check endpoints
 
-#### **1.2 TypeScript Build Configuration**
-- **Status**: Pending
-- **Dependencies**: 1.1 Folder Organization
-- **Tasks**:
-  - [ ] Update `tsconfig.json` for web application structure
-  - [ ] Add build output configuration for development and production
-  - [ ] Configure module resolution for web application patterns
-  - [ ] Set up source maps for debugging
-  - [ ] Add strict type checking appropriate for learning
+### **Layer 3: Testing & Validation** ✅ **COMPLETED**
+- [x] **3.1 Docker Testing**: Docker installation verified and container startup successful
+- [x] **3.2 Database Testing**: Database connection confirmed, schema working
+- [x] **3.3 Server Testing**: TypeScript compilation and server startup successful
+- [x] **3.4 Code Standards Audit**: All patterns and standards standardized across codebase
 
-#### **1.3 Package Dependencies**
-- **Status**: Pending
-- **Dependencies**: 1.1 Folder Organization
-- **Tasks**:
-  - [ ] Add Express and related middleware
-  - [ ] Add database connectivity packages (pg, @types/pg)
-  - [ ] Add development utilities (nodemon, concurrently)
-  - [ ] Update existing packages if needed
+## Files Created This Session
+### Configuration Files:
+- `tsconfig.json` - TypeScript configuration with path mapping
+- `docker-compose.yml` - PostgreSQL container setup
+- `.env` / `.env.example` - Environment configuration
+- `.gitignore` - Git ignore patterns
 
-#### **1.4 Build Tooling & Scripts**
-- **Status**: Pending
-- **Dependencies**: 1.2 TypeScript Config, 1.3 Package Dependencies
-- **Tasks**:
-  - [ ] Add TypeScript compilation scripts
-  - [ ] Set up development server with auto-reload
-  - [ ] Configure concurrent frontend/backend development
-  - [ ] Add linting and formatting tools (ESLint, Prettier)
+### Database Layer:
+- `src/database/init.sql` - Complete database schema
+- `src/database/connection.ts` - Connection pool management
 
-#### **1.5 Environment Configuration**
-- **Status**: Pending
-- **Dependencies**: 1.1 Folder Organization
-- **Tasks**:
-  - [ ] Create `.env` template for configuration
-  - [ ] Set up environment variable loading
-  - [ ] Configure development vs production settings
-  - [ ] Add environment validation
+### Data Models:
+- `src/models/User.ts` - User CRUD operations with roles  
+- `src/models/Team.ts` - Team management with memberships
+- `src/models/CalendarEntry.ts` - Calendar entries with conflict detection
 
-**Execution Order**: 1.1 → 1.2 → 1.3 → 1.4 → 1.5
+### Server:
+- `src/server/index.ts` - Express server with health checks
+
+### Package Configuration:
+- Updated `package.json` with dependencies and build scripts
 
 ## Current Session Status
-- Completed: PRD analysis, scope reduction, technology stack alignment, dependency-based roadmap
-- Active: Layer 1 Project Structure - starting with folder organization
-- Next: Implement folder structure, then TypeScript configuration
-- Status: Ready to begin hands-on development
+- **Completed**: Layer 1 (Project Structure), Layer 2 (Core Data Models), Layer 3 (Testing & Validation)
+- **Status**: Foundation complete, all systems operational
+- **Server**: Running at http://localhost:3000 with health check at `/health`
+- **Database**: PostgreSQL container running with successful connections
+- **Next Phase**: Ready to begin Layer 4 (Business Logic) development
+- **GitHub Repository**: Connected to https://github.com/ApexAZ/capacity-planner
+
+## Development Commands
+- **Start Database**: `docker-compose up -d`
+- **Build Project**: `npm run build`
+- **Start Dev Server**: `npm run dev`
+- **Run Tests**: `npm test`
+- **Check Health**: `curl http://localhost:3000/health`
