@@ -1,0 +1,31 @@
+{
+  "name": "capacity-planner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "concurrently \"tsc --watch\" \"nodemon dist/server/index.js\"",
+    "start": "node dist/server/index.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.3",
+    "@types/pg": "^8.15.4",
+    "concurrently": "^9.2.0",
+    "dotenv": "^16.6.0",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10",
+    "pg": "^8.16.2"
+  }
+}
