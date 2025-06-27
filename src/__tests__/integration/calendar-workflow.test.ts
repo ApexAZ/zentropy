@@ -44,9 +44,9 @@ import { CalendarEntryModel } from "../../models/CalendarEntry";
 import { UserModel } from "../../models/User";
 import bcrypt from "bcrypt";
 
-const mockCalendarEntryModel = CalendarEntryModel as any;
-const mockUserModel = UserModel as any;
-const mockBcrypt = bcrypt as any;
+const mockCalendarEntryModel = vi.mocked(CalendarEntryModel);
+const mockUserModel = vi.mocked(UserModel);
+const mockBcrypt = vi.mocked(bcrypt);
 
 // Create test app
 const app = express();
@@ -539,7 +539,7 @@ describe("Calendar Workflow Integration Tests", () => {
 				.expect(200);
 
 			expect(allUsersResponse.body).toHaveLength(2);
-			allUsersResponse.body.forEach((user: any) => {
+			allUsersResponse.body.forEach((user: Record<string, unknown>) => {
 				expect(user).not.toHaveProperty("password_hash");
 				expect(user).toHaveProperty("email");
 				expect(user).toHaveProperty("first_name");

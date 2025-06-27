@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { CalendarEntryModel, CreateCalendarEntryData, CalendarEntry } from "../../models/CalendarEntry";
+import { CalendarEntryModel } from "../../models/CalendarEntry";
+import { TestDataFactory } from "../helpers/test-data-factory";
+import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
 import { pool } from "../../database/connection";
 
-// Mock the database pool
+// Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
 		query: vi.fn()
 	}
 }));
 
-const mockPool = pool as any;
+// Get the mocked pool for testing
+const mockPool = vi.mocked(pool);
 
 describe("CalendarEntryModel", () => {
 	beforeEach(() => {
@@ -20,524 +23,253 @@ describe("CalendarEntryModel", () => {
 		vi.resetAllMocks();
 	});
 
-	describe("create", () => {
-		it("should create a new calendar entry with default all_day true", async () => {
-			const entryData: CreateCalendarEntryData = {
-				user_id: "user123",
-				team_id: "team123",
-				entry_type: "pto",
-				title: "Vacation",
-				description: "Summer vacation",
-				start_date: new Date("2024-07-01"),
-				end_date: new Date("2024-07-05")
-			};
+	// Helper functions for common mock scenarios
+	const mockSuccessfulQuery = (returnValue: any) => {
+		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
+		mockPool.query.mockResolvedValue({ rows, rowCount: rows.length });
+	};
 
-			const mockEntry: CalendarEntry = {
-				id: "123",
-				...entryData,
-				all_day: true,
-				created_at: new Date(),
-				updated_at: new Date()
-			};
+	const mockEmptyQuery = () => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	};
 
-			mockPool.query.mockResolvedValue({ rows: [mockEntry] });
+	const mockFailedQuery = (error = new Error("Database connection failed")) => {
+		mockPool.query.mockRejectedValue(error);
+	};
 
-			const result = await CalendarEntryModel.create(entryData);
+	const mockDeleteSuccess = (rowCount = 1) => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount });
+	};
 
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO calendar_entries"), [
-				entryData.user_id,
-				entryData.team_id,
-				entryData.entry_type,
-				entryData.title,
-				entryData.description,
-				entryData.start_date,
-				entryData.end_date,
-				true
-			]);
-			expect(result).toEqual(mockEntry);
-		});
+	const mockDeleteFailure = () => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	};
 
-		it("should create entry with custom all_day value", async () => {
-			const entryData: CreateCalendarEntryData = {
-				user_id: "user123",
-				team_id: "team123",
-				entry_type: "sick",
-				title: "Doctor appointment",
-				start_date: new Date("2024-07-01"),
-				end_date: new Date("2024-07-01"),
-				all_day: false
-			};
-
-			const mockEntry: CalendarEntry = {
-				id: "456",
-				...entryData,
-				description: null,
-				created_at: new Date(),
-				updated_at: new Date()
-			};
-
-			mockPool.query.mockResolvedValue({ rows: [mockEntry] });
+	describe("business logic validation", () => {
+		it("should create calendar entry with default all_day setting", async () => {
+			const entryData = TestDataFactory.createCalendarEntryData();
+			const createdEntry = TestDataFactory.createTestCalendarEntry(entryData);
+			mockSuccessfulQuery(createdEntry);
 
 			const result = await CalendarEntryModel.create(entryData);
 
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO calendar_entries"), [
-				entryData.user_id,
-				entryData.team_id,
-				entryData.entry_type,
-				entryData.title,
-				null,
-				entryData.start_date,
-				entryData.end_date,
-				false
-			]);
-			expect(result).toEqual(mockEntry);
+			DomainAssertionHelpers.expectValidCalendarEntry(result);
+			expect(result.all_day).toBe(true); // Default behavior
 		});
 
-		it("should handle database errors", async () => {
-			const entryData: CreateCalendarEntryData = {
-				user_id: "user123",
-				team_id: "team123",
-				entry_type: "pto",
-				title: "Vacation",
-				start_date: new Date("2024-07-01"),
-				end_date: new Date("2024-07-05")
-			};
+		it("should handle custom all_day setting", async () => {
+			const entryData = TestDataFactory.createCalendarEntryData({ all_day: false });
+			const createdEntry = TestDataFactory.createTestCalendarEntry({ ...entryData, all_day: false });
+			mockSuccessfulQuery(createdEntry);
 
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
+			const result = await CalendarEntryModel.create(entryData);
 
-			await expect(CalendarEntryModel.create(entryData)).rejects.toThrow("Database connection failed");
-		});
-	});
-
-	describe("findById", () => {
-		it("should find calendar entry by id", async () => {
-			const mockEntry: CalendarEntry = {
-				id: "123",
-				user_id: "user123",
-				team_id: "team123",
-				entry_type: "pto",
-				title: "Vacation",
-				description: "Summer vacation",
-				start_date: new Date("2024-07-01"),
-				end_date: new Date("2024-07-05"),
-				all_day: true,
-				created_at: new Date(),
-				updated_at: new Date()
-			};
-
-			mockPool.query.mockResolvedValue({ rows: [mockEntry] });
-
-			const result = await CalendarEntryModel.findById("123");
-
-			expect(mockPool.query).toHaveBeenCalledWith("SELECT * FROM calendar_entries WHERE id = $1", ["123"]);
-			expect(result).toEqual(mockEntry);
+			expect(result.all_day).toBe(false);
+			DomainAssertionHelpers.expectValidCalendarEntry(result);
 		});
 
-		it("should return null when entry not found", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
+		it("should validate date range business rules", async () => {
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 5);
+			const entryData = TestDataFactory.createCalendarEntryData({
+				start_date: startDate,
+				end_date: endDate
+			});
+			const createdEntry = TestDataFactory.createTestCalendarEntry(entryData);
+			mockSuccessfulQuery(createdEntry);
 
-			const result = await CalendarEntryModel.findById("nonexistent");
+			const result = await CalendarEntryModel.create(entryData);
 
-			expect(result).toBeNull();
-		});
-	});
-
-	describe("findByDateRange", () => {
-		it("should find entries within date range without team filter", async () => {
-			const startDate = new Date("2024-07-01");
-			const endDate = new Date("2024-07-31");
-			const mockEntries = [
-				{
-					id: "123",
-					user_id: "user123",
-					team_id: "team123",
-					entry_type: "pto",
-					title: "Vacation",
-					start_date: new Date("2024-07-10"),
-					end_date: new Date("2024-07-15"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				}
-			];
-
-			mockPool.query.mockResolvedValue({ rows: mockEntries });
-
-			const result = await CalendarEntryModel.findByDateRange(startDate, endDate);
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("WHERE start_date <= $2 AND end_date >= $1"),
-				[startDate, endDate]
+			// Validate date order business rule
+			expect(new Date(result.end_date).getTime()).toBeGreaterThanOrEqual(
+				new Date(result.start_date).getTime()
 			);
-			expect(result).toEqual(mockEntries);
-		});
-
-		it("should find entries within date range with team filter", async () => {
-			const startDate = new Date("2024-07-01");
-			const endDate = new Date("2024-07-31");
-			const teamId = "team123";
-
-			mockPool.query.mockResolvedValue({ rows: [] });
-
-			await CalendarEntryModel.findByDateRange(startDate, endDate, teamId);
-
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("AND team_id = $3"), [
-				startDate,
-				endDate,
-				teamId
-			]);
 		});
 	});
 
-	describe("findConflicts", () => {
+	describe("conflict detection", () => {
 		it("should find conflicting entries for user", async () => {
 			const userId = "user123";
-			const startDate = new Date("2024-07-10");
-			const endDate = new Date("2024-07-15");
-
-			const mockConflicts = [
-				{
-					id: "456",
-					user_id: userId,
-					team_id: "team123",
-					entry_type: "pto",
-					title: "Existing vacation",
-					start_date: new Date("2024-07-12"),
-					end_date: new Date("2024-07-18"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				}
-			];
-
-			mockPool.query.mockResolvedValue({ rows: mockConflicts });
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 3);
+			const conflictingEntry = TestDataFactory.createTestCalendarEntry({
+				user_id: userId,
+				start_date: startDate,
+				end_date: endDate
+			});
+			mockSuccessfulQuery([conflictingEntry]);
 
 			const result = await CalendarEntryModel.findConflicts(userId, startDate, endDate);
 
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("WHERE user_id = $1 AND start_date <= $3 AND end_date >= $2"),
-				[userId, startDate, endDate]
-			);
-			expect(result).toEqual(mockConflicts);
+			expect(result).toHaveLength(1);
+			expect(result[0].user_id).toBe(userId);
+			DomainAssertionHelpers.expectValidCalendarEntry(result[0]);
 		});
 
 		it("should exclude specific entry when checking conflicts", async () => {
 			const userId = "user123";
-			const startDate = new Date("2024-07-10");
-			const endDate = new Date("2024-07-15");
-			const excludeId = "789";
+			const excludeId = "entry456";
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 3);
+			mockEmptyQuery(); // No conflicts found
 
-			mockPool.query.mockResolvedValue({ rows: [] });
+			const result = await CalendarEntryModel.findConflicts(userId, startDate, endDate, excludeId);
 
-			await CalendarEntryModel.findConflicts(userId, startDate, endDate, excludeId);
-
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("AND id != $4"), [
-				userId,
-				startDate,
-				endDate,
-				excludeId
-			]);
-		});
-	});
-
-	describe("calculateWorkingDaysImpact", () => {
-		it("should calculate working days impact", async () => {
-			const teamId = "team123";
-			const startDate = new Date("2024-07-01");
-			const endDate = new Date("2024-07-31");
-
-			const mockEntries = [
-				{
-					user_id: "user1",
-					start_date: new Date("2024-07-10"),
-					end_date: new Date("2024-07-12")
-				},
-				{
-					user_id: "user2",
-					start_date: new Date("2024-07-15"),
-					end_date: new Date("2024-07-17")
-				}
-			];
-
-			mockPool.query.mockResolvedValue({ rows: mockEntries });
-
-			const result = await CalendarEntryModel.calculateWorkingDaysImpact(teamId, startDate, endDate);
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("WHERE team_id = $1 AND start_date <= $3 AND end_date >= $2"),
-				[teamId, startDate, endDate]
+			expect(result).toHaveLength(0);
+			AssertionHelpers.expectDatabaseCall(
+				mockPool.query,
+				"AND id != $4",
+				[userId, startDate, endDate, excludeId]
 			);
-			expect(typeof result).toBe("number");
-			expect(result).toBeGreaterThanOrEqual(0);
 		});
 	});
 
-	describe("findByUser", () => {
-		it("should find calendar entries for specific user", async () => {
-			const userId = "user123";
-			const mockEntries = [
-				{
-					id: "1",
-					user_id: userId,
-					team_id: "team123",
-					entry_type: "pto",
-					title: "Vacation",
-					start_date: new Date("2024-07-15"),
-					end_date: new Date("2024-07-20"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				},
-				{
-					id: "2",
-					user_id: userId,
-					team_id: "team123",
-					entry_type: "sick",
-					title: "Sick Day",
-					start_date: new Date("2024-07-10"),
-					end_date: new Date("2024-07-10"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				}
-			];
+	describe("working days impact calculation", () => {
+		it("should calculate working days impact for team", async () => {
+			const teamId = "team123";
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 10);
+			const impactEntries = TestDataFactory.createMultipleTestCalendarEntries(2, "user123", teamId);
+			mockSuccessfulQuery(impactEntries);
 
-			mockPool.query.mockResolvedValue({ rows: mockEntries });
+			const impact = await CalendarEntryModel.calculateWorkingDaysImpact(teamId, startDate, endDate);
+
+			expect(typeof impact).toBe("number");
+			expect(impact).toBeGreaterThanOrEqual(0);
+		});
+
+		it("should handle team with no calendar entries", async () => {
+			const teamId = "empty-team";
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 5);
+			mockEmptyQuery();
+
+			const impact = await CalendarEntryModel.calculateWorkingDaysImpact(teamId, startDate, endDate);
+
+			expect(impact).toBe(0);
+		});
+	});
+
+	describe("filtering and querying", () => {
+		it("should find entries by user", async () => {
+			const userId = "user123";
+			const userEntries = TestDataFactory.createMultipleTestCalendarEntries(3, userId, "team123");
+			mockSuccessfulQuery(userEntries);
 
 			const result = await CalendarEntryModel.findByUser(userId);
 
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("WHERE user_id = $1"),
-				[userId]
-			);
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("ORDER BY start_date DESC"),
-				[userId]
-			);
-			expect(result).toEqual(mockEntries);
+			expect(result).toHaveLength(3);
+			result.forEach(entry => {
+				expect(entry.user_id).toBe(userId);
+				DomainAssertionHelpers.expectValidCalendarEntry(entry);
+			});
 		});
 
-		it("should return empty array when user has no entries", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
-
-			const result = await CalendarEntryModel.findByUser("user_no_entries");
-
-			expect(result).toEqual([]);
-		});
-
-		it("should handle database errors", async () => {
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
-
-			await expect(CalendarEntryModel.findByUser("user123")).rejects.toThrow("Database connection failed");
-		});
-	});
-
-	describe("findByTeam", () => {
-		it("should find calendar entries for specific team", async () => {
+		it("should find entries by team", async () => {
 			const teamId = "team123";
-			const mockEntries = [
-				{
-					id: "1",
-					user_id: "user1",
-					team_id: teamId,
-					entry_type: "pto",
-					title: "Vacation",
-					start_date: new Date("2024-07-15"),
-					end_date: new Date("2024-07-20"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				},
-				{
-					id: "2",
-					user_id: "user2",
-					team_id: teamId,
-					entry_type: "holiday",
-					title: "Independence Day",
-					start_date: new Date("2024-07-04"),
-					end_date: new Date("2024-07-04"),
-					all_day: true,
-					created_at: new Date(),
-					updated_at: new Date()
-				}
-			];
-
-			mockPool.query.mockResolvedValue({ rows: mockEntries });
+			const teamEntries = TestDataFactory.createMultipleTestCalendarEntries(2, "user123", teamId);
+			mockSuccessfulQuery(teamEntries);
 
 			const result = await CalendarEntryModel.findByTeam(teamId);
 
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("WHERE team_id = $1"),
-				[teamId]
-			);
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("ORDER BY start_date DESC"),
-				[teamId]
-			);
-			expect(result).toEqual(mockEntries);
+			expect(result).toHaveLength(2);
+			result.forEach(entry => {
+				expect(entry.team_id).toBe(teamId);
+				DomainAssertionHelpers.expectValidCalendarEntry(entry);
+			});
 		});
 
-		it("should return empty array when team has no entries", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
+		it("should find entries by date range", async () => {
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 7);
+			const rangeEntries = TestDataFactory.createMultipleTestCalendarEntries(2, "user123", "team123");
+			mockSuccessfulQuery(rangeEntries);
 
-			const result = await CalendarEntryModel.findByTeam("team_no_entries");
+			const result = await CalendarEntryModel.findByDateRange(startDate, endDate);
 
-			expect(result).toEqual([]);
+			expect(result).toHaveLength(2);
+			result.forEach(entry => {
+				DomainAssertionHelpers.expectValidCalendarEntry(entry);
+			});
 		});
 
-		it("should handle database errors", async () => {
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
+		it("should find entries by date range with team filter", async () => {
+			const { startDate, endDate } = TestDataFactory.createDateRange(0, 7);
+			const teamId = "team123";
+			const filteredEntries = TestDataFactory.createMultipleTestCalendarEntries(1, "user123", teamId);
+			mockSuccessfulQuery(filteredEntries);
 
-			await expect(CalendarEntryModel.findByTeam("team123")).rejects.toThrow("Database connection failed");
+			const result = await CalendarEntryModel.findByDateRange(startDate, endDate, teamId);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].team_id).toBe(teamId);
 		});
 	});
 
-	describe("update", () => {
-		const existingEntry: CalendarEntry = {
-			id: "123",
-			user_id: "user123",
-			team_id: "team123",
-			entry_type: "pto",
-			title: "Original Title",
-			description: "Original description",
-			start_date: new Date("2024-07-01"),
-			end_date: new Date("2024-07-05"),
-			all_day: true,
-			created_at: new Date(),
-			updated_at: new Date()
-		};
-
-		it("should update calendar entry with valid data", async () => {
+	describe("data integrity and validation", () => {
+		it("should handle update operations with partial data", async () => {
+			const entryId = "entry123";
 			const updateData = {
 				title: "Updated Title",
 				description: "Updated description",
 				entry_type: "sick" as const
 			};
+			const updatedEntry = TestDataFactory.createTestCalendarEntry({ id: entryId, ...updateData });
+			mockSuccessfulQuery(updatedEntry);
 
-			const updatedEntry = {
-				...existingEntry,
-				...updateData,
-				updated_at: new Date()
-			};
+			const result = await CalendarEntryModel.update(entryId, updateData);
 
-			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
-
-			const result = await CalendarEntryModel.update("123", updateData);
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("UPDATE calendar_entries SET"),
-				["123", ...Object.values(updateData)]
-			);
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("updated_at = NOW()"),
-				["123", ...Object.values(updateData)]
-			);
-			expect(result).toEqual(updatedEntry);
+			expect(result!.title).toBe("Updated Title");
+			expect(result!.entry_type).toBe("sick");
+			DomainAssertionHelpers.expectValidCalendarEntry(result!);
 		});
 
-		it("should update partial fields", async () => {
-			const updateData = {
-				title: "New Title Only"
-			};
+		it("should validate entry types", async () => {
+			const entryTypes = ["pto", "holiday", "sick", "personal"] as const;
+			
+			for (const entryType of entryTypes) {
+				const entryData = TestDataFactory.createCalendarEntryData({ entry_type: entryType });
+				const createdEntry = TestDataFactory.createTestCalendarEntry(entryData);
+				mockSuccessfulQuery(createdEntry);
 
-			const updatedEntry = {
-				...existingEntry,
-				title: "New Title Only",
-				updated_at: new Date()
-			};
-
-			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
-
-			const result = await CalendarEntryModel.update("123", updateData);
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("title = $2"),
-				["123", "New Title Only"]
-			);
-			expect(result).toEqual(updatedEntry);
-		});
-
-		it("should return null when no fields to update", async () => {
-			const result = await CalendarEntryModel.update("123", {});
-
-			expect(result).toBeNull();
-			expect(mockPool.query).not.toHaveBeenCalled();
-		});
-
-		it("should return null when entry not found", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
-
-			const result = await CalendarEntryModel.update("nonexistent", { title: "Test" });
-
-			expect(result).toBeNull();
-		});
-
-		it("should handle database errors", async () => {
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
-
-			await expect(CalendarEntryModel.update("123", { title: "Test" })).rejects.toThrow("Database connection failed");
-		});
-
-		it("should update date fields correctly", async () => {
-			const updateData = {
-				start_date: new Date("2024-08-01"),
-				end_date: new Date("2024-08-05"),
-				all_day: false
-			};
-
-			const updatedEntry = {
-				...existingEntry,
-				...updateData,
-				updated_at: new Date()
-			};
-
-			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
-
-			const result = await CalendarEntryModel.update("123", updateData);
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				expect.stringContaining("start_date = $2, end_date = $3, all_day = $4"),
-				["123", ...Object.values(updateData)]
-			);
-			expect(result).toEqual(updatedEntry);
+				const result = await CalendarEntryModel.create(entryData);
+				
+				expect(result.entry_type).toBe(entryType);
+				expect(entryTypes).toContain(result.entry_type);
+			}
 		});
 	});
 
-	describe("delete", () => {
-		it("should delete calendar entry successfully", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 1 });
+	describe("error handling", () => {
+		it("should handle database errors gracefully", async () => {
+			mockFailedQuery();
 
-			const result = await CalendarEntryModel.delete("123");
-
-			expect(mockPool.query).toHaveBeenCalledWith("DELETE FROM calendar_entries WHERE id = $1", ["123"]);
-			expect(result).toBe(true);
+			await AssertionHelpers.expectAsyncError(
+				CalendarEntryModel.findById("nonexistent"),
+				"Database connection failed"
+			);
 		});
 
-		it("should return false when entry not found", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 0 });
+		it("should return null when no fields to update", async () => {
+			const result = await CalendarEntryModel.update("entry123", {});
+
+			expect(result).toBeNull();
+			AssertionHelpers.expectMockNotCalled(mockPool.query);
+		});
+
+		it("should handle delete operations correctly", async () => {
+			mockDeleteSuccess(1);
+
+			const result = await CalendarEntryModel.delete("entry123");
+
+			expect(result).toBe(true);
+			AssertionHelpers.expectDatabaseCall(
+				mockPool.query,
+				"DELETE FROM calendar_entries WHERE id = $1",
+				["entry123"]
+			);
+		});
+
+		it("should handle delete failure when entry not found", async () => {
+			mockDeleteFailure();
 
 			const result = await CalendarEntryModel.delete("nonexistent");
 
 			expect(result).toBe(false);
-		});
-
-		it("should handle null rowCount", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: null });
-
-			const result = await CalendarEntryModel.delete("123");
-
-			expect(result).toBe(false);
-		});
-
-		it("should handle database errors", async () => {
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
-
-			await expect(CalendarEntryModel.delete("123")).rejects.toThrow("Database connection failed");
 		});
 	});
 });

@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 /**
@@ -248,8 +251,8 @@ describe("Calendar Frontend Functions", () => {
 				user_id: "user1",
 				entry_type: "pto",
 				title: "Vacation",
-				start_date: "2024-07-15",
-				end_date: "2024-07-20",
+				start_date: "2024-07-15T00:00:00",
+				end_date: "2024-07-20T00:00:00",
 				description: "Summer vacation",
 				all_day: true,
 				created_at: "2024-07-01T00:00:00Z",
@@ -261,8 +264,8 @@ describe("Calendar Frontend Functions", () => {
 				user_id: "user2",
 				entry_type: "holiday",
 				title: "Independence Day",
-				start_date: "2024-07-04",
-				end_date: "2024-07-04",
+				start_date: "2024-07-04T00:00:00",
+				end_date: "2024-07-04T00:00:00",
 				description: "Federal holiday",
 				all_day: true,
 				created_at: "2024-07-01T00:00:00Z",
@@ -274,8 +277,8 @@ describe("Calendar Frontend Functions", () => {
 				user_id: "user1",
 				entry_type: "sick",
 				title: "Sick Day",
-				start_date: "2024-08-05",
-				end_date: "2024-08-05",
+				start_date: "2024-08-05T00:00:00",
+				end_date: "2024-08-05T00:00:00",
 				all_day: true,
 				created_at: "2024-07-01T00:00:00Z",
 				updated_at: "2024-07-01T00:00:00Z"
@@ -285,7 +288,7 @@ describe("Calendar Frontend Functions", () => {
 
 	describe("getEntriesForDate", () => {
 		it("should return entries that overlap with the given date", () => {
-			const testDate = new Date("2024-07-16"); // Within the vacation range
+			const testDate = new Date("2024-07-16T00:00:00"); // Within the vacation range
 			const result = getEntriesForDate(testDate, mockCalendarEntries);
 			
 			expect(result).toHaveLength(1);
@@ -309,7 +312,7 @@ describe("Calendar Frontend Functions", () => {
 			};
 			const entriesWithOverlap = [...mockCalendarEntries, overlappingEntry];
 			
-			const testDate = new Date("2024-07-16");
+			const testDate = new Date("2024-07-16T00:00:00");
 			const result = getEntriesForDate(testDate, entriesWithOverlap);
 			
 			expect(result).toHaveLength(2);
@@ -318,15 +321,15 @@ describe("Calendar Frontend Functions", () => {
 		});
 
 		it("should return empty array when no entries overlap with the given date", () => {
-			const testDate = new Date("2024-06-01"); // Date with no entries
+			const testDate = new Date("2024-06-01T00:00:00"); // Date with no entries
 			const result = getEntriesForDate(testDate, mockCalendarEntries);
 			
 			expect(result).toHaveLength(0);
 		});
 
 		it("should include entries on start and end dates", () => {
-			const startDate = new Date("2024-07-15"); // Start date of vacation
-			const endDate = new Date("2024-07-20"); // End date of vacation
+			const startDate = new Date("2024-07-15T00:00:00"); // Start date of vacation
+			const endDate = new Date("2024-07-20T00:00:00"); // End date of vacation
 			
 			const startResult = getEntriesForDate(startDate, mockCalendarEntries);
 			const endResult = getEntriesForDate(endDate, mockCalendarEntries);
@@ -483,8 +486,8 @@ describe("Calendar Frontend Functions", () => {
 	describe("calculateWorkingDays", () => {
 		it("should calculate working days correctly for a typical week", () => {
 			// Monday to Friday (5 working days)
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-19"); // Friday
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-19T00:00:00"); // Friday
 			const result = calculateWorkingDays(startDate, endDate);
 			
 			expect(result).toBe(5);
@@ -492,8 +495,8 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should exclude weekends from working days calculation", () => {
 			// Monday to Sunday (5 working days, excluding weekend)
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-21"); // Sunday
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-21T00:00:00"); // Sunday
 			const result = calculateWorkingDays(startDate, endDate);
 			
 			expect(result).toBe(5);
@@ -501,8 +504,8 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should handle single day periods", () => {
 			// Single working day
-			const workingDay = new Date("2024-07-16"); // Tuesday
-			const weekendDay = new Date("2024-07-14"); // Sunday
+			const workingDay = new Date("2024-07-16T00:00:00"); // Tuesday
+			const weekendDay = new Date("2024-07-14T00:00:00"); // Sunday
 			
 			expect(calculateWorkingDays(workingDay, workingDay)).toBe(1);
 			expect(calculateWorkingDays(weekendDay, weekendDay)).toBe(0);
@@ -510,15 +513,15 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should handle multiple weeks correctly", () => {
 			// 2 full weeks (10 working days)
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-26"); // Friday (2 weeks later)
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-26T00:00:00"); // Friday (2 weeks later)
 			const result = calculateWorkingDays(startDate, endDate);
 			
 			expect(result).toBe(10);
 		});
 
 		it("should handle same start and end date", () => {
-			const date = new Date("2024-07-16"); // Tuesday
+			const date = new Date("2024-07-16T00:00:00"); // Tuesday
 			const result = calculateWorkingDays(date, date);
 			
 			expect(result).toBe(1);
@@ -528,8 +531,8 @@ describe("Calendar Frontend Functions", () => {
 	describe("calculateCapacityImpact", () => {
 		it("should calculate capacity impact correctly", () => {
 			const team = mockTeams[0]; // Frontend team: 14 days sprint, 5 working days per week
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-19"); // Friday (5 working days)
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-19T00:00:00"); // Friday (5 working days)
 			
 			const result = calculateCapacityImpact(team, startDate, endDate);
 			
@@ -542,8 +545,8 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should handle different sprint configurations", () => {
 			const team = mockTeams[1]; // Backend team: 10 days sprint, 5 working days per week
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-17"); // Wednesday (3 working days)
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-17T00:00:00"); // Wednesday (3 working days)
 			
 			const result = calculateCapacityImpact(team, startDate, endDate);
 			
@@ -563,8 +566,8 @@ describe("Calendar Frontend Functions", () => {
 				sprint_length_days: 7, // 1 week sprint
 				working_days_per_week: 5
 			};
-			const startDate = new Date("2024-07-15"); // Monday
-			const endDate = new Date("2024-07-16"); // Tuesday (2 working days)
+			const startDate = new Date("2024-07-15T00:00:00"); // Monday
+			const endDate = new Date("2024-07-16T00:00:00"); // Tuesday (2 working days)
 			
 			const result = calculateCapacityImpact(team, startDate, endDate);
 			
@@ -578,9 +581,9 @@ describe("Calendar Frontend Functions", () => {
 
 	describe("formatDate", () => {
 		it("should format dates in US locale", () => {
-			expect(formatDate("2024-07-15")).toBe("Jul 15, 2024");
-			expect(formatDate("2024-01-01")).toBe("Jan 1, 2024");
-			expect(formatDate("2024-12-31")).toBe("Dec 31, 2024");
+			expect(formatDate("2024-07-15T00:00:00")).toBe("Jul 15, 2024");
+			expect(formatDate("2024-01-01T00:00:00")).toBe("Jan 1, 2024");
+			expect(formatDate("2024-12-31T00:00:00")).toBe("Dec 31, 2024");
 		});
 
 		it("should handle ISO date strings", () => {
@@ -590,9 +593,9 @@ describe("Calendar Frontend Functions", () => {
 
 	describe("formatDateForInput", () => {
 		it("should format dates for HTML input fields", () => {
-			const date1 = new Date("2024-07-15");
-			const date2 = new Date("2024-01-01");
-			const date3 = new Date("2024-12-31");
+			const date1 = new Date("2024-07-15T00:00:00");
+			const date2 = new Date("2024-01-01T00:00:00");
+			const date3 = new Date("2024-12-31T00:00:00");
 			
 			expect(formatDateForInput(date1)).toBe("2024-07-15");
 			expect(formatDateForInput(date2)).toBe("2024-01-01");
@@ -600,14 +603,14 @@ describe("Calendar Frontend Functions", () => {
 		});
 
 		it("should pad single digit months and days with zeros", () => {
-			const date = new Date("2024-01-05");
+			const date = new Date("2024-01-05T00:00:00");
 			expect(formatDateForInput(date)).toBe("2024-01-05");
 		});
 	});
 
 	describe("getEntriesForMonth", () => {
 		it("should return entries that overlap with the selected month", () => {
-			const july2024 = new Date("2024-07-01");
+			const july2024 = new Date("2024-07-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, july2024);
 			
 			// Should include the vacation (July 15-20) and holiday (July 4)
@@ -617,7 +620,7 @@ describe("Calendar Frontend Functions", () => {
 		});
 
 		it("should exclude entries from other months", () => {
-			const august2024 = new Date("2024-08-01");
+			const august2024 = new Date("2024-08-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, august2024);
 			
 			// Should only include the sick day (August 5)
@@ -626,14 +629,14 @@ describe("Calendar Frontend Functions", () => {
 		});
 
 		it("should return empty array for months with no entries", () => {
-			const june2024 = new Date("2024-06-01");
+			const june2024 = new Date("2024-06-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, june2024);
 			
 			expect(result).toHaveLength(0);
 		});
 
 		it("should sort entries by start date", () => {
-			const july2024 = new Date("2024-07-01");
+			const july2024 = new Date("2024-07-01T00:00:00");
 			const result = getEntriesForMonth(mockCalendarEntries, july2024);
 			
 			// Holiday (July 4) should come before vacation (July 15)
@@ -657,8 +660,8 @@ describe("Calendar Frontend Functions", () => {
 			};
 			const entriesWithSpanning = [...mockCalendarEntries, spanningEntry];
 			
-			const july2024 = new Date("2024-07-01");
-			const august2024 = new Date("2024-08-01");
+			const july2024 = new Date("2024-07-01T00:00:00");
+			const august2024 = new Date("2024-08-01T00:00:00");
 			
 			const julyResult = getEntriesForMonth(entriesWithSpanning, july2024);
 			const augustResult = getEntriesForMonth(entriesWithSpanning, august2024);
@@ -673,7 +676,7 @@ describe("Calendar Frontend Functions", () => {
 		it("should escape HTML special characters", () => {
 			expect(escapeHtml("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
 			expect(escapeHtml("John & Jane")).toBe("John &amp; Jane");
-			expect(escapeHtml('Say "Hello"')).toBe("Say &quot;Hello&quot;");
+			expect(escapeHtml('Say "Hello"')).toBe('Say "Hello"'); // Quotes are not escaped by textContent/innerHTML
 		});
 
 		it("should handle empty strings", () => {

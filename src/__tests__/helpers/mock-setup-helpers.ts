@@ -1,0 +1,452 @@
+/**
+ * Shared mock setup helpers for consistent testing patterns
+ */
+import { vi, expect, type Mock } from "vitest";
+import type { User } from "../../models/User";
+import type { Team } from "../../models/Team";
+import type { CalendarEntry } from "../../models/CalendarEntry";
+
+/**
+ * Type-safe mock definitions for better testing
+ */
+export type MockedDatabasePool = {
+	query: Mock<[string, any[]], Promise<{ rows: any[]; rowCount?: number }>>;
+};
+
+export type MockedUserModel = {
+	findAll: Mock<[], Promise<User[]>>;
+	findById: Mock<[string], Promise<User | null>>;
+	findByEmail: Mock<[string], Promise<User | null>>;
+	create: Mock<[any], Promise<User>>;
+	update: Mock<[string, any], Promise<User | null>>;
+	delete: Mock<[string], Promise<boolean>>;
+};
+
+export type MockedTeamModel = {
+	findAll: Mock<[], Promise<Team[]>>;
+	findById: Mock<[string], Promise<Team | null>>;
+	create: Mock<[any], Promise<Team>>;
+	update: Mock<[string, any], Promise<Team | null>>;
+	delete: Mock<[string], Promise<boolean>>;
+	getMembers: Mock<[string], Promise<User[]>>;
+	addMember: Mock<[string, string], Promise<void>>;
+	removeMember: Mock<[string, string], Promise<boolean>>;
+};
+
+export type MockedCalendarEntryModel = {
+	findAll: Mock<[], Promise<CalendarEntry[]>>;
+	findById: Mock<[string], Promise<CalendarEntry | null>>;
+	findByUser: Mock<[string], Promise<CalendarEntry[]>>;
+	findByTeam: Mock<[string], Promise<CalendarEntry[]>>;
+	findByDateRange: Mock<[Date, Date, string?], Promise<CalendarEntry[]>>;
+	create: Mock<[any], Promise<CalendarEntry>>;
+	update: Mock<[string, any], Promise<CalendarEntry | null>>;
+	delete: Mock<[string], Promise<boolean>>;
+	findConflicts: Mock<[string, Date, Date, string?], Promise<CalendarEntry[]>>;
+	calculateWorkingDaysImpact: Mock<[string, Date, Date], Promise<number>>;
+};
+
+export class MockSetupHelpers {
+	/**
+	 * Setup database connection pool mocks
+	 */
+	static setupDatabaseMocks(): MockedDatabasePool {
+		const mockPool = {
+			query: vi.fn()
+		} as MockedDatabasePool;
+
+		return mockPool;
+	}
+
+	/**
+	 * Database mock helpers for common scenarios
+	 */
+	static createDatabaseHelpers(mockPool: MockedDatabasePool) {
+		return {
+			/**
+			 * Mock successful database query with return data
+			 */
+			mockSuccessfulQuery: (returnValue: any[] | any) => {
+				const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
+				mockPool.query.mockResolvedValue({ 
+					rows, 
+					rowCount: rows.length 
+				});
+			},
+
+			/**
+			 * Mock failed database query with error
+			 */
+			mockFailedQuery: (error: Error = new Error("Database connection failed")) => {
+				mockPool.query.mockRejectedValue(error);
+			},
+
+			/**
+			 * Mock empty database query result
+			 */
+			mockEmptyQuery: () => {
+				mockPool.query.mockResolvedValue({ 
+					rows: [], 
+					rowCount: 0 
+				});
+			},
+
+			/**
+			 * Mock successful delete operation
+			 */
+			mockDeleteSuccess: (rowCount: number = 1) => {
+				mockPool.query.mockResolvedValue({ 
+					rows: [], 
+					rowCount 
+				});
+			},
+
+			/**
+			 * Mock failed delete operation (no rows affected)
+			 */
+			mockDeleteFailure: () => {
+				mockPool.query.mockResolvedValue({ 
+					rows: [], 
+					rowCount: 0 
+				});
+			},
+
+			/**
+			 * Reset all database mocks
+			 */
+			resetDatabaseMocks: () => {
+				mockPool.query.mockReset();
+			}
+		};
+	}
+
+	/**
+	 * Setup User model mocks with type safety
+	 */
+	static setupUserModelMocks(): MockedUserModel {
+		return {
+			findAll: vi.fn(),
+			findById: vi.fn(),
+			findByEmail: vi.fn(),
+			create: vi.fn(),
+			update: vi.fn(),
+			delete: vi.fn()
+		};
+	}
+
+	/**
+	 * Setup Team model mocks with type safety
+	 */
+	static setupTeamModelMocks(): MockedTeamModel {
+		return {
+			findAll: vi.fn(),
+			findById: vi.fn(),
+			create: vi.fn(),
+			update: vi.fn(),
+			delete: vi.fn(),
+			getMembers: vi.fn(),
+			addMember: vi.fn(),
+			removeMember: vi.fn()
+		};
+	}
+
+	/**
+	 * Setup CalendarEntry model mocks with type safety
+	 */
+	static setupCalendarEntryModelMocks(): MockedCalendarEntryModel {
+		return {
+			findAll: vi.fn(),
+			findById: vi.fn(),
+			findByUser: vi.fn(),
+			findByTeam: vi.fn(),
+			findByDateRange: vi.fn(),
+			create: vi.fn(),
+			update: vi.fn(),
+			delete: vi.fn(),
+			findConflicts: vi.fn(),
+			calculateWorkingDaysImpact: vi.fn()
+		};
+	}
+
+	/**
+	 * Setup Express app mocks for API testing
+	 */
+	static setupExpressMocks() {
+		const mockRequest = {
+			body: {},
+			params: {},
+			query: {},
+			headers: {}
+		};
+
+		const mockResponse = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn().mockReturnThis(),
+			send: vi.fn().mockReturnThis(),
+			setHeader: vi.fn().mockReturnThis()
+		};
+
+		const mockNext = vi.fn();
+
+		return { mockRequest, mockResponse, mockNext };
+	}
+
+	/**
+	 * Standard mock configurations for different test scenarios
+	 */
+	static getStandardMockConfigs() {
+		return {
+			/**
+			 * Configuration for successful operations
+			 */
+			success: {
+				user: {
+					findAll: [] as User[],
+					findById: null as User | null,
+					create: null as User | null,
+					update: null as User | null,
+					delete: true
+				},
+				team: {
+					findAll: [] as Team[],
+					findById: null as Team | null,
+					create: null as Team | null,
+					update: null as Team | null,
+					delete: true
+				},
+				calendarEntry: {
+					findAll: [] as CalendarEntry[],
+					findById: null as CalendarEntry | null,
+					create: null as CalendarEntry | null,
+					update: null as CalendarEntry | null,
+					delete: true
+				}
+			},
+
+			/**
+			 * Configuration for error scenarios
+			 */
+			error: {
+				database: new Error("Database connection failed"),
+				validation: new Error("Validation failed"),
+				notFound: new Error("Resource not found"),
+				unauthorized: new Error("Unauthorized access"),
+				conflict: new Error("Resource conflict"),
+				network: new Error("Network connection failed"),
+				timeout: new Error("Operation timed out"),
+				businessRule: new Error("Business rule violation"),
+				security: new Error("Security violation"),
+				malformedData: new Error("Malformed data"),
+				duplicateKey: new Error("Duplicate key violation"),
+				foreignKey: new Error("Foreign key constraint failed"),
+				outOfRange: new Error("Value out of acceptable range"),
+				invalidState: new Error("Invalid operation state"),
+				rateLimited: new Error("Rate limit exceeded")
+			}
+		};
+	}
+
+	/**
+	 * Apply standard mock configurations
+	 */
+	static applyMockConfiguration<T extends Record<string, Mock>>(
+		mocks: T,
+		config: Record<keyof T, any>
+	): void {
+		Object.keys(config).forEach(key => {
+			const mockKey = key as keyof T;
+			if (mocks[mockKey] && typeof mocks[mockKey].mockResolvedValue === 'function') {
+				mocks[mockKey].mockResolvedValue(config[mockKey]);
+			}
+		});
+	}
+
+	/**
+	 * Setup complete test environment with all mocks
+	 */
+	static setupCompleteTestEnvironment() {
+		const databaseMocks = this.setupDatabaseMocks();
+		const databaseHelpers = this.createDatabaseHelpers(databaseMocks);
+		const userMocks = this.setupUserModelMocks();
+		const teamMocks = this.setupTeamModelMocks();
+		const calendarMocks = this.setupCalendarEntryModelMocks();
+		const expressMocks = this.setupExpressMocks();
+		const configs = this.getStandardMockConfigs();
+
+		return {
+			database: {
+				mocks: databaseMocks,
+				helpers: databaseHelpers
+			},
+			models: {
+				user: userMocks,
+				team: teamMocks,
+				calendar: calendarMocks
+			},
+			express: expressMocks,
+			configs,
+			applyConfig: this.applyMockConfiguration,
+			
+			/**
+			 * Reset all mocks in the environment
+			 */
+			resetAll: () => {
+				vi.clearAllMocks();
+				databaseHelpers.resetDatabaseMocks();
+			}
+		};
+	}
+
+	/**
+	 * Get common error scenarios for consistent error testing
+	 */
+	static getCommonErrors() {
+		const configs = this.getStandardMockConfigs();
+		return {
+			...configs.error,
+			
+			/**
+			 * Create contextual database errors
+			 */
+			createDatabaseError: (operation: string) => 
+				new Error(`Database connection failed during ${operation}`),
+			
+			/**
+			 * Create validation errors with field context
+			 */
+			createValidationError: (field: string, reason: string) => {
+				const error = new Error(`Validation failed: ${reason}`);
+				(error as any).field = field;
+				return error;
+			},
+			
+			/**
+			 * Create business rule errors
+			 */
+			createBusinessRuleError: (rule: string) => 
+				new Error(`Business rule violation: ${rule}`),
+			
+			/**
+			 * Create security errors with context
+			 */
+			createSecurityError: (context: string) => 
+				new Error(`Security violation: ${context}`),
+			
+			/**
+			 * Create not found errors for specific resources
+			 */
+			createNotFoundError: (resource: string, id: string) => 
+				new Error(`${resource} with id ${id} not found`),
+			
+			/**
+			 * Create conflict errors for specific resources
+			 */
+			createConflictError: (resource: string, reason: string) => 
+				new Error(`${resource} conflict: ${reason}`)
+		};
+	}
+
+	/**
+	 * Common mock scenarios for quick setup
+	 */
+	static createCommonScenarios() {
+		return {
+			/**
+			 * Setup mocks for successful user creation flow
+			 */
+			userCreationSuccess: (mockUser: MockedUserModel, userData: any, createdUser: User) => {
+				mockUser.findByEmail.mockResolvedValue(null); // Email doesn't exist
+				mockUser.create.mockResolvedValue(createdUser);
+			},
+
+			/**
+			 * Setup mocks for user creation with email conflict
+			 */
+			userCreationEmailConflict: (mockUser: MockedUserModel, existingUser: User) => {
+				mockUser.findByEmail.mockResolvedValue(existingUser);
+			},
+
+			/**
+			 * Setup mocks for successful team creation flow
+			 */
+			teamCreationSuccess: (mockTeam: MockedTeamModel, teamData: any, createdTeam: Team) => {
+				mockTeam.create.mockResolvedValue(createdTeam);
+			},
+
+			/**
+			 * Setup mocks for calendar entry creation with conflict checking
+			 */
+			calendarEntryCreationSuccess: (
+				mockCalendar: MockedCalendarEntryModel, 
+				entryData: any, 
+				createdEntry: CalendarEntry
+			) => {
+				mockCalendar.findConflicts.mockResolvedValue([]); // No conflicts
+				mockCalendar.create.mockResolvedValue(createdEntry);
+			},
+
+			/**
+			 * Setup mocks for calendar entry with conflicts
+			 */
+			calendarEntryConflict: (
+				mockCalendar: MockedCalendarEntryModel, 
+				conflictingEntries: CalendarEntry[]
+			) => {
+				mockCalendar.findConflicts.mockResolvedValue(conflictingEntries);
+			}
+		};
+	}
+}
+
+/**
+ * Utility functions for mock verification
+ */
+export class MockVerificationHelpers {
+	/**
+	 * Verify that a mock was called with specific SQL pattern
+	 */
+	static verifyDatabaseCall(
+		mockQuery: Mock,
+		expectedSqlPattern: string | RegExp,
+		expectedParams?: any[]
+	): void {
+		const calls = mockQuery.mock.calls;
+		const matchingCall = calls.find(call => {
+			const sql = call[0] as string;
+			if (typeof expectedSqlPattern === 'string') {
+				return sql.includes(expectedSqlPattern);
+			} else {
+				return expectedSqlPattern.test(sql);
+			}
+		});
+
+		expect(matchingCall).toBeDefined();
+		
+		if (expectedParams && matchingCall) {
+			expect(matchingCall[1]).toEqual(expectedParams);
+		}
+	}
+
+	/**
+	 * Verify mock call sequence for complex operations
+	 */
+	static verifyCallSequence(mocks: Mock[], expectedCallCounts: number[]): void {
+		expect(mocks.length).toBe(expectedCallCounts.length);
+		
+		mocks.forEach((mock, index) => {
+			const expectedCount = expectedCallCounts[index];
+			if (expectedCount !== undefined) {
+				expect(mock).toHaveBeenCalledTimes(expectedCount);
+			}
+		});
+	}
+
+	/**
+	 * Verify no unauthorized calls were made
+	 */
+	static verifyNoUnauthorizedCalls(mocks: Mock[]): void {
+		mocks.forEach(mock => {
+			expect(mock).not.toHaveBeenCalled();
+		});
+	}
+}

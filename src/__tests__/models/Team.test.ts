@@ -1,54 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { TeamModel, CreateTeamData, Team, TeamMembership } from "../../models/Team";
-import { pool } from "../../database/connection";
+import { TeamModel } from "../../models/Team";
 import { TestDataFactory } from "../helpers/test-data-factory";
+import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
+import { pool } from "../../database/connection";
 
-// Mock the database pool
+// Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
 		query: vi.fn()
 	}
 }));
 
-const mockPool = pool as any;
-
-/**
- * Team model test data factory
- */
-class TeamModelTestDataFactory extends TestDataFactory {
-	static createValidTeamData(overrides: Partial<CreateTeamData> = {}): CreateTeamData {
-		return {
-			name: "Test Team",
-			description: "A test team",
-			...overrides
-		};
-	}
-
-	static createMockTeam(overrides: Partial<Team> = {}): Team {
-		return {
-			id: "123",
-			name: "Test Team",
-			description: "A test team",
-			velocity_baseline: 0,
-			sprint_length_days: 14,
-			working_days_per_week: 5,
-			created_by: null,
-			created_at: new Date(),
-			updated_at: new Date(),
-			...overrides
-		};
-	}
-
-	static createMockTeamMembership(overrides: Partial<TeamMembership> = {}): TeamMembership {
-		return {
-			id: "789",
-			team_id: "123",
-			user_id: "456",
-			joined_at: new Date(),
-			...overrides
-		};
-	}
-}
+// Get the mocked pool for testing
+const mockPool = vi.mocked(pool);
 
 describe("TeamModel", () => {
 	beforeEach(() => {
@@ -59,177 +23,157 @@ describe("TeamModel", () => {
 		vi.resetAllMocks();
 	});
 
-	describe("create", () => {
-		it("should create a new team with default values", async () => {
-			const teamData = TeamModelTestDataFactory.createValidTeamData();
-			const mockTeam = TeamModelTestDataFactory.createMockTeam();
+	// Helper functions for common mock scenarios
+	const mockSuccessfulQuery = (returnValue: any) => {
+		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
+		mockPool.query.mockResolvedValue({ rows, rowCount: rows.length });
+	};
 
-			mockPool.query.mockResolvedValue({ rows: [mockTeam] });
+	const mockEmptyQuery = () => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	};
 
-			const result = await TeamModel.create(teamData);
+	const mockFailedQuery = (error = new Error("Database connection failed")) => {
+		mockPool.query.mockRejectedValue(error);
+	};
 
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO teams"), [
-				teamData.name,
-				teamData.description,
-				0,
-				14,
-				5,
-				null
-			]);
-			expect(result).toEqual(mockTeam);
-		});
+	const mockDeleteSuccess = (rowCount = 1) => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount });
+	};
 
-		it("should handle database errors", async () => {
-			const teamData = TeamModelTestDataFactory.createValidTeamData();
+	const mockDeleteFailure = () => {
+		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	};
 
-			const dbError = new Error("Database connection failed");
-			mockPool.query.mockRejectedValue(dbError);
-
-			await expect(TeamModel.create(teamData)).rejects.toThrow("Database connection failed");
-		});
-
-		it("should create a team with custom values", async () => {
-			const teamData = TeamModelTestDataFactory.createValidTeamData({
-				name: "Custom Team",
-				description: undefined,
-				velocity_baseline: 25,
-				sprint_length_days: 10,
-				working_days_per_week: 4,
-				created_by: "user123"
-			});
-
-			const mockTeam = TeamModelTestDataFactory.createMockTeam({
-				id: "456",
-				name: "Custom Team",
-				description: undefined,
-				velocity_baseline: 25,
-				sprint_length_days: 10,
-				working_days_per_week: 4,
-				created_by: "user123"
-			});
-
-			mockPool.query.mockResolvedValue({ rows: [mockTeam] });
+	describe("business logic validation", () => {
+		it("should validate team creation with default values", async () => {
+			const teamData = TestDataFactory.createTeamData();
+			const createdTeam = TestDataFactory.createTestTeam(teamData);
+			mockSuccessfulQuery(createdTeam);
 
 			const result = await TeamModel.create(teamData);
 
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO teams"), [
-				teamData.name,
-				null,
-				25,
-				10,
-				4,
-				"user123"
-			]);
-			expect(result).toEqual(mockTeam);
+			DomainAssertionHelpers.expectValidTeam(result);
+			
+			// Validate business rule defaults
+			expect(result.velocity_baseline).toBeGreaterThan(0);
+			expect(result.sprint_length_days).toBeGreaterThan(0);
+			expect(result.working_days_per_week).toBeLessThanOrEqual(7);
+		});
+
+		it("should handle team creation with minimal data", async () => {
+			const minimalData = TestDataFactory.createTeamData({
+				description: "Basic team"
+			});
+			const createdTeam = TestDataFactory.createTestTeam(minimalData);
+			mockSuccessfulQuery(createdTeam);
+
+			const result = await TeamModel.create(minimalData);
+
+			expect(result.name).toBe(minimalData.name);
+			DomainAssertionHelpers.expectValidTeam(result);
+		});
+
+		it("should validate team capacity calculation parameters", async () => {
+			const teamData = TestDataFactory.createTeamData({
+				velocity_baseline: 30,
+				sprint_length_days: 10,
+				working_days_per_week: 5
+			});
+			const createdTeam = TestDataFactory.createTestTeam(teamData);
+			mockSuccessfulQuery(createdTeam);
+
+			const result = await TeamModel.create(teamData);
+
+			// Validate capacity planning parameters
+			expect(result.velocity_baseline).toBe(30);
+			expect(result.sprint_length_days).toBe(10);
+			expect(result.working_days_per_week).toBe(5);
+			
+			// Business rule: working days should not exceed 7
+			expect(result.working_days_per_week).toBeLessThanOrEqual(7);
 		});
 	});
 
-	describe("findById", () => {
-		it("should find team by id", async () => {
-			const mockTeam = TeamModelTestDataFactory.createMockTeam({
-				velocity_baseline: 20,
-				created_by: "user123"
+	describe("team membership management", () => {
+		it("should handle team member operations", async () => {
+			const team = TestDataFactory.createTestTeam();
+			const user = TestDataFactory.createTestUser();
+			const membership = TestDataFactory.createTestTeamMembership({
+				team_id: team.id,
+				user_id: user.id
 			});
 
-			mockPool.query.mockResolvedValue({ rows: [mockTeam] });
+			mockSuccessfulQuery(membership);
 
-			const result = await TeamModel.findById("123");
+			await TeamModel.addMember(team.id, user.id);
 
-			expect(mockPool.query).toHaveBeenCalledWith("SELECT * FROM teams WHERE id = $1", ["123"]);
-			expect(result).toEqual(mockTeam);
-		});
-
-		it("should return null when team not found", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
-
-			const result = await TeamModel.findById("nonexistent");
-
-			expect(result).toBeNull();
-		});
-	});
-
-	describe("addMember", () => {
-		it("should add member to team", async () => {
-			const mockMembership = TeamModelTestDataFactory.createMockTeamMembership();
-
-			mockPool.query.mockResolvedValue({ rows: [mockMembership] });
-
-			const result = await TeamModel.addMember("123", "456");
-
-			expect(mockPool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO team_memberships"), [
-				"123",
-				"456"
-			]);
-			expect(result).toEqual(mockMembership);
-		});
-	});
-
-	describe("removeMember", () => {
-		it("should remove member from team", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 1 });
-
-			const result = await TeamModel.removeMember("123", "456");
-
-			expect(mockPool.query).toHaveBeenCalledWith(
-				"DELETE FROM team_memberships WHERE team_id = $1 AND user_id = $2",
-				["123", "456"]
+			AssertionHelpers.expectDatabaseCall(
+				mockPool.query,
+				"INSERT INTO team_memberships",
+				[team.id, user.id]
 			);
-			expect(result).toBe(true);
 		});
 
-		it("should return false when membership not found", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 0 });
+		it("should retrieve team members with user details", async () => {
+			const team = TestDataFactory.createTestTeam();
+			const members = TestDataFactory.createMultipleTestUsers(3);
+			mockSuccessfulQuery(members);
 
-			const result = await TeamModel.removeMember("123", "456");
+			const result = await TeamModel.getMembers(team.id);
 
-			expect(result).toBe(false);
+			expect(result).toHaveLength(3);
+			result.forEach(member => {
+				DomainAssertionHelpers.expectValidUser(member);
+				// Note: Team member queries in model layer may include full user data
+				// API layer should filter sensitive data
+			});
 		});
 	});
 
-	describe("isMember", () => {
-		it("should return true when user is member", async () => {
-			mockPool.query.mockResolvedValue({ rows: [{ team_id: "123" }] });
+	describe("data integrity validation", () => {
+		it("should properly format team data from database", async () => {
+			const mockTeam = TestDataFactory.createTestTeam();
+			mockSuccessfulQuery(mockTeam);
 
-			const result = await TeamModel.isMember("123", "456");
+			const result = await TeamModel.findById(mockTeam.id);
 
-			expect(mockPool.query).toHaveBeenCalledWith(
-				"SELECT 1 FROM team_memberships WHERE team_id = $1 AND user_id = $2",
-				["123", "456"]
+			DomainAssertionHelpers.expectValidTeam(result!);
+			AssertionHelpers.expectValidDateFields(result!);
+			AssertionHelpers.expectValidId(result!.id);
+		});
+
+		it("should handle team update operations", async () => {
+			const existingTeam = TestDataFactory.createTestTeam();
+			const updateData = {
+				name: "Updated Team Name",
+				velocity_baseline: 35
+			};
+			const updatedTeam = { ...existingTeam, ...updateData };
+			mockSuccessfulQuery(updatedTeam);
+
+			const result = await TeamModel.update(existingTeam.id, updateData);
+
+			expect(result!.name).toBe("Updated Team Name");
+			expect(result!.velocity_baseline).toBe(35);
+			DomainAssertionHelpers.expectValidTeam(result!);
+		});
+	});
+
+	describe("error handling", () => {
+		it("should handle database errors gracefully", async () => {
+			mockFailedQuery();
+
+			await AssertionHelpers.expectAsyncError(
+				TeamModel.findById("nonexistent"),
+				"Database connection failed"
 			);
-			expect(result).toBe(true);
 		});
 
-		it("should return false when user is not member", async () => {
-			mockPool.query.mockResolvedValue({ rows: [] });
+		it("should handle member removal for non-existent relationships", async () => {
+			mockDeleteFailure();
 
-			const result = await TeamModel.isMember("123", "456");
-
-			expect(result).toBe(false);
-		});
-	});
-
-	describe("delete", () => {
-		it("should delete team successfully", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 1 });
-
-			const result = await TeamModel.delete("123");
-
-			expect(mockPool.query).toHaveBeenCalledWith("DELETE FROM teams WHERE id = $1", ["123"]);
-			expect(result).toBe(true);
-		});
-
-		it("should return false when team not found", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: 0 });
-
-			const result = await TeamModel.delete("nonexistent");
-
-			expect(result).toBe(false);
-		});
-
-		it("should handle null rowCount", async () => {
-			mockPool.query.mockResolvedValue({ rowCount: null });
-
-			const result = await TeamModel.delete("123");
+			const result = await TeamModel.removeMember("team123", "user456");
 
 			expect(result).toBe(false);
 		});

@@ -9,7 +9,7 @@ import { JSDOM } from 'jsdom';
 // Setup DOM environment
 const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.document = dom.window.document;
-global.window = dom.window as any;
+global.window = dom.window as unknown as Window & typeof globalThis;
 
 describe('Frontend DOM Type Safety', () => {
 	beforeEach(() => {
