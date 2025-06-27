@@ -62,8 +62,8 @@ export class TestDataFactory {
 		return {
 			user_id: 'test-user-id',
 			title: 'Test PTO',
-			start_date: startDate.toISOString().split('T')[0],
-			end_date: endDate.toISOString().split('T')[0],
+			start_date: startDate.toISOString().split('T')[0] as string,
+			end_date: endDate.toISOString().split('T')[0] as string,
 			entry_type: 'pto',
 			status: 'approved',
 			...overrides
@@ -96,8 +96,8 @@ export class TestDataFactory {
 			return this.createTestCalendarEntry({
 				user_id: userId,
 				title: `Test Entry ${index + 1}`,
-				start_date: baseDate.toISOString().split('T')[0],
-				end_date: endDate.toISOString().split('T')[0]
+				start_date: baseDate.toISOString().split('T')[0] as string,
+				end_date: endDate.toISOString().split('T')[0] as string
 			});
 		});
 	}

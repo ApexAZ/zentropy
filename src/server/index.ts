@@ -4,6 +4,8 @@ import { testConnection } from "../database/connection";
 import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation";
 import { validateTeamInput } from "../utils/team-validation";
+import calendarEntriesRouter from "../routes/calendar-entries";
+import usersRouter from "../routes/users";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000");
@@ -14,6 +16,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static file serving - serve HTML, CSS, JS files from public directory
 app.use(express.static(path.join(__dirname, "../public")));
+
+// API Routes
+app.use('/api/calendar-entries', calendarEntriesRouter);
+app.use('/api/users', usersRouter);
 
 // Basic route
 app.get("/", (_req: Request, res: Response) => {

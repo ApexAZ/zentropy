@@ -3,6 +3,7 @@
  * Handles CRUD operations for teams with comprehensive error handling and validation
  */
 
+(function() {
 // Type definitions
 interface Team {
 	id: string;
@@ -277,6 +278,7 @@ async function handleTeamSubmit(event: Event): Promise<void> {
 		const savedTeam = await response.json() as Team;
 		
 		// Update local state
+		const wasEditing = isEditing; // Capture state before closing modal
 		if (isEditing && currentTeam) {
 			const teamToUpdate = currentTeam; // Assert non-null for TypeScript
 			const index = teams.findIndex((t: Team) => t.id === teamToUpdate.id);
@@ -290,7 +292,7 @@ async function handleTeamSubmit(event: Event): Promise<void> {
 		renderTeams();
 		closeTeamModal();
 		showToast(
-			isEditing ? 'Team updated successfully!' : 'Team created successfully!', 
+			wasEditing ? 'Team updated successfully!' : 'Team created successfully!', 
 			'success'
 		);
 		
@@ -460,8 +462,10 @@ function showErrorState(message: string): void {
 
 function setSaveButtonLoading(loading: boolean): void {
 	const btn = document.getElementById('save-team-btn') as HTMLButtonElement;
-	const text = btn.querySelector('.btn-text') as HTMLElement;
-	const spinner = btn.querySelector('.btn-spinner') as HTMLElement;
+	const text = btn?.querySelector('.btn-text') as HTMLElement | null;
+	const spinner = btn?.querySelector('.btn-spinner') as HTMLElement | null;
+	
+	if (!btn || !text || !spinner) {return;}
 	
 	if (loading) {
 		btn.disabled = true;
@@ -476,8 +480,10 @@ function setSaveButtonLoading(loading: boolean): void {
 
 function setDeleteButtonLoading(loading: boolean): void {
 	const btn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
-	const text = btn.querySelector('.btn-text') as HTMLElement;
-	const spinner = btn.querySelector('.btn-spinner') as HTMLElement;
+	const text = btn?.querySelector('.btn-text') as HTMLElement | null;
+	const spinner = btn?.querySelector('.btn-spinner') as HTMLElement | null;
+	
+	if (!btn || !text || !spinner) {return;}
 	
 	if (loading) {
 		btn.disabled = true;
@@ -582,13 +588,8 @@ document.addEventListener('keydown', function(e: KeyboardEvent) {
 });
 
 // Make functions available globally for onclick handlers
-interface GlobalWindow extends Window {
-	editTeam: (teamId: string) => void;
-	confirmDeleteTeam: (teamId: string) => void;
-	viewTeamDetails: (teamId: string) => void;
-}
+(window as any).editTeam = editTeam;
+(window as any).confirmDeleteTeam = confirmDeleteTeam;
+(window as any).viewTeamDetails = viewTeamDetails;
 
-const globalWindow = window as GlobalWindow;
-globalWindow.editTeam = editTeam;
-globalWindow.confirmDeleteTeam = confirmDeleteTeam;
-globalWindow.viewTeamDetails = viewTeamDetails;
+})();
