@@ -25,6 +25,7 @@ npm test                              # Run all tests with Vitest
 npm run test:watch                    # Run tests in watch mode
 npm run test:integration              # Run integration tests only
 npm run test:ui                       # Open Vitest UI
+npm run test:quality                  # Run tests + lint + format + type-check (RECOMMENDED)
 
 # Code Quality
 npm run lint                          # Auto-fix ESLint issues
@@ -43,6 +44,13 @@ npm run check-static                  # Verify static files are present
 curl http://localhost:3000/health      # Check server and database status
 ```
 
+### Environment Setup
+```bash
+# Copy environment template and configure
+cp .env.example .env
+# Edit .env with your database credentials and session secret
+```
+
 ## Architecture Overview
 
 ### High-Level Structure
@@ -56,6 +64,8 @@ src/
 ├── config/          # Environment configuration
 ├── database/        # Database connection and schema
 ├── public/          # Static frontend files (HTML, CSS, TypeScript)
+├── client/          # Frontend TypeScript code and components (currently minimal)
+├── shared/          # Shared utilities and types (currently minimal)
 └── __tests__/       # Comprehensive test suite
 ```
 
@@ -153,6 +163,8 @@ document.addEventListener('click', (event: Event) => {
 - `src/database/init.sql`: Complete database schema with constraints
 - `tsconfig.json`: Strict TypeScript compilation settings
 - `package.json`: Build scripts with static file management
+- `.env.example`: Environment configuration template
+- `src/config/environment.ts`: Type-safe environment variable handling
 
 ## Testing
 Complete testing strategy, patterns, and best practices documented in [CLAUDEQuality.md](./CLAUDEQuality.md).

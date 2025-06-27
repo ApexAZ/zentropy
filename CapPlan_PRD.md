@@ -217,7 +217,7 @@ The Sprint Capacity Planning Tool aims to achieve the following specific busines
 
 #### **External Dependencies**
 
-1. **Microsoft Azure Access**: Availability of Microsoft Azure cloud services for application hosting and deployment
+1. **Cloud Infrastructure Access**: Availability of cloud services for application hosting and deployment (Azure, AWS, Google Cloud, or other providers)
 2. **Authentication Infrastructure**: Access to existing organizational authentication systems (if integration is required)
 3. **User Training Resources**: Availability of time and resources for user training and change management activities
 4. **Data Migration Support**: Ability to extract and migrate existing capacity data from current spreadsheets and Confluence tables (if historical data preservation is required)
@@ -379,15 +379,130 @@ The Sprint Capacity Planning Tool aims to achieve the following specific busines
 
 ### **4.1 Authentication and Authorization**
 
-#### **4.1.1 User Authentication**
-* System shall integrate with organizational authentication (SSO/Azure AD)
-* Users must authenticate before accessing any system functions
-* Session timeout after 30 minutes of inactivity
+#### **4.1.1 User Authentication System**
 
-#### **4.1.2 Role-Based Access Control**
+**Primary Authentication Methods:**
+* **Phase 1**: Session-based authentication with secure password verification
+* **Phase 2**: Azure AD/SSO integration with local account fallback
+* All users must authenticate before accessing any system functions
+* Session timeout after 30 minutes of inactivity with warning at 25 minutes
+
+**Login/Logout Functionality:**
+* Secure login endpoint with username/password validation
+* Password verification using bcrypt hashing
+* Session creation with secure HTTP-only cookies
+* Logout functionality that invalidates server-side sessions
+* Automatic redirect to login page for unauthenticated requests
+
+#### **4.1.2 User Registration and Onboarding**
+
+**Account Creation Process:**
+* **Phase 1**: Admin-created accounts with initial password setup
+* **Phase 2**: Self-registration with email verification
+* Email verification required for all new accounts
+* Initial password setup via secure token-based link
+* Profile completion workflow for new users
+
+**Admin Account Management:**
+* System administrators can create user accounts
+* Bulk user import from CSV with email validation
+* User invitation system with secure activation links
+* Account deactivation vs deletion policies defined
+
+#### **4.1.3 Password Security Requirements**
+
+**Password Policy Enforcement:**
+* Minimum 8 characters, maximum 128 characters
+* Must contain: uppercase letter, lowercase letter, number, special character
+* Cannot reuse last 5 passwords
+* Password strength indicator during creation/change
+* Optional password expiration (configurable, default: disabled)
+
+**Password Management:**
+* Secure password reset via email-based token system
+* Password reset tokens expire after 1 hour
+* Account lockout after 5 failed login attempts
+* Lockout duration: 15 minutes (configurable)
+* Self-service password change functionality
+
+#### **4.1.4 Session Management**
+
+**Session Security:**
+* Sessions stored server-side with secure session tokens
+* HTTP-only, secure cookies for session identification
+* Session data includes: user ID, roles, team memberships, last activity
+* Concurrent session limit: 3 per user (configurable)
+* Session invalidation on password change or role modification
+
+**Token Specifications:**
+* Session tokens: cryptographically secure random strings (32 bytes)
+* Remember me functionality: optional 30-day extended sessions
+* API tokens: JWT format for service accounts (Phase 2)
+* Token refresh mechanism for long-running sessions
+
+#### **4.1.5 Role-Based Access Control**
+
+**Permission Enforcement:**
 * System shall enforce role-based permissions as defined in Section 3.1.1
 * Users can have multiple roles across different teams
 * Role changes take effect immediately upon assignment
+* API-level permission checking for all endpoints
+* Frontend route protection based on user roles
+
+**Multi-Team Role Management:**
+* Users can have different roles on different teams
+* Role hierarchy: System Admin > Team Lead > Team Member > Stakeholder
+* Cross-team permissions managed via explicit assignment
+* Role inheritance rules for team creation and membership
+
+#### **4.1.6 Account Recovery and Management**
+
+**Password Recovery:**
+* "Forgot Password" functionality with email-based reset
+* Security questions as secondary recovery method (Phase 2)
+* Account recovery via administrator intervention
+* Password reset audit logging with user notification
+
+**Account Security:**
+* Account lockout notifications via email
+* Suspicious activity detection and alerting
+* Login history and device tracking (Phase 2)
+* Multi-factor authentication option (Phase 2)
+
+#### **4.1.7 Single Sign-On Integration (Phase 2)**
+
+**Supported SSO Providers:**
+* **Azure Active Directory**: Enterprise authentication for organizations using Microsoft 365
+* **Google Workspace**: Enterprise authentication for organizations using Google Workspace
+* **Google OAuth 2.0**: Consumer and enterprise Google account authentication
+* Multiple provider support with provider selection on login page
+
+**Azure AD Integration:**
+* Azure AD tenant integration with app registration
+* User attribute mapping: email, name, groups to local roles
+* Group-based role assignment from Azure AD organizational units
+* Automatic user provisioning from Azure AD groups
+* Support for Azure AD B2B guest users
+
+**Google SSO Integration:**
+* Google Workspace domain authentication with admin controls
+* Google OAuth 2.0 for consumer Google accounts
+* User attribute mapping: email, name, profile picture to local user data
+* Google Groups integration for role assignment (Workspace only)
+* Automatic user provisioning from Google Workspace organizational units
+
+**Multi-Provider Configuration:**
+* Support for both Azure AD and Google SSO simultaneously
+* Provider selection based on email domain or user choice
+* Account linking between different SSO providers and local accounts
+* Provider-specific role mapping and user attribute handling
+
+**Fallback Authentication:**
+* Local account authentication when SSO providers unavailable
+* Account linking between SSO providers and local accounts
+* Emergency admin access independent of SSO providers
+* Graceful degradation during SSO provider outages
+* Provider failover with user notification
 
 ### **4.2 Team Management**
 
@@ -543,11 +658,46 @@ Example: For a 2-week sprint with Mon-Fri working days:
 
 ### **5.3 Security Requirements**
 
+#### **5.3.1 Transport Security**
 * All data transmission encrypted (HTTPS/TLS 1.2+)
+* HTTP Strict Transport Security (HSTS) headers enforced
+* Secure cookie flags (HttpOnly, Secure, SameSite) for all authentication cookies
+* Content Security Policy (CSP) headers to prevent XSS attacks
+
+#### **5.3.2 Authentication Security**
 * Role-based access control enforced at API level
-* Audit logging for all data modifications
 * Session management with secure token handling
-* Regular security vulnerability scanning
+* Cross-Site Request Forgery (CSRF) protection for all state-changing operations
+* Rate limiting: 5 login attempts per minute per IP address
+* Account lockout after 5 failed attempts with exponential backoff
+
+#### **5.3.3 Data Protection**
+* Password hashing using bcrypt with minimum 10 salt rounds
+* Sensitive data encryption at rest using AES-256
+* Personal Identifiable Information (PII) handling per privacy regulations
+* Secure password reset token generation (cryptographically random, 32+ bytes)
+* Password history storage (hashed) to prevent reuse
+
+#### **5.3.4 API Security**
+* Input validation and sanitization for all user inputs
+* SQL injection prevention through parameterized queries
+* Authorization checks on every API endpoint
+* Secure error handling (no sensitive information in error messages)
+* API versioning security considerations
+
+#### **5.3.5 Audit and Monitoring**
+* Audit logging for all authentication events and data modifications
+* Login attempt logging with IP address and user agent
+* Failed authentication attempt monitoring and alerting
+* Security event logging with tamper-evident storage
+* Regular security vulnerability scanning and penetration testing
+
+#### **5.3.6 Frontend Security**
+* Client-side input validation (with server-side verification)
+* Protection against XSS attacks through output encoding
+* Secure handling of authentication tokens in frontend
+* Protection of sensitive data in browser storage
+* Content Security Policy compliance in frontend code
 
 ### **5.4 Compatibility Requirements**
 
@@ -590,7 +740,7 @@ Example: For a 2-week sprint with Mon-Fri working days:
   
 * **Hosting**: 
   - Local development initially
-  - Azure deployment planned for Phase 2
+  - Cloud deployment planned for Phase 2 (provider TBD)
 
 #### **Phase 2: Production-Ready Stack**
 
@@ -602,24 +752,25 @@ Example: For a 2-week sprint with Mon-Fri working days:
 * **Backend**: 
   - Enhanced Express API with middleware
   - JWT for authentication tokens
+  - SSO integration libraries (Passport.js with Azure AD and Google OAuth strategies)
   - Full caching layer
   
 * **Database**: 
-  - Azure Database for PostgreSQL
+  - Managed PostgreSQL service (cloud provider specific)
   - Redis for caching and sessions
   
 * **Hosting**: 
-  - Microsoft Azure App Service
-  - Azure Database for PostgreSQL
-  - Azure Cache for Redis
+  - Cloud application platform (Azure App Service, AWS Elastic Beanstalk, Google Cloud Run, or similar)
+  - Managed PostgreSQL database service
+  - Managed Redis cache service
 
 **Database Selection Rationale:**
 PostgreSQL was selected for the following reasons:
-- **Cost-effective**: Open source with option for managed Azure service
+- **Cost-effective**: Open source with managed service options across all major cloud providers
 - **JSON support**: Native JSONB type perfect for flexible team configurations (working days, custom settings)
 - **Excellent date/time handling**: Critical for calendar operations and timezone support
 - **ACID compliance**: Ensures data integrity for capacity calculations
-- **Easy Azure migration**: Can start with PostgreSQL and migrate to Azure SQL if needed
+- **Cloud portability**: Available as managed service on AWS, Azure, Google Cloud, and others
 - **Developer familiarity**: Common in Node.js ecosystem
 
 ### **6.2 Architecture Overview**
@@ -669,9 +820,64 @@ CREATE TABLE teams (
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  azure_id VARCHAR(255) UNIQUE,
-  created_date TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  password_hash VARCHAR(255), -- bcrypt hash for local authentication
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  role VARCHAR(20) CHECK (role IN ('system_admin', 'team_lead', 'team_member', 'stakeholder')) NOT NULL DEFAULT 'team_member',
+  is_active BOOLEAN DEFAULT true,
+  email_verified BOOLEAN DEFAULT false,
+  email_verification_token VARCHAR(255),
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP WITH TIME ZONE,
+  last_login_at TIMESTAMP WITH TIME ZONE,
+  failed_login_attempts INTEGER DEFAULT 0,
+  account_locked_until TIMESTAMP WITH TIME ZONE,
+  azure_id VARCHAR(255) UNIQUE, -- For Azure AD integration
+  google_id VARCHAR(255) UNIQUE, -- For Google SSO integration
+  sso_provider VARCHAR(50), -- 'azure', 'google', 'local', or NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CONSTRAINT users_email_valid CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  CONSTRAINT users_names_not_empty CHECK (length(trim(first_name)) > 0 AND length(trim(last_name)) > 0),
+  CONSTRAINT users_sso_provider_valid CHECK (sso_provider IN ('azure', 'google', 'local') OR sso_provider IS NULL)
+);
+
+-- User sessions table for server-side session management
+CREATE TABLE user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  session_token VARCHAR(64) UNIQUE NOT NULL, -- Cryptographically secure token
+  ip_address INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  is_remember_me BOOLEAN DEFAULT false
+);
+
+-- Password history for preventing reuse
+CREATE TABLE password_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enhanced audit log for authentication events
+CREATE TABLE audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  session_id UUID REFERENCES user_sessions(id),
+  action VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id UUID,
+  ip_address INET,
+  user_agent TEXT,
+  old_value JSONB,
+  new_value JSONB,
+  success BOOLEAN DEFAULT true,
+  error_message TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE team_members (
@@ -728,6 +934,17 @@ CREATE INDEX idx_sprints_team_dates ON sprints(team_id, start_date, end_date);
 CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX idx_team_members_user ON team_members(user_id) WHERE left_date IS NULL;
 
+-- Authentication-specific indexes
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_azure_id ON users(azure_id) WHERE azure_id IS NOT NULL;
+CREATE INDEX idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
+CREATE INDEX idx_users_sso_provider ON users(sso_provider) WHERE sso_provider IS NOT NULL;
+CREATE INDEX idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX idx_user_sessions_user_active ON user_sessions(user_id, expires_at) WHERE expires_at > NOW();
+CREATE INDEX idx_password_history_user ON password_history(user_id, created_at);
+CREATE INDEX idx_audit_log_user_action ON audit_log(user_id, action, timestamp);
+CREATE INDEX idx_audit_log_session ON audit_log(session_id) WHERE session_id IS NOT NULL;
+
 -- PostgreSQL-specific: GIN index for JSONB working_days_config searches
 CREATE INDEX idx_teams_working_days ON teams USING GIN (working_days_config);
 ```
@@ -749,10 +966,56 @@ CREATE INDEX idx_teams_working_days ON teams USING GIN (working_days_config);
 #### **6.3.3 Data Security**
 
 * All connections use SSL/TLS encryption
-* Database credentials stored in Azure Key Vault
+* Database credentials stored in cloud provider's key management service (Azure Key Vault, AWS Secrets Manager, Google Secret Manager)
 * Row-level security for multi-tenant isolation
-* Encrypted backups using Azure Storage encryption
+* Encrypted backups using cloud provider's storage encryption
 * Regular security audits of database access patterns
+
+### **6.4 Frontend Authentication Requirements**
+
+#### **6.4.1 Authentication UI Components**
+
+**Login Interface:**
+* Login form with email/password fields for local authentication
+* Password visibility toggle
+* "Remember Me" checkbox (optional)
+* "Forgot Password" link
+* **SSO Provider Buttons**: "Sign in with Google" and "Sign in with Microsoft" options
+* Provider selection based on email domain detection
+* Loading states during authentication for all providers
+* Clear error messaging for failed attempts (local and SSO)
+* Account lockout notifications
+* Provider-specific error handling and user guidance
+
+**Session Management UI:**
+* Session timeout warning (5 minutes before expiry)
+* Automatic logout with user notification
+* Session extension prompt for active users
+* Multiple session management indicator
+
+#### **6.4.2 Protected Route Handling**
+
+**Route Protection:**
+* Automatic redirect to login for unauthenticated users
+* Return to intended page after successful login
+* Role-based route access control
+* Loading states during authentication checks
+* Graceful handling of session expiry
+
+**State Management:**
+* User authentication state persistence
+* Role and permission caching
+* Team membership state management
+* Automatic state refresh on permission changes
+
+#### **6.4.3 Security Implementation**
+
+**Client-Side Security:**
+* Secure token storage (HTTP-only cookies preferred)
+* XSS protection through output encoding
+* Input validation with server-side verification
+* CSRF token handling for state-changing operations
+* Secure logout with token invalidation
 
 ---
 
@@ -763,14 +1026,17 @@ CREATE INDEX idx_teams_working_days ON teams USING GIN (working_days_config);
 * Test-Driven Development approach
 * Automated testing pipeline in CI/CD
 * Manual testing for UI/UX validation
+* Security testing for authentication flows
 
 ### **7.2 Test Coverage Requirements**
 
 * **Unit Tests**: 80% code coverage minimum
-* **Integration Tests**: All API endpoints
-* **UI Tests**: Critical user workflows
+* **Integration Tests**: All API endpoints including SSO callbacks
+* **Authentication Tests**: Local login, Azure AD SSO, Google SSO, and fallback scenarios
+* **UI Tests**: Critical user workflows including multi-provider login flows
 * **Performance Tests**: Load testing for 100 concurrent users
-* **Security Tests**: Penetration testing before launch
+* **Security Tests**: Penetration testing before launch including SSO security validation
+* **Provider Testing**: Mock testing for Azure AD and Google OAuth responses
 
 ### **7.3 User Acceptance Testing**
 
@@ -818,7 +1084,7 @@ CREATE INDEX idx_teams_working_days ON teams USING GIN (working_days_config);
 * Add advanced user roles
 * Implement complex capacity algorithms
 * Add reporting and export features
-* Azure deployment
+* Cloud deployment
 * Production hardening
 
 ### **8.2 Database Deployment Strategy**
@@ -829,27 +1095,29 @@ CREATE INDEX idx_teams_working_days ON teams USING GIN (working_days_config);
 - Development-specific configurations
 
 **Staging Environment:**
-- Azure Database for PostgreSQL (Basic tier)
+- Managed PostgreSQL service (cloud provider specific)
 - Automated backup configuration
 - Performance testing environment
 
 **Production Deployment Options:**
 
-**Option 1: Azure Database for PostgreSQL (Recommended for initial launch)**
-- **Cost**: ~$25-100/month depending on tier
+**Option 1: Managed PostgreSQL Service (Recommended for initial launch)**
+- **Examples**: Azure Database for PostgreSQL, AWS RDS for PostgreSQL, Google Cloud SQL for PostgreSQL
+- **Cost**: ~$25-100/month depending on provider and tier
 - **Benefits**: Managed service, automated backups, easy scaling
-- **Configuration**: General Purpose tier with 2-4 vCores
+- **Configuration**: General Purpose tier with 2-4 vCores equivalent
 
-**Option 2: PostgreSQL on Azure Container Instance**
+**Option 2: Containerized PostgreSQL**
+- **Examples**: Azure Container Instances, AWS ECS, Google Cloud Run
 - **Cost**: ~$50-150/month including storage
-- **Benefits**: More control, portable
+- **Benefits**: More control, portable across cloud providers
 - **Considerations**: Requires more operational overhead
 
-**Future Migration Path to Azure SQL (if needed):**
-1. Use database abstraction layer (e.g., Prisma, TypeORM)
-2. Minimize PostgreSQL-specific features
-3. Plan for JSONB to JSON column migration
-4. Test migration scripts in staging environment
+**Cloud Provider Migration Strategy:**
+1. Use database abstraction layer (e.g., Prisma, TypeORM) for portability
+2. Minimize cloud-specific database features
+3. Use standard PostgreSQL features for maximum compatibility
+4. Container-based deployment for easy cloud migration
 
 ### **8.3 Migration Strategy**
 
