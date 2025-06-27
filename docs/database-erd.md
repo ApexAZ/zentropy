@@ -11,8 +11,10 @@ erDiagram
         VARCHAR first_name
         VARCHAR last_name
         VARCHAR role
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
+        BOOLEAN is_active
+        TIMESTAMP_WITH_TIME_ZONE last_login_at
+        TIMESTAMP_WITH_TIME_ZONE created_at
+        TIMESTAMP_WITH_TIME_ZONE updated_at
     }
     
     TEAMS {
@@ -22,16 +24,17 @@ erDiagram
         INTEGER velocity_baseline
         INTEGER sprint_length_days
         INTEGER working_days_per_week
+        BOOLEAN is_active
         UUID created_by FK
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
+        TIMESTAMP_WITH_TIME_ZONE created_at
+        TIMESTAMP_WITH_TIME_ZONE updated_at
     }
     
     TEAM_MEMBERSHIPS {
         UUID id PK
         UUID team_id FK
         UUID user_id FK
-        TIMESTAMP joined_at
+        TIMESTAMP_WITH_TIME_ZONE joined_at
     }
     
     CALENDAR_ENTRIES {
@@ -44,8 +47,8 @@ erDiagram
         DATE start_date
         DATE end_date
         BOOLEAN all_day
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
+        TIMESTAMP_WITH_TIME_ZONE created_at
+        TIMESTAMP_WITH_TIME_ZONE updated_at
     }
     
     SPRINTS {
@@ -57,8 +60,8 @@ erDiagram
         INTEGER planned_capacity
         INTEGER actual_capacity
         VARCHAR status
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
+        TIMESTAMP_WITH_TIME_ZONE created_at
+        TIMESTAMP_WITH_TIME_ZONE updated_at
     }
 
     %% Relationships
@@ -119,6 +122,12 @@ erDiagram
 
 ### **Check Constraints**
 - `users.role` ∈ ('team_lead', 'team_member')
+- `users.email` must match email format validation regex
+- `users.first_name` and `users.last_name` must not be empty (trimmed length > 0)
+- `teams.name` must not be empty (trimmed length > 0)
+- `teams.velocity_baseline` ≥ 0
+- `teams.sprint_length_days` between 1 and 30
+- `teams.working_days_per_week` between 1 and 7
 - `calendar_entries.entry_type` ∈ ('pto', 'holiday', 'sick', 'personal')
 - `calendar_entries.end_date` ≥ `start_date`
 - `sprints.status` ∈ ('planned', 'active', 'completed')
@@ -127,6 +136,18 @@ erDiagram
 ### **Unique Constraints**
 - `users.email` (unique across all users)
 - `team_memberships(team_id, user_id)` (prevents duplicate memberships)
+
+### **Default Values**
+- `users.is_active` = true
+- `teams.is_active` = true
+- `teams.velocity_baseline` = 0
+- `teams.sprint_length_days` = 14
+- `teams.working_days_per_week` = 5
+- `calendar_entries.all_day` = true
+- `sprints.planned_capacity` = 0
+- `sprints.actual_capacity` = 0
+- `sprints.status` = 'planned'
+- All `created_at` and `updated_at` fields default to NOW()
 
 ## Indexes for Performance
 
@@ -156,3 +177,22 @@ erDiagram
    - Actual team member count during sprint period
 
 This ERD supports the core capacity planning workflow by tracking team composition, individual availability, and sprint planning data.
+
+## Implementation Status
+
+### **✅ Fully Implemented**
+- **USERS**: Complete with TypeScript models, validation, and comprehensive test coverage
+- **TEAMS**: Complete with TypeScript models, validation, and comprehensive test coverage  
+- **TEAM_MEMBERSHIPS**: Complete with TypeScript models and full CRUD operations
+- **CALENDAR_ENTRIES**: Complete with TypeScript models, validation, and comprehensive test coverage
+
+### **⏳ Database Schema Only**
+- **SPRINTS**: Database table exists with proper constraints and indexes, but TypeScript model implementation is pending
+  - Part of the next development priority: "Sprint Capacity Dashboard"
+  - Will include auto-generation based on team configuration
+  - Planned features: capacity visualization, sprint planning interface
+
+### **🔗 Cross-References**
+- Technical implementation details: [CLAUDE.md](../CLAUDE.md)
+- Testing standards and coverage: [CLAUDEQuality.md](../CLAUDEQuality.md)
+- Development roadmap and priorities: [CLAUDETasks.md](../CLAUDETasks.md)
