@@ -45,6 +45,16 @@ The primary objectives of the Sprint Capacity Planning Tool are:
 
 7. **Support Global Teams**: Accommodate teams with different working schedules through configurable working days (e.g., Sunday-Thursday, 4-day work weeks) to ensure accurate capacity calculations across diverse team structures.
 
+### **1.2.1 Calendar-First Approach**
+
+This tool is designed with a **calendar-first philosophy** where user interaction primarily occurs through the calendar interface rather than manual data entry forms:
+
+- **Primary User Interface**: The integrated calendar system serves as the main interaction point for team members and leads
+- **Minimal Manual Input**: Forms are limited to initial team setup (working days, velocity baseline, sprint configuration) and one-time configurations
+- **Automated Derivation**: All capacity calculations, sprint impacts, and availability adjustments are automatically derived from calendar entries
+- **Real-Time Updates**: Changes to calendar entries (PTO additions, holiday updates) immediately trigger capacity recalculations across affected sprints
+- **Single Source of Truth**: The calendar maintains all time-off and availability data, eliminating the need for separate tracking systems or manual spreadsheet updates
+
 ### **1.3 Scope**
 
 #### **Phase 1: Core MVP (In Scope)**
@@ -59,14 +69,18 @@ The following features are included in the initial release to create a functiona
    * Simple velocity baseline setting
 
 3. **Core Calendar System**: 
-   * Team Members can log personal time off (PTO, vacation, sick days)
-   * Basic holiday management
-   * Simple date range selection
+   * **Calendar-Driven Interface**: Primary user interaction through integrated calendar view
+   * Team Members can log personal time off (PTO, vacation, sick days) directly in calendar
+   * Basic holiday management through calendar interface
+   * **Automated Impact Calculation**: System automatically determines which calendar entries affect capacity
+   * Simple date range selection with visual feedback
 
 4. **Basic Capacity Calculation**: 
-   * Automated sprint capacity calculation using simplified formula
-   * Real-time updates when calendar changes
-   * Basic dashboard showing current sprint capacity
+   * **Fully Automated**: Sprint capacity calculation derived entirely from calendar data
+   * **Zero Manual Recalculation**: Changes to calendar entries automatically update all affected sprint capacities
+   * Real-time updates when calendar changes (within 1 minute)
+   * Basic dashboard showing current sprint capacity with calendar-driven data
+   * **Configuration-Based**: Working days and sprint schedules drive which calendar entries impact capacity
 
 #### **Phase 2: Enhanced Features (Nice-to-Have)**
 
@@ -319,30 +333,31 @@ The Sprint Capacity Planning Tool aims to achieve the following specific busines
    - Confirm setup
 3. **Output**: Fully configured team with calculated capacity for next 12 sprints based on configured working days
 
-#### **Workflow 2: Time-Off Management (Team Member)**
+#### **Workflow 2: Time-Off Management (Team Member) - Calendar-First**
 
 1. **Prerequisites**: Team membership active
 2. **Steps**:
-   - Access team dashboard
-   - Navigate to Calendar view
-   - Click on desired date range
-   - Select leave type (PTO, Sick, Personal, Other)
-   - Add optional notes
-   - Submit entry
-   - System automatically recalculates affected sprint capacities
-   - View capacity impact summary
-3. **Output**: Updated calendar and revised sprint capacity
+   - Access team dashboard (calendar view is default)
+   - **Calendar-First Interaction**: Click directly on calendar date(s) for time-off entry
+   - Select leave type (PTO, Sick, Personal, Other) from contextual popup
+   - Add optional notes in popup interface
+   - **One-Click Submission**: Submit entry directly from calendar interface
+   - **Automatic Impact Visualization**: System immediately shows capacity impact on calendar
+   - **Real-Time Updates**: Affected sprint capacities update automatically without page refresh
+   - **Visual Feedback**: Calendar displays updated availability and capacity indicators
+3. **Output**: Updated calendar with immediate visual feedback and automatically revised sprint capacity
 
-#### **Workflow 3: Sprint Planning Preparation (Team Lead)**
+#### **Workflow 3: Sprint Planning Preparation (Team Lead) - Automated**
 
 1. **Prerequisites**: Upcoming sprint within 2 weeks
 2. **Steps**:
-   - System automatically displays upcoming sprint on dashboard
-   - Review calculated capacity based on current calendar
-   - Identify any capacity constraints
-   - Optionally adjust velocity baseline if team composition changed
-   - Export capacity report for sprint planning meeting
-3. **Output**: Accurate capacity data for sprint planning
+   - **Automatic Display**: System automatically displays upcoming sprint capacity on dashboard
+   - **Calendar-Derived Data**: Review calculated capacity based entirely on current calendar entries
+   - **Visual Constraint Identification**: Calendar view highlights capacity constraints and impacted dates
+   - **One-Click Adjustments**: Optionally adjust velocity baseline if team composition changed
+   - **Automated Report Generation**: Export capacity report with calendar-based calculations
+   - **Real-Time Accuracy**: All data reflects current calendar state without manual synchronization
+3. **Output**: Accurate, calendar-derived capacity data for sprint planning with zero manual calculation
 
 #### **Workflow 4: Capacity Monitoring (Stakeholder)**
 

@@ -1,5 +1,5 @@
-import { pool } from '../database/connection';
-import { User } from './User';
+import { pool } from "../database/connection";
+import { User } from "./User";
 
 export interface Team {
 	id: string;
@@ -40,41 +40,42 @@ export class TeamModel {
 			`;
 			const values = [
 				teamData.name,
-				teamData.description || null,
-				teamData.velocity_baseline || 0,
-				teamData.sprint_length_days || 14,
-				teamData.working_days_per_week || 5,
-				teamData.created_by || null
+				teamData.description ?? null,
+				teamData.velocity_baseline ?? 0,
+				teamData.sprint_length_days ?? 14,
+				teamData.working_days_per_week ?? 5,
+				teamData.created_by ?? null
 			];
 
 			const result = await pool.query(query, values);
-			return result.rows[0];
+			return result.rows[0] as Team;
 		} catch (error) {
-			console.error('Error creating team:', error);
+			// eslint-disable-next-line no-console
+			console.error("Error creating team:", error);
 			throw error;
 		}
 	}
 
 	// Find team by ID
 	static async findById(id: string): Promise<Team | null> {
-		const query = 'SELECT * FROM teams WHERE id = $1';
+		const query = "SELECT * FROM teams WHERE id = $1";
 		const result = await pool.query(query, [id]);
-		return result.rows[0] || null;
+		return (result.rows[0] as Team) ?? null;
 	}
 
 	// Get all teams
 	static async findAll(): Promise<Team[]> {
-		const query = 'SELECT * FROM teams ORDER BY created_at DESC';
+		const query = "SELECT * FROM teams ORDER BY created_at DESC";
 		const result = await pool.query(query);
-		return result.rows;
+		return result.rows as Team[];
 	}
 
 	// Update team
 	static async update(id: string, updateData: Partial<CreateTeamData>): Promise<Team | null> {
 		const fields = Object.keys(updateData);
-		if (fields.length === 0) return null;
+		if (fields.length === 0) {return null;}
 
-		const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+		const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(", ");
 		const query = `
 			UPDATE teams 
 			SET ${setClause}, updated_at = NOW()
@@ -84,14 +85,14 @@ export class TeamModel {
 		const values = [id, ...Object.values(updateData)];
 
 		const result = await pool.query(query, values);
-		return result.rows[0] || null;
+		return (result.rows[0] as Team) ?? null;
 	}
 
 	// Delete team
 	static async delete(id: string): Promise<boolean> {
-		const query = 'DELETE FROM teams WHERE id = $1';
+		const query = "DELETE FROM teams WHERE id = $1";
 		const result = await pool.query(query, [id]);
-		return (result.rowCount || 0) > 0;
+		return (result.rowCount ?? 0) > 0;
 	}
 
 	// Add user to team
@@ -102,14 +103,14 @@ export class TeamModel {
 			RETURNING *
 		`;
 		const result = await pool.query(query, [teamId, userId]);
-		return result.rows[0];
+		return result.rows[0] as TeamMembership;
 	}
 
 	// Remove user from team
 	static async removeMember(teamId: string, userId: string): Promise<boolean> {
-		const query = 'DELETE FROM team_memberships WHERE team_id = $1 AND user_id = $2';
+		const query = "DELETE FROM team_memberships WHERE team_id = $1 AND user_id = $2";
 		const result = await pool.query(query, [teamId, userId]);
-		return (result.rowCount || 0) > 0;
+		return (result.rowCount ?? 0) > 0;
 	}
 
 	// Get team members
@@ -121,7 +122,7 @@ export class TeamModel {
 			ORDER BY u.first_name, u.last_name
 		`;
 		const result = await pool.query(query, [teamId]);
-		return result.rows;
+		return result.rows as User[];
 	}
 
 	// Get teams for a user
@@ -133,12 +134,12 @@ export class TeamModel {
 			ORDER BY t.name
 		`;
 		const result = await pool.query(query, [userId]);
-		return result.rows;
+		return result.rows as Team[];
 	}
 
 	// Check if user is member of team
 	static async isMember(teamId: string, userId: string): Promise<boolean> {
-		const query = 'SELECT 1 FROM team_memberships WHERE team_id = $1 AND user_id = $2';
+		const query = "SELECT 1 FROM team_memberships WHERE team_id = $1 AND user_id = $2";
 		const result = await pool.query(query, [teamId, userId]);
 		return result.rows.length > 0;
 	}

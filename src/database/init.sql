@@ -12,8 +12,12 @@ CREATE TABLE users (
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     role VARCHAR(20) CHECK (role IN ('team_lead', 'team_member')) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    is_active BOOLEAN DEFAULT true,
+    last_login_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT users_email_valid CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CONSTRAINT users_names_not_empty CHECK (length(trim(first_name)) > 0 AND length(trim(last_name)) > 0)
 );
 
 -- Teams table
@@ -24,9 +28,14 @@ CREATE TABLE teams (
     velocity_baseline INTEGER DEFAULT 0,
     sprint_length_days INTEGER DEFAULT 14,
     working_days_per_week INTEGER DEFAULT 5,
+    is_active BOOLEAN DEFAULT true,
     created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    CONSTRAINT teams_name_not_empty CHECK (length(trim(name)) > 0),
+    CONSTRAINT teams_velocity_positive CHECK (velocity_baseline >= 0),
+    CONSTRAINT teams_sprint_length_valid CHECK (sprint_length_days BETWEEN 1 AND 30),
+    CONSTRAINT teams_working_days_valid CHECK (working_days_per_week BETWEEN 1 AND 7)
 );
 
 -- Team memberships table (many-to-many relationship)

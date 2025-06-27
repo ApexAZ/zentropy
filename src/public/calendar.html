@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Team capacity planning calendar for managing PTO, holidays, and sprint capacity calculation">
+	<meta name="keywords" content="capacity planning, team calendar, sprint planning, PTO tracking">
+	<meta name="robots" content="noindex, nofollow">
+	<title>Team Calendar - Capacity Planning</title>
+	<link rel="stylesheet" href="/styles.css">
+	<link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+<body>
+	<div class="container">
+		<h1><span id="teamName">Team</span> Calendar</h1>
+		<p class="calendar-description">Click on dates to add PTO or view capacity impact. Working days and holidays are automatically calculated.</p>
+		
+		<!-- Capacity Summary Panel -->
+		<div class="capacity-summary">
+			<h2>Current Sprint Capacity</h2>
+			<div class="sprint-info">
+				<div class="sprint-item">
+					<span class="label">Current Sprint:</span>
+					<span class="value" id="currentSprint">Sprint 1 (Jan 1 - Jan 14)</span>
+				</div>
+				<div class="sprint-item">
+					<span class="label">Available Capacity:</span>
+					<span class="value" id="availableCapacity">42 points (84%)</span>
+				</div>
+				<div class="sprint-item working-days-count">
+					<span class="label">Working Days Remaining:</span>
+					<span class="value" id="workingDaysRemaining">8 of 10 days</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Month Navigation -->
+		<div class="month-nav">
+			<button type="button" class="btn btn-secondary" onclick="changeMonth(-1)">← Previous</button>
+			<h2 id="currentMonth">January 2024</h2>
+			<button type="button" class="btn btn-secondary" onclick="changeMonth(1)">Next →</button>
+		</div>
+
+		<!-- Calendar Grid -->
+		<div class="calendar-container">
+			<div class="calendar-grid">
+				<!-- Weekday Headers -->
+				<div class="weekday-header">Sun</div>
+				<div class="weekday-header">Mon</div>
+				<div class="weekday-header">Tue</div>
+				<div class="weekday-header">Wed</div>
+				<div class="weekday-header">Thu</div>
+				<div class="weekday-header">Fri</div>
+				<div class="weekday-header">Sat</div>
+				
+				<!-- Calendar Days - Will be populated by JavaScript -->
+			</div>
+		</div>
+
+		<!-- PTO Entry Form (Hidden by default) -->
+		<div class="pto-form" id="ptoForm" style="display: none;">
+			<h3>Add Time Off</h3>
+			<form onsubmit="submitPTO(event)">
+				<div class="form-group">
+					<label for="ptoStartDate">Start Date:</label>
+					<input type="date" id="ptoStartDate" name="startDate" required>
+				</div>
+				<div class="form-group">
+					<label for="ptoEndDate">End Date:</label>
+					<input type="date" id="ptoEndDate" name="endDate" required>
+				</div>
+				<div class="form-group">
+					<label for="ptoType">Type:</label>
+					<select id="ptoType" name="type" required>
+						<option value="PTO">Paid Time Off</option>
+						<option value="Sick">Sick Day</option>
+						<option value="Personal">Personal Day</option>
+						<option value="Holiday">Company Holiday</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="ptoDescription">Description (Optional):</label>
+					<input type="text" id="ptoDescription" name="description" placeholder="Vacation, doctor appointment, etc.">
+				</div>
+				<div class="form-buttons">
+					<button type="button" class="btn btn-secondary" onclick="closePTOForm()">Cancel</button>
+					<button type="submit" class="btn btn-primary">Add Time Off</button>
+				</div>
+			</form>
+		</div>
+
+		<!-- Legend -->
+		<div class="calendar-legend">
+			<h3>Legend</h3>
+			<div class="legend-items">
+				<div class="legend-item">
+					<span class="legend-color working-day"></span>
+					<span>Working Day</span>
+				</div>
+				<div class="legend-item">
+					<span class="legend-color weekend"></span>
+					<span>Weekend</span>
+				</div>
+				<div class="legend-item">
+					<span class="legend-color holiday"></span>
+					<span>Company Holiday</span>
+				</div>
+				<div class="legend-item">
+					<span class="legend-color pto"></span>
+					<span>PTO/Time Off</span>
+				</div>
+				<div class="legend-item">
+					<span class="legend-color current-sprint"></span>
+					<span>Current Sprint</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Action Buttons -->
+		<div class="action-buttons">
+			<a href="#" onclick="goToTeamConfiguration(); return false;" class="btn btn-secondary">Team Configuration</a>
+			<button type="button" class="btn btn-primary" onclick="refreshCapacity()">Refresh Capacity</button>
+		</div>
+	</div>
+
+	<script>
+		// Calendar state
+		let currentDate = new Date();
+		let selectedDate = null;
+		let calendarEntries = [];
+		
+		// Load calendar entries for this team
+		function loadCalendarEntries() {
+			const saved = localStorage.getItem(`team-${teamId}-calendar-entries`);
+			return saved ? JSON.parse(saved) : [];
+		}
+		
+		// Save calendar entries
+		function saveCalendarEntries() {
+			localStorage.setItem(`team-${teamId}-calendar-entries`, JSON.stringify(calendarEntries));
+		}
+		
+		// Get team ID from URL or localStorage
+		function getTeamId() {
+			const urlParams = new URLSearchParams(window.location.search);
+			const teamIdFromUrl = urlParams.get('teamId');
+			if (teamIdFromUrl) {
+				localStorage.setItem('currentTeamId', teamIdFromUrl);
+				return teamIdFromUrl;
+			}
+			
+			// If no team ID in URL, redirect to team configuration to create/select one
+			const existingTeamId = localStorage.getItem('currentTeamId');
+			if (!existingTeamId) {
+				// No team exists, redirect to create one
+				window.location.href = '/team-configuration.html';
+				return null;
+			}
+			
+			// Check if it's an old long ID
+			if (existingTeamId.startsWith('team-') && existingTeamId.length > 10) {
+				// Old format detected, clear it and redirect to create new team
+				localStorage.removeItem('currentTeamId');
+				window.location.href = '/team-configuration.html';
+				return null;
+			}
+			
+			// Add team ID to URL for consistency
+			window.history.replaceState({}, '', `${window.location.pathname}?teamId=${existingTeamId}`);
+			return existingTeamId;
+		}
+		
+		const teamId = getTeamId();
+		
+		// Exit early if no team ID (redirecting to team config)
+		if (!teamId) {
+			// Stop execution while redirecting
+			throw new Error('Redirecting to team configuration...');
+		}
+		
+		// Load team configuration from localStorage (would come from API in real implementation)
+		function loadTeamConfig() {
+			const savedConfig = localStorage.getItem(`team-${teamId}-config`);
+			const savedSprints = localStorage.getItem(`team-${teamId}-sprints`);
+			
+			const config = savedConfig ? JSON.parse(savedConfig) : {
+				id: teamId,
+				workingDays: [1, 2, 3, 4, 5], // Monday-Friday
+				baselineVelocity: 50,
+				sprintLength: 2
+			};
+			
+			// Parse sprint dates
+			const sprints = savedSprints ? JSON.parse(savedSprints).map(sprint => ({
+				...sprint,
+				startDate: new Date(sprint.startDate),
+				endDate: new Date(sprint.endDate)
+			})) : [];
+			
+			return { ...config, sprints };
+		}
+		
+		const teamConfig = loadTeamConfig();
+		
+		// Calculate current sprint based on today's date
+		function getCurrentSprint() {
+			if (!teamConfig.sprints || teamConfig.sprints.length === 0) {
+				return null; // No sprints configured
+			}
+			
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			
+			// Find sprint that contains today
+			for (const sprint of teamConfig.sprints) {
+				if (today >= sprint.startDate && today <= sprint.endDate) {
+					// Calculate working days for this sprint
+					const workingDays = calculateWorkingDays(sprint.startDate, sprint.endDate);
+					return { ...sprint, workingDays };
+				}
+			}
+			
+			// If no current sprint found, return the next upcoming sprint
+			for (const sprint of teamConfig.sprints) {
+				if (today < sprint.startDate) {
+					const workingDays = calculateWorkingDays(sprint.startDate, sprint.endDate);
+					return { ...sprint, workingDays };
+				}
+			}
+			
+			// No current or future sprint found
+			return null;
+		}
+		
+		// Calculate working days between two dates
+		function calculateWorkingDays(startDate, endDate) {
+			let count = 0;
+			const current = new Date(startDate);
+			
+			while (current <= endDate) {
+				if (teamConfig.workingDays.includes(current.getDay())) {
+					count++;
+				}
+				current.setDate(current.getDate() + 1);
+			}
+			
+			return count;
+		}
+		
+		teamConfig.currentSprint = getCurrentSprint();
+
+		// Initialize calendar on page load
+		document.addEventListener('DOMContentLoaded', () => {
+			// Load calendar entries for this team
+			calendarEntries = loadCalendarEntries();
+			
+			// Update team name in title
+			if (teamConfig.name) {
+				document.getElementById('teamName').textContent = teamConfig.name;
+			}
+			
+			renderCalendar();
+			updateCapacitySummary();
+		});
+
+		// Render calendar grid for current month
+		function renderCalendar() {
+			const year = currentDate.getFullYear();
+			const month = currentDate.getMonth();
+			
+			// Update month header
+			document.getElementById('currentMonth').textContent = 
+				currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+			
+			// Get first day of month and number of days
+			const firstDay = new Date(year, month, 1);
+			const lastDay = new Date(year, month + 1, 0);
+			const startDate = new Date(firstDay);
+			startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+			
+			// Clear existing calendar days (keep headers)
+			const calendarGrid = document.querySelector('.calendar-grid');
+			const headers = calendarGrid.querySelectorAll('.weekday-header');
+			calendarGrid.innerHTML = '';
+			headers.forEach(header => calendarGrid.appendChild(header));
+			
+			// Generate 6 weeks of calendar
+			for (let week = 0; week < 6; week++) {
+				for (let day = 0; day < 7; day++) {
+					const currentDay = new Date(startDate);
+					currentDay.setDate(startDate.getDate() + (week * 7) + day);
+					
+					const dayElement = createDayElement(currentDay, month);
+					calendarGrid.appendChild(dayElement);
+				}
+			}
+		}
+
+		// Create individual day element
+		function createDayElement(date, currentMonth) {
+			const dayDiv = document.createElement('div');
+			dayDiv.className = 'calendar-day';
+			dayDiv.setAttribute('data-date', date.toISOString().split('T')[0]);
+			
+			// Add day number
+			const dayNumber = document.createElement('span');
+			dayNumber.className = 'day-number';
+			dayNumber.textContent = date.getDate();
+			dayDiv.appendChild(dayNumber);
+			
+			// Add classes for styling
+			const dayOfWeek = date.getDay();
+			const isCurrentMonth = date.getMonth() === currentMonth;
+			const isWorkingDay = teamConfig.workingDays.includes(dayOfWeek);
+			const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+			const isInCurrentSprint = isDateInCurrentSprint(date);
+			
+			if (!isCurrentMonth) {
+				dayDiv.classList.add('other-month');
+			}
+			
+			if (isWorkingDay && isCurrentMonth) {
+				dayDiv.classList.add('working-day');
+			}
+			
+			if (isWeekend) {
+				dayDiv.classList.add('weekend');
+			}
+			
+			if (isInCurrentSprint) {
+				dayDiv.classList.add('current-sprint');
+			}
+			
+			// Check for existing calendar entries
+			const entry = getCalendarEntry(date);
+			if (entry) {
+				dayDiv.classList.add(entry.type.toLowerCase());
+				const entryDiv = document.createElement('div');
+				entryDiv.className = 'entry-indicator';
+				entryDiv.textContent = entry.type;
+				dayDiv.appendChild(entryDiv);
+			}
+			
+			// Add click handler for current month working days
+			if (isCurrentMonth && isWorkingDay) {
+				dayDiv.classList.add('clickable');
+				dayDiv.onclick = () => openPTOForm(date);
+			}
+			
+			return dayDiv;
+		}
+
+		// Check if date is in current sprint
+		function isDateInCurrentSprint(date) {
+			if (!teamConfig.currentSprint) return false;
+			return date >= teamConfig.currentSprint.startDate && 
+				   date <= teamConfig.currentSprint.endDate;
+		}
+
+		// Get calendar entry for specific date
+		function getCalendarEntry(date) {
+			const dateStr = date.toISOString().split('T')[0];
+			return calendarEntries.find(entry => {
+				const entryStart = new Date(entry.startDate);
+				const entryEnd = new Date(entry.endDate);
+				return date >= entryStart && date <= entryEnd;
+			});
+		}
+
+		// Change month navigation
+		function changeMonth(direction) {
+			currentDate.setMonth(currentDate.getMonth() + direction);
+			renderCalendar();
+		}
+
+		// Open PTO form for selected date
+		function openPTOForm(date) {
+			selectedDate = date;
+			const dateStr = date.toISOString().split('T')[0];
+			
+			document.getElementById('ptoStartDate').value = dateStr;
+			document.getElementById('ptoEndDate').value = dateStr;
+			document.getElementById('ptoForm').style.display = 'block';
+		}
+
+		// Close PTO form
+		function closePTOForm() {
+			document.getElementById('ptoForm').style.display = 'none';
+			selectedDate = null;
+		}
+
+		// Submit PTO entry
+		function submitPTO(event) {
+			event.preventDefault();
+			
+			const formData = new FormData(event.target);
+			const entry = {
+				startDate: formData.get('startDate'),
+				endDate: formData.get('endDate'),
+				type: formData.get('type'),
+				description: formData.get('description') || ''
+			};
+			
+			// Add to calendar entries
+			calendarEntries.push(entry);
+			saveCalendarEntries();
+			
+			// Re-render calendar and update capacity
+			renderCalendar();
+			updateCapacitySummary();
+			closePTOForm();
+			
+			// Reset form
+			event.target.reset();
+			
+			alert(`${entry.type} added successfully for ${entry.startDate} to ${entry.endDate}`);
+		}
+
+		// Update capacity summary based on calendar entries
+		function updateCapacitySummary() {
+			const sprint = teamConfig.currentSprint;
+			
+			// Check if sprint is configured
+			if (!sprint) {
+				document.getElementById('currentSprint').textContent = 'No sprint configured';
+				document.getElementById('availableCapacity').textContent = 'N/A';
+				document.getElementById('workingDaysRemaining').textContent = 'N/A';
+				return;
+			}
+			
+			let totalWorkingDays = sprint.workingDays;
+			let usedDays = 0;
+			
+			// Calculate days affected by PTO/holidays in current sprint
+			calendarEntries.forEach(entry => {
+				const entryStart = new Date(entry.startDate);
+				const entryEnd = new Date(entry.endDate);
+				
+				// Count working days affected within current sprint
+				for (let d = new Date(Math.max(entryStart, sprint.startDate)); 
+					 d <= Math.min(entryEnd, sprint.endDate); 
+					 d.setDate(d.getDate() + 1)) {
+					
+					if (teamConfig.workingDays.includes(d.getDay())) {
+						usedDays++;
+					}
+				}
+			});
+			
+			const availableWorkingDays = totalWorkingDays - usedDays;
+			const capacityPercentage = (availableWorkingDays / totalWorkingDays) * 100;
+			const adjustedCapacity = Math.round((teamConfig.baselineVelocity * capacityPercentage) / 100);
+			
+			// Update display
+			document.getElementById('currentSprint').textContent = 
+				`${sprint.name} (${sprint.startDate.toLocaleDateString()} - ${sprint.endDate.toLocaleDateString()})`;
+			document.getElementById('availableCapacity').textContent = 
+				`${adjustedCapacity} points (${Math.round(capacityPercentage)}%)`;
+			document.getElementById('workingDaysRemaining').textContent = 
+				`${availableWorkingDays} of ${totalWorkingDays} days`;
+		}
+
+		// Refresh capacity calculation
+		function refreshCapacity() {
+			updateCapacitySummary();
+			alert('Capacity recalculated based on current calendar entries.');
+		}
+		
+		// Navigate to team configuration
+		function goToTeamConfiguration() {
+			window.location.href = `/team-configuration.html?teamId=${teamId}`;
+		}
+	</script>
+</body>
+</html>

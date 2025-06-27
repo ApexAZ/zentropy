@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Team Management - Create and manage agile development teams">
+	<meta name="keywords" content="team management, agile, scrum, capacity planning">
+	<title>Team Management - Capacity Planner</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<header class="main-header">
+		<nav class="nav-container">
+			<div class="logo">
+				<h1>Capacity Planner</h1>
+			</div>
+			<ul class="nav-menu">
+				<li><a href="team-configuration.html">Dashboard</a></li>
+				<li><a href="teams.html" class="active">Teams</a></li>
+				<li><a href="calendar.html">Calendar</a></li>
+			</ul>
+		</nav>
+	</header>
+
+	<main class="main-content">
+		<div class="page-header">
+			<h2>Team Management</h2>
+			<button id="create-team-btn" class="btn btn-primary">Create New Team</button>
+		</div>
+
+		<!-- Loading State -->
+		<div id="loading-state" class="loading-container" style="display: none;">
+			<div class="spinner"></div>
+			<p>Loading teams...</p>
+		</div>
+
+		<!-- Error State -->
+		<div id="error-state" class="error-container" style="display: none;">
+			<div class="error-message">
+				<h3>Unable to Load Teams</h3>
+				<p id="error-message-text">Something went wrong. Please try again.</p>
+				<button id="retry-btn" class="btn btn-secondary">Retry</button>
+			</div>
+		</div>
+
+		<!-- Teams List -->
+		<section id="teams-section" class="teams-container">
+			<div id="teams-grid" class="teams-grid">
+				<!-- Teams will be dynamically loaded here -->
+			</div>
+
+			<!-- Empty State -->
+			<div id="empty-state" class="empty-state" style="display: none;">
+				<div class="empty-content">
+					<h3>No Teams Yet</h3>
+					<p>Create your first team to start planning sprint capacity.</p>
+					<button class="btn btn-primary" onclick="showCreateTeamModal()">Create Team</button>
+				</div>
+			</div>
+		</section>
+
+		<!-- Create/Edit Team Modal -->
+		<div id="team-modal" class="modal" style="display: none;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 id="modal-title">Create New Team</h3>
+					<button class="modal-close" onclick="closeTeamModal()">&times;</button>
+				</div>
+
+				<form id="team-form" class="form-container">
+					<div class="form-section">
+						<h4>Basic Information</h4>
+						
+						<div class="form-group">
+							<label for="team-name">Team Name *</label>
+							<input type="text" id="team-name" name="name" required 
+								   placeholder="e.g., Frontend Development Team">
+							<span class="field-error" id="name-error"></span>
+						</div>
+
+						<div class="form-group">
+							<label for="team-description">Description</label>
+							<textarea id="team-description" name="description" rows="3" 
+									  placeholder="Brief description of the team's focus and responsibilities"></textarea>
+							<span class="field-error" id="description-error"></span>
+						</div>
+					</div>
+
+					<div class="form-section">
+						<h4>Sprint Configuration</h4>
+						
+						<div class="form-row">
+							<div class="form-group">
+								<label for="velocity-baseline">Velocity Baseline</label>
+								<input type="number" id="velocity-baseline" name="velocity_baseline" 
+									   min="0" step="1" value="0" 
+									   placeholder="Story points per sprint">
+								<small class="field-help">Average story points completed per sprint (leave 0 if unknown)</small>
+								<span class="field-error" id="velocity-error"></span>
+							</div>
+
+							<div class="form-group">
+								<label for="sprint-length">Sprint Length (Days) *</label>
+								<select id="sprint-length" name="sprint_length_days" required>
+									<option value="7">1 Week</option>
+									<option value="14" selected>2 Weeks</option>
+									<option value="21">3 Weeks</option>
+									<option value="28">4 Weeks</option>
+								</select>
+								<span class="field-error" id="sprint-length-error"></span>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="working-days">Working Days per Week *</label>
+							<select id="working-days" name="working_days_per_week" required>
+								<option value="3">3 Days</option>
+								<option value="4">4 Days</option>
+								<option value="5" selected>5 Days (Standard)</option>
+								<option value="6">6 Days</option>
+							</select>
+							<span class="field-error" id="working-days-error"></span>
+						</div>
+					</div>
+
+					<div class="modal-actions">
+						<button type="button" class="btn btn-secondary" onclick="closeTeamModal()">Cancel</button>
+						<button type="submit" id="save-team-btn" class="btn btn-primary">
+							<span class="btn-text">Create Team</span>
+							<span class="btn-spinner" style="display: none;"></span>
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<!-- Delete Confirmation Modal -->
+		<div id="delete-modal" class="modal" style="display: none;">
+			<div class="modal-content modal-small">
+				<div class="modal-header">
+					<h3>Delete Team</h3>
+					<button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+				</div>
+				
+				<div class="modal-body">
+					<p>Are you sure you want to delete <strong id="delete-team-name"></strong>?</p>
+					<p class="warning-text">This action cannot be undone. All team data and calendar entries will be permanently removed.</p>
+				</div>
+
+				<div class="modal-actions">
+					<button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+					<button type="button" id="confirm-delete-btn" class="btn btn-danger">
+						<span class="btn-text">Delete Team</span>
+						<span class="btn-spinner" style="display: none;"></span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<!-- Success/Error Toast -->
+	<div id="toast" class="toast" style="display: none;">
+		<div class="toast-content">
+			<span id="toast-message"></span>
+			<button class="toast-close" onclick="hideToast()">&times;</button>
+		</div>
+	</div>
+
+	<script src="teams.js"></script>
+</body>
+</html>

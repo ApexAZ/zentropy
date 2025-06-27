@@ -1,0 +1,35 @@
+{
+	"env": {
+		"node": true,
+		"es2022": true,
+		"browser": true
+	},
+	"extends": [
+		"eslint:recommended",
+		"plugin:@typescript-eslint/recommended",
+		"plugin:@typescript-eslint/recommended-requiring-type-checking"
+	],
+	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"ecmaVersion": 2022,
+		"sourceType": "module",
+		"project": "./tsconfig.json"
+	},
+	"plugins": ["@typescript-eslint"],
+	"rules": {
+		"@typescript-eslint/no-unused-vars": "error",
+		"@typescript-eslint/no-explicit-any": "warn",
+		"@typescript-eslint/explicit-function-return-type": "warn",
+		"@typescript-eslint/no-non-null-assertion": "error",
+		"@typescript-eslint/prefer-nullish-coalescing": "error",
+		"@typescript-eslint/prefer-optional-chain": "error",
+		"@typescript-eslint/prefer-readonly": "warn",
+		"@typescript-eslint/require-await": "error",
+		"prefer-const": "error",
+		"no-var": "error",
+		"no-console": "warn",
+		"eqeqeq": "error",
+		"curly": "error"
+	},
+	"ignorePatterns": ["dist/", "node_modules/", "**/*.test.ts"]
+}
