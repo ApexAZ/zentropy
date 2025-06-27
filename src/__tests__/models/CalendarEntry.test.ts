@@ -273,6 +273,240 @@ describe("CalendarEntryModel", () => {
 		});
 	});
 
+	describe("findByUser", () => {
+		it("should find calendar entries for specific user", async () => {
+			const userId = "user123";
+			const mockEntries = [
+				{
+					id: "1",
+					user_id: userId,
+					team_id: "team123",
+					entry_type: "pto",
+					title: "Vacation",
+					start_date: new Date("2024-07-15"),
+					end_date: new Date("2024-07-20"),
+					all_day: true,
+					created_at: new Date(),
+					updated_at: new Date()
+				},
+				{
+					id: "2",
+					user_id: userId,
+					team_id: "team123",
+					entry_type: "sick",
+					title: "Sick Day",
+					start_date: new Date("2024-07-10"),
+					end_date: new Date("2024-07-10"),
+					all_day: true,
+					created_at: new Date(),
+					updated_at: new Date()
+				}
+			];
+
+			mockPool.query.mockResolvedValue({ rows: mockEntries });
+
+			const result = await CalendarEntryModel.findByUser(userId);
+
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("WHERE user_id = $1"),
+				[userId]
+			);
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("ORDER BY start_date DESC"),
+				[userId]
+			);
+			expect(result).toEqual(mockEntries);
+		});
+
+		it("should return empty array when user has no entries", async () => {
+			mockPool.query.mockResolvedValue({ rows: [] });
+
+			const result = await CalendarEntryModel.findByUser("user_no_entries");
+
+			expect(result).toEqual([]);
+		});
+
+		it("should handle database errors", async () => {
+			const dbError = new Error("Database connection failed");
+			mockPool.query.mockRejectedValue(dbError);
+
+			await expect(CalendarEntryModel.findByUser("user123")).rejects.toThrow("Database connection failed");
+		});
+	});
+
+	describe("findByTeam", () => {
+		it("should find calendar entries for specific team", async () => {
+			const teamId = "team123";
+			const mockEntries = [
+				{
+					id: "1",
+					user_id: "user1",
+					team_id: teamId,
+					entry_type: "pto",
+					title: "Vacation",
+					start_date: new Date("2024-07-15"),
+					end_date: new Date("2024-07-20"),
+					all_day: true,
+					created_at: new Date(),
+					updated_at: new Date()
+				},
+				{
+					id: "2",
+					user_id: "user2",
+					team_id: teamId,
+					entry_type: "holiday",
+					title: "Independence Day",
+					start_date: new Date("2024-07-04"),
+					end_date: new Date("2024-07-04"),
+					all_day: true,
+					created_at: new Date(),
+					updated_at: new Date()
+				}
+			];
+
+			mockPool.query.mockResolvedValue({ rows: mockEntries });
+
+			const result = await CalendarEntryModel.findByTeam(teamId);
+
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("WHERE team_id = $1"),
+				[teamId]
+			);
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("ORDER BY start_date DESC"),
+				[teamId]
+			);
+			expect(result).toEqual(mockEntries);
+		});
+
+		it("should return empty array when team has no entries", async () => {
+			mockPool.query.mockResolvedValue({ rows: [] });
+
+			const result = await CalendarEntryModel.findByTeam("team_no_entries");
+
+			expect(result).toEqual([]);
+		});
+
+		it("should handle database errors", async () => {
+			const dbError = new Error("Database connection failed");
+			mockPool.query.mockRejectedValue(dbError);
+
+			await expect(CalendarEntryModel.findByTeam("team123")).rejects.toThrow("Database connection failed");
+		});
+	});
+
+	describe("update", () => {
+		const existingEntry: CalendarEntry = {
+			id: "123",
+			user_id: "user123",
+			team_id: "team123",
+			entry_type: "pto",
+			title: "Original Title",
+			description: "Original description",
+			start_date: new Date("2024-07-01"),
+			end_date: new Date("2024-07-05"),
+			all_day: true,
+			created_at: new Date(),
+			updated_at: new Date()
+		};
+
+		it("should update calendar entry with valid data", async () => {
+			const updateData = {
+				title: "Updated Title",
+				description: "Updated description",
+				entry_type: "sick" as const
+			};
+
+			const updatedEntry = {
+				...existingEntry,
+				...updateData,
+				updated_at: new Date()
+			};
+
+			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
+
+			const result = await CalendarEntryModel.update("123", updateData);
+
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("UPDATE calendar_entries SET"),
+				["123", ...Object.values(updateData)]
+			);
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("updated_at = NOW()"),
+				["123", ...Object.values(updateData)]
+			);
+			expect(result).toEqual(updatedEntry);
+		});
+
+		it("should update partial fields", async () => {
+			const updateData = {
+				title: "New Title Only"
+			};
+
+			const updatedEntry = {
+				...existingEntry,
+				title: "New Title Only",
+				updated_at: new Date()
+			};
+
+			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
+
+			const result = await CalendarEntryModel.update("123", updateData);
+
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("title = $2"),
+				["123", "New Title Only"]
+			);
+			expect(result).toEqual(updatedEntry);
+		});
+
+		it("should return null when no fields to update", async () => {
+			const result = await CalendarEntryModel.update("123", {});
+
+			expect(result).toBeNull();
+			expect(mockPool.query).not.toHaveBeenCalled();
+		});
+
+		it("should return null when entry not found", async () => {
+			mockPool.query.mockResolvedValue({ rows: [] });
+
+			const result = await CalendarEntryModel.update("nonexistent", { title: "Test" });
+
+			expect(result).toBeNull();
+		});
+
+		it("should handle database errors", async () => {
+			const dbError = new Error("Database connection failed");
+			mockPool.query.mockRejectedValue(dbError);
+
+			await expect(CalendarEntryModel.update("123", { title: "Test" })).rejects.toThrow("Database connection failed");
+		});
+
+		it("should update date fields correctly", async () => {
+			const updateData = {
+				start_date: new Date("2024-08-01"),
+				end_date: new Date("2024-08-05"),
+				all_day: false
+			};
+
+			const updatedEntry = {
+				...existingEntry,
+				...updateData,
+				updated_at: new Date()
+			};
+
+			mockPool.query.mockResolvedValue({ rows: [updatedEntry] });
+
+			const result = await CalendarEntryModel.update("123", updateData);
+
+			expect(mockPool.query).toHaveBeenCalledWith(
+				expect.stringContaining("start_date = $2, end_date = $3, all_day = $4"),
+				["123", ...Object.values(updateData)]
+			);
+			expect(result).toEqual(updatedEntry);
+		});
+	});
+
 	describe("delete", () => {
 		it("should delete calendar entry successfully", async () => {
 			mockPool.query.mockResolvedValue({ rowCount: 1 });
@@ -297,6 +531,13 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.delete("123");
 
 			expect(result).toBe(false);
+		});
+
+		it("should handle database errors", async () => {
+			const dbError = new Error("Database connection failed");
+			mockPool.query.mockRejectedValue(dbError);
+
+			await expect(CalendarEntryModel.delete("123")).rejects.toThrow("Database connection failed");
 		});
 	});
 });
