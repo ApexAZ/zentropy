@@ -117,13 +117,14 @@ describe("Session Authentication Integration", () => {
 			expect(cookieArray).toHaveLength(1);
 
 			const sessionCookie = cookieArray[0];
+			expect(sessionCookie).toBeDefined();
 			expect(sessionCookie).toMatch(/^sessionToken=([a-f0-9]{64});/);
 			expect(sessionCookie).toContain("HttpOnly");
 			expect(sessionCookie).toContain("Path=/");
 			expect(sessionCookie).toContain("Max-Age=");
 
 			// Assert: Session should be created in database
-			const sessionTokenMatch = sessionCookie.match(/sessionToken=([a-f0-9]{64})/);
+			const sessionTokenMatch = sessionCookie?.match(/sessionToken=([a-f0-9]{64})/);
 			expect(sessionTokenMatch).toBeTruthy();
 
 			if (sessionTokenMatch) {
@@ -204,7 +205,7 @@ describe("Session Authentication Integration", () => {
 				expect(sessionCookie).toContain("SameSite=Strict");
 
 				// Track session for cleanup
-				const sessionTokenMatch = sessionCookie.match(/sessionToken=([a-f0-9]{64})/);
+				const sessionTokenMatch = sessionCookie?.match(/sessionToken=([a-f0-9]{64})/);
 				if (sessionTokenMatch) {
 					testSessions.push(sessionTokenMatch[1] as string);
 				}
@@ -252,7 +253,7 @@ describe("Session Authentication Integration", () => {
 				expect(sessionCookie).toContain("HttpOnly");
 
 				// Track session for cleanup
-				const sessionTokenMatch = sessionCookie.match(/sessionToken=([a-f0-9]{64})/);
+				const sessionTokenMatch = sessionCookie?.match(/sessionToken=([a-f0-9]{64})/);
 				if (sessionTokenMatch) {
 					testSessions.push(sessionTokenMatch[1] as string);
 				}

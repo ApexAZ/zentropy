@@ -125,11 +125,11 @@ describe("Protected User Routes", () => {
 		it("should allow PUT /api/users/:id/password with valid session", async () => {
 			// Retry logic to handle race conditions in parallel test execution
 			let retries = 3;
-			let lastError: Error;
+			let lastError: Error | null = null;
+			let passwordUpdateUser: User | null = null;
+			let passwordUpdateSession: Session | null = null;
 
 			while (retries > 0) {
-				let passwordUpdateUser: User;
-				let passwordUpdateSession: Session;
 
 				try {
 					// Create dedicated user for this test to avoid race conditions
@@ -210,7 +210,7 @@ describe("Protected User Routes", () => {
 			}
 
 			// All retries failed, throw the last error
-			throw lastError;
+			throw lastError || new Error("Unknown error occurred during password update test");
 		});
 
 		it("should allow DELETE /api/users/:id with valid session", async () => {

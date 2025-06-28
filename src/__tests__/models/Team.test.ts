@@ -27,7 +27,7 @@ describe("TeamModel", () => {
 	// Helper functions for common mock scenarios
 	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-		const mockResult: QueryResult = { rows, rowCount: rows.length, command: "", oid: 0, fields: [] };
+		const mockResult: QueryResult<any> = { rows, rowCount: rows.length, command: "", oid: 0, fields: [] };
 		mockPool.query.mockResolvedValue(mockResult);
 	};
 
@@ -36,7 +36,7 @@ describe("TeamModel", () => {
 	};
 
 	const mockDeleteFailure = (): void => {
-		const mockResult: QueryResult = { rows: [], rowCount: 0, command: "", oid: 0, fields: [] };
+		const mockResult: QueryResult<any> = { rows: [], rowCount: 0, command: "", oid: 0, fields: [] };
 		mockPool.query.mockResolvedValue(mockResult);
 	};
 

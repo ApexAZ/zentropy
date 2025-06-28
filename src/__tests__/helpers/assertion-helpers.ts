@@ -254,7 +254,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized object property validation
 	 */
-	static expectHasProperties(obj: Record<string, unknown>, properties: string[]): void {
+	static expectHasProperties(obj: Record<string, unknown> | object, properties: string[]): void {
 		properties.forEach(prop => {
 			expect(obj).toHaveProperty(prop);
 		});

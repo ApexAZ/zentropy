@@ -19,7 +19,7 @@ describe("SessionModel", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Mock crypto.randomBytes for consistent session tokens in tests
-		vi.spyOn(crypto, "randomBytes").mockReturnValue(Buffer.from("a".repeat(32)));
+		(vi.spyOn(crypto, "randomBytes") as any).mockReturnValue(Buffer.from("a".repeat(32)));
 	});
 
 	afterEach(() => {
