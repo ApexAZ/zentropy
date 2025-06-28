@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import type { QueryResult } from "pg";
-import { UserModel } from "../../models/User";
+import { UserModel, type User } from "../../models/User";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
 import { pool } from "../../database/connection";
@@ -14,7 +14,7 @@ vi.mock("../../database/connection", () => ({
 			command: 'SELECT', 
 			oid: 0, 
 			fields: [] 
-		} as QueryResult<any>)
+		} as QueryResult<User>)
 	}
 }));
 

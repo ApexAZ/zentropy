@@ -115,8 +115,7 @@ class TestAssertions {
 		startDate: Date,
 		endDate: Date,
 		config: TeamWorkingDaysConfig,
-		expectedCount: number,
-		_description?: string
+		expectedCount: number
 	): void {
 		const result = calculator.calculateWorkingDays(startDate, endDate, config);
 		expect(result).toBe(expectedCount);
@@ -126,8 +125,7 @@ class TestAssertions {
 		calculator: WorkingDaysCalculator,
 		date: Date,
 		config: TeamWorkingDaysConfig,
-		expected: boolean,
-		_description?: string
+		expected: boolean
 	): void {
 		const result = calculator.isWorkingDay(date, config);
 		expect(result).toBe(expected);
@@ -137,7 +135,7 @@ class TestAssertions {
 		expect(actual).toHaveLength(expectedLength);
 	}
 
-	static expectErrorToBeThrown(fn: () => void, expectedMessage: string, _description?: string): void {
+	static expectErrorToBeThrown(fn: () => void, expectedMessage: string): void {
 		expect(fn).toThrow(expectedMessage);
 	}
 }
@@ -165,8 +163,7 @@ describe("WorkingDaysCalculator", () => {
 					startDate,
 					endDate,
 					standardConfig,
-					5,
-					"Monday through Friday should be 5 working days"
+					5
 				);
 			});
 
@@ -178,8 +175,7 @@ describe("WorkingDaysCalculator", () => {
 					startDate,
 					endDate,
 					standardConfig,
-					5,
-					"Week including weekend should still count only weekdays"
+					5
 				);
 			});
 
@@ -189,8 +185,7 @@ describe("WorkingDaysCalculator", () => {
 					TEST_DATES.MONDAY_JULY_1,
 					TEST_DATES.MONDAY_JULY_1,
 					standardConfig,
-					1,
-					"Single working day should count as 1"
+					1
 				);
 
 				TestAssertions.expectWorkingDayCount(
@@ -198,8 +193,7 @@ describe("WorkingDaysCalculator", () => {
 					TEST_DATES.SATURDAY_JULY_6,
 					TEST_DATES.SATURDAY_JULY_6,
 					standardConfig,
-					0,
-					"Single weekend day should count as 0"
+					0
 				);
 			});
 
@@ -211,8 +205,7 @@ describe("WorkingDaysCalculator", () => {
 					startDate,
 					endDate,
 					standardConfig,
-					10,
-					"Two weeks should contain 10 working days"
+					10
 				);
 			});
 		});
@@ -227,8 +220,7 @@ describe("WorkingDaysCalculator", () => {
 					startDate,
 					endDate,
 					configWithHoliday,
-					4,
-					"Week with one holiday should have 4 working days"
+					4
 				);
 			});
 		});
@@ -243,8 +235,7 @@ describe("WorkingDaysCalculator", () => {
 					startDate,
 					endDate,
 					fourDayConfig,
-					4,
-					"Four-day work week should count only Monday-Thursday"
+					4
 				);
 			});
 		});
@@ -256,8 +247,7 @@ describe("WorkingDaysCalculator", () => {
 					TEST_DATES.MONDAY_JULY_1,
 					TEST_DATES.MONDAY_JULY_1,
 					standardConfig,
-					1,
-					"Same start and end date should work correctly"
+					1
 				);
 			});
 
@@ -269,8 +259,7 @@ describe("WorkingDaysCalculator", () => {
 							TEST_DATES.MONDAY_JULY_1,
 							standardConfig
 						),
-					"End date must be greater than or equal to start date",
-					"End date before start date should throw error"
+					"End date must be greater than or equal to start date"
 				);
 			});
 		});
@@ -286,8 +275,7 @@ describe("WorkingDaysCalculator", () => {
 						calculator,
 						date,
 						standardConfig,
-						true,
-						`${date.toDateString()} should be a working day`
+						true
 					);
 				});
 			});
@@ -300,8 +288,7 @@ describe("WorkingDaysCalculator", () => {
 						calculator,
 						date,
 						standardConfig,
-						false,
-						`${date.toDateString()} should not be a working day`
+						false
 					);
 				});
 			});
@@ -315,8 +302,7 @@ describe("WorkingDaysCalculator", () => {
 					calculator,
 					TEST_DATES.THURSDAY_JULY_4,
 					configWithHoliday,
-					false,
-					"Holiday should not be considered a working day"
+					false
 				);
 			});
 		});
@@ -329,16 +315,14 @@ describe("WorkingDaysCalculator", () => {
 					calculator,
 					TEST_DATES.THURSDAY_JULY_4,
 					customConfig,
-					true,
-					"Thursday should be working day in 4-day week"
+					true
 				);
 
 				TestAssertions.expectWorkingDayResult(
 					calculator,
 					TEST_DATES.FRIDAY_JULY_5,
 					customConfig,
-					false,
-					"Friday should not be working day in 4-day week"
+					false
 				);
 			});
 		});
@@ -459,8 +443,7 @@ describe("WorkingDaysCalculator", () => {
 			it("should handle invalid dates gracefully", () => {
 				TestAssertions.expectErrorToBeThrown(
 					() => calculator.isWorkingDay(TEST_DATES.INVALID_DATE, standardConfig),
-					"Invalid date provided",
-					"Invalid date should throw descriptive error"
+					"Invalid date provided"
 				);
 			});
 
@@ -471,8 +454,7 @@ describe("WorkingDaysCalculator", () => {
 					calculator,
 					TEST_DATES.MONDAY_JULY_1,
 					configWithEmptyHolidays,
-					true,
-					"Empty holidays array should not affect working day calculation"
+					true
 				);
 			});
 		});
@@ -487,16 +469,14 @@ describe("WorkingDaysCalculator", () => {
 					calculator,
 					TEST_DATES.TIMEZONE_TEST_DATE,
 					utcConfig,
-					true,
-					"UTC timezone should work correctly"
+					true
 				);
 
 				TestAssertions.expectWorkingDayResult(
 					calculator,
 					TEST_DATES.TIMEZONE_TEST_DATE,
 					pstConfig,
-					true,
-					"PST timezone should work correctly"
+					true
 				);
 			});
 		});

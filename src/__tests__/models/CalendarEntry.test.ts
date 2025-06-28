@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import type { QueryResult } from "pg";
-import { CalendarEntryModel } from "../../models/CalendarEntry";
+import { CalendarEntryModel, type CalendarEntry } from "../../models/CalendarEntry";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
 import { pool } from "../../database/connection";
@@ -14,7 +14,7 @@ vi.mock("../../database/connection", () => ({
 			command: 'SELECT', 
 			oid: 0, 
 			fields: [] 
-		} as QueryResult<any>)
+		} as QueryResult<CalendarEntry>)
 	}
 }));
 

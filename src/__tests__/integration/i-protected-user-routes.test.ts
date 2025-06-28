@@ -210,7 +210,7 @@ describe("Protected User Routes", () => {
 			}
 
 			// All retries failed, throw the last error
-			throw lastError || new Error("Unknown error occurred during password update test");
+			throw lastError ?? new Error("Unknown error occurred during password update test");
 		});
 
 		it("should allow DELETE /api/users/:id with valid session", async () => {

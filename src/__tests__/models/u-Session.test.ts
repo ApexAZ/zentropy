@@ -18,7 +18,8 @@ const mockPool = vi.mocked(pool);
 describe("SessionModel", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Mock crypto.randomBytes for consistent session tokens in tests
+		// Mock crypto.randomBytes for consistent session tokens in tests  
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(vi.spyOn(crypto, "randomBytes") as any).mockReturnValue(Buffer.from("a".repeat(32)));
 	});
 
