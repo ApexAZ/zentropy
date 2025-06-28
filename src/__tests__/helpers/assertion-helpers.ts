@@ -380,4 +380,46 @@ export class DomainAssertionHelpers extends AssertionHelpers {
 		// Validate role
 		expect(["team_lead", "team_member"]).toContain(user.role);
 	}
+
+	/**
+	 * Session specific validations
+	 */
+	static expectValidSession(session: any): void {
+		this.expectHasProperties(session, [
+			"id",
+			"user_id",
+			"session_token",
+			"created_at",
+			"updated_at",
+			"expires_at",
+			"is_active"
+		]);
+		this.expectValidId(session.id);
+		this.expectValidId(session.user_id);
+		this.expectValidDateFields(session);
+
+		// Validate session token format (64 character hex string)
+		expect(session.session_token).toMatch(/^[a-f0-9]{64}$/);
+
+		// Validate boolean fields
+		expect(typeof session.is_active).toBe("boolean");
+
+		// Validate expiration is in the future for active sessions
+		if (session.is_active) {
+			const expiresAt = new Date(session.expires_at);
+			const createdAt = new Date(session.created_at);
+			expect(expiresAt.getTime()).toBeGreaterThan(createdAt.getTime());
+		}
+
+		// Validate optional fields if present
+		if (session.ip_address) {
+			expect(typeof session.ip_address).toBe("string");
+			expect(session.ip_address.length).toBeGreaterThan(0);
+		}
+
+		if (session.user_agent) {
+			expect(typeof session.user_agent).toBe("string");
+			expect(session.user_agent.length).toBeGreaterThan(0);
+		}
+	}
 }

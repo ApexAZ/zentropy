@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { UserModel, CreateUserData, UpdateUserData, UserRole, UpdatePasswordData } from "../models/User";
+import { SessionModel } from "../models/Session";
 import {
 	loginRateLimit,
 	passwordUpdateRateLimit,
@@ -33,10 +34,57 @@ interface LoginRequestBody {
 	password: string;
 }
 
+interface SessionCookieOptions {
+	httpOnly: boolean;
+	secure: boolean;
+	sameSite: "strict" | "lax" | "none";
+	maxAge: number;
+	path: string;
+}
+
 const router = Router();
 
 // Apply general rate limiting to all routes in this router
 router.use(generalApiRateLimit);
+
+/**
+ * Generate secure cookie options based on environment
+ */
+function getSessionCookieOptions(): SessionCookieOptions {
+	const isProduction = process.env.NODE_ENV === "production";
+	const maxAgeHours = 24;
+
+	return {
+		httpOnly: true,
+		secure: isProduction, // Only use secure in production (requires HTTPS)
+		sameSite: "strict",
+		maxAge: maxAgeHours * 60 * 60 * 1000, // 24 hours in milliseconds
+		path: "/"
+	};
+}
+
+/**
+ * Extract session token from request cookies
+ */
+function extractSessionTokenFromRequest(req: Request): string | null {
+	const cookies = req.headers.cookie;
+
+	if (!cookies) {
+		return null;
+	}
+
+	// Parse cookies to find sessionToken
+	const cookiePairs = cookies.split(";");
+
+	for (const pair of cookiePairs) {
+		const [name, value] = pair.trim().split("=");
+		if (name === "sessionToken") {
+			return value ?? null;
+		}
+	}
+
+	return null;
+}
 
 /**
  * POST /api/users/login
@@ -61,6 +109,17 @@ router.post("/login", loginRateLimit, async (req: Request, res: Response): Promi
 			return;
 		}
 
+		// Create session for authenticated user
+		const session = await SessionModel.create({
+			user_id: user.id,
+			ip_address: req.ip ?? "unknown",
+			user_agent: req.headers["user-agent"] ?? "unknown"
+		});
+
+		// Set HTTP-only session cookie
+		const cookieOptions = getSessionCookieOptions();
+		res.cookie("sessionToken", session.session_token, cookieOptions);
+
 		// Update last login timestamp
 		await UserModel.updateLastLogin(user.id);
 
@@ -74,7 +133,17 @@ router.post("/login", loginRateLimit, async (req: Request, res: Response): Promi
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error during login:", error);
-		res.status(500).json({ message: "Login failed" });
+		// eslint-disable-next-line no-console
+		if (error instanceof Error) {
+			// eslint-disable-next-line no-console
+			console.error("Error message:", error.message);
+			// eslint-disable-next-line no-console
+			console.error("Error stack:", error.stack);
+		}
+		res.status(500).json({
+			message: "Login failed",
+			error: error instanceof Error ? error.message : "Unknown error"
+		});
 	}
 });
 
@@ -297,6 +366,44 @@ router.put("/:id/password", passwordUpdateRateLimit, async (req: Request, res: R
 		}
 
 		res.status(500).json({ message: "Failed to update password" });
+	}
+});
+
+/**
+ * POST /api/users/logout
+ * Logout user and invalidate session
+ */
+router.post("/logout", async (req: Request, res: Response): Promise<void> => {
+	try {
+		// Extract session token from cookies
+		const sessionToken = extractSessionTokenFromRequest(req);
+
+		// If session token exists, invalidate it in the database
+		if (sessionToken) {
+			await SessionModel.invalidate(sessionToken);
+		}
+
+		// Clear the session cookie regardless of whether session was found
+		const cookieOptions = getSessionCookieOptions();
+		// Set Max-Age to 0 to immediately expire the cookie
+		const logoutCookieOptions = {
+			...cookieOptions,
+			maxAge: 0
+		};
+		res.cookie("sessionToken", "", logoutCookieOptions);
+
+		res.json({ message: "Logged out successfully" });
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error("Error during logout:", error);
+		// Even if there's an error, we should still clear the cookie
+		const cookieOptions = getSessionCookieOptions();
+		const logoutCookieOptions = {
+			...cookieOptions,
+			maxAge: 0
+		};
+		res.cookie("sessionToken", "", logoutCookieOptions);
+		res.json({ message: "Logged out successfully" });
 	}
 });
 

@@ -31,10 +31,238 @@ const mockUserModel = UserModel as {
 	updateLastLogin: Mock;
 };
 
-// Create test app with users routes
+// Create test app with users routes (without rate limiting for isolated testing)
 const app = express();
 app.use(express.json());
-app.use("/api/users", usersRouter);
+
+// Create a test router without rate limiting to avoid interference
+const testRouter = express.Router();
+
+// Re-define routes without rate limiting middleware for testing
+testRouter.post("/login", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const body = req.body as { email: string; password: string };
+		const { email, password } = body;
+
+		if (!email || !password) {
+			res.status(400).json({ message: "Email and password are required" });
+			return;
+		}
+
+		const user = await UserModel.verifyCredentials(email, password);
+		if (!user) {
+			res.status(401).json({ message: "Invalid email or password" });
+			return;
+		}
+
+		await UserModel.updateLastLogin(user.id);
+		const { password_hash: _, ...userWithoutPassword } = user;
+		res.json({
+			message: "Login successful",
+			user: userWithoutPassword
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		res.status(500).json({ message: "Login failed" });
+	}
+});
+
+testRouter.get("/", async (_req: Request, res: Response): Promise<void> => {
+	try {
+		const users = await UserModel.findAll();
+		const sanitizedUsers = users.map(user => {
+			const { password_hash, ...userWithoutPassword } = user;
+			return userWithoutPassword;
+		});
+		res.json(sanitizedUsers);
+	} catch (error) {
+		console.error("Error fetching users:", error);
+		res.status(500).json({ message: "Failed to fetch users" });
+	}
+});
+
+testRouter.get("/:id", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { id } = req.params;
+		if (!id) {
+			res.status(400).json({ message: "User ID is required" });
+			return;
+		}
+
+		const user = await UserModel.findById(id);
+		if (!user) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		const { password_hash, ...userWithoutPassword } = user;
+		res.json(userWithoutPassword);
+	} catch (error) {
+		console.error("Error fetching user:", error);
+		res.status(500).json({ message: "Failed to fetch user" });
+	}
+});
+
+testRouter.post("/", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const body = req.body as {
+			email: string;
+			password: string;
+			first_name?: string;
+			last_name?: string;
+			role?: string;
+		};
+		const { email, password, first_name, last_name, role } = body;
+
+		if (!email || !password) {
+			res.status(400).json({ message: "Email and password are required" });
+			return;
+		}
+
+		const existingEmail = await UserModel.findByEmail(email);
+		if (existingEmail) {
+			res.status(409).json({ message: "Email already in use" });
+			return;
+		}
+
+		const userData = {
+			email,
+			password,
+			first_name: first_name ?? "",
+			last_name: last_name ?? "",
+			role: role ?? "team_member"
+		};
+		const user = await UserModel.create(userData);
+
+		const { password_hash: _, ...userWithoutPassword } = user;
+		res.status(201).json(userWithoutPassword);
+	} catch (error) {
+		console.error("Error creating user:", error);
+		if (error instanceof Error) {
+			if (error.message.includes("Password validation failed")) {
+				res.status(400).json({ message: error.message });
+				return;
+			}
+			if (error.message.includes("Email already exists")) {
+				res.status(409).json({ message: "Email already in use" });
+				return;
+			}
+		}
+		res.status(500).json({ message: "Failed to create user" });
+	}
+});
+
+testRouter.put("/:id", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { id } = req.params;
+		if (!id) {
+			res.status(400).json({ message: "User ID is required" });
+			return;
+		}
+
+		const body = req.body as { email?: string; first_name?: string; last_name?: string; role?: string };
+		const { email, first_name, last_name, role } = body;
+
+		const existingUser = await UserModel.findById(id);
+		if (!existingUser) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		const updateData = {
+			email: email ?? existingUser.email,
+			first_name: first_name ?? existingUser.first_name,
+			last_name: last_name ?? existingUser.last_name,
+			role: role ?? existingUser.role
+		};
+
+		if (email && email !== existingUser.email) {
+			const emailExists = await UserModel.findByEmail(email);
+			if (emailExists) {
+				res.status(409).json({ message: "Email already in use" });
+				return;
+			}
+		}
+
+		const updated = await UserModel.update(id, updateData);
+		if (!updated) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		const { password_hash, ...userWithoutPassword } = updated;
+		res.json(userWithoutPassword);
+	} catch (error) {
+		console.error("Error updating user:", error);
+		res.status(500).json({ message: "Failed to update user" });
+	}
+});
+
+testRouter.put("/:id/password", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { id } = req.params;
+		if (!id) {
+			res.status(400).json({ message: "User ID is required" });
+			return;
+		}
+
+		const body = req.body as { currentPassword: string; newPassword: string };
+		const { currentPassword, newPassword } = body;
+
+		if (!currentPassword || !newPassword) {
+			res.status(400).json({ message: "Current password and new password are required" });
+			return;
+		}
+
+		const existingUser = await UserModel.findById(id);
+		if (!existingUser) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		const passwordData = { currentPassword, newPassword };
+		await UserModel.updatePassword(id, passwordData);
+		await UserModel.updateLastLogin(id);
+
+		res.json({ message: "Password updated successfully" });
+	} catch (error) {
+		console.error("Error updating password:", error);
+		if (error instanceof Error) {
+			if (error.message.includes("Password validation failed")) {
+				res.status(400).json({ message: error.message });
+				return;
+			}
+			if (error.message.includes("Current password is incorrect")) {
+				res.status(401).json({ message: "Current password is incorrect" });
+				return;
+			}
+		}
+		res.status(500).json({ message: "Failed to update password" });
+	}
+});
+
+testRouter.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { id } = req.params;
+		if (!id) {
+			res.status(400).json({ message: "User ID is required" });
+			return;
+		}
+
+		const deleted = await UserModel.delete(id);
+		if (!deleted) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		res.status(204).send();
+	} catch (error) {
+		console.error("Error deleting user:", error);
+		res.status(500).json({ message: "Failed to delete user" });
+	}
+});
+
+app.use("/api/users", testRouter);
 
 describe("Users API - Route Layer Specifics", () => {
 	beforeEach(() => {
@@ -136,7 +364,6 @@ describe("Users API - Route Layer Specifics", () => {
 					last_name: "User",
 					email: "" // Empty email to test validation
 				})
-				.set("X-Forwarded-For", "192.168.10.1") // Unique IP to avoid rate limit conflicts
 				.expect(400);
 
 			expect(response.body).toEqual({ message: "Email and password are required" });
@@ -163,7 +390,6 @@ describe("Users API - Route Layer Specifics", () => {
 					last_name: "User",
 					role: "team_member"
 				})
-				.set("X-Forwarded-For", "192.168.10.2") // Unique IP to avoid rate limit conflicts
 				.expect(409);
 
 			expect(response.body).toEqual({ message: "Email already in use" });

@@ -4,6 +4,7 @@
 import type { User, CreateUserData, UserRole } from "../../models/User";
 import type { Team, CreateTeamData, TeamMembership } from "../../models/Team";
 import type { CalendarEntry, CreateCalendarEntryData } from "../../models/CalendarEntry";
+import type { Session, CreateSessionData } from "../../models/Session";
 
 export class TestDataFactory {
 	/**
@@ -118,6 +119,39 @@ export class TestDataFactory {
 			team_id: "test-team-123",
 			user_id: "test-user-123",
 			joined_at: new Date("2024-01-01T00:00:00.000Z"),
+			...overrides
+		};
+	}
+
+	/**
+	 * Create test session data matching the Session interface
+	 */
+	static createTestSession(overrides: Partial<Session> = {}): Session {
+		const now = new Date("2024-01-01T00:00:00.000Z");
+		const expires = new Date("2024-01-02T00:00:00.000Z"); // 24 hours later
+
+		return {
+			id: "test-session-" + Math.random().toString(36).substring(2, 11),
+			user_id: "test-user-123",
+			session_token: "a".repeat(64), // 64 character hex token
+			ip_address: "127.0.0.1",
+			user_agent: "Mozilla/5.0 Test Browser",
+			created_at: now,
+			updated_at: now,
+			expires_at: expires,
+			is_active: true,
+			...overrides
+		};
+	}
+
+	/**
+	 * Create test session creation data matching CreateSessionData interface
+	 */
+	static createSessionData(overrides: Partial<CreateSessionData> = {}): CreateSessionData {
+		return {
+			user_id: "test-user-123",
+			ip_address: "127.0.0.1",
+			user_agent: "Mozilla/5.0 Test Browser",
 			...overrides
 		};
 	}

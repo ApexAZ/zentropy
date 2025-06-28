@@ -55,6 +55,20 @@ CREATE TABLE password_history (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- Sessions table for user session management
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    session_token VARCHAR(255) UNIQUE NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    CONSTRAINT sessions_expires_future CHECK (expires_at > created_at)
+);
+
 -- Calendar entries table (PTO, holidays, etc.)
 CREATE TABLE calendar_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -92,6 +106,10 @@ CREATE INDEX idx_team_memberships_team_id ON team_memberships(team_id);
 CREATE INDEX idx_team_memberships_user_id ON team_memberships(user_id);
 CREATE INDEX idx_password_history_user_id ON password_history(user_id);
 CREATE INDEX idx_password_history_created_at ON password_history(created_at);
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_token ON sessions(session_token);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+CREATE INDEX idx_sessions_active ON sessions(is_active, expires_at);
 CREATE INDEX idx_calendar_entries_user_id ON calendar_entries(user_id);
 CREATE INDEX idx_calendar_entries_team_id ON calendar_entries(team_id);
 CREATE INDEX idx_calendar_entries_dates ON calendar_entries(start_date, end_date);
