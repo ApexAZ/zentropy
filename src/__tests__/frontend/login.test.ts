@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { JSDOM } from "jsdom";
 import fs from "fs";
@@ -5,22 +8,20 @@ import path from "path";
 
 /**
  * Login Page Frontend Integration Tests
- * Tests the actual login.ts implementation with real DOM simulation
- * Validates form validation, API integration, error handling, and security measures
+ * Following hybrid testing approach - focuses on integration only
+ * Business logic (validation, API client, sanitization) tested in utils
  */
 
 // Mock fetch globally for API testing
 global.fetch = vi.fn();
 
-// Interface for the exported login page functions
+// Interface for minimal integration testing
 interface LoginPageFunctions {
 	validateLoginForm: () => boolean;
 	performLogin: (email: string, password: string) => Promise<void>;
 	displayError: (message: string, element: HTMLElement) => void;
-	sanitizeInput: (input: string) => string;
 }
 
-// Extend global window interface to include our functions
 declare global {
 	interface Window {
 		loginPageFunctions?: LoginPageFunctions;
@@ -72,72 +73,25 @@ describe("Login Page Frontend Integration", () => {
 		window.fetch = vi.fn();
 		global.fetch = window.fetch;
 
-		// Instead of executing TypeScript directly, we'll test the compiled JavaScript
-		// For now, let's create mock functions that match the expected interface
+		// Simplified mock for integration testing only - business logic tested in utils
 		window.loginPageFunctions = {
 			validateLoginForm: (): boolean => {
+				// Simple integration mock - actual validation logic tested in login-validation.test.ts
 				const emailInput = document.getElementById("email") as HTMLInputElement;
 				const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-				if (!emailInput?.value.trim()) {
-					const emailError = document.getElementById("email-error");
-					if (emailError) {
-						emailError.textContent = "Email is required";
-						emailError.style.display = "block";
-					}
-					emailInput?.classList.add("error");
-					return false;
-				}
-
-				const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-				if (!emailRegex.test(emailInput.value)) {
-					const emailError = document.getElementById("email-error");
-					if (emailError) {
-						emailError.textContent = "Please enter a valid email address";
-						emailError.style.display = "block";
-					}
-					emailInput.classList.add("error");
-					return false;
-				}
-
-				if (!passwordInput?.value) {
-					const passwordError = document.getElementById("password-error");
-					if (passwordError) {
-						passwordError.textContent = "Password is required";
-						passwordError.style.display = "block";
-					}
-					passwordInput?.classList.add("error");
-					return false;
-				}
-
-				// Clear errors for valid inputs
-				emailInput?.classList.remove("error");
-				passwordInput?.classList.remove("error");
-				return true;
+				return !!(emailInput?.value && passwordInput?.value);
 			},
 
 			performLogin: async (email: string, password: string): Promise<void> => {
-				try {
-					const response = await fetch("/api/users/login", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						credentials: "include",
-						body: JSON.stringify({ email, password })
-					});
+				// Simple API integration - actual API client logic tested in login-api.test.ts
+				const response = await fetch("/api/users/login", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ email, password })
+				});
 
-					// We don't actually use the response data in this mock, so we can skip parsing it
-					if (response.status === 200) {
-						// Success - would normally redirect
-						return;
-					} else {
-						// Show error
-						const generalError = document.getElementById("general-error");
-						if (generalError) {
-							generalError.style.display = "block";
-						}
-					}
-				} catch (error) {
-					// Network error
+				if (!response.ok) {
 					const generalError = document.getElementById("general-error");
 					if (generalError) {
 						generalError.style.display = "block";
@@ -147,20 +101,11 @@ describe("Login Page Frontend Integration", () => {
 
 			displayError: (message: string, element: HTMLElement): void => {
 				element.textContent = message;
-			},
-
-			sanitizeInput: (input: string): string => {
-				return input
-					.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-					.replace(/<[^>]*>/g, "")
-					.replace(/javascript:/gi, "") // Remove javascript: protocol
-					.trim();
 			}
 		};
 
-		// Get the exported functions
 		if (!window.loginPageFunctions) {
-			throw new Error("loginPageFunctions not found on window object");
+			throw new Error("loginPageFunctions not defined");
 		}
 		loginPageFunctions = window.loginPageFunctions;
 
@@ -185,82 +130,8 @@ describe("Login Page Frontend Integration", () => {
 		vi.resetAllMocks();
 	});
 
-	describe("Form Validation", () => {
-		it("should validate required email field", () => {
-			// Arrange: Get real form elements
-			const emailInput = document.getElementById("email") as HTMLInputElement;
-			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-			// Set up form state
-			emailInput.value = "";
-			passwordInput.value = "SecureP@ssw0rd123!";
-
-			// Act: Validate form using real function
-			const isValid = loginPageFunctions.validateLoginForm();
-
-			// Assert: Should show email required error
-			expect(isValid).toBe(false);
-			const emailError = document.getElementById("email-error");
-			expect(emailError?.textContent).toContain("Email is required");
-			expect(emailInput.classList.contains("error")).toBe(true);
-		});
-
-		it("should validate email format", () => {
-			// Arrange: Get real form elements
-			const emailInput = document.getElementById("email") as HTMLInputElement;
-			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-			// Set up form state with invalid email
-			emailInput.value = "invalid-email";
-			passwordInput.value = "SecureP@ssw0rd123!";
-
-			// Act: Validate form using real function
-			const isValid = loginPageFunctions.validateLoginForm();
-
-			// Assert: Should show email format error
-			expect(isValid).toBe(false);
-			const emailError = document.getElementById("email-error");
-			expect(emailError?.textContent).toContain("Please enter a valid email address");
-			expect(emailInput.classList.contains("error")).toBe(true);
-		});
-
-		it("should validate required password field", () => {
-			// Arrange: Get real form elements
-			const emailInput = document.getElementById("email") as HTMLInputElement;
-			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-			// Set up form state with empty password
-			emailInput.value = "test@example.com";
-			passwordInput.value = "";
-
-			// Act: Validate form using real function
-			const isValid = loginPageFunctions.validateLoginForm();
-
-			// Assert: Should show password required error
-			expect(isValid).toBe(false);
-			const passwordError = document.getElementById("password-error");
-			expect(passwordError?.textContent).toContain("Password is required");
-			expect(passwordInput.classList.contains("error")).toBe(true);
-		});
-
-		it("should pass validation with valid credentials", () => {
-			// Arrange: Get real form elements
-			const emailInput = document.getElementById("email") as HTMLInputElement;
-			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-			// Set up form state with valid data
-			emailInput.value = "test@example.com";
-			passwordInput.value = "SecureP@ssw0rd123!";
-
-			// Act: Validate form using real function
-			const isValid = loginPageFunctions.validateLoginForm();
-
-			// Assert: Should pass validation
-			expect(isValid).toBe(true);
-			expect(emailInput.classList.contains("error")).toBe(false);
-			expect(passwordInput.classList.contains("error")).toBe(false);
-		});
-	});
+	// Note: Form validation logic tested in src/__tests__/utils/login-validation.test.ts
+	// This integration test focuses on DOM integration only
 
 	describe("API Integration", () => {
 		it("should handle successful login (200 response)", async () => {
@@ -282,9 +153,7 @@ describe("Login Page Frontend Integration", () => {
 
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-			// Skip location mocking for this test - just verify API call
-
-			// Act: Perform login using real function
+			// Act: Perform login using integration function
 			await loginPageFunctions.performLogin("test@example.com", "SecureP@ssw0rd123!");
 
 			// Assert: Should call API correctly
@@ -299,117 +168,52 @@ describe("Login Page Frontend Integration", () => {
 					password: "SecureP@ssw0rd123!"
 				})
 			});
-
-			// Mock function doesn't parse JSON in our simplified implementation
 		});
 
-		it("should handle invalid credentials (401 response)", async () => {
-			// Arrange: Mock 401 API response
-			const mockResponse = {
-				ok: false,
-				status: 401,
-				json: vi.fn().mockResolvedValue({
-					message: "Invalid email or password"
-				})
-			};
-
+		it("should handle API errors by showing error UI", async () => {
+			// Arrange: Mock failed API response
+			const mockResponse = { ok: false, status: 401 };
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-			// Act: Perform login with invalid credentials
+			// Act: Perform login
 			await loginPageFunctions.performLogin("test@example.com", "wrongpassword");
 
-			// Assert: Should call API and handle error
+			// Assert: Should show error UI
 			expect(fetch).toHaveBeenCalled();
-			// Mock function doesn't parse JSON in our simplified implementation
-
-			// Check that error message is displayed
 			const generalError = document.getElementById("general-error");
 			expect(generalError?.style.display).toBe("block");
 		});
 
-		it("should handle rate limiting (429 response)", async () => {
-			// Arrange: Mock 429 API response
-			const mockResponse = {
-				ok: false,
-				status: 429,
-				json: vi.fn().mockResolvedValue({
-					message: "Too many login attempts. Please try again in 15 minutes."
-				})
-			};
-
-			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
-
-			// Act: Perform login when rate limited
-			await loginPageFunctions.performLogin("test@example.com", "SecureP@ssw0rd123!");
-
-			// Assert: Should handle rate limiting appropriately
-			expect(fetch).toHaveBeenCalled();
-			// Mock function doesn't parse JSON in our simplified implementation
-
-			// Check that rate limit message is displayed
-			const generalError = document.getElementById("general-error");
-			expect(generalError?.style.display).toBe("block");
-		});
-
-		it("should handle network errors", async () => {
+		it("should handle network errors gracefully", async () => {
 			// Arrange: Mock network error
 			(global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
 
-			// Act: Perform login with network error
-			await loginPageFunctions.performLogin("test@example.com", "SecureP@ssw0rd123!");
+			// Act: Perform login
+			await loginPageFunctions.performLogin("test@example.com", "password");
 
-			// Assert: Should handle network errors gracefully
+			// Assert: Should handle gracefully
 			expect(fetch).toHaveBeenCalled();
-
-			// Check that network error message is displayed
 			const generalError = document.getElementById("general-error");
 			expect(generalError?.style.display).toBe("block");
 		});
 	});
 
-	describe("Security Measures", () => {
-		it("should sanitize error messages to prevent XSS", () => {
-			// Arrange: Get real error element
-			const errorElement = document.getElementById("general-error-text") as HTMLElement;
-			const maliciousMessage = "<script>alert('xss')</script>Error message";
+	// Note: Security measures (XSS prevention, input sanitization) tested in:
+	// - src/__tests__/utils/login-validation.test.ts (input sanitization)
+	// - src/__tests__/utils/login-api.test.ts (API security)
 
-			// Act: Display error message using real function
+	describe("DOM Security Integration", () => {
+		it("should use textContent for error display (XSS prevention)", () => {
+			// Arrange: Get error element
+			const errorElement = document.getElementById("general-error-text") as HTMLElement;
+			const maliciousMessage = "<script>alert('xss')</script>Error";
+
+			// Act: Display error using DOM integration
 			loginPageFunctions.displayError(maliciousMessage, errorElement);
 
-			// Assert: Should use textContent instead of innerHTML (safe)
+			// Assert: textContent prevents XSS
 			expect(errorElement.textContent).toBe(maliciousMessage);
-			// innerHTML will be HTML-encoded when set via textContent, which is the safe behavior
 			expect(errorElement.innerHTML).toContain("&lt;script&gt;");
-		});
-
-		it("should validate and sanitize input data", () => {
-			// Arrange: Test malicious inputs
-			const maliciousEmail = "test@example.com<script>alert('xss')</script>";
-			const normalPassword = "SecureP@ssw0rd123!";
-
-			// Act: Sanitize inputs using real function
-			const sanitizedEmail = loginPageFunctions.sanitizeInput(maliciousEmail);
-			const sanitizedPassword = loginPageFunctions.sanitizeInput(normalPassword);
-
-			// Assert: Should remove script tags and dangerous content
-			expect(sanitizedEmail).toBe("test@example.com");
-			expect(sanitizedPassword).toBe(normalPassword);
-		});
-
-		it("should validate return URL to prevent open redirect attacks", () => {
-			// This test verifies that only relative URLs are accepted
-			// Since we can't easily mock location.search in JSDOM, we'll test the principle
-
-			// The login.ts implementation should use isValidReturnUrl function
-			// which checks if URL is same-origin. For testing purposes, we verify
-			// that our sanitizeInput function removes dangerous content
-			const maliciousUrl = "javascript:alert('xss')";
-			const sanitized = loginPageFunctions.sanitizeInput(maliciousUrl);
-
-			// Should remove the dangerous javascript: protocol
-			expect(sanitized).not.toContain("javascript:");
-			// The alert part remains but the dangerous protocol is removed
-			expect(sanitized).toBe("alert('xss')");
 		});
 	});
 
@@ -456,60 +260,30 @@ describe("Login Page Frontend Integration", () => {
 		});
 	});
 
-	describe("Form Submission", () => {
-		it("should prevent form submission when validation fails", () => {
-			// Arrange: Get real form elements
-			const loginForm = document.getElementById("login-form") as HTMLFormElement;
+	describe("Integration Workflow", () => {
+		it("should integrate validation and API call for successful login", async () => {
+			// Arrange: Set up form inputs
 			const emailInput = document.getElementById("email") as HTMLInputElement;
 			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
-			// Set up invalid form state
-			emailInput.value = "";
-			passwordInput.value = "";
-
-			// Mock preventDefault
-			const preventDefaultSpy = vi.fn();
-			const event = new dom.window.Event("submit", { bubbles: true, cancelable: true });
-			event.preventDefault = preventDefaultSpy;
-
-			// Act: Submit form
-			loginForm.dispatchEvent(event);
-
-			// The form submission handler should prevent default for invalid forms
-			// This is tested implicitly through the validation logic
-			expect(loginForm).toBeTruthy();
-		});
-
-		it("should handle form submission with valid data", async () => {
-			// Arrange: Get real form elements and set up valid data
-			const emailInput = document.getElementById("email") as HTMLInputElement;
-			const passwordInput = document.getElementById("password") as HTMLInputElement;
-
 			emailInput.value = "test@example.com";
-			passwordInput.value = "SecureP@ssw0rd123!";
+			passwordInput.value = "password123";
 
 			// Mock successful API response
-			const mockResponse = {
-				ok: true,
-				status: 200,
-				json: vi.fn().mockResolvedValue({
-					message: "Login successful",
-					user: { id: "user-123", email: "test@example.com" }
-				})
-			};
-
+			const mockResponse = { ok: true, status: 200 };
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
-			// Skip location mocking for this test - just verify API call
-
-			// Act: Validate and perform login
+			// Act: Validate and login
 			const isValid = loginPageFunctions.validateLoginForm();
 			expect(isValid).toBe(true);
 
-			await loginPageFunctions.performLogin("test@example.com", "SecureP@ssw0rd123!");
+			await loginPageFunctions.performLogin("test@example.com", "password123");
 
-			// Assert: API should be called
-			expect(fetch).toHaveBeenCalled();
+			// Assert: API called correctly
+			expect(fetch).toHaveBeenCalledWith("/api/users/login", expect.objectContaining({
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include"
+			}));
 		});
 	});
 });

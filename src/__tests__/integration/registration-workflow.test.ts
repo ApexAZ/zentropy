@@ -414,70 +414,21 @@ describe("Registration Workflow Integration", () => {
 		});
 	});
 
-	describe("Security Validation", () => {
-		it("should prevent XSS in form inputs", async () => {
-			// Arrange
-			const xssPayload = "<script>alert('xss')</script>";
+	// Note: Security validation (XSS, SQL injection) tested in:
+	// - src/__tests__/utils/registration-validation.test.ts (business logic)
+	// - src/__tests__/utils/auth-utils.test.ts (URL validation)
+	// - src/__tests__/utils/profile-utils.test.ts (input sanitization)
 
-			// Act
+	// Note: Password strength calculation tested in:
+	// - src/__tests__/utils/registration-validation.test.ts (algorithm testing)
+
+	describe("Integration Workflow Validation", () => {
+		it("should handle complete registration workflow with API integration", async () => {
+			// This test focuses on end-to-end registration workflow
+			// Business logic validation is tested in utils modules
 			const registrationModule = await import("../../public/register.js");
 
-			// Verify XSS protection exists in validation
-			expect(registrationModule.validateName).toBeDefined();
-			const nameValidation = registrationModule.validateName(xssPayload);
-			expect(nameValidation.isValid).toBe(false);
-			expect(nameValidation.error).toBe("Only letters, spaces, hyphens and apostrophes allowed");
-		});
-
-		it("should prevent SQL injection in email field", async () => {
-			// Arrange
-			const sqlPayload = "'; DROP TABLE users; --@example.com";
-
-			// Act
-			const registrationModule = await import("../../public/register.js");
-
-			// Verify SQL injection protection
-			expect(registrationModule.validateEmail).toBeDefined();
-			const emailValidation = registrationModule.validateEmail(sqlPayload);
-			expect(emailValidation.isValid).toBe(false);
-			expect(emailValidation.error).toBe("Please enter a valid email address");
-		});
-
-		it("should handle return URL validation", async () => {
-			// Arrange
-			const maliciousReturnUrl = "javascript:alert('xss')";
-			mockWindow.location.search = `?return=${encodeURIComponent(maliciousReturnUrl)}`;
-
-			// Act
-			const registrationModule = await import("../../public/register.js");
-
-			// Verify return URL protection exists
-			expect(registrationModule).toBeDefined();
-			expect(mockWindow.location.href).not.toContain("javascript:");
-		});
-	});
-
-	describe("Password Strength Integration", () => {
-		it("should calculate password strength correctly", async () => {
-			// Act
-			const registrationModule = await import("../../public/register.js");
-
-			// Verify password strength calculation
-			expect(registrationModule.calculatePasswordStrength).toBeDefined();
-
-			const weakResult = registrationModule.calculatePasswordStrength("123");
-			expect(weakResult.level).toBe("very-weak");
-
-			const strongResult = registrationModule.calculatePasswordStrength("MySecure123!");
-			expect(strongResult.level).toBeOneOf(["good", "excellent"]);
-		});
-	});
-
-	describe("Module Structure Validation", () => {
-		it("should export required validation functions", async () => {
-			const registrationModule = await import("../../public/register.js");
-
-			// Verify all expected exports are present
+			// Verify module exports for integration (structural test)
 			expect(registrationModule.validateName).toBeDefined();
 			expect(registrationModule.validateEmail).toBeDefined();
 			expect(registrationModule.validatePassword).toBeDefined();

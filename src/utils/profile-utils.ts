@@ -11,6 +11,7 @@ export interface UserProfile {
 	last_name: string;
 	role?: "team_lead" | "team_member";
 	is_active?: boolean;
+	last_login_at?: string | null;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -135,15 +136,28 @@ export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateDat
 			return "";
 		}
 		
-		const stringValue = String(value);
+		let stringValue = String(value);
 		
-		// Remove HTML tags
-		const withoutHtml = stringValue.replace(/<[^>]*>/g, "");
+		// Remove dangerous protocols - check for these first and return empty if found
+		if (/^(javascript|data|vbscript):/gi.test(stringValue)) {
+			// For data: URLs, completely remove them as they can contain arbitrary content
+			if (/^data:/gi.test(stringValue)) {
+				return "";
+			}
+			// For javascript: and vbscript:, remove the protocol part
+			stringValue = stringValue.replace(/^(javascript|vbscript):/gi, "");
+		}
 		
-		// Remove dangerous protocols
-		const withoutProtocols = withoutHtml.replace(/^(javascript|data|vbscript):/gi, "");
+		// Remove HTML tags and their contents for script, style, and other dangerous tags
+		stringValue = stringValue.replace(/<(script|style|object|embed|iframe)[^>]*>.*?<\/\1>/gis, "");
 		
-		return withoutProtocols.trim();
+		// Remove all remaining HTML tags
+		stringValue = stringValue.replace(/<[^>]*>/g, "");
+		
+		// Remove HTML entities that could be used for XSS
+		stringValue = stringValue.replace(/&[#\w]+;/g, "");
+		
+		return stringValue.trim();
 	};
 
 	// Sanitize each field

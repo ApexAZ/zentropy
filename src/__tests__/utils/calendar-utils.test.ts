@@ -1,15 +1,10 @@
 /**
- * @vitest-environment jsdom
+ * Calendar Utilities Tests
+ * Following hybrid testing approach - testing pure functions extracted from calendar.test.ts
+ * TDD implementation with comprehensive edge case coverage for calendar business logic
  */
+
 import { describe, it, expect, beforeEach } from "vitest";
-
-/**
- * Calendar Frontend Integration Tests
- * Tests calendar utilities that have been extracted to proper utils module
- * This file now focuses on integration testing only, following hybrid testing approach
- */
-
-// Import the extracted utilities (business logic now properly separated)
 import {
 	getEntriesForDate,
 	getEntryTitle,
@@ -27,7 +22,7 @@ import {
 	type CreateCalendarEntryData
 } from "../../utils/calendar-utils.js";
 
-describe("Calendar Frontend Integration Tests", () => {
+describe("Calendar Utilities", () => {
 	let mockUsers: User[];
 	let mockTeams: Team[];
 	let mockCalendarEntries: CalendarEntry[];
@@ -534,7 +529,7 @@ describe("Calendar Frontend Integration Tests", () => {
 		it("should escape HTML special characters", () => {
 			expect(escapeHtml("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
 			expect(escapeHtml("John & Jane")).toBe("John &amp; Jane");
-			expect(escapeHtml('Say "Hello"')).toBe('Say "Hello"'); // Quotes are not escaped by textContent/innerHTML
+			expect(escapeHtml('Say "Hello"')).toBe('Say &quot;Hello&quot;');
 		});
 
 		it("should handle empty strings", () => {
@@ -543,6 +538,16 @@ describe("Calendar Frontend Integration Tests", () => {
 
 		it("should not modify safe text", () => {
 			expect(escapeHtml("Safe text 123")).toBe("Safe text 123");
+		});
+
+		it("should handle all dangerous HTML characters", () => {
+			const dangerous = `<script>alert('xss')</script> & "quotes" 'single'`;
+			const result = escapeHtml(dangerous);
+			
+			expect(result).toContain("&lt;script&gt;");
+			expect(result).toContain("&amp;");
+			expect(result).toContain("&quot;");
+			expect(result).toContain("&#x27;");
 		});
 	});
 });

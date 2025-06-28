@@ -2,13 +2,28 @@
  * Login Page TypeScript
  * Handles user authentication with comprehensive error handling and security measures
  * Follows TDD approach and strict ESLint compliance
+ * Uses tested pure functions from login utilities
  */
 
+import { 
+	isValidEmail,
+	validateLoginForm as validateLoginFormData,
+	sanitizeLoginInput,
+	type LoginFormData,
+	type LoginValidationResult
+} from "../utils/login-validation.js";
+
+import {
+	createLoginRequest,
+	handleLoginResponse,
+	createSessionCheckRequest,
+	type LoginCredentials,
+	type LoginApiResult
+} from "../utils/login-api.js";
+
 (function (): void {
-	// Type definitions
-	interface LoginFormData {
-		email: string;
-		password: string;
+	// Type definitions (extending the base LoginFormData with remember option)
+	interface ExtendedLoginFormData extends LoginFormData {
 		remember?: boolean;
 	}
 
@@ -121,33 +136,53 @@
 		}
 
 		// Get form data
-		const formData = getFormData();
-		if (!formData) {
+		const formResult = getFormData();
+		if (!formResult) {
 			showGeneralError("Unable to read form data. Please try again.");
 			return;
 		}
 
 		// Perform login
-		await performLogin(formData.email, formData.password);
+		await performLogin(formResult.loginData.email, formResult.loginData.password);
 	}
 
 	/**
-	 * Validate the entire login form
+	 * Validate the entire login form using tested utilities
 	 */
 	function validateLoginForm(): boolean {
-		let isValid = true;
-
-		// Validate email
-		if (!validateField("email")) {
-			isValid = false;
+		// Get current form data
+		const formResult = getFormData();
+		if (!formResult) {
+			return false;
 		}
 
-		// Validate password
-		if (!validateField("password")) {
-			isValid = false;
+		// Use tested validation utility
+		const validation = validateLoginFormData(formResult.loginData);
+		
+		// Clear any existing errors
+		clearFieldError("email");
+		clearFieldError("password");
+		
+		// Display validation errors in UI
+		if (!validation.isValid) {
+			if (validation.errors.email) {
+				const emailInput = document.getElementById("email") as HTMLInputElement;
+				const emailError = document.getElementById("email-error");
+				if (emailInput && emailError) {
+					showFieldError(emailInput, emailError, validation.errors.email);
+				}
+			}
+			
+			if (validation.errors.password) {
+				const passwordInput = document.getElementById("password") as HTMLInputElement;
+				const passwordError = document.getElementById("password-error");
+				if (passwordInput && passwordError) {
+					showFieldError(passwordInput, passwordError, validation.errors.password);
+				}
+			}
 		}
 
-		return isValid;
+		return validation.isValid;
 	}
 
 	/**
@@ -192,13 +227,6 @@
 		}
 	}
 
-	/**
-	 * Validate email format
-	 */
-	function isValidEmail(email: string): boolean {
-		const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-		return emailRegex.test(email);
-	}
 
 	/**
 	 * Show field-specific error
@@ -226,49 +254,44 @@
 	}
 
 	/**
-	 * Get form data
+	 * Get form data (returns base LoginFormData and remember checkbox separately)
 	 */
-	function getFormData(): LoginFormData | null {
+	function getFormData(): { loginData: LoginFormData; remember: boolean } | null {
 		if (!emailInput || !passwordInput) {
 			return null;
 		}
 
 		return {
-			email: sanitizeInput(emailInput.value.trim()),
-			password: passwordInput.value, // Don't trim passwords
+			loginData: {
+				email: sanitizeLoginInput(emailInput.value.trim()),
+				password: passwordInput.value // Don't trim passwords
+			},
 			remember: rememberCheckbox?.checked ?? false
 		};
 	}
 
-	/**
-	 * Sanitize input to prevent XSS
-	 */
-	function sanitizeInput(input: string): string {
-		// Remove script tags and other dangerous content
-		return input
-			.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-			.replace(/<[^>]*>/g, "")
-			.trim();
-	}
 
 	/**
-	 * Perform login API call
+	 * Perform login API call using tested utilities
 	 */
 	async function performLogin(email: string, password: string): Promise<void> {
 		try {
 			setLoadingState(true);
 			hideGeneralError();
 
-			const response = await fetch("/api/users/login", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				credentials: "include", // Important for session cookies
-				body: JSON.stringify({ email, password })
-			});
+			// Use tested API utility to create request
+			const credentials: LoginCredentials = { email, password };
+			const requestConfig = createLoginRequest(credentials);
+			const response = await fetch("/api/users/login", requestConfig);
 
-			await handleLoginResponse(response);
+			// Use tested API utility to handle response
+			const result = await handleLoginResponse(response);
+			
+			if (result.success) {
+				handleSuccessfulLogin(result);
+			} else {
+				handleLoginError(result);
+			}
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error("Network error during login:", error);
@@ -279,71 +302,44 @@
 	}
 
 	/**
-	 * Handle login API response
+	 * Handle successful login result
 	 */
-	async function handleLoginResponse(response: Response): Promise<void> {
-		try {
-			const data = (await response.json()) as LoginResponse | ErrorResponse;
-
-			switch (response.status) {
-				case 200:
-					// Successful login
-					handleSuccessfulLogin(data as LoginResponse);
-					break;
-
-				case 400:
-					// Validation error
-					showGeneralError((data as ErrorResponse).message || "Please check your input and try again.");
-					break;
-
-				case 401:
-					// Authentication failed
-					showGeneralError("Invalid email or password. Please try again.");
-					break;
-
-				case 429:
-					// Rate limited
-					showGeneralError("Too many login attempts. Please wait 15 minutes before trying again.");
-					break;
-
-				case 500:
-				default:
-					// Server error
-					showGeneralError("Server error. Please try again later.");
-					break;
-			}
-		} catch (error) {
-			// eslint-disable-next-line no-console
-			console.error("Error parsing login response:", error);
-			showGeneralError("Unexpected response from server. Please try again.");
-		}
-	}
-
-	/**
-	 * Handle successful login
-	 */
-	function handleSuccessfulLogin(data: LoginResponse): void {
+	function handleSuccessfulLogin(result: LoginApiResult): void {
+		if (!result.success) {return;}
+		
 		// Show success message
 		showSuccessToast("Login successful! Redirecting...");
 
 		// Store user info if needed (avoid storing sensitive data)
-		if (data.user) {
-			sessionStorage.setItem(
-				"user",
-				JSON.stringify({
-					id: data.user.id,
-					email: data.user.email,
-					name: `${data.user.first_name} ${data.user.last_name}`,
-					role: data.user.role
-				})
-			);
+		if (result.user) {
+			// Store minimal user info for navigation
+			sessionStorage.setItem("user_info", JSON.stringify({
+				id: result.user.id,
+				email: result.user.email,
+				name: `${result.user.first_name} ${result.user.last_name}`,
+				role: result.user.role
+			}));
 		}
 
-		// Redirect after short delay
+		// Redirect to dashboard or intended page
+		const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
+		const redirectUrl = returnUrl || "/teams.html";
+		
 		setTimeout(() => {
-			redirectToIntendedPage();
-		}, 1000);
+			window.location.href = redirectUrl;
+		}, 1500);
 	}
+
+	/**
+	 * Handle login error result
+	 */
+	function handleLoginError(result: LoginApiResult): void {
+		if (result.success) {return;}
+		
+		// Show appropriate error message
+		showGeneralError(result.message || "Login failed. Please try again.");
+	}
+
 
 	/**
 	 * Redirect to intended page or dashboard
@@ -502,7 +498,7 @@
 			validateLoginForm,
 			performLogin,
 			displayError,
-			sanitizeInput
+			sanitizeInput: sanitizeLoginInput
 		};
 	}
 })();

@@ -29,7 +29,16 @@ global.Response = vi.fn().mockImplementation((body: unknown, init?: MockResponse
 	ok: init?.status ? init.status >= 200 && init.status < 300 : true,
 	status: init?.status ?? 200,
 	statusText: init?.statusText ?? "OK",
-	json: vi.fn().mockResolvedValue(typeof body === "string" ? JSON.parse(body) : body),
+	json: vi.fn().mockImplementation(() => {
+		if (typeof body === "string") {
+			try {
+				return Promise.resolve(JSON.parse(body));
+			} catch {
+				return Promise.reject(new Error("Invalid JSON"));
+			}
+		}
+		return Promise.resolve(body);
+	}),
 	text: vi.fn().mockResolvedValue(typeof body === "string" ? body : JSON.stringify(body))
 })) as unknown as typeof Response;
 
