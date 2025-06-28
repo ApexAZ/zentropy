@@ -144,3 +144,86 @@ export function validateDateRange(
 		throw new ValidationError(`${endFieldName} must be after ${startFieldName}`, endFieldName, endDate);
 	}
 }
+
+/**
+ * Sanitizes input to prevent XSS attacks
+ * Removes script tags, HTML tags, and dangerous protocols
+ */
+export function sanitizeInput(input: string): string {
+	if (!input || typeof input !== "string") {
+		return "";
+	}
+	
+	return input
+		.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove script tags
+		.replace(/<[^>]*>/g, "") // Remove all HTML tags
+		.replace(/javascript:/gi, "") // Remove javascript: protocol
+		.replace(/vbscript:/gi, "") // Remove vbscript: protocol
+		.replace(/data:/gi, "") // Remove data: protocol
+		.trim();
+}
+
+/**
+ * Validates that a URL is safe for redirection (same-origin only)
+ */
+export function isValidReturnUrl(url: string, currentOrigin: string): boolean {
+	if (!url || typeof url !== "string") {
+		return false;
+	}
+	
+	// Only allow relative URLs or same-origin URLs
+	try {
+		if (url.startsWith("/") && !url.startsWith("//")) {
+			// Relative URL - safe
+			return true;
+		}
+		
+		const returnUrl = new URL(url, currentOrigin);
+		return returnUrl.origin === currentOrigin;
+	} catch {
+		// If URL parsing fails, reject it
+		return false;
+	}
+}
+
+/**
+ * Validation result for login forms
+ */
+export interface LoginValidationResult {
+	isValid: boolean;
+	emailError?: string;
+	passwordError?: string;
+}
+
+/**
+ * Validates login form data and returns detailed validation results
+ */
+export function validateLoginForm(email: string, password: string): LoginValidationResult {
+	const result: LoginValidationResult = { isValid: true };
+	
+	// Validate email
+	try {
+		validateEmail(email, "email");
+	} catch (error) {
+		result.isValid = false;
+		if (error instanceof ValidationError) {
+			result.emailError = error.message;
+		} else {
+			result.emailError = "Invalid email";
+		}
+	}
+	
+	// Validate password
+	try {
+		validateString(password, "password", { required: true });
+	} catch (error) {
+		result.isValid = false;
+		if (error instanceof ValidationError) {
+			result.passwordError = error.message;
+		} else {
+			result.passwordError = "Invalid password";
+		}
+	}
+	
+	return result;
+}

@@ -6,7 +6,11 @@ import {
 	validateEmail,
 	validatePositiveInteger,
 	validateDate,
-	validateDateRange
+	validateDateRange,
+	sanitizeInput,
+	isValidReturnUrl,
+	validateLoginForm,
+	type LoginValidationResult
 } from "../../utils/validation";
 
 describe("ValidationError", () => {
@@ -207,5 +211,150 @@ describe("validateDateRange", () => {
 			expect(error instanceof ValidationError).toBe(true);
 			expect((error as ValidationError).field).toBe("customEnd");
 		}
+	});
+});
+
+describe("sanitizeInput", () => {
+	it("should remove script tags", () => {
+		const maliciousInput = '<script>alert("xss")</script>Hello';
+		const result = sanitizeInput(maliciousInput);
+		expect(result).toBe("Hello");
+		expect(result).not.toContain("<script>");
+		expect(result).not.toContain("alert");
+	});
+
+	it("should remove all HTML tags", () => {
+		const htmlInput = '<div><span>Hello</span><p>World</p></div>';
+		const result = sanitizeInput(htmlInput);
+		expect(result).toBe("HelloWorld");
+		expect(result).not.toContain("<");
+		expect(result).not.toContain(">");
+	});
+
+	it("should remove dangerous protocols", () => {
+		expect(sanitizeInput("javascript:alert('xss')")).toBe("alert('xss')");
+		expect(sanitizeInput("vbscript:alert('xss')")).toBe("alert('xss')");
+		expect(sanitizeInput("data:text/html,<script>")).toBe("text/html,");
+	});
+
+	it("should handle empty and invalid inputs", () => {
+		expect(sanitizeInput("")).toBe("");
+		expect(sanitizeInput("   ")).toBe("");
+		expect(sanitizeInput("  hello  ")).toBe("hello");
+	});
+
+	it("should preserve normal text", () => {
+		const normalText = "Hello, this is normal text!";
+		expect(sanitizeInput(normalText)).toBe(normalText);
+	});
+});
+
+describe("isValidReturnUrl", () => {
+	const currentOrigin = "https://example.com";
+
+	it("should accept relative URLs starting with /", () => {
+		expect(isValidReturnUrl("/dashboard", currentOrigin)).toBe(true);
+		expect(isValidReturnUrl("/teams/123", currentOrigin)).toBe(true);
+		expect(isValidReturnUrl("/", currentOrigin)).toBe(true);
+	});
+
+	it("should reject protocol-relative URLs", () => {
+		expect(isValidReturnUrl("//evil.com/steal", currentOrigin)).toBe(false);
+	});
+
+	it("should accept same-origin URLs", () => {
+		expect(isValidReturnUrl("https://example.com/dashboard", currentOrigin)).toBe(true);
+		expect(isValidReturnUrl("https://example.com/teams", currentOrigin)).toBe(true);
+	});
+
+	it("should reject different-origin URLs", () => {
+		expect(isValidReturnUrl("https://evil.com/steal", currentOrigin)).toBe(false);
+		expect(isValidReturnUrl("http://example.com/dashboard", currentOrigin)).toBe(false);
+	});
+
+	it("should reject dangerous protocols", () => {
+		expect(isValidReturnUrl("javascript:alert('xss')", currentOrigin)).toBe(false);
+		expect(isValidReturnUrl("data:text/html,<script>", currentOrigin)).toBe(false);
+	});
+
+	it("should handle empty and invalid inputs", () => {
+		expect(isValidReturnUrl("", currentOrigin)).toBe(false);
+		expect(isValidReturnUrl("invalid-url", currentOrigin)).toBe(false);
+	});
+});
+
+describe("validateLoginForm", () => {
+	it("should validate correct email and password", () => {
+		const result: LoginValidationResult = validateLoginForm("test@example.com", "password123");
+		expect(result.isValid).toBe(true);
+		expect(result.emailError).toBeUndefined();
+		expect(result.passwordError).toBeUndefined();
+	});
+
+	it("should catch empty email", () => {
+		const result: LoginValidationResult = validateLoginForm("", "password123");
+		expect(result.isValid).toBe(false);
+		expect(result.emailError).toBeDefined();
+		expect(result.emailError).toContain("required");
+	});
+
+	it("should catch invalid email format", () => {
+		const result: LoginValidationResult = validateLoginForm("invalid-email", "password123");
+		expect(result.isValid).toBe(false);
+		expect(result.emailError).toBeDefined();
+		expect(result.emailError).toContain("valid email");
+	});
+
+	it("should catch empty password", () => {
+		const result: LoginValidationResult = validateLoginForm("test@example.com", "");
+		expect(result.isValid).toBe(false);
+		expect(result.passwordError).toBeDefined();
+		expect(result.passwordError).toContain("required");
+	});
+
+	it("should catch both email and password errors", () => {
+		const result: LoginValidationResult = validateLoginForm("", "");
+		expect(result.isValid).toBe(false);
+		expect(result.emailError).toBeDefined();
+		expect(result.passwordError).toBeDefined();
+	});
+
+	it("should handle whitespace-only inputs", () => {
+		const result: LoginValidationResult = validateLoginForm("   ", "   ");
+		expect(result.isValid).toBe(false);
+		expect(result.emailError).toBeDefined();
+		expect(result.passwordError).toBeDefined();
+	});
+
+	it("should validate complex valid email formats", () => {
+		const validEmails = [
+			"user@example.com",
+			"user.name@example.com",
+			"user+tag@example.co.uk",
+			"user123@test-domain.org"
+		];
+
+		validEmails.forEach(email => {
+			const result = validateLoginForm(email, "password123");
+			expect(result.isValid).toBe(true);
+			expect(result.emailError).toBeUndefined();
+		});
+	});
+
+	it("should reject invalid email formats", () => {
+		const invalidEmails = [
+			"user@",
+			"@example.com",
+			"user.example.com",
+			"user..name@example.com",
+			"user@.com",
+			"user@com"
+		];
+
+		invalidEmails.forEach(email => {
+			const result = validateLoginForm(email, "password123");
+			expect(result.isValid).toBe(false);
+			expect(result.emailError).toBeDefined();
+		});
 	});
 });
