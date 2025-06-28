@@ -116,7 +116,7 @@ class TestAssertions {
 		endDate: Date,
 		config: TeamWorkingDaysConfig,
 		expectedCount: number,
-		description?: string
+		_description?: string
 	): void {
 		const result = calculator.calculateWorkingDays(startDate, endDate, config);
 		expect(result).toBe(expectedCount);
@@ -127,7 +127,7 @@ class TestAssertions {
 		date: Date,
 		config: TeamWorkingDaysConfig,
 		expected: boolean,
-		description?: string
+		_description?: string
 	): void {
 		const result = calculator.isWorkingDay(date, config);
 		expect(result).toBe(expected);
@@ -137,7 +137,7 @@ class TestAssertions {
 		expect(actual).toHaveLength(expectedLength);
 	}
 
-	static expectErrorToBeThrown(fn: () => void, expectedMessage: string, description?: string): void {
+	static expectErrorToBeThrown(fn: () => void, expectedMessage: string, _description?: string): void {
 		expect(fn).toThrow(expectedMessage);
 	}
 }

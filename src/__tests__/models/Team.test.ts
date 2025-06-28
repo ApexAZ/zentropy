@@ -8,7 +8,7 @@ import type { QueryResult } from "pg";
 // Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
-		query: vi.fn()
+		query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0, command: "", oid: 0, fields: [] })
 	}
 }));
 
@@ -28,7 +28,7 @@ describe("TeamModel", () => {
 	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
 		const mockResult: QueryResult<any> = { rows, rowCount: rows.length, command: "", oid: 0, fields: [] };
-		mockPool.query.mockResolvedValue(mockResult);
+		(mockPool.query as any).mockResolvedValue(mockResult);
 	};
 
 	const mockFailedQuery = (error = new Error("Database connection failed")): void => {
@@ -37,7 +37,7 @@ describe("TeamModel", () => {
 
 	const mockDeleteFailure = (): void => {
 		const mockResult: QueryResult<any> = { rows: [], rowCount: 0, command: "", oid: 0, fields: [] };
-		mockPool.query.mockResolvedValue(mockResult);
+		(mockPool.query as any).mockResolvedValue(mockResult);
 	};
 
 	describe("business logic validation", () => {
