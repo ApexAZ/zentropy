@@ -162,9 +162,15 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		const baselineVelocityInput = document.getElementById("baselineVelocity") as HTMLInputElement;
 		const sprintLengthSelect = document.getElementById("sprintLength") as HTMLSelectElement;
 
-		if (teamNameInput) {teamNameInput.value = teamConfig.name || "My Development Team";}
-		if (baselineVelocityInput) {baselineVelocityInput.value = teamConfig.baselineVelocity.toString();}
-		if (sprintLengthSelect) {sprintLengthSelect.value = teamConfig.sprintLength.toString();}
+		if (teamNameInput) {
+			teamNameInput.value = teamConfig.name || "My Development Team";
+		}
+		if (baselineVelocityInput) {
+			baselineVelocityInput.value = teamConfig.baselineVelocity.toString();
+		}
+		if (sprintLengthSelect) {
+			sprintLengthSelect.value = teamConfig.sprintLength.toString();
+		}
 
 		// Update working days checkboxes
 		document.querySelectorAll<HTMLInputElement>('input[name="workingDays"]').forEach(checkbox => {
@@ -194,12 +200,16 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	// Team member management
 	function openAddMemberForm(): void {
 		const form = document.getElementById("addMemberForm") as HTMLElement;
-		if (form) {form.style.display = "block";}
+		if (form) {
+			form.style.display = "block";
+		}
 	}
 
 	function closeAddMemberForm(): void {
 		const form = document.getElementById("addMemberForm") as HTMLElement;
-		if (form) {form.style.display = "none";}
+		if (form) {
+			form.style.display = "none";
+		}
 	}
 
 	function submitAddMember(event: Event): void {
@@ -208,7 +218,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 
 		const memberEmail = formData.get("memberEmail") as string | null;
 		const memberRole = formData.get("memberRole") as string | null;
-		
+
 		if (!memberEmail || !memberRole) {
 			// eslint-disable-next-line no-console
 			console.error("Missing required member data");
@@ -216,7 +226,9 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		}
 
 		const member: TeamMember = {
-			name: (memberEmail.split("@")[0] ?? memberEmail).replace(".", " ").replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
+			name: (memberEmail.split("@")[0] ?? memberEmail)
+				.replace(".", " ")
+				.replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
 			email: memberEmail,
 			role: memberRole
 		};
@@ -237,12 +249,15 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	// Render team members list
 	function renderTeamMembers(): void {
 		const membersList = document.getElementById("teamMembersList") as HTMLElement;
-		if (!membersList) {return;}
+		if (!membersList) {
+			return;
+		}
 
 		membersList.innerHTML = "";
 
 		if (teamMembers.length === 0) {
-			membersList.innerHTML = '<div class="empty-state">No team members yet. Click "Add Team Member" to get started.</div>';
+			membersList.innerHTML =
+				'<div class="empty-state">No team members yet. Click "Add Team Member" to get started.</div>';
 			return;
 		}
 
@@ -256,9 +271,10 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 					<span class="member-role">${member.role === "lead" ? "Team Lead" : "Team Member"}</span>
 				</div>
 				<div class="member-actions">
-					${member.role === "lead" ? 
-						'<span class="lead-indicator">Team Lead</span>' :
-						`<button type="button" class="btn btn-secondary btn-sm" onclick="editMember('${member.email}')">Edit</button>
+					${
+						member.role === "lead"
+							? '<span class="lead-indicator">Team Lead</span>'
+							: `<button type="button" class="btn btn-secondary btn-sm" onclick="editMember('${member.email}')">Edit</button>
 						<button type="button" class="btn btn-danger btn-sm" onclick="removeMember('${member.email}')">Remove</button>`
 					}
 				</div>
@@ -288,12 +304,16 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	// Sprint management
 	function openSprintCreationForm(): void {
 		const form = document.getElementById("sprintCreationForm") as HTMLElement;
-		if (form) {form.style.display = "block";}
+		if (form) {
+			form.style.display = "block";
+		}
 	}
 
 	function closeSprintCreationForm(): void {
 		const form = document.getElementById("sprintCreationForm") as HTMLElement;
-		if (form) {form.style.display = "none";}
+		if (form) {
+			form.style.display = "none";
+		}
 	}
 
 	function submitCreateSprint(event: Event): void {
@@ -324,7 +344,9 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	// Render sprints list
 	function renderSprints(): void {
 		const sprintsList = document.getElementById("sprintsList") as HTMLElement;
-		if (!sprintsList) {return;}
+		if (!sprintsList) {
+			return;
+		}
 
 		sprintsList.innerHTML = "";
 
@@ -332,7 +354,8 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		localStorage.setItem(`team-${teamId}-sprints`, JSON.stringify(sprints));
 
 		if (sprints.length === 0) {
-			sprintsList.innerHTML = '<div class="empty-state">No sprints created yet. Click "Create New Sprint" or "Generate Multiple Sprints" to get started.</div>';
+			sprintsList.innerHTML =
+				'<div class="empty-state">No sprints created yet. Click "Create New Sprint" or "Generate Multiple Sprints" to get started.</div>';
 			return;
 		}
 
@@ -359,12 +382,16 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 
 	function generateMultipleSprints(): void {
 		const form = document.getElementById("multipleSprintsForm") as HTMLElement;
-		if (form) {form.style.display = "block";}
+		if (form) {
+			form.style.display = "block";
+		}
 	}
 
 	function closeMultipleSprintsForm(): void {
 		const form = document.getElementById("multipleSprintsForm") as HTMLElement;
-		if (form) {form.style.display = "none";}
+		if (form) {
+			form.style.display = "none";
+		}
 	}
 
 	function submitGenerateMultipleSprints(event: Event): void {
@@ -374,7 +401,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		const startingNumberStr = formData.get("startingSprintNumber") as string | null;
 		const numberOfSprintsStr = formData.get("numberOfSprints") as string | null;
 		const firstStartDateStr = formData.get("firstSprintStartDate") as string | null;
-		
+
 		if (!startingNumberStr || !numberOfSprintsStr || !firstStartDateStr) {
 			// eslint-disable-next-line no-console
 			console.error("Missing required sprint generation data");
@@ -395,7 +422,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 			const sprintNum = config.startingNumber + i;
 			const startDate = new Date(currentDate);
 			const endDate = new Date(currentDate);
-			endDate.setDate(endDate.getDate() + (sprintLengthWeeks * 7) - 1);
+			endDate.setDate(endDate.getDate() + sprintLengthWeeks * 7 - 1);
 
 			const sprint: Sprint = {
 				id: "sprint-" + Date.now().toString() + "-" + i.toString(),

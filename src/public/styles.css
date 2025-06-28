@@ -1893,3 +1893,334 @@ main {
 		min-width: auto;
 	}
 }
+
+/* Registration Form Styles */
+.form-section-title {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: var(--gray-800);
+	margin-bottom: var(--spacing-lg);
+	padding-bottom: var(--spacing-sm);
+	border-bottom: 1px solid var(--gray-200);
+}
+
+.form-label {
+	display: block;
+	font-weight: 500;
+	margin-bottom: var(--spacing-sm);
+	color: var(--gray-700);
+	font-size: 0.875rem;
+}
+
+.form-input {
+	width: 100%;
+	padding: var(--spacing-md);
+	border: 1px solid var(--gray-300);
+	border-radius: var(--radius-md);
+	font-size: 1rem;
+	line-height: 1.5;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	background: white;
+}
+
+.form-input:focus {
+	outline: none;
+	border-color: var(--primary-blue);
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input.error {
+	border-color: var(--danger-red);
+	box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.form-input::placeholder {
+	color: var(--gray-400);
+}
+
+/* Password Strength Indicator */
+.password-strength {
+	margin-top: var(--spacing-sm);
+	padding: var(--spacing-sm);
+	background: var(--gray-50);
+	border-radius: var(--radius-sm);
+}
+
+.strength-label {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--gray-700);
+	margin-bottom: var(--spacing-xs);
+}
+
+.strength-meter {
+	width: 100%;
+	height: 6px;
+	background: var(--gray-200);
+	border-radius: 3px;
+	overflow: hidden;
+	margin-bottom: var(--spacing-xs);
+}
+
+.strength-bar {
+	height: 100%;
+	border-radius: 3px;
+	transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-bar.strength-very-weak {
+	background: var(--danger-red);
+}
+
+.strength-bar.strength-weak {
+	background: #f59e0b;
+}
+
+.strength-bar.strength-fair {
+	background: #eab308;
+}
+
+.strength-bar.strength-good {
+	background: #22c55e;
+}
+
+.strength-bar.strength-excellent {
+	background: var(--success-green);
+}
+
+.strength-text {
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.strength-text.strength-very-weak {
+	color: var(--danger-red);
+}
+
+.strength-text.strength-weak {
+	color: #f59e0b;
+}
+
+.strength-text.strength-fair {
+	color: #eab308;
+}
+
+.strength-text.strength-good {
+	color: #22c55e;
+}
+
+.strength-text.strength-excellent {
+	color: var(--success-green);
+}
+
+/* Password Requirements */
+.password-requirements {
+	margin-top: var(--spacing-sm);
+	padding: var(--spacing-sm);
+	background: var(--gray-50);
+	border-radius: var(--radius-sm);
+}
+
+.requirements-title {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: var(--gray-700);
+	margin-bottom: var(--spacing-sm);
+}
+
+.requirements-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.requirement {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	font-size: 0.875rem;
+	color: var(--gray-600);
+	margin-bottom: var(--spacing-xs);
+	transition: color 0.2s ease;
+}
+
+.requirement.valid {
+	color: var(--success-green);
+}
+
+.requirement-icon {
+	font-size: 0.75rem;
+	font-weight: bold;
+	min-width: 16px;
+	text-align: center;
+}
+
+.requirement.valid .requirement-icon {
+	color: var(--success-green);
+}
+
+/* Checkbox Container */
+.checkbox-container {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--spacing-sm);
+	cursor: pointer;
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+.checkbox-container input[type="checkbox"] {
+	margin: 0;
+	margin-top: 2px;
+	width: auto;
+}
+
+.checkmark {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 1px solid var(--gray-300);
+	border-radius: var(--radius-sm);
+	position: relative;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark {
+	background: var(--primary-blue);
+	border-color: var(--primary-blue);
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark::after {
+	content: '✓';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: white;
+	font-size: 0.75rem;
+	font-weight: bold;
+}
+
+.checkbox-text {
+	color: var(--gray-700);
+}
+
+/* Field Info */
+.field-info {
+	font-size: 0.875rem;
+	margin-top: var(--spacing-xs);
+	display: none;
+}
+
+.field-info-success {
+	color: var(--success-green);
+}
+
+.field-info-checking {
+	color: var(--gray-500);
+}
+
+.field-info-info {
+	color: var(--primary-blue);
+}
+
+/* Button Full Width */
+.btn-full-width {
+	width: 100%;
+	justify-content: center;
+}
+
+/* Auth Info */
+.auth-info {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-md);
+	background: var(--gray-50);
+	border: 1px solid var(--gray-200);
+	border-radius: var(--radius-md);
+	margin: var(--spacing-lg) 0;
+}
+
+.info-icon {
+	font-size: 1.25rem;
+	flex-shrink: 0;
+}
+
+.info-text {
+	font-size: 0.875rem;
+	color: var(--gray-600);
+	line-height: 1.4;
+}
+
+/* Success Modal */
+.auth-modal {
+	text-align: center;
+	padding: var(--spacing-2xl);
+}
+
+.success-icon {
+	font-size: 3rem;
+	margin-bottom: var(--spacing-lg);
+}
+
+.auth-modal h3 {
+	color: var(--gray-900);
+	margin-bottom: var(--spacing-lg);
+}
+
+.success-message {
+	color: var(--gray-600);
+	margin-bottom: var(--spacing-2xl);
+	line-height: 1.6;
+}
+
+/* Toast Message */
+.toast-message {
+	flex: 1;
+	color: inherit;
+	font-size: 0.875rem;
+	line-height: 1.4;
+}
+
+.toast-close {
+	background: none;
+	border: none;
+	color: inherit;
+	font-size: 1.25rem;
+	cursor: pointer;
+	padding: var(--spacing-xs);
+	border-radius: var(--radius-sm);
+	opacity: 0.8;
+	transition: opacity 0.2s ease;
+}
+
+.toast-close:hover {
+	opacity: 1;
+}
+
+/* Responsive Registration Form */
+@media (max-width: 768px) {
+	.form-row {
+		grid-template-columns: 1fr;
+		gap: var(--spacing-lg);
+	}
+	
+	.auth-container {
+		padding: var(--spacing-lg);
+	}
+	
+	.auth-card {
+		padding: var(--spacing-lg);
+	}
+	
+	.password-input-container input {
+		padding-right: 2.5rem;
+	}
+	
+	.password-toggle {
+		right: 0.5rem;
+		padding: var(--spacing-xs);
+	}
+}

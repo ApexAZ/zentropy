@@ -90,9 +90,9 @@ export async function checkAuthenticationOnLoad(): Promise<void> {
 		// Handle network or other errors
 		// eslint-disable-next-line no-console
 		console.error("Error checking authentication status:", error);
-		
+
 		updateNavigationState(false);
-		
+
 		const authError: AuthError = {
 			type: "network",
 			message: "Unable to verify authentication. Please check your connection.",
@@ -121,27 +121,27 @@ export async function handleLogout(): Promise<void> {
 			const data = (await response.json()) as LogoutResponse;
 			// eslint-disable-next-line no-console
 			console.log("Logout successful:", data.message);
-			
+
 			// Clear session data
 			clearSessionInfo();
-			
+
 			// Update navigation state
 			updateNavigationState(false);
-			
+
 			// Redirect to login page
 			redirectToLogin("You have been logged out successfully.");
 		} else {
 			// Handle logout API errors
 			const errorData = (await response.json()) as ErrorResponse;
 			const errorMessage = errorData.message ?? "Logout failed";
-			
+
 			// eslint-disable-next-line no-console
 			console.error("Logout error:", errorMessage);
-			
+
 			// Still clear session locally even if server logout failed
 			clearSessionInfo();
 			updateNavigationState(false);
-			
+
 			// Redirect with error message
 			redirectToLogin(`Logout incomplete: ${errorMessage}`);
 		}
@@ -150,11 +150,11 @@ export async function handleLogout(): Promise<void> {
 		const errorMessage = error instanceof Error ? error.message : "Network error during logout";
 		// eslint-disable-next-line no-console
 		console.error("Network error during logout:", errorMessage);
-		
+
 		// Clear session data locally
 		clearSessionInfo();
 		updateNavigationState(false);
-		
+
 		// Redirect to login with error message
 		redirectToLogin("Network error during logout. Please try again.");
 	}
@@ -184,7 +184,7 @@ function setupNavigationEventListeners(container: HTMLElement): void {
 	container.addEventListener("click", (event: Event) => {
 		const target = event.target as HTMLElement;
 		const action = target.dataset.action;
-		
+
 		if (action === "logout") {
 			event.preventDefault();
 			void handleLogout();

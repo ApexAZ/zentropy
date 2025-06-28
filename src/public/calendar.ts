@@ -76,7 +76,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	document.addEventListener("DOMContentLoaded", function () {
 		// Initialize authentication-aware navigation
 		initializeNavigation("nav-container");
-		
+
 		// Initialize calendar functionality
 		void initialize();
 		setupEventListeners();

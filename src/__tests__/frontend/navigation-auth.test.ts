@@ -433,7 +433,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 
 			// ASSERT
 			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("user");
-			expect(mockLocation.href).toBe("/login.html?return=%2Fteams.html&message=You%20have%20been%20logged%20out%20successfully.");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fteams.html&message=You%20have%20been%20logged%20out%20successfully."
+			);
 		});
 
 		it("should handle logout errors gracefully", async () => {
@@ -449,7 +451,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 
 			// ASSERT - Should still clear session locally and redirect
 			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("user");
-			expect(mockLocation.href).toBe("/login.html?return=%2Fteams.html&message=Logout%20incomplete%3A%20Server%20error");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fteams.html&message=Logout%20incomplete%3A%20Server%20error"
+			);
 		});
 
 		it("should handle network errors during logout", async () => {
@@ -461,7 +465,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 
 			// ASSERT
 			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("user");
-			expect(mockLocation.href).toBe("/login.html?return=%2Fteams.html&message=Network%20error%20during%20logout.%20Please%20try%20again.");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fteams.html&message=Network%20error%20during%20logout.%20Please%20try%20again."
+			);
 		});
 	});
 
@@ -480,7 +486,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 
 			// ASSERT - Should clear session and redirect
 			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("user");
-			expect(mockLocation.href).toBe("/login.html?return=%2Fteams.html&message=Your%20session%20has%20expired.%20Please%20log%20in%20again.");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fteams.html&message=Your%20session%20has%20expired.%20Please%20log%20in%20again."
+			);
 
 			consoleSpy.mockRestore();
 		});
@@ -543,7 +551,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 			await checkAuthenticationOnLoad();
 
 			// ASSERT - Should redirect with correct return URL
-			expect(mockLocation.href).toBe("/login.html?return=%2Fcalendar.html%3Fmonth%3D2024-01&message=Unauthorized");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fcalendar.html%3Fmonth%3D2024-01&message=Unauthorized"
+			);
 		});
 
 		it("should work correctly on team-configuration page", async () => {

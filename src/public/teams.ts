@@ -52,7 +52,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	document.addEventListener("DOMContentLoaded", function () {
 		// Initialize authentication-aware navigation
 		initializeNavigation("nav-container");
-		
+
 		// Initialize teams functionality
 		void loadTeams();
 		setupEventListeners();
