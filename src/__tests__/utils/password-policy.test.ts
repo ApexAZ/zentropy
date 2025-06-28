@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { PasswordPolicy } from "./password-policy";
+import { PasswordPolicy } from "../../utils/password-policy";
 
 describe("PasswordPolicy", () => {
 	describe("validateLength", () => {
