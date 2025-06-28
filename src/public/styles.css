@@ -2224,3 +2224,279 @@ main {
 		padding: var(--spacing-xs);
 	}
 }
+
+/* ================================
+   PROFILE PAGE STYLES
+   ================================ */
+
+/* Profile Container */
+.profile-container {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: var(--spacing-2xl);
+}
+
+.page-subtitle {
+	color: var(--gray-600);
+	font-size: 1.1rem;
+	margin-top: -var(--spacing-lg);
+	margin-bottom: var(--spacing-2xl);
+}
+
+/* Profile Sections */
+.profile-section {
+	background: white;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+	border: 1px solid var(--gray-200);
+	margin-bottom: var(--spacing-2xl);
+	overflow: hidden;
+}
+
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--spacing-xl);
+	background: var(--gray-50);
+	border-bottom: 1px solid var(--gray-200);
+}
+
+.section-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--gray-800);
+	margin: 0;
+}
+
+.btn-small {
+	padding: var(--spacing-sm) var(--spacing-lg);
+	font-size: 0.875rem;
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+}
+
+.btn-icon {
+	font-size: 1rem;
+}
+
+/* Profile Display Mode */
+.profile-display {
+	padding: var(--spacing-2xl);
+}
+
+.profile-field-group {
+	display: grid;
+	gap: var(--spacing-xl);
+}
+
+.profile-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+}
+
+.profile-label {
+	font-weight: 600;
+	color: var(--gray-700);
+	font-size: 0.875rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.profile-value {
+	color: var(--gray-900);
+	font-size: 1rem;
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-md);
+}
+
+.profile-id {
+	font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+	font-size: 0.875rem;
+	color: var(--gray-600);
+	background: var(--gray-100);
+	padding: var(--spacing-sm) var(--spacing-md);
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--gray-200);
+}
+
+/* Role and Status Badges */
+.role-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--spacing-xs);
+	padding: var(--spacing-xs) var(--spacing-md);
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.role-badge.team-lead {
+	background: #fef3c7;
+	color: #d97706;
+	border: 1px solid #fcd34d;
+}
+
+.role-badge.team-member {
+	background: #dbeafe;
+	color: #2563eb;
+	border: 1px solid #93c5fd;
+}
+
+.status-badge, .security-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-sm) var(--spacing-lg);
+	border-radius: var(--radius-md);
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.status-badge.status-active {
+	background: #d1fae5;
+	color: #065f46;
+	border: 1px solid #6ee7b7;
+}
+
+.security-badge.security-good {
+	background: #d1fae5;
+	color: #065f46;
+	border: 1px solid #6ee7b7;
+}
+
+.security-badge.security-warning {
+	background: #fef3c7;
+	color: #92400e;
+	border: 1px solid #fcd34d;
+}
+
+.security-info {
+	font-size: 0.875rem;
+	color: var(--gray-600);
+	font-weight: normal;
+	margin-left: var(--spacing-sm);
+}
+
+.status-icon, .security-icon {
+	font-size: 1rem;
+}
+
+/* Password Display */
+.password-placeholder {
+	font-family: monospace;
+	font-size: 1.2rem;
+	letter-spacing: 0.1em;
+	color: var(--gray-400);
+}
+
+.password-meta {
+	font-size: 0.875rem;
+	color: var(--gray-500);
+	font-style: italic;
+}
+
+/* Profile Edit Mode */
+.profile-edit {
+	padding: var(--spacing-2xl);
+	background: var(--gray-50);
+}
+
+.profile-form {
+	max-width: 600px;
+}
+
+.form-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--spacing-xl);
+}
+
+.form-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--spacing-lg);
+	margin-top: var(--spacing-2xl);
+	padding-top: var(--spacing-xl);
+	border-top: 1px solid var(--gray-200);
+}
+
+/* Date Formatting */
+.profile-value .date-formatted {
+	color: var(--gray-900);
+}
+
+.profile-value .date-relative {
+	font-size: 0.875rem;
+	color: var(--gray-500);
+	font-style: italic;
+	margin-left: var(--spacing-sm);
+}
+
+/* Enhanced Password Requirements for Profile */
+.profile-edit .password-requirements {
+	margin-top: var(--spacing-lg);
+	padding: var(--spacing-lg);
+	background: white;
+	border: 1px solid var(--gray-200);
+	border-radius: var(--radius-md);
+}
+
+.profile-edit .password-strength {
+	margin-top: var(--spacing-lg);
+	padding: var(--spacing-lg);
+	background: white;
+	border: 1px solid var(--gray-200);
+	border-radius: var(--radius-md);
+}
+
+/* Responsive Design for Profile */
+@media (max-width: 768px) {
+	.profile-container {
+		padding: var(--spacing-lg);
+	}
+	
+	.section-header {
+		flex-direction: column;
+		align-items: stretch;
+		gap: var(--spacing-lg);
+	}
+	
+	.section-header .btn {
+		align-self: flex-start;
+	}
+	
+	.form-row {
+		grid-template-columns: 1fr;
+		gap: var(--spacing-lg);
+	}
+	
+	.form-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.profile-display,
+	.profile-edit {
+		padding: var(--spacing-xl);
+	}
+}
+
+@media (max-width: 480px) {
+	.profile-value {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--spacing-sm);
+	}
+	
+	.role-badge,
+	.status-badge,
+	.security-badge {
+		align-self: flex-start;
+	}
+}
