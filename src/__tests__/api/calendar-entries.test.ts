@@ -7,24 +7,44 @@ import calendarEntriesRouter from "../../routes/calendar-entries";
 // Mock the CalendarEntryModel
 vi.mock("../../models/CalendarEntry", () => ({
 	CalendarEntryModel: {
-		findAll: vi.fn(),
 		findById: vi.fn(),
 		findByTeam: vi.fn(),
 		findByUser: vi.fn(),
+		findByDateRange: vi.fn(),
 		create: vi.fn(),
 		update: vi.fn(),
-		delete: vi.fn()
+		delete: vi.fn(),
+		findConflicts: vi.fn(),
+		calculateWorkingDaysImpact: vi.fn()
 	}
 }));
 
-const mockCalendarEntryModel = CalendarEntryModel as {
-	findAll: Mock;
+// Mock the session authentication middleware
+vi.mock("../../middleware/session-auth", () => ({
+	default: vi.fn((req: any, _res: any, next: any) => {
+		// Mock authenticated user
+		req.user = {
+			id: "mock-user-id",
+			email: "test@example.com",
+			first_name: "Test",
+			last_name: "User",
+			role: "team_member",
+			is_active: true
+		};
+		next();
+	})
+}));
+
+const mockCalendarEntryModel = CalendarEntryModel as unknown as {
 	findById: Mock;
 	findByTeam: Mock;
 	findByUser: Mock;
+	findByDateRange: Mock;
 	create: Mock;
 	update: Mock;
 	delete: Mock;
+	findConflicts: Mock;
+	calculateWorkingDaysImpact: Mock;
 };
 
 // Create test app with calendar entries routes
@@ -61,7 +81,6 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			await request(app).get("/api/calendar-entries?team_id=team1").expect(200);
 
 			expect(mockCalendarEntryModel.findByTeam).toHaveBeenCalledWith("team1");
-			expect(mockCalendarEntryModel.findAll).not.toHaveBeenCalled();
 			expect(mockCalendarEntryModel.findByUser).not.toHaveBeenCalled();
 		});
 
@@ -72,7 +91,6 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			// Should return empty array for unknown query params
 			expect(response.body).toEqual([]);
 			expect(mockCalendarEntryModel.findByUser).not.toHaveBeenCalled();
-			expect(mockCalendarEntryModel.findAll).not.toHaveBeenCalled();
 			expect(mockCalendarEntryModel.findByTeam).not.toHaveBeenCalled();
 		});
 
@@ -81,7 +99,6 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 
 			// Route returns empty array when no team_id is provided
 			expect(response.body).toEqual([]);
-			expect(mockCalendarEntryModel.findAll).not.toHaveBeenCalled();
 			expect(mockCalendarEntryModel.findByTeam).not.toHaveBeenCalled();
 			expect(mockCalendarEntryModel.findByUser).not.toHaveBeenCalled();
 		});

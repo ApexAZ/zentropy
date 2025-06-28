@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { UserModel, CreateUserData, UpdateUserData, UserRole, UpdatePasswordData } from "../models/User";
 import { SessionModel } from "../models/Session";
+import sessionAuthMiddleware from "../middleware/session-auth";
 import {
 	loginRateLimit,
 	passwordUpdateRateLimit,
@@ -150,8 +151,9 @@ router.post("/login", loginRateLimit, async (req: Request, res: Response): Promi
 /**
  * GET /api/users
  * Get all users
+ * Requires authentication
  */
-router.get("/", async (_req: Request, res: Response): Promise<void> => {
+router.get("/", sessionAuthMiddleware, async (_req: Request, res: Response): Promise<void> => {
 	try {
 		const users = await UserModel.findAll();
 		// Remove password hashes from response
@@ -171,8 +173,9 @@ router.get("/", async (_req: Request, res: Response): Promise<void> => {
 /**
  * GET /api/users/:id
  * Get a specific user
+ * Requires authentication
  */
-router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+router.get("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -257,8 +260,9 @@ router.post("/", userCreationRateLimit, async (req: Request, res: Response): Pro
 /**
  * PUT /api/users/:id
  * Update a user
+ * Requires authentication
  */
-router.put("/:id", async (req: Request, res: Response): Promise<void> => {
+router.put("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -315,8 +319,9 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
  * PUT /api/users/:id/password
  * Update user password with validation
  * Rate limited: 3 attempts per 30 minutes per IP+user combination
+ * Requires authentication
  */
-router.put("/:id/password", passwordUpdateRateLimit, async (req: Request, res: Response): Promise<void> => {
+router.put("/:id/password", sessionAuthMiddleware, passwordUpdateRateLimit, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -410,8 +415,9 @@ router.post("/logout", async (req: Request, res: Response): Promise<void> => {
 /**
  * DELETE /api/users/:id
  * Delete a user
+ * Requires authentication
  */
-router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+router.delete("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {

@@ -8,14 +8,24 @@ import usersRouter from "../../routes/users";
 // Integration test for session-based authentication with HTTP cookies
 describe("Session Authentication Integration", () => {
 	let app: express.Application;
+	let testUsers: string[] = []; // Track created users for cleanup
 
 	beforeEach(() => {
 		app = express();
 		app.use(express.json());
 		app.use("/api/users", usersRouter);
+		testUsers = []; // Reset user tracking
 	});
 
 	afterEach(async () => {
+		// Clean up test users
+		for (const userId of testUsers) {
+			try {
+				await UserModel.delete(userId);
+			} catch (error) {
+				// User might already be deleted, continue cleanup
+			}
+		}
 		// Clean up test sessions
 		await SessionModel.cleanupExpired();
 	});
@@ -31,6 +41,7 @@ describe("Session Authentication Integration", () => {
 				last_name: "Authentication",
 				role: "team_member"
 			});
+			testUsers.push(testUser.id); // Track for cleanup
 
 			// Verify user was created properly
 			const createdUser = await UserModel.findByEmail("session-test-unique@example.com");
@@ -93,8 +104,7 @@ describe("Session Authentication Integration", () => {
 				expect(hoursUntilExpiry).toBeLessThan(25);
 			}
 
-			// Cleanup
-			await UserModel.delete(testUser.id);
+			// Cleanup handled in afterEach
 		});
 
 		it("should not create session on failed login", async () => {

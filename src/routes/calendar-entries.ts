@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { CalendarEntryModel, CreateCalendarEntryData } from "../models/CalendarEntry";
+import sessionAuthMiddleware from "../middleware/session-auth";
 
 // Request body interface for calendar entry endpoints
 interface CalendarEntryRequestBody {
@@ -18,8 +19,9 @@ const router = Router();
 /**
  * GET /api/calendar-entries
  * Get all calendar entries, optionally filtered by team
+ * Requires authentication
  */
-router.get("/", async (_req: Request, res: Response): Promise<void> => {
+router.get("/", sessionAuthMiddleware, async (_req: Request, res: Response): Promise<void> => {
 	try {
 		const teamId = _req.query.team_id as string | undefined;
 
@@ -41,8 +43,9 @@ router.get("/", async (_req: Request, res: Response): Promise<void> => {
 /**
  * GET /api/calendar-entries/:id
  * Get a specific calendar entry
+ * Requires authentication
  */
-router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+router.get("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -68,8 +71,9 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 /**
  * POST /api/calendar-entries
  * Create a new calendar entry
+ * Requires authentication
  */
-router.post("/", async (req: Request, res: Response): Promise<void> => {
+router.post("/", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const body = req.body as CalendarEntryRequestBody;
 		const { team_id, user_id, entry_type, title, start_date, end_date, description, all_day } = body;
@@ -114,8 +118,9 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 /**
  * PUT /api/calendar-entries/:id
  * Update a calendar entry
+ * Requires authentication
  */
-router.put("/:id", async (req: Request, res: Response): Promise<void> => {
+router.put("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -178,8 +183,9 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
 /**
  * DELETE /api/calendar-entries/:id
  * Delete a calendar entry
+ * Requires authentication
  */
-router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+router.delete("/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {

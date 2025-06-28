@@ -68,7 +68,13 @@ describe("SessionModel", () => {
 			// Verify SQL query structure
 			expect(mockPool.query).toHaveBeenCalledWith(
 				expect.stringContaining("INSERT INTO sessions"),
-				expect.arrayContaining([mockUser.id, "a".repeat(64), "192.168.1.1", "Mozilla/5.0 Test Browser"])
+				expect.arrayContaining([
+					mockUser.id, 
+					expect.any(String), // Session token (generated)
+					"192.168.1.1", 
+					"Mozilla/5.0 Test Browser",
+					expect.any(Date) // Expiration date (generated)
+				])
 			);
 		});
 

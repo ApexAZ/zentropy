@@ -4,6 +4,7 @@ import { testConnection } from "../database/connection";
 import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation";
 import { validateTeamInput } from "../utils/team-validation";
+import sessionAuthMiddleware from "../middleware/session-auth";
 import calendarEntriesRouter from "../routes/calendar-entries";
 import usersRouter from "../routes/users";
 
@@ -41,8 +42,8 @@ app.get("/health", async (_req: Request, res: Response) => {
 });
 
 // Team Management API endpoints
-// GET /api/teams - Get all teams
-app.get("/api/teams", async (_req: Request, res: Response) => {
+// GET /api/teams - Get all teams (requires authentication)
+app.get("/api/teams", sessionAuthMiddleware, async (_req: Request, res: Response) => {
 	try {
 		const teams = await TeamModel.findAll();
 		res.json(teams);
@@ -56,8 +57,8 @@ app.get("/api/teams", async (_req: Request, res: Response) => {
 	}
 });
 
-// GET /api/teams/:id - Get team by ID
-app.get("/api/teams/:id", async (req: Request, res: Response): Promise<void> => {
+// GET /api/teams/:id - Get team by ID (requires authentication)
+app.get("/api/teams/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -83,8 +84,8 @@ app.get("/api/teams/:id", async (req: Request, res: Response): Promise<void> => 
 	}
 });
 
-// POST /api/teams - Create new team
-app.post("/api/teams", async (req: Request, res: Response): Promise<void> => {
+// POST /api/teams - Create new team (requires authentication)
+app.post("/api/teams", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		// Validate input data
 		const teamData = validateTeamInput(req.body);
@@ -111,8 +112,8 @@ app.post("/api/teams", async (req: Request, res: Response): Promise<void> => {
 	}
 });
 
-// PUT /api/teams/:id - Update team
-app.put("/api/teams/:id", async (req: Request, res: Response): Promise<void> => {
+// PUT /api/teams/:id - Update team (requires authentication)
+app.put("/api/teams/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -157,8 +158,8 @@ app.put("/api/teams/:id", async (req: Request, res: Response): Promise<void> => 
 	}
 });
 
-// DELETE /api/teams/:id - Delete team
-app.delete("/api/teams/:id", async (req: Request, res: Response): Promise<void> => {
+// DELETE /api/teams/:id - Delete team (requires authentication)
+app.delete("/api/teams/:id", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
@@ -183,8 +184,8 @@ app.delete("/api/teams/:id", async (req: Request, res: Response): Promise<void> 
 	}
 });
 
-// GET /api/teams/:id/members - Get team members
-app.get("/api/teams/:id/members", async (req: Request, res: Response): Promise<void> => {
+// GET /api/teams/:id/members - Get team members (requires authentication)
+app.get("/api/teams/:id/members", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
 		const { id } = req.params;
 		if (!id) {
