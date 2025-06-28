@@ -31,7 +31,7 @@ export class TestDataFactory {
 	static createUserData(overrides: Partial<CreateUserData> = {}): CreateUserData {
 		return {
 			email: "test@example.com",
-			password_hash: "hashed_password_123",
+			password: "TestPassword123!",
 			first_name: "Test",
 			last_name: "User",
 			role: "team_member" as UserRole,
@@ -218,7 +218,7 @@ export class ModelTestDataFactory extends TestDataFactory {
 	static createMinimalUserData(): CreateUserData {
 		return {
 			email: "minimal@example.com",
-			password_hash: "minimal_password_hash",
+			password: "MinimalPassword123!",
 			first_name: "Minimal",
 			last_name: "User",
 			role: "team_member" as UserRole

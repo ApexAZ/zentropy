@@ -29,24 +29,18 @@ vi.mock("../../models/User", () => ({
 		findByEmail: vi.fn(),
 		create: vi.fn(),
 		update: vi.fn(),
-		delete: vi.fn()
-	}
-}));
-
-vi.mock("bcrypt", () => ({
-	default: {
-		hash: vi.fn(),
-		compare: vi.fn()
+		delete: vi.fn(),
+		verifyCredentials: vi.fn(),
+		updatePassword: vi.fn(),
+		updateLastLogin: vi.fn()
 	}
 }));
 
 import { CalendarEntryModel } from "../../models/CalendarEntry";
 import { UserModel } from "../../models/User";
-import bcrypt from "bcrypt";
 
 const mockCalendarEntryModel = vi.mocked(CalendarEntryModel);
 const mockUserModel = vi.mocked(UserModel);
-const mockBcrypt = vi.mocked(bcrypt);
 
 // Create test app
 const app = express();
@@ -202,27 +196,27 @@ describe("Calendar Workflow Integration Tests", () => {
 	});
 
 	describe("User Management Integration", () => {
-		it("should complete user creation workflow with password hashing", async () => {
-			const hashedPassword = "hashed_password_123";
+		it("should complete user creation workflow with secure password handling", async () => {
 			const createdUser = {
 				id: "user3",
 				email: "newuser@example.com",
-				password_hash: hashedPassword,
+				password_hash: "$2b$12$secureHashedPassword",
 				first_name: "New",
 				last_name: "User",
 				role: "team_member",
+				is_active: true,
+				last_login_at: null,
 				created_at: new Date(),
 				updated_at: new Date()
 			};
 
 			// Setup mocks
 			mockUserModel.findByEmail.mockResolvedValue(null); // Email doesn't exist
-			mockBcrypt.hash.mockResolvedValue(hashedPassword);
 			mockUserModel.create.mockResolvedValue(createdUser);
 
 			const userData = {
 				email: "newuser@example.com",
-				password: "password123",
+				password: "SecureP@ssw0rd123!",
 				first_name: "New",
 				last_name: "User",
 				role: "team_member"
@@ -230,13 +224,10 @@ describe("Calendar Workflow Integration Tests", () => {
 
 			const response = await request(app).post("/api/users").send(userData).expect(201);
 
-			// Verify password was hashed
-			expect(mockBcrypt.hash).toHaveBeenCalledWith("password123", 10);
-
-			// Verify user was created with hashed password
+			// Verify user was created with plaintext password (PasswordService handles hashing)
 			expect(mockUserModel.create).toHaveBeenCalledWith({
 				email: "newuser@example.com",
-				password_hash: hashedPassword,
+				password: "SecureP@ssw0rd123!",
 				first_name: "New",
 				last_name: "User",
 				role: "team_member"

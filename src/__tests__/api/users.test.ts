@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import request from "supertest";
 import express from "express";
-import bcrypt from "bcrypt";
 import { UserModel } from "../../models/User";
 import usersRouter from "../../routes/users";
 
@@ -13,15 +12,10 @@ vi.mock("../../models/User", () => ({
 		findByEmail: vi.fn(),
 		create: vi.fn(),
 		update: vi.fn(),
-		delete: vi.fn()
-	}
-}));
-
-// Mock bcrypt
-vi.mock("bcrypt", () => ({
-	default: {
-		hash: vi.fn(),
-		compare: vi.fn()
+		delete: vi.fn(),
+		verifyCredentials: vi.fn(),
+		updatePassword: vi.fn(),
+		updateLastLogin: vi.fn()
 	}
 }));
 
@@ -32,11 +26,9 @@ const mockUserModel = UserModel as {
 	create: Mock;
 	update: Mock;
 	delete: Mock;
-};
-
-const mockBcrypt = bcrypt as {
-	hash: Mock;
-	compare: Mock;
+	verifyCredentials: Mock;
+	updatePassword: Mock;
+	updateLastLogin: Mock;
 };
 
 // Create test app with users routes
@@ -76,18 +68,18 @@ describe("Users API - Route Layer Specifics", () => {
 			expect(response.body.email).toBe("john@example.com");
 		});
 
-		it("should hash password on user creation", async () => {
-			const hashedPassword = "hashed_password_123";
-			mockBcrypt.hash.mockResolvedValue(hashedPassword);
+		it("should use secure password handling on user creation", async () => {
 			mockUserModel.findByEmail.mockResolvedValue(null); // Email doesn't exist
 
 			const createdUser = {
 				id: "new-user-123",
 				email: "new@example.com",
-				password_hash: hashedPassword,
+				password_hash: "$2b$12$secureHashedPassword",
 				first_name: "New",
 				last_name: "User",
 				role: "team_member" as const,
+				is_active: true,
+				last_login_at: null,
 				created_at: new Date(),
 				updated_at: new Date()
 			};
@@ -98,18 +90,17 @@ describe("Users API - Route Layer Specifics", () => {
 				.post("/api/users")
 				.send({
 					email: "new@example.com",
-					password: "plaintext_password",
+					password: "SecureP@ssw0rd123!",
 					first_name: "New",
 					last_name: "User",
 					role: "team_member"
 				})
 				.expect(201);
 
-			// Verify password was hashed before model call
-			expect(mockBcrypt.hash).toHaveBeenCalledWith("plaintext_password", 10);
+			// Verify UserModel.create was called with plaintext password (PasswordService handles hashing)
 			expect(mockUserModel.create).toHaveBeenCalledWith({
 				email: "new@example.com",
-				password_hash: hashedPassword,
+				password: "SecureP@ssw0rd123!",
 				first_name: "New",
 				last_name: "User",
 				role: "team_member"
@@ -142,9 +133,10 @@ describe("Users API - Route Layer Specifics", () => {
 				.send({
 					password: "password123",
 					first_name: "Test",
-					last_name: "User"
-					// Missing email
+					last_name: "User",
+					email: "" // Empty email to test validation
 				})
+				.set("X-Forwarded-For", "192.168.10.1") // Unique IP to avoid rate limit conflicts
 				.expect(400);
 
 			expect(response.body).toEqual({ message: "Email and password are required" });
@@ -171,6 +163,7 @@ describe("Users API - Route Layer Specifics", () => {
 					last_name: "User",
 					role: "team_member"
 				})
+				.set("X-Forwarded-For", "192.168.10.2") // Unique IP to avoid rate limit conflicts
 				.expect(409);
 
 			expect(response.body).toEqual({ message: "Email already in use" });
@@ -227,6 +220,101 @@ describe("Users API - Route Layer Specifics", () => {
 			const response = await request(app).delete("/api/users/nonexistent-123").expect(404);
 
 			expect(response.body).toEqual({ message: "User not found" });
+		});
+	});
+
+	describe("Authentication Endpoints", () => {
+		it("should handle successful login", async () => {
+			const mockUser = {
+				id: "user-123",
+				email: "test@example.com",
+				password_hash: "$2b$12$hashedPassword",
+				first_name: "Test",
+				last_name: "User",
+				role: "team_member" as const,
+				is_active: true,
+				last_login_at: null,
+				created_at: new Date(),
+				updated_at: new Date()
+			};
+
+			mockUserModel.verifyCredentials.mockResolvedValue(mockUser);
+			mockUserModel.updateLastLogin.mockResolvedValue(undefined);
+
+			const response = await request(app)
+				.post("/api/users/login")
+				.send({
+					email: "test@example.com",
+					password: "SecureP@ssw0rd123!"
+				})
+				.expect(200);
+
+			expect(mockUserModel.verifyCredentials).toHaveBeenCalledWith("test@example.com", "SecureP@ssw0rd123!");
+			expect(mockUserModel.updateLastLogin).toHaveBeenCalledWith("user-123");
+			expect(response.body.message).toBe("Login successful");
+			expect(response.body.user).not.toHaveProperty("password_hash");
+			expect(response.body.user.id).toBe("user-123");
+		});
+
+		it("should handle failed login", async () => {
+			mockUserModel.verifyCredentials.mockResolvedValue(null);
+
+			const response = await request(app)
+				.post("/api/users/login")
+				.send({
+					email: "test@example.com",
+					password: "wrongpassword"
+				})
+				.expect(401);
+
+			expect(response.body).toEqual({ message: "Invalid email or password" });
+			expect(mockUserModel.updateLastLogin).not.toHaveBeenCalled();
+		});
+
+		it("should handle password update", async () => {
+			const mockUser = {
+				id: "user-123",
+				email: "test@example.com",
+				first_name: "Test",
+				last_name: "User",
+				role: "team_member" as const
+			};
+
+			mockUserModel.findById.mockResolvedValue(mockUser);
+			mockUserModel.updatePassword.mockResolvedValue(true);
+			mockUserModel.updateLastLogin.mockResolvedValue(undefined);
+
+			const response = await request(app)
+				.put("/api/users/user-123/password")
+				.send({
+					currentPassword: "OldP@ssw0rd123!",
+					newPassword: "NewP@ssw0rd456!"
+				})
+				.expect(200);
+
+			expect(mockUserModel.updatePassword).toHaveBeenCalledWith("user-123", {
+				currentPassword: "OldP@ssw0rd123!",
+				newPassword: "NewP@ssw0rd456!"
+			});
+			expect(response.body).toEqual({ message: "Password updated successfully" });
+		});
+
+		it("should handle password validation errors", async () => {
+			const mockUser = { id: "user-123" };
+			mockUserModel.findById.mockResolvedValue(mockUser);
+			mockUserModel.updatePassword.mockRejectedValue(
+				new Error("Password validation failed: Password is too weak")
+			);
+
+			const response = await request(app)
+				.put("/api/users/user-123/password")
+				.send({
+					currentPassword: "OldP@ssw0rd123!",
+					newPassword: "weak"
+				})
+				.expect(400);
+
+			expect(response.body).toEqual({ message: "Password validation failed: Password is too weak" });
 		});
 	});
 });

@@ -47,6 +47,14 @@ CREATE TABLE team_memberships (
     UNIQUE(team_id, user_id)
 );
 
+-- Password history table for preventing password reuse
+CREATE TABLE password_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
 -- Calendar entries table (PTO, holidays, etc.)
 CREATE TABLE calendar_entries (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -82,6 +90,8 @@ CREATE TABLE sprints (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_team_memberships_team_id ON team_memberships(team_id);
 CREATE INDEX idx_team_memberships_user_id ON team_memberships(user_id);
+CREATE INDEX idx_password_history_user_id ON password_history(user_id);
+CREATE INDEX idx_password_history_created_at ON password_history(created_at);
 CREATE INDEX idx_calendar_entries_user_id ON calendar_entries(user_id);
 CREATE INDEX idx_calendar_entries_team_id ON calendar_entries(team_id);
 CREATE INDEX idx_calendar_entries_dates ON calendar_entries(start_date, end_date);

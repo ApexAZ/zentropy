@@ -45,9 +45,7 @@ describe("UserModel", () => {
 			const result = await UserModel.emailExists(mockUser.email);
 
 			expect(result).toBe(true);
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "SELECT 1 FROM users WHERE email = $1", [
-				mockUser.email
-			]);
+			AssertionHelpers.expectDatabaseCall(mockPool.query, "LOWER(email) = LOWER($1)", [mockUser.email]);
 		});
 
 		it("should return false when email does not exist", async () => {
@@ -88,37 +86,62 @@ describe("UserModel", () => {
 		});
 	});
 
-	describe("business logic validation", () => {
-		it("should validate user creation with all required fields", async () => {
-			const userData = TestDataFactory.createUserData();
-			const createdUser = TestDataFactory.createTestUser(userData);
-			mockSuccessfulQuery(createdUser);
+	describe("findById", () => {
+		it("should find user by id", async () => {
+			const mockUser = TestDataFactory.createTestUser();
+			mockSuccessfulQuery(mockUser);
 
-			const result = await UserModel.create(userData);
+			const result = await UserModel.findById(mockUser.id);
 
-			DomainAssertionHelpers.expectValidUser(result);
-			AssertionHelpers.expectHasProperties(result, [
-				"id",
-				"email",
-				"first_name",
-				"last_name",
-				"role",
-				"is_active"
-			]);
+			DomainAssertionHelpers.expectValidUser(result!);
+			expect(result!.id).toBe(mockUser.id);
 		});
 
-		it("should handle user creation with minimal valid data", async () => {
-			const minimalData = TestDataFactory.createUserData({
-				first_name: "J",
-				last_name: "D"
-			});
-			const createdUser = TestDataFactory.createTestUser(minimalData);
-			mockSuccessfulQuery(createdUser);
+		it("should return null when user not found", async () => {
+			mockEmptyQuery();
 
-			const result = await UserModel.create(minimalData);
+			const result = await UserModel.findById("nonexistent-id");
 
-			expect(result.email).toBe(minimalData.email);
-			expect(result.role).toBe(minimalData.role);
+			expect(result).toBeNull();
+		});
+	});
+
+	describe("update", () => {
+		it("should update user fields", async () => {
+			const mockUser = TestDataFactory.createTestUser();
+			const updatedUser = { ...mockUser, first_name: "Updated" };
+			mockSuccessfulQuery(updatedUser);
+
+			const result = await UserModel.update(mockUser.id, { first_name: "Updated" });
+
+			expect(result).toBeDefined();
+			expect(result!.first_name).toBe("Updated");
+		});
+
+		it("should return null when user not found", async () => {
+			mockEmptyQuery();
+
+			const result = await UserModel.update("nonexistent-id", { first_name: "Updated" });
+
+			expect(result).toBeNull();
+		});
+	});
+
+	describe("delete", () => {
+		it("should delete user", async () => {
+			mockPool.query.mockResolvedValue({ rows: [], rowCount: 1 });
+
+			const result = await UserModel.delete("user-id");
+
+			expect(result).toBe(true);
+		});
+
+		it("should return false when user not found", async () => {
+			mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+
+			const result = await UserModel.delete("nonexistent-id");
+
+			expect(result).toBe(false);
 		});
 	});
 

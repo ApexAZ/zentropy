@@ -95,11 +95,52 @@ src/
 ### Test-Driven Development (TDD)
 **MANDATORY**: Always write tests before implementation. See [CLAUDEQuality.md](./CLAUDEQuality.md) for complete TDD workflow and testing standards.
 
+**Security-Critical TDD Requirements**:
+- **Algorithm verification**: All security algorithms (Levenshtein distance, password strength, etc.) must have tests that verify correct behavior
+- **Edge case coverage**: Security functions must test boundary conditions, unicode handling, concurrent operations
+- **Threshold calibration**: Password strength scoring must be tested against expected ranges
+- **Never assume security works**: Always verify through tests that similarity detection, password policies, etc. function as designed
+
 ### TypeScript Standards
 - Strict compilation with `noImplicitReturns`, `noUncheckedIndexedAccess`
 - Interface naming: `CreateXData` for creation, `XRequestBody` for API requests
 - Use nullish coalescing (`??`) instead of logical OR (`||`) for safer null handling
 - No `any` types - use proper type definitions
+- **Explicit null checking** instead of non-null assertions (`!`) to satisfy strict ESLint rules
+- **Defensive programming** with explicit error throwing for array/matrix boundary conditions
+- **Type-safe implementations** even for complex algorithms - prioritize safety over convenience
+
+### Security Standards
+**CRITICAL**: Security implementations must never compromise on algorithmic rigor
+- **Password hashing**: bcrypt with minimum 12 salt rounds
+- **Password similarity detection**: Full Levenshtein distance algorithm (never simplified alternatives)
+- **Password validation**: Multi-layered approach - length, complexity, forbidden patterns, user info detection, reuse prevention
+- **Password strength thresholds**: Very Weak <20, Weak 20-39, Fair 40-59, Good 60-79, Excellent 80+
+- **Similarity threshold**: 70% similarity triggers reuse prevention
+- **Rate limiting**: Protection against brute force and automated attacks
+  - Login: 5 attempts per 15 minutes per IP+email
+  - Password updates: 3 attempts per 30 minutes per IP+user
+  - User creation: 2 attempts per hour per IP
+  - General API: 100 requests per 15 minutes per IP
+- **Input validation**: Comprehensive validation for all security-critical functions
+- **Test coverage**: All security algorithms must have comprehensive test coverage including edge cases
+
+### Service Architecture Patterns
+```typescript
+// Validation utility pattern (static methods for stateless operations)
+export class PasswordPolicy {
+    static validatePassword(password: string, options?: ValidationOptions): ValidationResult {
+        // Pure validation logic
+    }
+}
+
+// Service pattern (instance methods for stateful/async operations)  
+export class PasswordService {
+    async hashPassword(password: string): Promise<string> {
+        // Stateful operations with external dependencies
+    }
+}
+```
 
 ### Database Patterns
 ```typescript
@@ -168,4 +209,19 @@ document.addEventListener('click', (event: Event) => {
 
 ## Testing
 Complete testing strategy, patterns, and best practices documented in [CLAUDEQuality.md](./CLAUDEQuality.md).
+
+## Current Project Status
+See [CLAUDETasks.md](./CLAUDETasks.md) for current implementation status, roadmap, and task tracking.
+
+## Temporary Session Recap (2025-06-28)
+**Current Work**: Successfully completed Password Security Service implementation
+- ✅ All 7 password security tasks completed
+- ✅ 305 tests passing (100% success rate)
+- ✅ Renamed test files: `u-User.test.ts` (unit) and `i-User.test.ts` (integration)
+- ✅ Fixed SQL query assertions for case-insensitive email lookups
+- ✅ Build, lint, and type checks all passing
+
+**Next Steps**: 
+1. Perform deep dive security audit on password integration
+2. Continue with Session Management System implementation
 
