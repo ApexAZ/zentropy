@@ -11,9 +11,32 @@
 	<link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+	<header class="main-header">
+		<nav id="nav-container" class="nav-container">
+			<div class="logo">
+				<h1>Capacity Planner</h1>
+			</div>
+			<ul class="nav-menu">
+				<li><a href="team-configuration.html" class="active">Dashboard</a></li>
+				<li><a href="teams.html">Teams</a></li>
+				<li><a href="calendar.html">Calendar</a></li>
+			</ul>
+			<div class="nav-auth">
+				<div id="user-info" class="user-info" style="display: none;"></div>
+				<button id="logout-btn" class="btn btn-secondary logout-btn" style="display: none;" data-action="logout">
+					Logout
+				</button>
+			</div>
+		</nav>
+	</header>
+
+	<main class="main-content">
+		<div class="page-header">
+			<h2>Team Configuration</h2>
+			<p class="config-description">Configure your team settings, members, velocity, and sprints. All changes will automatically reflect in the calendar and capacity planning.</p>
+		</div>
+
 	<div class="container">
-		<h1>Team Configuration</h1>
-		<p class="config-description">Configure your team settings, members, velocity, and sprints. All changes will automatically reflect in the calendar and capacity planning.</p>
 		
 		<!-- Team Basic Settings -->
 		<div class="config-section">
@@ -194,380 +217,8 @@
 			<button type="button" class="btn btn-secondary" onclick="exportTeamConfig()">Export Configuration</button>
 		</div>
 	</div>
+	</main>
 
-	<script>
-		// Team configuration state
-		let teamMembers = [];
-		let sprints = [];
-		
-		// Generate or retrieve team ID
-		function getTeamId() {
-			// Check URL params first
-			const urlParams = new URLSearchParams(window.location.search);
-			const teamIdFromUrl = urlParams.get('teamId');
-			if (teamIdFromUrl) {
-				localStorage.setItem('currentTeamId', teamIdFromUrl);
-				// Update URL to include team ID if not already there
-				if (!window.location.search.includes('teamId')) {
-					window.history.replaceState({}, '', `${window.location.pathname}?teamId=${teamIdFromUrl}`);
-				}
-				return teamIdFromUrl;
-			}
-			
-			// Check localStorage for existing team
-			const existingTeamId = localStorage.getItem('currentTeamId');
-			if (existingTeamId) {
-				// Skip old long team IDs and generate new simple one
-				if (existingTeamId.startsWith('team-') && existingTeamId.length > 10) {
-					// Old format detected, clear it
-					localStorage.removeItem('currentTeamId');
-				} else {
-					// Valid simple ID, use it
-					window.history.replaceState({}, '', `${window.location.pathname}?teamId=${existingTeamId}`);
-					return existingTeamId;
-				}
-			}
-			
-			// Generate new team ID using simple counter
-			let teamCounter = parseInt(localStorage.getItem('teamCounter') || '0');
-			teamCounter++;
-			localStorage.setItem('teamCounter', teamCounter.toString());
-			
-			const newTeamId = teamCounter.toString();
-			localStorage.setItem('currentTeamId', newTeamId);
-			
-			// Update URL to include team ID
-			window.history.replaceState({}, '', `${window.location.pathname}?teamId=${newTeamId}`);
-			return newTeamId;
-		}
-		
-		const teamId = getTeamId();
-		
-		let teamConfig = {
-			id: teamId,
-			name: '',
-			description: '',
-			workingDays: [1, 2, 3, 4, 5],
-			baselineVelocity: 50,
-			sprintLength: 2
-		};
-
-		// Initialize page
-		document.addEventListener('DOMContentLoaded', () => {
-			loadTeamConfiguration();
-			renderTeamMembers();
-			renderSprints();
-		});
-
-		// Team basic form submission
-		document.getElementById('teamBasicForm').addEventListener('submit', (e) => {
-			e.preventDefault();
-			const formData = new FormData(e.target);
-			
-			teamConfig.name = formData.get('teamName');
-			teamConfig.description = formData.get('teamDescription');
-			teamConfig.workingDays = formData.getAll('workingDays').map(day => parseInt(day));
-			
-			saveTeamConfiguration();
-			alert('Team information saved successfully!');
-		});
-
-		// Velocity form submission
-		document.getElementById('velocityForm').addEventListener('submit', async (e) => {
-			e.preventDefault();
-			const formData = new FormData(e.target);
-			
-			teamConfig.baselineVelocity = parseInt(formData.get('baselineVelocity'));
-			teamConfig.sprintLength = parseInt(formData.get('sprintLength'));
-			
-			try {
-				await fetch('/api/team/velocity', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						baselineVelocity: teamConfig.baselineVelocity,
-						sprintLength: teamConfig.sprintLength
-					})
-				});
-				alert('Velocity settings saved successfully!');
-			} catch (error) {
-				console.error('Error saving velocity settings:', error);
-				alert('Error saving velocity settings. Please try again.');
-			}
-		});
-
-		// Load team configuration
-		function loadTeamConfiguration() {
-			// Load team-specific data from localStorage
-			const savedConfig = localStorage.getItem(`team-${teamId}-config`);
-			const savedSprints = localStorage.getItem(`team-${teamId}-sprints`);
-			const savedMembers = localStorage.getItem(`team-${teamId}-members`);
-			
-			if (savedConfig) {
-				const config = JSON.parse(savedConfig);
-				teamConfig = { ...teamConfig, ...config };
-			}
-			
-			if (savedSprints) {
-				sprints = JSON.parse(savedSprints);
-			}
-			
-			if (savedMembers) {
-				teamMembers = JSON.parse(savedMembers);
-			}
-			
-			// Update form fields
-			document.getElementById('teamName').value = teamConfig.name || 'My Development Team';
-			document.getElementById('baselineVelocity').value = teamConfig.baselineVelocity;
-			document.getElementById('sprintLength').value = teamConfig.sprintLength;
-			
-			// Update working days checkboxes
-			document.querySelectorAll('input[name="workingDays"]').forEach(checkbox => {
-				checkbox.checked = teamConfig.workingDays.includes(parseInt(checkbox.value));
-			});
-		}
-
-		// Save team configuration
-		async function saveTeamConfiguration() {
-			// Save to localStorage with team-specific keys
-			localStorage.setItem(`team-${teamId}-config`, JSON.stringify(teamConfig));
-			localStorage.setItem(`team-${teamId}-sprints`, JSON.stringify(sprints));
-			localStorage.setItem(`team-${teamId}-members`, JSON.stringify(teamMembers));
-			
-			try {
-				await fetch('/api/team/basic', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(teamConfig)
-				});
-			} catch (error) {
-				console.error('Error saving team configuration:', error);
-			}
-		}
-
-		// Team member management
-		function openAddMemberForm() {
-			document.getElementById('addMemberForm').style.display = 'block';
-		}
-
-		function closeAddMemberForm() {
-			document.getElementById('addMemberForm').style.display = 'none';
-		}
-
-		function submitAddMember(event) {
-			event.preventDefault();
-			const formData = new FormData(event.target);
-			
-			const member = {
-				name: formData.get('memberEmail').split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
-				email: formData.get('memberEmail'),
-				role: formData.get('memberRole')
-			};
-			
-			// Add member to the list
-			teamMembers.push(member);
-			renderTeamMembers();
-			
-			// In real implementation, this would POST to API
-			console.log('Adding team member:', member);
-			alert(`Team member ${member.email} added successfully!`);
-			
-			closeAddMemberForm();
-			event.target.reset();
-		}
-
-		// Render team members list
-		function renderTeamMembers() {
-			const membersList = document.getElementById('teamMembersList');
-			membersList.innerHTML = '';
-			
-			if (teamMembers.length === 0) {
-				membersList.innerHTML = '<div class="empty-state">No team members yet. Click "Add Team Member" to get started.</div>';
-				return;
-			}
-			
-			teamMembers.forEach(member => {
-				const memberDiv = document.createElement('div');
-				memberDiv.className = 'member-item';
-				memberDiv.innerHTML = `
-					<div class="member-info">
-						<span class="member-name">${member.name}</span>
-						<span class="member-email">${member.email}</span>
-						<span class="member-role">${member.role === 'lead' ? 'Team Lead' : 'Team Member'}</span>
-					</div>
-					<div class="member-actions">
-						${member.role === 'lead' ? 
-							'<span class="lead-indicator">Team Lead</span>' :
-							`<button type="button" class="btn btn-secondary btn-sm" onclick="editMember('${member.email}')">Edit</button>
-							<button type="button" class="btn btn-danger btn-sm" onclick="removeMember('${member.email}')">Remove</button>`
-						}
-					</div>
-				`;
-				membersList.appendChild(memberDiv);
-			});
-		}
-
-		function removeMember(memberEmail) {
-			if (confirm(`Remove ${memberEmail} from the team?`)) {
-				// Remove member from the list
-				teamMembers = teamMembers.filter(m => m.email !== memberEmail);
-				renderTeamMembers();
-				
-				// In real implementation, this would DELETE from API
-				console.log('Removing team member:', memberEmail);
-				alert(`${memberEmail} removed from team.`);
-			}
-		}
-
-		function editMember(memberEmail) {
-			// In real implementation, this would open edit form
-			alert(`Edit functionality for ${memberEmail} would open here.`);
-		}
-
-		// Sprint management
-		function openSprintCreationForm() {
-			document.getElementById('sprintCreationForm').style.display = 'block';
-		}
-
-		function closeSprintCreationForm() {
-			document.getElementById('sprintCreationForm').style.display = 'none';
-		}
-
-		function submitCreateSprint(event) {
-			event.preventDefault();
-			const formData = new FormData(event.target);
-			
-			const sprint = {
-				id: 'sprint-' + Date.now(),
-				name: formData.get('sprintName'),
-				startDate: formData.get('sprintStartDate'),
-				endDate: formData.get('sprintEndDate'),
-				status: new Date(formData.get('sprintStartDate')) > new Date() ? 'planned' : 'active'
-			};
-			
-			// Add sprint to the list
-			sprints.push(sprint);
-			renderSprints();
-			
-			// In real implementation, this would POST to API
-			console.log('Creating sprint:', sprint);
-			alert(`Sprint "${sprint.name}" created successfully!`);
-			
-			closeSprintCreationForm();
-			event.target.reset();
-		}
-
-		// Render sprints list
-		function renderSprints() {
-			const sprintsList = document.getElementById('sprintsList');
-			sprintsList.innerHTML = '';
-			
-			// Save sprints to localStorage with team-specific key
-			localStorage.setItem(`team-${teamId}-sprints`, JSON.stringify(sprints));
-			
-			if (sprints.length === 0) {
-				sprintsList.innerHTML = '<div class="empty-state">No sprints created yet. Click "Create New Sprint" or "Generate Multiple Sprints" to get started.</div>';
-				return;
-			}
-			
-			sprints.forEach(sprint => {
-				const sprintDiv = document.createElement('div');
-				sprintDiv.className = 'sprint-item';
-				const startDate = new Date(sprint.startDate).toLocaleDateString();
-				const endDate = new Date(sprint.endDate).toLocaleDateString();
-				
-				sprintDiv.innerHTML = `
-					<div class="sprint-info">
-						<span class="sprint-name">${sprint.name}</span>
-						<span class="sprint-dates">${startDate} - ${endDate}</span>
-						<span class="sprint-status status-${sprint.status}">${sprint.status.charAt(0).toUpperCase() + sprint.status.slice(1)}</span>
-					</div>
-					<div class="sprint-actions">
-						<button type="button" class="btn btn-secondary btn-sm" onclick="editSprint('${sprint.id}')">Edit</button>
-						<button type="button" class="btn btn-danger btn-sm" onclick="deleteSprint('${sprint.id}')">Delete</button>
-					</div>
-				`;
-				sprintsList.appendChild(sprintDiv);
-			});
-		}
-
-		function generateMultipleSprints() {
-			document.getElementById('multipleSprintsForm').style.display = 'block';
-		}
-
-		function closeMultipleSprintsForm() {
-			document.getElementById('multipleSprintsForm').style.display = 'none';
-		}
-
-		function submitGenerateMultipleSprints(event) {
-			event.preventDefault();
-			const formData = new FormData(event.target);
-			
-			const config = {
-				startingNumber: parseInt(formData.get('startingSprintNumber')),
-				numberOfSprints: parseInt(formData.get('numberOfSprints')),
-				firstStartDate: formData.get('firstSprintStartDate')
-			};
-			
-			// Generate sprints
-			const sprintLengthWeeks = teamConfig.sprintLength || 2;
-			let currentDate = new Date(config.firstStartDate);
-			
-			for (let i = 0; i < config.numberOfSprints; i++) {
-				const sprintNum = config.startingNumber + i;
-				const startDate = new Date(currentDate);
-				const endDate = new Date(currentDate);
-				endDate.setDate(endDate.getDate() + (sprintLengthWeeks * 7) - 1);
-				
-				const sprint = {
-					id: 'sprint-' + Date.now() + '-' + i,
-					name: `Sprint ${sprintNum}`,
-					startDate: startDate.toISOString().split('T')[0],
-					endDate: endDate.toISOString().split('T')[0],
-					status: startDate > new Date() ? 'planned' : 'active'
-				};
-				
-				sprints.push(sprint);
-				currentDate = new Date(endDate);
-				currentDate.setDate(currentDate.getDate() + 1);
-			}
-			
-			renderSprints();
-			
-			// In real implementation, this would POST to API
-			console.log('Generating multiple sprints:', config);
-			alert(`Generated ${config.numberOfSprints} sprints starting from Sprint ${config.startingNumber}!`);
-			
-			closeMultipleSprintsForm();
-			event.target.reset();
-		}
-
-		function editSprint(sprintId) {
-			alert(`Edit functionality for ${sprintId} would open here.`);
-		}
-
-		function deleteSprint(sprintId) {
-			if (confirm('Delete this sprint? This action cannot be undone.')) {
-				// Remove sprint from the list
-				sprints = sprints.filter(s => s.id !== sprintId);
-				renderSprints();
-				
-				console.log('Deleting sprint:', sprintId);
-				alert('Sprint deleted successfully!');
-			}
-		}
-
-		function exportTeamConfig() {
-			// In real implementation, this would generate export file
-			alert('Export functionality would download team configuration here.');
-		}
-		
-		function viewTeamCalendar() {
-			// Save current configuration before navigating
-			saveTeamConfiguration();
-			// Navigate to calendar with team ID
-			window.location.href = `/calendar.html?teamId=${teamId}`;
-		}
-	</script>
+	<script type="module" src="team-configuration.js"></script>
 </body>
 </html>

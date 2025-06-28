@@ -10,7 +10,7 @@
 </head>
 <body>
 	<header class="main-header">
-		<nav class="nav-container">
+		<nav id="nav-container" class="nav-container">
 			<div class="logo">
 				<h1>Capacity Planner</h1>
 			</div>
@@ -19,6 +19,12 @@
 				<li><a href="teams.html" class="active">Teams</a></li>
 				<li><a href="calendar.html">Calendar</a></li>
 			</ul>
+			<div class="nav-auth">
+				<div id="user-info" class="user-info" style="display: none;"></div>
+				<button id="logout-btn" class="btn btn-secondary logout-btn" style="display: none;" data-action="logout">
+					Logout
+				</button>
+			</div>
 		</nav>
 	</header>
 
@@ -166,6 +172,6 @@
 		</div>
 	</div>
 
-	<script src="teams.js"></script>
+	<script type="module" src="teams.js"></script>
 </body>
 </html>

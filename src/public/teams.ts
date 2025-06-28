@@ -3,6 +3,8 @@
  * Handles CRUD operations for teams with comprehensive error handling and validation
  */
 
+import { initializeNavigation } from "../utils/navigation-auth.js";
+
 (function (): void {
 	// Type definitions
 	interface Team {
@@ -48,6 +50,10 @@
 
 	// Initialize page
 	document.addEventListener("DOMContentLoaded", function () {
+		// Initialize authentication-aware navigation
+		initializeNavigation("nav-container");
+		
+		// Initialize teams functionality
 		void loadTeams();
 		setupEventListeners();
 	});

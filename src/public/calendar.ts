@@ -3,6 +3,8 @@
  * Handles calendar entries for PTO, holidays, and capacity calculation
  */
 
+import { initializeNavigation } from "../utils/navigation-auth.js";
+
 (function (): void {
 	// Type definitions
 	interface CalendarEntry {
@@ -72,6 +74,10 @@
 
 	// Initialize page
 	document.addEventListener("DOMContentLoaded", function () {
+		// Initialize authentication-aware navigation
+		initializeNavigation("nav-container");
+		
+		// Initialize calendar functionality
 		void initialize();
 		setupEventListeners();
 	});

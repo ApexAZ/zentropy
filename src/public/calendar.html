@@ -11,12 +11,21 @@
 	<link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-	<header>
-		<nav>
-			<h1>Calendar Management</h1>
-			<div class="nav-links">
-				<a href="teams.html">Teams</a>
-				<a href="calendar.html" class="active">Calendar</a>
+	<header class="main-header">
+		<nav id="nav-container" class="nav-container">
+			<div class="logo">
+				<h1>Capacity Planner</h1>
+			</div>
+			<ul class="nav-menu">
+				<li><a href="team-configuration.html">Dashboard</a></li>
+				<li><a href="teams.html">Teams</a></li>
+				<li><a href="calendar.html" class="active">Calendar</a></li>
+			</ul>
+			<div class="nav-auth">
+				<div id="user-info" class="user-info" style="display: none;"></div>
+				<button id="logout-btn" class="btn btn-secondary logout-btn" style="display: none;" data-action="logout">
+					Logout
+				</button>
 			</div>
 		</nav>
 	</header>
@@ -191,6 +200,6 @@
 		</div>
 	</div>
 
-	<script src="calendar.js"></script>
+	<script type="module" src="calendar.js"></script>
 </body>
 </html>
