@@ -27,7 +27,7 @@
 		"test:ui": "vitest --ui",
 		"test:integration": "vitest tests/integration/",
 		"test:all": "vitest",
-		"test:quality": "npm test && npm run quality"
+		"test:quality": "npm test && npm run lint && npm run format && npm run type-check"
 	},
 	"keywords": [],
 	"author": "",
