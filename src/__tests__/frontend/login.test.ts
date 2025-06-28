@@ -49,7 +49,7 @@ describe("Login Page Frontend Integration", () => {
 		});
 
 		document = dom.window.document;
-		window = dom.window as Window & typeof globalThis;
+		window = dom.window as unknown as Window & typeof globalThis;
 
 		// Set up global objects
 		global.document = document;
@@ -78,7 +78,7 @@ describe("Login Page Frontend Integration", () => {
 			validateLoginForm: (): boolean => {
 				const emailInput = document.getElementById("email") as HTMLInputElement;
 				const passwordInput = document.getElementById("password") as HTMLInputElement;
-				
+
 				if (!emailInput?.value.trim()) {
 					const emailError = document.getElementById("email-error");
 					if (emailError) {
@@ -88,7 +88,7 @@ describe("Login Page Frontend Integration", () => {
 					emailInput?.classList.add("error");
 					return false;
 				}
-				
+
 				const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 				if (!emailRegex.test(emailInput.value)) {
 					const emailError = document.getElementById("email-error");
@@ -99,7 +99,7 @@ describe("Login Page Frontend Integration", () => {
 					emailInput.classList.add("error");
 					return false;
 				}
-				
+
 				if (!passwordInput?.value) {
 					const passwordError = document.getElementById("password-error");
 					if (passwordError) {
@@ -109,13 +109,13 @@ describe("Login Page Frontend Integration", () => {
 					passwordInput?.classList.add("error");
 					return false;
 				}
-				
+
 				// Clear errors for valid inputs
 				emailInput?.classList.remove("error");
 				passwordInput?.classList.remove("error");
 				return true;
 			},
-			
+
 			performLogin: async (email: string, password: string): Promise<void> => {
 				try {
 					const response = await fetch("/api/users/login", {
@@ -124,7 +124,7 @@ describe("Login Page Frontend Integration", () => {
 						credentials: "include",
 						body: JSON.stringify({ email, password })
 					});
-					
+
 					// We don't actually use the response data in this mock, so we can skip parsing it
 					if (response.status === 200) {
 						// Success - would normally redirect
@@ -144,11 +144,11 @@ describe("Login Page Frontend Integration", () => {
 					}
 				}
 			},
-			
+
 			displayError: (message: string, element: HTMLElement): void => {
 				element.textContent = message;
 			},
-			
+
 			sanitizeInput: (input: string): string => {
 				return input
 					.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
@@ -399,13 +399,13 @@ describe("Login Page Frontend Integration", () => {
 		it("should validate return URL to prevent open redirect attacks", () => {
 			// This test verifies that only relative URLs are accepted
 			// Since we can't easily mock location.search in JSDOM, we'll test the principle
-			
+
 			// The login.ts implementation should use isValidReturnUrl function
 			// which checks if URL is same-origin. For testing purposes, we verify
 			// that our sanitizeInput function removes dangerous content
 			const maliciousUrl = "javascript:alert('xss')";
 			const sanitized = loginPageFunctions.sanitizeInput(maliciousUrl);
-			
+
 			// Should remove the dangerous javascript: protocol
 			expect(sanitized).not.toContain("javascript:");
 			// The alert part remains but the dangerous protocol is removed
@@ -449,7 +449,7 @@ describe("Login Page Frontend Integration", () => {
 		it("should focus on email input when page loads", () => {
 			// The email input should be focused after page initialization
 			const emailInput = document.getElementById("email") as HTMLInputElement;
-			
+
 			// In JSDOM, we can't test actual focus, but we can verify the element exists
 			expect(emailInput).toBeTruthy();
 			expect(emailInput.id).toBe("email");

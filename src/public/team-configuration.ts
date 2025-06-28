@@ -206,10 +206,19 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		event.preventDefault();
 		const formData = new FormData(event.target as HTMLFormElement);
 
+		const memberEmail = formData.get("memberEmail") as string | null;
+		const memberRole = formData.get("memberRole") as string | null;
+		
+		if (!memberEmail || !memberRole) {
+			// eslint-disable-next-line no-console
+			console.error("Missing required member data");
+			return;
+		}
+
 		const member: TeamMember = {
-			name: (formData.get("memberEmail") as string).split("@")[0].replace(".", " ").replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
-			email: formData.get("memberEmail") as string,
-			role: formData.get("memberRole") as string
+			name: (memberEmail.split("@")[0] ?? memberEmail).replace(".", " ").replace(/(^\w|\s\w)/g, m => m.toUpperCase()),
+			email: memberEmail,
+			role: memberRole
 		};
 
 		// Add member to the list
@@ -362,10 +371,20 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 		event.preventDefault();
 		const formData = new FormData(event.target as HTMLFormElement);
 
+		const startingNumberStr = formData.get("startingSprintNumber") as string | null;
+		const numberOfSprintsStr = formData.get("numberOfSprints") as string | null;
+		const firstStartDateStr = formData.get("firstSprintStartDate") as string | null;
+		
+		if (!startingNumberStr || !numberOfSprintsStr || !firstStartDateStr) {
+			// eslint-disable-next-line no-console
+			console.error("Missing required sprint generation data");
+			return;
+		}
+
 		const config = {
-			startingNumber: parseInt(formData.get("startingSprintNumber") as string),
-			numberOfSprints: parseInt(formData.get("numberOfSprints") as string),
-			firstStartDate: formData.get("firstSprintStartDate") as string
+			startingNumber: parseInt(startingNumberStr),
+			numberOfSprints: parseInt(numberOfSprintsStr),
+			firstStartDate: firstStartDateStr
 		};
 
 		// Generate sprints
@@ -381,8 +400,8 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 			const sprint: Sprint = {
 				id: "sprint-" + Date.now().toString() + "-" + i.toString(),
 				name: `Sprint ${sprintNum}`,
-				startDate: startDate.toISOString().split("T")[0],
-				endDate: endDate.toISOString().split("T")[0],
+				startDate: startDate.toISOString().split("T")[0] ?? startDate.toISOString(),
+				endDate: endDate.toISOString().split("T")[0] ?? endDate.toISOString(),
 				status: startDate > new Date() ? "planned" : "active"
 			};
 

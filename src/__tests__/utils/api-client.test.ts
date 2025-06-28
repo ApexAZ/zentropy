@@ -14,9 +14,9 @@ describe("API Client Utilities", () => {
 		it("should create correct login request configuration", () => {
 			const email = "test@example.com";
 			const password = "SecureP@ssw0rd123!";
-			
+
 			const request = createLoginRequest(email, password);
-			
+
 			expect(request.method).toBe("POST");
 			expect(request.headers).toEqual({ "Content-Type": "application/json" });
 			expect(request.credentials).toBe("include");
@@ -26,9 +26,9 @@ describe("API Client Utilities", () => {
 		it("should handle special characters in email and password", () => {
 			const email = "user+tag@example-domain.co.uk";
 			const password = "P@ssw0rd!@#$%^&*()";
-			
+
 			const request = createLoginRequest(email, password);
-			
+
 			expect(JSON.parse(request.body as string)).toEqual({
 				email,
 				password
@@ -37,7 +37,7 @@ describe("API Client Utilities", () => {
 
 		it("should handle empty strings", () => {
 			const request = createLoginRequest("", "");
-			
+
 			expect(JSON.parse(request.body as string)).toEqual({
 				email: "",
 				password: ""
@@ -48,7 +48,7 @@ describe("API Client Utilities", () => {
 	describe("createSessionCheckRequest", () => {
 		it("should create correct session check request configuration", () => {
 			const request = createSessionCheckRequest();
-			
+
 			expect(request.method).toBe("GET");
 			expect(request.credentials).toBe("include");
 			expect(request.body).toBeUndefined();
@@ -131,12 +131,12 @@ describe("API Client Utilities", () => {
 					user: { id: "123", email: "test@example.com" }
 				})
 			};
-			
+
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
 			const email = "test@example.com";
 			const password = "SecureP@ssw0rd123!";
-			
+
 			const result = await makeLoginRequest(email, password);
 
 			expect(global.fetch).toHaveBeenCalledWith("/api/users/login", {
@@ -157,7 +157,7 @@ describe("API Client Utilities", () => {
 					message: "Invalid credentials"
 				})
 			};
-			
+
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
 			await expect(makeLoginRequest("test@example.com", "wrong")).rejects.toThrow("Invalid credentials");
@@ -191,9 +191,9 @@ describe("API Client Utilities", () => {
 					user: { id: "123", email: "test@example.com" }
 				})
 			};
-			
+
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
-			
+
 			const result = await makeSessionCheckRequest();
 
 			expect(global.fetch).toHaveBeenCalledWith("/api/users/session", {
@@ -212,7 +212,7 @@ describe("API Client Utilities", () => {
 					message: "Session expired"
 				})
 			};
-			
+
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
 			await expect(makeSessionCheckRequest()).rejects.toThrow("Session expired");
@@ -225,7 +225,7 @@ describe("API Client Utilities", () => {
 					message: "Unauthorized"
 				})
 			};
-			
+
 			(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
 
 			await expect(makeSessionCheckRequest()).rejects.toThrow("Unauthorized");

@@ -130,7 +130,6 @@ describe("Protected User Routes", () => {
 			let passwordUpdateSession: Session | null = null;
 
 			while (retries > 0) {
-
 				try {
 					// Create dedicated user for this test to avoid race conditions
 					const passwordUpdatePassword = "SecureIsolatedP@ssw0rd2024!ZqX";

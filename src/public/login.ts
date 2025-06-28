@@ -269,7 +269,6 @@
 			});
 
 			await handleLoginResponse(response);
-
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error("Network error during login:", error);
@@ -284,7 +283,7 @@
 	 */
 	async function handleLoginResponse(response: Response): Promise<void> {
 		try {
-			const data = await response.json() as LoginResponse | ErrorResponse;
+			const data = (await response.json()) as LoginResponse | ErrorResponse;
 
 			switch (response.status) {
 				case 200:
@@ -329,12 +328,15 @@
 
 		// Store user info if needed (avoid storing sensitive data)
 		if (data.user) {
-			sessionStorage.setItem("user", JSON.stringify({
-				id: data.user.id,
-				email: data.user.email,
-				name: `${data.user.first_name} ${data.user.last_name}`,
-				role: data.user.role
-			}));
+			sessionStorage.setItem(
+				"user",
+				JSON.stringify({
+					id: data.user.id,
+					email: data.user.email,
+					name: `${data.user.first_name} ${data.user.last_name}`,
+					role: data.user.role
+				})
+			);
 		}
 
 		// Redirect after short delay
@@ -435,7 +437,7 @@
 		if (generalError && generalErrorText) {
 			generalErrorText.textContent = message;
 			generalError.style.display = "block";
-			
+
 			// Scroll error into view
 			generalError.scrollIntoView({ behavior: "smooth", block: "nearest" });
 		}
@@ -477,12 +479,12 @@
 
 		const isPassword = passwordInput.type === "password";
 		passwordInput.type = isPassword ? "text" : "password";
-		
+
 		const icon = togglePasswordButton.querySelector(".password-toggle-icon");
 		if (icon) {
 			icon.textContent = isPassword ? "🙈" : "👁";
 		}
-		
+
 		togglePasswordButton.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
 	}
 

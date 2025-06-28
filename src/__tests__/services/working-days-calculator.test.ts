@@ -158,25 +158,13 @@ describe("WorkingDaysCalculator", () => {
 			it("should calculate working days for a standard work week", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createSimpleWeekRange();
 
-				TestAssertions.expectWorkingDayCount(
-					calculator,
-					startDate,
-					endDate,
-					standardConfig,
-					5
-				);
+				TestAssertions.expectWorkingDayCount(calculator, startDate, endDate, standardConfig, 5);
 			});
 
 			it("should exclude weekends from working day calculations", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createWeekWithWeekendsRange();
 
-				TestAssertions.expectWorkingDayCount(
-					calculator,
-					startDate,
-					endDate,
-					standardConfig,
-					5
-				);
+				TestAssertions.expectWorkingDayCount(calculator, startDate, endDate, standardConfig, 5);
 			});
 
 			it("should handle single day ranges correctly", () => {
@@ -200,13 +188,7 @@ describe("WorkingDaysCalculator", () => {
 			it("should handle date ranges spanning multiple weeks", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createTwoWeekRange();
 
-				TestAssertions.expectWorkingDayCount(
-					calculator,
-					startDate,
-					endDate,
-					standardConfig,
-					10
-				);
+				TestAssertions.expectWorkingDayCount(calculator, startDate, endDate, standardConfig, 10);
 			});
 		});
 
@@ -215,13 +197,7 @@ describe("WorkingDaysCalculator", () => {
 				const configWithHoliday = TestConfigFactory.createConfigWithHolidays([TEST_DATES.THURSDAY_JULY_4]);
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createSimpleWeekRange();
 
-				TestAssertions.expectWorkingDayCount(
-					calculator,
-					startDate,
-					endDate,
-					configWithHoliday,
-					4
-				);
+				TestAssertions.expectWorkingDayCount(calculator, startDate, endDate, configWithHoliday, 4);
 			});
 		});
 
@@ -230,13 +206,7 @@ describe("WorkingDaysCalculator", () => {
 				const fourDayConfig = TestConfigFactory.createFourDayWorkWeekConfig();
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createSimpleWeekRange();
 
-				TestAssertions.expectWorkingDayCount(
-					calculator,
-					startDate,
-					endDate,
-					fourDayConfig,
-					4
-				);
+				TestAssertions.expectWorkingDayCount(calculator, startDate, endDate, fourDayConfig, 4);
 			});
 		});
 
@@ -271,12 +241,7 @@ describe("WorkingDaysCalculator", () => {
 				const workingDays = [TEST_DATES.MONDAY_JULY_1, TEST_DATES.TUESDAY_JULY_2, TEST_DATES.FRIDAY_JULY_5];
 
 				workingDays.forEach(date => {
-					TestAssertions.expectWorkingDayResult(
-						calculator,
-						date,
-						standardConfig,
-						true
-					);
+					TestAssertions.expectWorkingDayResult(calculator, date, standardConfig, true);
 				});
 			});
 
@@ -284,12 +249,7 @@ describe("WorkingDaysCalculator", () => {
 				const weekendDays = [TEST_DATES.SATURDAY_JULY_6, TEST_DATES.SUNDAY_JULY_7];
 
 				weekendDays.forEach(date => {
-					TestAssertions.expectWorkingDayResult(
-						calculator,
-						date,
-						standardConfig,
-						false
-					);
+					TestAssertions.expectWorkingDayResult(calculator, date, standardConfig, false);
 				});
 			});
 		});
@@ -298,12 +258,7 @@ describe("WorkingDaysCalculator", () => {
 			it("should return false for holidays", () => {
 				const configWithHoliday = TestConfigFactory.createConfigWithHolidays([TEST_DATES.THURSDAY_JULY_4]);
 
-				TestAssertions.expectWorkingDayResult(
-					calculator,
-					TEST_DATES.THURSDAY_JULY_4,
-					configWithHoliday,
-					false
-				);
+				TestAssertions.expectWorkingDayResult(calculator, TEST_DATES.THURSDAY_JULY_4, configWithHoliday, false);
 			});
 		});
 
@@ -311,19 +266,9 @@ describe("WorkingDaysCalculator", () => {
 			it("should respect custom working days configuration", () => {
 				const customConfig = TestConfigFactory.createFourDayWorkWeekConfig();
 
-				TestAssertions.expectWorkingDayResult(
-					calculator,
-					TEST_DATES.THURSDAY_JULY_4,
-					customConfig,
-					true
-				);
+				TestAssertions.expectWorkingDayResult(calculator, TEST_DATES.THURSDAY_JULY_4, customConfig, true);
 
-				TestAssertions.expectWorkingDayResult(
-					calculator,
-					TEST_DATES.FRIDAY_JULY_5,
-					customConfig,
-					false
-				);
+				TestAssertions.expectWorkingDayResult(calculator, TEST_DATES.FRIDAY_JULY_5, customConfig, false);
 			});
 		});
 	});
@@ -465,19 +410,9 @@ describe("WorkingDaysCalculator", () => {
 				const pstConfig = TestConfigFactory.createTimezoneConfig("America/Los_Angeles");
 
 				// Both should handle the date correctly regardless of timezone
-				TestAssertions.expectWorkingDayResult(
-					calculator,
-					TEST_DATES.TIMEZONE_TEST_DATE,
-					utcConfig,
-					true
-				);
+				TestAssertions.expectWorkingDayResult(calculator, TEST_DATES.TIMEZONE_TEST_DATE, utcConfig, true);
 
-				TestAssertions.expectWorkingDayResult(
-					calculator,
-					TEST_DATES.TIMEZONE_TEST_DATE,
-					pstConfig,
-					true
-				);
+				TestAssertions.expectWorkingDayResult(calculator, TEST_DATES.TIMEZONE_TEST_DATE, pstConfig, true);
 			});
 		});
 	});

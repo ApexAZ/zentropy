@@ -378,7 +378,7 @@ describe("Navigation Authentication Integration", () => {
 			const { updateNavigationState } = await import("../../utils/navigation-auth.js");
 			
 			// Act
-			updateNavigationState(true, mockUser);
+			updateNavigationState(true, { name: `${mockUser.firstName} ${mockUser.lastName}`, role: mockUser.role });
 
 			// Assert
 			expect(mockUserInfo.style.display).toBe("block");

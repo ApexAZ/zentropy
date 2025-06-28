@@ -8,12 +8,12 @@ import { pool } from "../../database/connection";
 // Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
-		query: vi.fn().mockResolvedValue({ 
-			rows: [], 
-			rowCount: 0, 
-			command: 'SELECT', 
-			oid: 0, 
-			fields: [] 
+		query: vi.fn().mockResolvedValue({
+			rows: [],
+			rowCount: 0,
+			command: "SELECT",
+			oid: 0,
+			fields: []
 		} as QueryResult<CalendarEntry>)
 	}
 }));

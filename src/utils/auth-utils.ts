@@ -52,7 +52,7 @@ export async function checkSessionStatus(): Promise<SessionStatus> {
 		});
 
 		if (response.ok) {
-			const data = await response.json() as SessionCheckResponse;
+			const data = (await response.json()) as SessionCheckResponse;
 			return {
 				isValid: true,
 				user: data.user
@@ -60,7 +60,7 @@ export async function checkSessionStatus(): Promise<SessionStatus> {
 		}
 
 		// Handle specific error status codes
-		const errorData = await response.json() as ErrorResponse;
+		const errorData = (await response.json()) as ErrorResponse;
 		const sessionStatus: SessionStatus = {
 			isValid: false,
 			user: null,
@@ -73,7 +73,6 @@ export async function checkSessionStatus(): Promise<SessionStatus> {
 		}
 
 		return sessionStatus;
-
 	} catch (error) {
 		return {
 			isValid: false,
@@ -88,7 +87,7 @@ export async function checkSessionStatus(): Promise<SessionStatus> {
  */
 export function isSessionExpired(lastCheck: number, sessionDuration: number = DEFAULT_SESSION_DURATION): boolean {
 	const now = Date.now();
-	return (now - lastCheck) >= sessionDuration;
+	return now - lastCheck >= sessionDuration;
 }
 
 /**
@@ -98,21 +97,23 @@ export function isSessionExpired(lastCheck: number, sessionDuration: number = DE
 export function getSessionInfo(): SessionInfo | null {
 	try {
 		const sessionData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-		
+
 		if (!sessionData || sessionData.trim() === "") {
 			return null;
 		}
 
 		const parsed: unknown = JSON.parse(sessionData);
-		
+
 		// Validate that we have the required fields with type safety
-		if (!parsed || 
-			typeof parsed !== "object" || 
+		if (
+			!parsed ||
+			typeof parsed !== "object" ||
 			parsed === null ||
-			!("id" in parsed) || 
+			!("id" in parsed) ||
 			!("email" in parsed) ||
 			typeof (parsed as Record<string, unknown>).id !== "string" ||
-			typeof (parsed as Record<string, unknown>).email !== "string") {
+			typeof (parsed as Record<string, unknown>).email !== "string"
+		) {
 			return null;
 		}
 
@@ -142,7 +143,7 @@ export function clearSessionInfo(): void {
 export function buildReturnUrl(): string {
 	const currentPath = window.location.pathname;
 	const currentSearch = window.location.search;
-	
+
 	// Don't create return URL if already on login page
 	if (currentPath === "/login.html") {
 		return "/login.html";
@@ -166,9 +167,7 @@ export function validateReturnUrl(url: string): boolean {
 
 	// Block dangerous protocols
 	const dangerousProtocols = ["javascript:", "data:", "vbscript:"];
-	if (dangerousProtocols.some(protocol => 
-		trimmedUrl.toLowerCase().startsWith(protocol.toLowerCase())
-	)) {
+	if (dangerousProtocols.some(protocol => trimmedUrl.toLowerCase().startsWith(protocol.toLowerCase()))) {
 		return false;
 	}
 
@@ -197,7 +196,7 @@ export function validateReturnUrl(url: string): boolean {
  */
 export function redirectToLogin(message?: string): void {
 	let loginUrl = buildReturnUrl();
-	
+
 	if (message) {
 		const separator = loginUrl.includes("?") ? "&" : "?";
 		loginUrl += `${separator}message=${encodeURIComponent(message)}`;
@@ -267,7 +266,7 @@ export function showSessionWarning(message?: string, minutesRemaining: number = 
 	// Set warning message
 	const defaultMessage = `Your session will expire in ${minutesRemaining} minutes. Please save your work.`;
 	warningElement.textContent = message ?? defaultMessage;
-	
+
 	// Show the warning
 	warningElement.style.display = "block";
 }

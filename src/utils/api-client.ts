@@ -63,10 +63,10 @@ export function createSessionCheckRequest(): RequestInit {
  */
 export async function handleApiResponse<T>(response: Response): Promise<T> {
 	if (!response.ok) {
-		const errorData = await response.json() as ApiErrorResponse;
+		const errorData = (await response.json()) as ApiErrorResponse;
 		throw new Error(errorData.message ?? "API request failed");
 	}
-	
+
 	return response.json() as Promise<T>;
 }
 

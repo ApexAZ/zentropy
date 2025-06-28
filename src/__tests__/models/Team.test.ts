@@ -27,12 +27,12 @@ describe("TeamModel", () => {
 	// Helper functions for common mock scenarios
 	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-		const mockResult: QueryResult<Team> = { 
-			rows: rows as Team[], 
-			rowCount: rows.length, 
-			command: "", 
-			oid: 0, 
-			fields: [] 
+		const mockResult: QueryResult<Team> = {
+			rows: rows as Team[],
+			rowCount: rows.length,
+			command: "",
+			oid: 0,
+			fields: []
 		};
 		(mockPool.query as ReturnType<typeof vi.fn>).mockResolvedValue(mockResult);
 	};
@@ -42,12 +42,12 @@ describe("TeamModel", () => {
 	};
 
 	const mockDeleteFailure = (): void => {
-		const mockResult: QueryResult<Team> = { 
-			rows: [], 
-			rowCount: 0, 
-			command: "", 
-			oid: 0, 
-			fields: [] 
+		const mockResult: QueryResult<Team> = {
+			rows: [],
+			rowCount: 0,
+			command: "",
+			oid: 0,
+			fields: []
 		};
 		(mockPool.query as ReturnType<typeof vi.fn>).mockResolvedValue(mockResult);
 	};

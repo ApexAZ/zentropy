@@ -153,7 +153,7 @@ export function sanitizeInput(input: string): string {
 	if (!input || typeof input !== "string") {
 		return "";
 	}
-	
+
 	return input
 		.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove script tags
 		.replace(/<[^>]*>/g, "") // Remove all HTML tags
@@ -170,14 +170,14 @@ export function isValidReturnUrl(url: string, currentOrigin: string): boolean {
 	if (!url || typeof url !== "string") {
 		return false;
 	}
-	
+
 	// Only allow relative URLs or same-origin URLs
 	try {
 		if (url.startsWith("/") && !url.startsWith("//")) {
 			// Relative URL - safe
 			return true;
 		}
-		
+
 		const returnUrl = new URL(url, currentOrigin);
 		return returnUrl.origin === currentOrigin;
 	} catch {
@@ -200,7 +200,7 @@ export interface LoginValidationResult {
  */
 export function validateLoginForm(email: string, password: string): LoginValidationResult {
 	const result: LoginValidationResult = { isValid: true };
-	
+
 	// Validate email
 	try {
 		validateEmail(email, "email");
@@ -212,7 +212,7 @@ export function validateLoginForm(email: string, password: string): LoginValidat
 			result.emailError = "Invalid email";
 		}
 	}
-	
+
 	// Validate password
 	try {
 		validateString(password, "password", { required: true });
@@ -224,6 +224,6 @@ export function validateLoginForm(email: string, password: string): LoginValidat
 			result.passwordError = "Invalid password";
 		}
 	}
-	
+
 	return result;
 }

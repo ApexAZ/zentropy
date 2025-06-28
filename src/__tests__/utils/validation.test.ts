@@ -224,7 +224,7 @@ describe("sanitizeInput", () => {
 	});
 
 	it("should remove all HTML tags", () => {
-		const htmlInput = '<div><span>Hello</span><p>World</p></div>';
+		const htmlInput = "<div><span>Hello</span><p>World</p></div>";
 		const result = sanitizeInput(htmlInput);
 		expect(result).toBe("HelloWorld");
 		expect(result).not.toContain("<");

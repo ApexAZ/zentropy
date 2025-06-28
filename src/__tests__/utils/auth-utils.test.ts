@@ -176,7 +176,7 @@ describe("Session Status Checking", () => {
 	describe("isSessionExpired", () => {
 		it("should return true when last check was more than session duration ago", () => {
 			// ARRANGE
-			const lastCheck = Date.now() - (25 * 60 * 1000); // 25 minutes ago
+			const lastCheck = Date.now() - 25 * 60 * 1000; // 25 minutes ago
 			const sessionDuration = 24 * 60 * 60 * 1000; // 24 hours
 
 			// ACT
@@ -188,7 +188,7 @@ describe("Session Status Checking", () => {
 
 		it("should return true when session duration has passed", () => {
 			// ARRANGE
-			const lastCheck = Date.now() - (25 * 60 * 60 * 1000); // 25 hours ago
+			const lastCheck = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
 			const sessionDuration = 24 * 60 * 60 * 1000; // 24 hours
 
 			// ACT
@@ -408,7 +408,9 @@ describe("URL and Redirect Management", () => {
 			redirectToLogin("Session expired. Please log in again.");
 
 			// ASSERT
-			expect(mockLocation.href).toBe("/login.html?return=%2Fteams.html&message=Session%20expired.%20Please%20log%20in%20again.");
+			expect(mockLocation.href).toBe(
+				"/login.html?return=%2Fteams.html&message=Session%20expired.%20Please%20log%20in%20again."
+			);
 		});
 
 		it("should handle when current page is already login", () => {
