@@ -86,6 +86,7 @@ src/
 - Event delegation using `data-action` attributes
 - Modular functions for calendar, team management, etc.
 
+@CLAUDEQuality.md
 **Testing Architecture**: Comprehensive three-layer testing approach
 
 ### Test-Driven Development (TDD)
@@ -101,14 +102,9 @@ src/
 - **Never assume security works**: Always verify through tests that similarity detection, password policies, etc. function as designed
 
 ### TypeScript Standards
-**MANDATORY**: Follow all strict ESLint rules in all TypeScript files
-- Strict compilation with `noImplicitReturns`, `noUncheckedIndexedAccess`
-- Interface naming: `CreateXData` for creation, `XRequestBody` for API requests
-- Use nullish coalescing (`??`) instead of logical OR (`||`) for safer null handling
-- No `any` types - use proper type definitions
-- **Explicit null checking** instead of non-null assertions (`!`) to satisfy strict ESLint rules
-- **Defensive programming** with explicit error throwing for array/matrix boundary conditions
-- **Type-safe implementations** even for complex algorithms - prioritize safety over convenience
+@CLAUDEESLintRules.md
+**MANDATORY**: **MANDATORY**: Always write code using TypeScript standards. See [CLAUDEESLintRules.md](./CLAUDEESLintRules.md) for complete TDD workflow and testing standards.
+
 
 ### Security Standards
 **CRITICAL**: Security implementations must never compromise on algorithmic rigor
@@ -211,6 +207,7 @@ document.addEventListener('click', (event: Event) => {
 Complete testing strategy, patterns, and best practices documented in [CLAUDEQuality.md](./CLAUDEQuality.md).
 
 ## Current Project Status
+@CLAUDETasks.md
 See [CLAUDETasks.md](./CLAUDETasks.md) for current implementation status, roadmap, and task tracking.
 
 ## Temporary Session Recap (2025-06-28)
