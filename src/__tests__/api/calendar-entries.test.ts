@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import request from "supertest";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { CalendarEntryModel } from "../../models/CalendarEntry";
 import calendarEntriesRouter from "../../routes/calendar-entries";
 
@@ -21,9 +21,9 @@ vi.mock("../../models/CalendarEntry", () => ({
 
 // Mock the session authentication middleware
 vi.mock("../../middleware/session-auth", () => ({
-	default: vi.fn((req: any, _res: any, next: any) => {
+	default: vi.fn((req: Request, _res: Response, next: NextFunction) => {
 		// Mock authenticated user
-		req.user = {
+		(req as Request & { user: unknown }).user = {
 			id: "mock-user-id",
 			email: "test@example.com",
 			first_name: "Test",
@@ -150,11 +150,16 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 				.expect(201);
 
 			// Verify model was called with Date objects, not strings
-			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];
-			expect(modelCall.start_date).toBeInstanceOf(Date);
-			expect(modelCall.end_date).toBeInstanceOf(Date);
-			expect(modelCall.start_date.toISOString()).toBe("2024-01-15T08:00:00.000Z");
-			expect(modelCall.end_date.toISOString()).toBe("2024-01-15T17:00:00.000Z");
+			const mockCalls = mockCalendarEntryModel.create.mock.calls;
+			expect(mockCalls).toHaveLength(1);
+			const modelCall = mockCalls[0]?.[0] as { start_date: Date; end_date: Date } | undefined;
+			expect(modelCall).toBeDefined();
+			if (modelCall) {
+				expect(modelCall.start_date).toBeInstanceOf(Date);
+				expect(modelCall.end_date).toBeInstanceOf(Date);
+				expect(modelCall.start_date.toISOString()).toBe("2024-01-15T08:00:00.000Z");
+				expect(modelCall.end_date.toISOString()).toBe("2024-01-15T17:00:00.000Z");
+			}
 		});
 	});
 
@@ -202,8 +207,13 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 				.expect(201);
 
 			// Verify route accepts any entry_type and passes to model
-			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];
-			expect(modelCall.entry_type).toBe("custom_type");
+			const mockCalls = mockCalendarEntryModel.create.mock.calls;
+			expect(mockCalls).toHaveLength(1);
+			const modelCall = mockCalls[0]?.[0] as { entry_type: string } | undefined;
+			expect(modelCall).toBeDefined();
+			if (modelCall) {
+				expect(modelCall.entry_type).toBe("custom_type");
+			}
 		});
 	});
 
@@ -225,10 +235,17 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			await request(app).post("/api/calendar-entries").send(entryWithoutDescription).expect(201);
 
 			// Verify model is called with description: undefined when not provided
-			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];
-			expect(modelCall.description).toBeUndefined();
-			expect(modelCall.team_id).toBe("team1");
-			expect(modelCall.all_day).toBe(true);
+			const mockCalls = mockCalendarEntryModel.create.mock.calls;
+			expect(mockCalls).toHaveLength(1);
+			const modelCall = mockCalls[0]?.[0] as
+				| { description?: string; team_id: string; all_day: boolean }
+				| undefined;
+			expect(modelCall).toBeDefined();
+			if (modelCall) {
+				expect(modelCall.description).toBeUndefined();
+				expect(modelCall.team_id).toBe("team1");
+				expect(modelCall.all_day).toBe(true);
+			}
 		});
 
 		it("should handle all_day default value correctly", async () => {
@@ -248,8 +265,13 @@ describe("Calendar Entries API - Route Layer Specifics", () => {
 			await request(app).post("/api/calendar-entries").send(entryWithoutAllDay).expect(201);
 
 			// Verify model receives default all_day: true when not specified
-			const modelCall = mockCalendarEntryModel.create.mock.calls[0][0];
-			expect(modelCall.all_day).toBe(true);
+			const mockCalls = mockCalendarEntryModel.create.mock.calls;
+			expect(mockCalls).toHaveLength(1);
+			const modelCall = mockCalls[0]?.[0] as { all_day: boolean } | undefined;
+			expect(modelCall).toBeDefined();
+			if (modelCall) {
+				expect(modelCall.all_day).toBe(true);
+			}
 		});
 	});
 });

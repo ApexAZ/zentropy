@@ -223,7 +223,7 @@ export class TestDataFactory {
 	/**
 	 * Create test data with secure defaults for security testing
 	 */
-	static createSecureTestData() {
+	static createSecureTestData(): Record<string, unknown> {
 		return {
 			user: this.createTestUser({
 				email: "secure.test@example.com",

@@ -30,7 +30,7 @@ const TEST_CONFIG = {
 /**
  * Create test Express app with static file serving
  */
-function createTestApp() {
+function createTestApp(): express.Application {
 	const app = express();
 
 	// Disable x-powered-by header for security
@@ -124,7 +124,7 @@ describe("Server Static File Serving Integration", () => {
 				app,
 				`/${TEST_CONFIG.PATHS.TEAMS_HTML}`,
 				TEST_CONFIG.CONTENT_TYPES.HTML,
-				expectedContent
+				expectedContent ?? []
 			);
 		});
 
@@ -135,7 +135,7 @@ describe("Server Static File Serving Integration", () => {
 				app,
 				`/${TEST_CONFIG.PATHS.CALENDAR_HTML}`,
 				TEST_CONFIG.CONTENT_TYPES.HTML,
-				expectedContent
+				expectedContent ?? []
 			);
 		});
 

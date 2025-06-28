@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 
 /**
  * Frontend Calendar Functions Test Suite
@@ -85,7 +85,7 @@ function getEntryTypeLabel(type: string): string {
 		sick: "Sick Leave",
 		personal: "Personal Time"
 	};
-	return labels[type] || type;
+	return labels[type] ?? type;
 }
 
 /**
@@ -298,8 +298,10 @@ describe("Calendar Frontend Functions", () => {
 			const result = getEntriesForDate(testDate, mockCalendarEntries);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].id).toBe("entry1");
-			expect(result[0].title).toBe("Vacation");
+			const firstEntry = result[0];
+			expect(firstEntry).toBeDefined();
+			expect(firstEntry?.id).toBe("entry1");
+			expect(firstEntry?.title).toBe("Vacation");
 		});
 
 		it("should return multiple entries when they overlap with the same date", () => {
@@ -341,23 +343,36 @@ describe("Calendar Frontend Functions", () => {
 			const endResult = getEntriesForDate(endDate, mockCalendarEntries);
 
 			expect(startResult).toHaveLength(1);
-			expect(startResult[0].id).toBe("entry1");
+			const firstStartResult = startResult[0];
+			expect(firstStartResult).toBeDefined();
+			expect(firstStartResult?.id).toBe("entry1");
 			expect(endResult).toHaveLength(1);
-			expect(endResult[0].id).toBe("entry1");
+			const firstEndResult = endResult[0];
+			expect(firstEndResult).toBeDefined();
+			expect(firstEndResult?.id).toBe("entry1");
 		});
 	});
 
 	describe("getEntryTitle", () => {
 		it("should format entry title with user name and type label", () => {
 			const entry = mockCalendarEntries[0]; // John Doe's vacation
+			expect(entry).toBeDefined();
+			if (!entry) {
+				return;
+			}
 			const result = getEntryTitle(entry, mockUsers);
 
 			expect(result).toBe("John Doe - PTO / Vacation");
 		});
 
 		it("should handle unknown user gracefully", () => {
+			const baseEntry = mockCalendarEntries[0];
+			expect(baseEntry).toBeDefined();
+			if (!baseEntry) {
+				return;
+			}
 			const entryWithUnknownUser: CalendarEntry = {
-				...mockCalendarEntries[0],
+				...baseEntry,
 				user_id: "unknown_user"
 			};
 			const result = getEntryTitle(entryWithUnknownUser, mockUsers);
@@ -367,6 +382,10 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should format different entry types correctly", () => {
 			const holidayEntry = mockCalendarEntries[1]; // Jane's holiday
+			expect(holidayEntry).toBeDefined();
+			if (!holidayEntry) {
+				return;
+			}
 			const result = getEntryTitle(holidayEntry, mockUsers);
 
 			expect(result).toBe("Jane Smith - Holiday");
@@ -537,6 +556,10 @@ describe("Calendar Frontend Functions", () => {
 	describe("calculateCapacityImpact", () => {
 		it("should calculate capacity impact correctly", () => {
 			const team = mockTeams[0]; // Frontend team: 14 days sprint, 5 working days per week
+			expect(team).toBeDefined();
+			if (!team) {
+				return;
+			}
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-19T00:00:00"); // Friday (5 working days)
 
@@ -551,6 +574,10 @@ describe("Calendar Frontend Functions", () => {
 
 		it("should handle different sprint configurations", () => {
 			const team = mockTeams[1]; // Backend team: 10 days sprint, 5 working days per week
+			expect(team).toBeDefined();
+			if (!team) {
+				return;
+			}
 			const startDate = new Date("2024-07-15T00:00:00"); // Monday
 			const endDate = new Date("2024-07-17T00:00:00"); // Wednesday (3 working days)
 
@@ -631,7 +658,9 @@ describe("Calendar Frontend Functions", () => {
 
 			// Should only include the sick day (August 5)
 			expect(result).toHaveLength(1);
-			expect(result[0].id).toBe("entry3");
+			const firstAugustResult = result[0];
+			expect(firstAugustResult).toBeDefined();
+			expect(firstAugustResult?.id).toBe("entry3");
 		});
 
 		it("should return empty array for months with no entries", () => {
@@ -646,8 +675,12 @@ describe("Calendar Frontend Functions", () => {
 			const result = getEntriesForMonth(mockCalendarEntries, july2024);
 
 			// Holiday (July 4) should come before vacation (July 15)
-			expect(result[0].id).toBe("entry2"); // Holiday
-			expect(result[1].id).toBe("entry1"); // Vacation
+			const firstJulyResult = result[0];
+			const secondJulyResult = result[1];
+			expect(firstJulyResult).toBeDefined();
+			expect(secondJulyResult).toBeDefined();
+			expect(firstJulyResult?.id).toBe("entry2"); // Holiday
+			expect(secondJulyResult?.id).toBe("entry1"); // Vacation
 		});
 
 		it("should handle entries that span across month boundaries", () => {

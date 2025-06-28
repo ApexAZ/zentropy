@@ -321,58 +321,63 @@ router.put("/:id", sessionAuthMiddleware, async (req: Request, res: Response): P
  * Rate limited: 3 attempts per 30 minutes per IP+user combination
  * Requires authentication
  */
-router.put("/:id/password", sessionAuthMiddleware, passwordUpdateRateLimit, async (req: Request, res: Response): Promise<void> => {
-	try {
-		const { id } = req.params;
-		if (!id) {
-			res.status(400).json({ message: "User ID is required" });
-			return;
-		}
-
-		const body = req.body as UpdatePasswordRequestBody;
-		const { currentPassword, newPassword } = body;
-
-		// Basic validation
-		if (!currentPassword || !newPassword) {
-			res.status(400).json({ message: "Current password and new password are required" });
-			return;
-		}
-
-		// Check if user exists
-		const existingUser = await UserModel.findById(id);
-		if (!existingUser) {
-			res.status(404).json({ message: "User not found" });
-			return;
-		}
-
-		const passwordData: UpdatePasswordData = {
-			currentPassword,
-			newPassword
-		};
-
-		await UserModel.updatePassword(id, passwordData);
-		await UserModel.updateLastLogin(id);
-
-		res.json({ message: "Password updated successfully" });
-	} catch (error) {
-		// eslint-disable-next-line no-console
-		console.error("Error updating password:", error);
-
-		// Check for specific password validation errors
-		if (error instanceof Error) {
-			if (error.message.includes("Password validation failed")) {
-				res.status(400).json({ message: error.message });
+router.put(
+	"/:id/password",
+	sessionAuthMiddleware,
+	passwordUpdateRateLimit,
+	async (req: Request, res: Response): Promise<void> => {
+		try {
+			const { id } = req.params;
+			if (!id) {
+				res.status(400).json({ message: "User ID is required" });
 				return;
 			}
-			if (error.message.includes("Current password is incorrect")) {
-				res.status(401).json({ message: "Current password is incorrect" });
+
+			const body = req.body as UpdatePasswordRequestBody;
+			const { currentPassword, newPassword } = body;
+
+			// Basic validation
+			if (!currentPassword || !newPassword) {
+				res.status(400).json({ message: "Current password and new password are required" });
 				return;
 			}
-		}
 
-		res.status(500).json({ message: "Failed to update password" });
+			// Check if user exists
+			const existingUser = await UserModel.findById(id);
+			if (!existingUser) {
+				res.status(404).json({ message: "User not found" });
+				return;
+			}
+
+			const passwordData: UpdatePasswordData = {
+				currentPassword,
+				newPassword
+			};
+
+			await UserModel.updatePassword(id, passwordData);
+			await UserModel.updateLastLogin(id);
+
+			res.json({ message: "Password updated successfully" });
+		} catch (error) {
+			// eslint-disable-next-line no-console
+			console.error("Error updating password:", error);
+
+			// Check for specific password validation errors
+			if (error instanceof Error) {
+				if (error.message.includes("Password validation failed")) {
+					res.status(400).json({ message: error.message });
+					return;
+				}
+				if (error.message.includes("Current password is incorrect")) {
+					res.status(401).json({ message: "Current password is incorrect" });
+					return;
+				}
+			}
+
+			res.status(500).json({ message: "Failed to update password" });
+		}
 	}
-});
+);
 
 /**
  * POST /api/users/logout

@@ -3,6 +3,7 @@ import { SessionModel, CreateSessionData } from "../../models/Session";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
 import { pool } from "../../database/connection";
+import crypto from "crypto";
 
 // Mock the database connection
 vi.mock("../../database/connection", () => ({
@@ -18,7 +19,7 @@ describe("SessionModel", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Mock crypto.randomBytes for consistent session tokens in tests
-		vi.spyOn(require("crypto"), "randomBytes").mockReturnValue(Buffer.from("a".repeat(32)));
+		vi.spyOn(crypto, "randomBytes").mockReturnValue(Buffer.from("a".repeat(32)));
 	});
 
 	afterEach(() => {
@@ -27,16 +28,16 @@ describe("SessionModel", () => {
 	});
 
 	// Helper functions for common mock scenarios
-	const mockSuccessfulQuery = (returnValue: any) => {
+	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-		(mockPool.query as any).mockResolvedValue({ rows, rowCount: rows.length });
+		(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rows, rowCount: rows.length });
 	};
 
-	const mockEmptyQuery = () => {
-		(mockPool.query as any).mockResolvedValue({ rows: [], rowCount: 0 });
+	const mockEmptyQuery = (): void => {
+		(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rows: [], rowCount: 0 });
 	};
 
-	const mockFailedQuery = (error = new Error("Database connection failed")) => {
+	const mockFailedQuery = (error = new Error("Database connection failed")): void => {
 		mockPool.query.mockRejectedValue(error);
 	};
 
@@ -52,8 +53,8 @@ describe("SessionModel", () => {
 			const mockSession = TestDataFactory.createTestSession({
 				user_id: mockUser.id,
 				session_token: "a".repeat(64), // Expected token from mocked crypto
-				ip_address: sessionData.ip_address,
-				user_agent: sessionData.user_agent
+				ip_address: sessionData.ip_address ?? "unknown",
+				user_agent: sessionData.user_agent ?? "unknown"
 			});
 
 			mockSuccessfulQuery(mockSession);
@@ -66,12 +67,13 @@ describe("SessionModel", () => {
 			expect(result.ip_address).toBe("192.168.1.1");
 
 			// Verify SQL query structure
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockPool.query).toHaveBeenCalledWith(
 				expect.stringContaining("INSERT INTO sessions"),
 				expect.arrayContaining([
-					mockUser.id, 
+					mockUser.id,
 					expect.any(String), // Session token (generated)
-					"192.168.1.1", 
+					"192.168.1.1",
 					"Mozilla/5.0 Test Browser",
 					expect.any(Date) // Expiration date (generated)
 				])
@@ -90,11 +92,14 @@ describe("SessionModel", () => {
 			await SessionModel.create(sessionData);
 
 			// Verify that expires_at is passed to the query (5th parameter)
-			const callArgs = (mockPool.query as any).mock.calls[0][1];
-			expect(callArgs[4]).toBeInstanceOf(Date);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			const firstCall = mockQuery.mock.calls[0] as [string, unknown[]];
+			const queryParams = firstCall[1];
+			expect(queryParams[4]).toBeInstanceOf(Date);
 
 			// Verify it's roughly 24 hours from now (within 1 minute tolerance)
-			const expirationDate = callArgs[4] as Date;
+			const expirationDate = queryParams[4] as Date;
 			const expectedExpiration = new Date();
 			expectedExpiration.setHours(expectedExpiration.getHours() + 24);
 			const timeDifference = Math.abs(expirationDate.getTime() - expectedExpiration.getTime());
@@ -120,11 +125,15 @@ describe("SessionModel", () => {
 			const result = await SessionModel.findByToken(mockSession.session_token);
 
 			expect(result).toBeDefined();
-			expect(result!.session_token).toBe(mockSession.session_token);
+			if (result) {
+				expect(result.session_token).toBe(mockSession.session_token);
+			}
 
 			// Verify query checks for active and non-expired sessions
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "is_active = true", [mockSession.session_token]);
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "expires_at > NOW()", [mockSession.session_token]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "is_active = true", [mockSession.session_token]);
+			AssertionHelpers.expectDatabaseCall(mockQuery, "expires_at > NOW()", [mockSession.session_token]);
 		});
 
 		it("should return null when session not found", async () => {
@@ -166,13 +175,17 @@ describe("SessionModel", () => {
 			const result = await SessionModel.findByTokenWithUser(mockSession.session_token);
 
 			expect(result).toBeDefined();
-			expect(result!.session_token).toBe(mockSession.session_token);
-			expect(result!.user).toBeDefined();
-			expect(result!.user.email).toBe(mockUser.email);
-			expect(result!.user.role).toBe(mockUser.role);
+			if (result) {
+				expect(result.session_token).toBe(mockSession.session_token);
+				expect(result.user).toBeDefined();
+				expect(result.user.email).toBe(mockUser.email);
+				expect(result.user.role).toBe(mockUser.role);
+			}
 
 			// Verify JOIN query is used
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "JOIN users u ON s.user_id = u.id", [
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "JOIN users u ON s.user_id = u.id", [
 				mockSession.session_token
 			]);
 		});
@@ -199,11 +212,13 @@ describe("SessionModel", () => {
 			const result = await SessionModel.findByUserId(mockUser.id);
 
 			expect(result).toHaveLength(2);
-			expect(result[0].user_id).toBe(mockUser.id);
-			expect(result[1].user_id).toBe(mockUser.id);
+			expect(result[0]?.user_id).toBe(mockUser.id);
+			expect(result[1]?.user_id).toBe(mockUser.id);
 
 			// Verify ordering by created_at
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "ORDER BY created_at DESC", [mockUser.id]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "ORDER BY created_at DESC", [mockUser.id]);
 		});
 
 		it("should return empty array when no sessions found", async () => {
@@ -223,10 +238,14 @@ describe("SessionModel", () => {
 			const result = await SessionModel.updateActivity(mockSession.session_token);
 
 			expect(result).toBeDefined();
-			expect(result!.session_token).toBe(mockSession.session_token);
+			if (result) {
+				expect(result.session_token).toBe(mockSession.session_token);
+			}
 
 			// Verify UPDATE query with NOW()
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "SET updated_at = NOW()", [mockSession.session_token]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "SET updated_at = NOW()", [mockSession.session_token]);
 		});
 
 		it("should return null when session not found or expired", async () => {
@@ -240,18 +259,20 @@ describe("SessionModel", () => {
 
 	describe("invalidate", () => {
 		it("should invalidate a session", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 1 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 1 });
 
 			const result = await SessionModel.invalidate("test-token");
 
 			expect(result).toBe(true);
 
 			// Verify UPDATE query sets is_active to false
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "SET is_active = false", ["test-token"]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "SET is_active = false", ["test-token"]);
 		});
 
 		it("should return false when session not found", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 0 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 0 });
 
 			const result = await SessionModel.invalidate("invalid-token");
 
@@ -261,20 +282,20 @@ describe("SessionModel", () => {
 
 	describe("invalidateAllForUser", () => {
 		it("should invalidate all user sessions", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 3 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 3 });
 
 			const result = await SessionModel.invalidateAllForUser("test-user-id");
 
 			expect(result).toBe(3);
 
 			// Verify UPDATE affects all user sessions
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "WHERE user_id = $1 AND is_active = true", [
-				"test-user-id"
-			]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "WHERE user_id = $1 AND is_active = true", ["test-user-id"]);
 		});
 
 		it("should return 0 when no sessions to invalidate", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 0 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 0 });
 
 			const result = await SessionModel.invalidateAllForUser("user-with-no-sessions");
 
@@ -284,18 +305,19 @@ describe("SessionModel", () => {
 
 	describe("cleanupExpired", () => {
 		it("should delete expired and inactive sessions", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 5 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 5 });
 
 			const result = await SessionModel.cleanupExpired();
 
 			expect(result).toBe(5);
 
 			// Verify DELETE query was called
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockPool.query).toHaveBeenCalledTimes(1);
 		});
 
 		it("should handle no expired sessions", async () => {
-			(mockPool.query as any).mockResolvedValue({ rowCount: 0 });
+			(mockPool.query as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ rowCount: 0 });
 
 			const result = await SessionModel.cleanupExpired();
 
@@ -311,10 +333,14 @@ describe("SessionModel", () => {
 			const result = await SessionModel.extendExpiration(mockSession.session_token);
 
 			expect(result).toBeDefined();
-			expect(result!.session_token).toBe(mockSession.session_token);
+			if (result) {
+				expect(result.session_token).toBe(mockSession.session_token);
+			}
 
 			// Verify INTERVAL extension
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "INTERVAL '24 hours'", [mockSession.session_token]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "INTERVAL '24 hours'", [mockSession.session_token]);
 		});
 
 		it("should extend session expiration by custom hours", async () => {
@@ -324,7 +350,9 @@ describe("SessionModel", () => {
 			await SessionModel.extendExpiration(mockSession.session_token, 48);
 
 			// Verify custom INTERVAL extension
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "INTERVAL '48 hours'", [mockSession.session_token]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const mockQuery = mockPool.query as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "INTERVAL '48 hours'", [mockSession.session_token]);
 		});
 
 		it("should return null when session not found", async () => {
@@ -353,6 +381,7 @@ describe("SessionModel", () => {
 			expect(result.users_with_sessions).toBe(8);
 
 			// Verify aggregate query was called
+			// eslint-disable-next-line @typescript-eslint/unbound-method
 			expect(mockPool.query).toHaveBeenCalledTimes(1);
 		});
 
@@ -379,7 +408,9 @@ describe("SessionModel", () => {
 			expect(result).toHaveProperty("is_active");
 
 			// Validate session token format (64 character hex string)
-			expect(result!.session_token).toMatch(/^[a-f0-9]{64}$/);
+			if (result) {
+				expect(result.session_token).toMatch(/^[a-f0-9]{64}$/);
+			}
 		});
 
 		it("should validate session with user data structure", async () => {
@@ -401,13 +432,15 @@ describe("SessionModel", () => {
 			const result = await SessionModel.findByTokenWithUser(mockSession.session_token);
 
 			// Validate session properties
-			DomainAssertionHelpers.expectValidSession(result!);
+			if (result) {
+				DomainAssertionHelpers.expectValidSession(result);
 
-			// Validate nested user properties
-			expect(result!.user).toHaveProperty("id");
-			expect(result!.user).toHaveProperty("email");
-			expect(result!.user).toHaveProperty("role");
-			expect(["team_lead", "team_member"]).toContain(result!.user.role);
+				// Validate nested user properties
+				expect(result.user).toHaveProperty("id");
+				expect(result.user).toHaveProperty("email");
+				expect(result.user).toHaveProperty("role");
+				expect(["team_lead", "team_member"]).toContain(result.user.role);
+			}
 		});
 	});
 });

@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import type { QueryResult } from "pg";
 import { CalendarEntryModel } from "../../models/CalendarEntry";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
@@ -7,7 +8,7 @@ import { pool } from "../../database/connection";
 // Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
-		query: vi.fn()
+		query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 } as QueryResult)
 	}
 }));
 
@@ -24,25 +25,29 @@ describe("CalendarEntryModel", () => {
 	});
 
 	// Helper functions for common mock scenarios
-	const mockSuccessfulQuery = (returnValue: any) => {
+	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-		mockPool.query.mockResolvedValue({ rows, rowCount: rows.length });
+		const mockResult: QueryResult = { rows, rowCount: rows.length, command: "SELECT", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
-	const mockEmptyQuery = () => {
-		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	const mockEmptyQuery = (): void => {
+		const mockResult: QueryResult = { rows: [], rowCount: 0, command: "SELECT", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
-	const mockFailedQuery = (error = new Error("Database connection failed")) => {
-		mockPool.query.mockRejectedValue(error);
+	const mockFailedQuery = (error = new Error("Database connection failed")): void => {
+		(mockPool.query as Mock).mockRejectedValue(error);
 	};
 
-	const mockDeleteSuccess = (rowCount = 1) => {
-		mockPool.query.mockResolvedValue({ rows: [], rowCount });
+	const mockDeleteSuccess = (rowCount = 1): void => {
+		const mockResult: QueryResult = { rows: [], rowCount, command: "DELETE", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
-	const mockDeleteFailure = () => {
-		mockPool.query.mockResolvedValue({ rows: [], rowCount: 0 });
+	const mockDeleteFailure = (): void => {
+		const mockResult: QueryResult = { rows: [], rowCount: 0, command: "DELETE", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
 	describe("business logic validation", () => {
@@ -98,8 +103,10 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.findConflicts(userId, startDate, endDate);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].user_id).toBe(userId);
-			DomainAssertionHelpers.expectValidCalendarEntry(result[0]);
+			expect(result[0]?.user_id).toBe(userId);
+			if (result[0]) {
+				DomainAssertionHelpers.expectValidCalendarEntry(result[0]);
+			}
 		});
 
 		it("should exclude specific entry when checking conflicts", async () => {
@@ -111,12 +118,8 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.findConflicts(userId, startDate, endDate, excludeId);
 
 			expect(result).toHaveLength(0);
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "AND id != $4", [
-				userId,
-				startDate,
-				endDate,
-				excludeId
-			]);
+			const mockQuery = mockPool["query"] as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "AND id != $4", [userId, startDate, endDate, excludeId]);
 		});
 	});
 
@@ -195,7 +198,7 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.findByDateRange(startDate, endDate, teamId);
 
 			expect(result).toHaveLength(1);
-			expect(result[0].team_id).toBe(teamId);
+			expect(result[0]?.team_id).toBe(teamId);
 		});
 	});
 
@@ -212,9 +215,12 @@ describe("CalendarEntryModel", () => {
 
 			const result = await CalendarEntryModel.update(entryId, updateData);
 
-			expect(result!.title).toBe("Updated Title");
-			expect(result!.entry_type).toBe("sick");
-			DomainAssertionHelpers.expectValidCalendarEntry(result!);
+			if (result === null) {
+				throw new Error("Expected result to be defined, but got null");
+			}
+			expect(result.title).toBe("Updated Title");
+			expect(result.entry_type).toBe("sick");
+			DomainAssertionHelpers.expectValidCalendarEntry(result);
 		});
 
 		it("should validate entry types", async () => {
@@ -247,7 +253,8 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.update("entry123", {});
 
 			expect(result).toBeNull();
-			AssertionHelpers.expectMockNotCalled(mockPool.query);
+			const mockQuery = mockPool["query"] as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectMockNotCalled(mockQuery);
 		});
 
 		it("should handle delete operations correctly", async () => {
@@ -256,9 +263,8 @@ describe("CalendarEntryModel", () => {
 			const result = await CalendarEntryModel.delete("entry123");
 
 			expect(result).toBe(true);
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "DELETE FROM calendar_entries WHERE id = $1", [
-				"entry123"
-			]);
+			const mockQuery = mockPool["query"] as ReturnType<typeof vi.fn>;
+			AssertionHelpers.expectDatabaseCall(mockQuery, "DELETE FROM calendar_entries WHERE id = $1", ["entry123"]);
 		});
 
 		it("should handle delete failure when entry not found", async () => {

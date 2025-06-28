@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import express from "express";
-import { TeamModel } from "../../models/Team";
+import { TeamModel, CreateTeamData, Team } from "../../models/Team";
+import { User } from "../../models/User";
 import { ValidationError } from "../../utils/validation";
 
 // Mock the TeamModel for integration tests
@@ -9,7 +10,7 @@ vi.mock("../../models/Team");
 const mockTeamModel = vi.mocked(TeamModel);
 
 // Create a test application that mimics our server setup
-function createTestApp() {
+function createTestApp(): express.Application {
 	const app = express();
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
@@ -18,7 +19,7 @@ function createTestApp() {
 	// For now, let's create simplified versions for testing
 
 	// GET /api/teams
-	app.get("/api/teams", async (req, res) => {
+	app.get("/api/teams", async (_req, res) => {
 		try {
 			const teams = await TeamModel.findAll();
 			res.json(teams);
@@ -58,7 +59,8 @@ function createTestApp() {
 	app.post("/api/teams", async (req, res) => {
 		try {
 			// Basic validation for testing
-			if (!req.body.name || req.body.name.trim().length < 2) {
+			const body = req.body as CreateTeamData;
+			if (!body.name || typeof body.name !== "string" || body.name.trim().length < 2) {
 				const error = new ValidationError("Name must be at least 2 characters", "name");
 				res.status(400).json({
 					message: "Validation error",
@@ -68,7 +70,7 @@ function createTestApp() {
 				return;
 			}
 
-			const newTeam = await TeamModel.create(req.body);
+			const newTeam = await TeamModel.create(body);
 			res.status(201).json(newTeam);
 		} catch (error) {
 			if (error instanceof ValidationError) {
@@ -102,7 +104,7 @@ function createTestApp() {
 				return;
 			}
 
-			const updatedTeam = await TeamModel.update(id, req.body);
+			const updatedTeam = await TeamModel.update(id, req.body as Partial<CreateTeamData>);
 			if (!updatedTeam) {
 				res.status(404).json({ message: "Team not found after update" });
 				return;
@@ -219,13 +221,18 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).get("/api/teams").expect(200);
 
-			expect(response.body).toMatchObject(
-				mockTeams.map(team => ({
-					...team,
-					created_at: expect.any(String),
-					updated_at: expect.any(String)
-				}))
-			);
+			const responseBody = response.body as Team[];
+			expect(responseBody).toHaveLength(2);
+			responseBody.forEach((team, index) => {
+				expect(team.id).toBe(mockTeams[index]?.id);
+				expect(team.name).toBe(mockTeams[index]?.name);
+				expect(team.description).toBe(mockTeams[index]?.description);
+				expect(team.velocity_baseline).toBe(mockTeams[index]?.velocity_baseline);
+				expect(team.sprint_length_days).toBe(mockTeams[index]?.sprint_length_days);
+				expect(team.working_days_per_week).toBe(mockTeams[index]?.working_days_per_week);
+				expect(team.created_at).toEqual(expect.any(String));
+				expect(team.updated_at).toEqual(expect.any(String));
+			});
 			expect(mockTeamModel.findAll).toHaveBeenCalledTimes(1);
 		});
 
@@ -267,11 +274,15 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).get("/api/teams/1").expect(200);
 
-			expect(response.body).toMatchObject({
-				...mockTeam,
-				created_at: expect.any(String),
-				updated_at: expect.any(String)
-			});
+			const responseBody = response.body as Team;
+			expect(responseBody.id).toBe(mockTeam.id);
+			expect(responseBody.name).toBe(mockTeam.name);
+			expect(responseBody.description).toBe(mockTeam.description);
+			expect(responseBody.velocity_baseline).toBe(mockTeam.velocity_baseline);
+			expect(responseBody.sprint_length_days).toBe(mockTeam.sprint_length_days);
+			expect(responseBody.working_days_per_week).toBe(mockTeam.working_days_per_week);
+			expect(responseBody.created_at).toEqual(expect.any(String));
+			expect(responseBody.updated_at).toEqual(expect.any(String));
 			expect(mockTeamModel.findById).toHaveBeenCalledWith("1");
 		});
 
@@ -319,11 +330,15 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).post("/api/teams").send(teamData).expect(201);
 
-			expect(response.body).toMatchObject({
-				...createdTeam,
-				created_at: expect.any(String),
-				updated_at: expect.any(String)
-			});
+			const responseBody = response.body as Team;
+			expect(responseBody.id).toBe(createdTeam.id);
+			expect(responseBody.name).toBe(createdTeam.name);
+			expect(responseBody.description).toBe(createdTeam.description);
+			expect(responseBody.velocity_baseline).toBe(createdTeam.velocity_baseline);
+			expect(responseBody.sprint_length_days).toBe(createdTeam.sprint_length_days);
+			expect(responseBody.working_days_per_week).toBe(createdTeam.working_days_per_week);
+			expect(responseBody.created_at).toEqual(expect.any(String));
+			expect(responseBody.updated_at).toEqual(expect.any(String));
 			expect(mockTeamModel.create).toHaveBeenCalledWith(teamData);
 		});
 
@@ -335,7 +350,6 @@ describe("Team API Integration Tests", () => {
 			const createdTeam = {
 				id: "4",
 				name: "Minimal Team",
-				description: undefined,
 				velocity_baseline: 0,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
@@ -347,15 +361,14 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).post("/api/teams").send(minimalData).expect(201);
 
-			expect(response.body).toMatchObject({
-				id: createdTeam.id,
-				name: createdTeam.name,
-				velocity_baseline: createdTeam.velocity_baseline,
-				sprint_length_days: createdTeam.sprint_length_days,
-				working_days_per_week: createdTeam.working_days_per_week,
-				created_at: expect.any(String),
-				updated_at: expect.any(String)
-			});
+			const responseBody = response.body as Team;
+			expect(responseBody.id).toBe(createdTeam.id);
+			expect(responseBody.name).toBe(createdTeam.name);
+			expect(responseBody.velocity_baseline).toBe(createdTeam.velocity_baseline);
+			expect(responseBody.sprint_length_days).toBe(createdTeam.sprint_length_days);
+			expect(responseBody.working_days_per_week).toBe(createdTeam.working_days_per_week);
+			expect(responseBody.created_at).toEqual(expect.any(String));
+			expect(responseBody.updated_at).toEqual(expect.any(String));
 		});
 
 		it("should return 400 for invalid team name", async () => {
@@ -431,11 +444,15 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).put("/api/teams/1").send(updateData).expect(200);
 
-			expect(response.body).toMatchObject({
-				...updatedTeam,
-				created_at: expect.any(String),
-				updated_at: expect.any(String)
-			});
+			const responseBody = response.body as Team;
+			expect(responseBody.id).toBe(updatedTeam.id);
+			expect(responseBody.name).toBe(updatedTeam.name);
+			expect(responseBody.description).toBe(updatedTeam.description);
+			expect(responseBody.velocity_baseline).toBe(updatedTeam.velocity_baseline);
+			expect(responseBody.sprint_length_days).toBe(updatedTeam.sprint_length_days);
+			expect(responseBody.working_days_per_week).toBe(updatedTeam.working_days_per_week);
+			expect(responseBody.created_at).toEqual(expect.any(String));
+			expect(responseBody.updated_at).toEqual(expect.any(String));
 			expect(mockTeamModel.findById).toHaveBeenCalledWith("1");
 			expect(mockTeamModel.update).toHaveBeenCalledWith("1", updateData);
 		});
@@ -507,13 +524,18 @@ describe("Team API Integration Tests", () => {
 
 			const response = await request(app).get("/api/teams/1/members").expect(200);
 
-			expect(response.body).toMatchObject(
-				mockMembers.map(member => ({
-					...member,
-					created_at: expect.any(String),
-					updated_at: expect.any(String)
-				}))
-			);
+			const responseBody = response.body as User[];
+			expect(responseBody).toHaveLength(1);
+			responseBody.forEach((member, index) => {
+				expect(member.id).toBe(mockMembers[index]?.id);
+				expect(member.email).toBe(mockMembers[index]?.email);
+				expect(member.first_name).toBe(mockMembers[index]?.first_name);
+				expect(member.last_name).toBe(mockMembers[index]?.last_name);
+				expect(member.role).toBe(mockMembers[index]?.role);
+				expect(member.is_active).toBe(mockMembers[index]?.is_active);
+				expect(member.created_at).toEqual(expect.any(String));
+				expect(member.updated_at).toEqual(expect.any(String));
+			});
 			expect(mockTeamModel.findById).toHaveBeenCalledWith("1");
 			expect(mockTeamModel.getMembers).toHaveBeenCalledWith("1");
 		});
@@ -546,7 +568,6 @@ describe("Team API Integration Tests", () => {
 			const mockTeam = {
 				id: "5",
 				name: "Test Team",
-				description: undefined,
 				velocity_baseline: 0,
 				sprint_length_days: 14,
 				working_days_per_week: 5,

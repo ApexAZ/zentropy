@@ -3,9 +3,12 @@ import { UserModel, USER_ROLES, type CreateUserData, type UpdatePasswordData } f
 import { pool } from "../database/connection";
 
 describe("UserModel with PasswordService Integration", () => {
+	// Use a specific test domain to avoid conflicts with other tests
+	const TEST_DOMAIN = "i-user-model-test.local";
+
 	// Test data
 	const testUserData: CreateUserData = {
-		email: "john.doe@example.com",
+		email: `john.doe@${TEST_DOMAIN}`,
 		password: "SecureP@ssw0rd2024!",
 		first_name: "John",
 		last_name: "Doe",
@@ -23,21 +26,19 @@ describe("UserModel with PasswordService Integration", () => {
 	};
 
 	beforeEach(async () => {
-		// Clean up test data
-		await pool.query(
-			"DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1 OR email LIKE $2)",
-			["%test%", "%example.com"]
-		);
-		await pool.query("DELETE FROM users WHERE email LIKE $1 OR email LIKE $2", ["%test%", "%example.com"]);
+		// Clean up test data - only delete users created by THIS test file
+		await pool.query("DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1)", [
+			`%@${TEST_DOMAIN}`
+		]);
+		await pool.query("DELETE FROM users WHERE email LIKE $1", [`%@${TEST_DOMAIN}`]);
 	});
 
 	afterEach(async () => {
-		// Clean up test data
-		await pool.query(
-			"DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1 OR email LIKE $2)",
-			["%test%", "%example.com"]
-		);
-		await pool.query("DELETE FROM users WHERE email LIKE $1 OR email LIKE $2", ["%test%", "%example.com"]);
+		// Clean up test data - only delete users created by THIS test file
+		await pool.query("DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1)", [
+			`%@${TEST_DOMAIN}`
+		]);
+		await pool.query("DELETE FROM users WHERE email LIKE $1", [`%@${TEST_DOMAIN}`]);
 	});
 
 	describe("create", () => {
@@ -95,11 +96,11 @@ describe("UserModel with PasswordService Integration", () => {
 		test("should normalize email to lowercase", async () => {
 			const upperCaseEmailData = {
 				...testUserData,
-				email: "TEST@EXAMPLE.COM"
+				email: `TEST.NORMALIZE.${Date.now()}@${TEST_DOMAIN}`.toUpperCase()
 			};
 
 			const user = await UserModel.create(upperCaseEmailData);
-			expect(user.email).toBe("test@example.com");
+			expect(user.email).toBe(upperCaseEmailData.email.toLowerCase());
 		});
 
 		test("should accept additional validation options", async () => {
@@ -339,7 +340,7 @@ describe("UserModel with PasswordService Integration", () => {
 
 		test("should support createWithHash for migration scenarios", async () => {
 			const hashData = {
-				email: "hash@example.com",
+				email: `hash.migration.${Date.now()}-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`,
 				password_hash: "$2b$12$dummyHashForTestingPurposes.WithValidFormat",
 				first_name: "Hash",
 				last_name: "User",

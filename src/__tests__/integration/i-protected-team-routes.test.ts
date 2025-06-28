@@ -1,28 +1,37 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
-import express from "express";
-import { UserModel } from "../../models/User";
-import { SessionModel } from "../../models/Session";
-import { TeamModel } from "../../models/Team";
+import { UserModel, type User } from "../../models/User";
+import { SessionModel, type Session } from "../../models/Session";
+import { TeamModel, type Team } from "../../models/Team";
 import { testConnection } from "../../database/connection";
+import type { Request, Response, NextFunction } from "express";
+
+// Mock rate limiting middleware to avoid conflicts in tests
+vi.mock("../../middleware/rate-limiter", () => ({
+	loginRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
+	passwordUpdateRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
+	userCreationRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
+	generalApiRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next())
+}));
 
 // Import the entire server app to test team endpoints
 import "../../server/index";
 
 // Integration test for protected team routes
 describe("Protected Team Routes", () => {
-	let testUser: any;
-	let testSession: any;
-	let testTeam: any;
+	let testUser: User;
+	let testSession: Session;
+	let testTeam: Team;
 
 	beforeEach(async () => {
 		// Ensure database connection
 		await testConnection();
 
-		// Create test user and session for authentication testing
+		// Create test user and session for authentication testing with unique email
 		const strongPassword = "ComplexSecureP@ssw0rd2024!ZqX9";
+		const uniqueEmail = `team-protection-test-${Date.now()}-${Math.random().toString(36).substring(2, 11)}@example.com`;
 		testUser = await UserModel.create({
-			email: "team-protection-test@example.com",
+			email: uniqueEmail,
 			password: strongPassword,
 			first_name: "Alex",
 			last_name: "Rodriguez",
@@ -39,9 +48,8 @@ describe("Protected Team Routes", () => {
 		testTeam = await TeamModel.create({
 			name: "Test Team for Protection",
 			description: "A team created for testing authentication",
-			velocity_points_per_sprint: 50,
-			sprint_length_weeks: 2,
-			is_active: true
+			velocity_baseline: 50,
+			sprint_length_days: 14
 		});
 	});
 
@@ -66,7 +74,7 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(200);
 
-			expect(Array.isArray(response.body)).toBe(true);
+			expect(Array.isArray(response.body as unknown)).toBe(true);
 		});
 
 		it("should allow GET /api/teams/:id with valid session", async () => {
@@ -75,17 +83,17 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("id", testTeam.id);
-			expect(response.body).toHaveProperty("name", testTeam.name);
+			const responseBody = response.body as Team;
+			expect(responseBody).toHaveProperty("id", testTeam.id);
+			expect(responseBody).toHaveProperty("name", testTeam.name);
 		});
 
 		it("should allow POST /api/teams with valid session", async () => {
 			const newTeamData = {
 				name: "New Authenticated Team",
 				description: "Team created with authentication",
-				velocity_points_per_sprint: 40,
-				sprint_length_weeks: 3,
-				is_active: true
+				velocity_baseline: 40,
+				sprint_length_days: 21
 			};
 
 			const response = await request("http://localhost:3000")
@@ -94,20 +102,20 @@ describe("Protected Team Routes", () => {
 				.send(newTeamData)
 				.expect(201);
 
-			expect(response.body).toHaveProperty("name", "New Authenticated Team");
-			expect(response.body).toHaveProperty("velocity_points_per_sprint", 40);
+			const responseBody = response.body as Team;
+			expect(responseBody).toHaveProperty("name", "New Authenticated Team");
+			expect(responseBody).toHaveProperty("velocity_baseline", 40);
 
 			// Clean up the created team
-			await TeamModel.delete(response.body.id);
+			await TeamModel.delete(responseBody.id);
 		});
 
 		it("should allow PUT /api/teams/:id with valid session", async () => {
 			const updateData = {
 				name: "Updated Team Name",
 				description: "Updated description",
-				velocity_points_per_sprint: 60,
-				sprint_length_weeks: 2,
-				is_active: true
+				velocity_baseline: 60,
+				sprint_length_days: 14
 			};
 
 			const response = await request("http://localhost:3000")
@@ -116,8 +124,9 @@ describe("Protected Team Routes", () => {
 				.send(updateData)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("name", "Updated Team Name");
-			expect(response.body).toHaveProperty("velocity_points_per_sprint", 60);
+			const responseBody = response.body as Team;
+			expect(responseBody).toHaveProperty("name", "Updated Team Name");
+			expect(responseBody).toHaveProperty("velocity_baseline", 60);
 		});
 
 		it("should allow DELETE /api/teams/:id with valid session", async () => {
@@ -125,9 +134,8 @@ describe("Protected Team Routes", () => {
 			const deleteTeam = await TeamModel.create({
 				name: "Delete Test Team",
 				description: "Team for deletion testing",
-				velocity_points_per_sprint: 30,
-				sprint_length_weeks: 1,
-				is_active: true
+				velocity_baseline: 30,
+				sprint_length_days: 7
 			});
 
 			const response = await request("http://localhost:3000")
@@ -135,7 +143,8 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("message", "Team deleted successfully");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Team deleted successfully");
 
 			// Verify team was deleted
 			const deletedTeam = await TeamModel.findById(deleteTeam.id);
@@ -148,42 +157,37 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(200);
 
-			expect(Array.isArray(response.body)).toBe(true);
+			expect(Array.isArray(response.body as unknown)).toBe(true);
 		});
 	});
 
 	describe("Unauthenticated Access Denied", () => {
 		it("should deny GET /api/teams without session", async () => {
-			const response = await request("http://localhost:3000")
-				.get("/api/teams")
-				.expect(401);
+			const response = await request("http://localhost:3000").get("/api/teams").expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny GET /api/teams/:id without session", async () => {
-			const response = await request("http://localhost:3000")
-				.get(`/api/teams/${testTeam.id}`)
-				.expect(401);
+			const response = await request("http://localhost:3000").get(`/api/teams/${testTeam.id}`).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny POST /api/teams without session", async () => {
 			const newTeamData = {
 				name: "Unauthorized Team",
 				description: "Should not be created",
-				velocity_points_per_sprint: 40,
-				sprint_length_weeks: 2,
-				is_active: true
+				velocity_baseline: 40,
+				sprint_length_days: 14
 			};
 
-			const response = await request("http://localhost:3000")
-				.post("/api/teams")
-				.send(newTeamData)
-				.expect(401);
+			const response = await request("http://localhost:3000").post("/api/teams").send(newTeamData).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny PUT /api/teams/:id without session", async () => {
@@ -196,15 +200,15 @@ describe("Protected Team Routes", () => {
 				.send(updateData)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny DELETE /api/teams/:id without session", async () => {
-			const response = await request("http://localhost:3000")
-				.delete(`/api/teams/${testTeam.id}`)
-				.expect(401);
+			const response = await request("http://localhost:3000").delete(`/api/teams/${testTeam.id}`).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny GET /api/teams/:id/members without session", async () => {
@@ -212,7 +216,8 @@ describe("Protected Team Routes", () => {
 				.get(`/api/teams/${testTeam.id}/members`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 	});
 
@@ -223,7 +228,8 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", "sessionToken=invalid-token-67890")
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 
 		it("should deny access with expired session", async () => {
@@ -235,7 +241,8 @@ describe("Protected Team Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 	});
 });

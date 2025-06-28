@@ -5,7 +5,7 @@ describe("PasswordService", () => {
 	let passwordService: PasswordService;
 	const VALID_PASSWORD = "SecureP@ssw0rd2024";
 	const ANOTHER_VALID_PASSWORD = "Str0ngP@ssw0rd!";
-	const THIRD_VALID_PASSWORD = "C0mplexSecure#Pass";
+	// const THIRD_VALID_PASSWORD = "C0mplexSecure#Pass";
 
 	beforeEach(() => {
 		passwordService = new PasswordService();
@@ -32,7 +32,7 @@ describe("PasswordService", () => {
 			const hash = await passwordService.hashPassword(VALID_PASSWORD);
 
 			expect(hash.startsWith("$2b$")).toBe(true);
-			const saltRounds = parseInt(hash.split("$")[2]);
+			const saltRounds = parseInt(hash.split("$")[2] ?? "0");
 			expect(saltRounds).toBeGreaterThanOrEqual(10);
 		});
 
@@ -41,8 +41,12 @@ describe("PasswordService", () => {
 		});
 
 		test("should handle null or undefined password", async () => {
-			await expect(passwordService.hashPassword(null as any)).rejects.toThrow("Password must be a string");
-			await expect(passwordService.hashPassword(undefined as any)).rejects.toThrow("Password must be a string");
+			await expect(passwordService.hashPassword(null as unknown as string)).rejects.toThrow(
+				"Password must be a string"
+			);
+			await expect(passwordService.hashPassword(undefined as unknown as string)).rejects.toThrow(
+				"Password must be a string"
+			);
 		});
 
 		test("should handle very long passwords", async () => {
@@ -98,10 +102,10 @@ describe("PasswordService", () => {
 		test("should handle null or undefined inputs", async () => {
 			const hash = await passwordService.hashPassword(VALID_PASSWORD);
 
-			await expect(passwordService.verifyPassword(null as any, hash)).rejects.toThrow(
+			await expect(passwordService.verifyPassword(null as unknown as string, hash)).rejects.toThrow(
 				"Password must be a string"
 			);
-			await expect(passwordService.verifyPassword(VALID_PASSWORD, null as any)).rejects.toThrow(
+			await expect(passwordService.verifyPassword(VALID_PASSWORD, null as unknown as string)).rejects.toThrow(
 				"Hash must be a string"
 			);
 		});
@@ -127,7 +131,7 @@ describe("PasswordService", () => {
 			];
 
 			invalidHashes.forEach(hash => {
-				const isValid = passwordService.isValidHash(hash as any);
+				const isValid = passwordService.isValidHash(hash as string);
 				expect(isValid).toBe(false);
 			});
 		});

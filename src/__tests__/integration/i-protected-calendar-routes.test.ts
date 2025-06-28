@@ -1,19 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel } from "../../models/User";
-import { SessionModel } from "../../models/Session";
-import { CalendarEntryModel } from "../../models/CalendarEntry";
-import { TeamModel } from "../../models/Team";
+import { UserModel, type User } from "../../models/User";
+import { SessionModel, type Session } from "../../models/Session";
+import { CalendarEntryModel, type CalendarEntry } from "../../models/CalendarEntry";
+import { TeamModel, type Team } from "../../models/Team";
 import calendarEntriesRouter from "../../routes/calendar-entries";
 
 // Integration test for protected calendar routes
 describe("Protected Calendar Routes", () => {
 	let app: express.Application;
-	let testUser: any;
-	let testSession: any;
-	let testTeam: any;
-	let testCalendarEntry: any;
+	let testUser: User;
+	let testSession: Session;
+	let testTeam: Team;
+	let testCalendarEntry: CalendarEntry;
 
 	beforeEach(async () => {
 		app = express();
@@ -40,9 +40,9 @@ describe("Protected Calendar Routes", () => {
 		testTeam = await TeamModel.create({
 			name: "Calendar Test Team",
 			description: "Team for calendar testing",
-			velocity_points_per_sprint: 40,
-			sprint_length_weeks: 2,
-			is_active: true
+			velocity_baseline: 40,
+			sprint_length_days: 14,
+			working_days_per_week: 5
 		});
 
 		// Create a test calendar entry
@@ -100,8 +100,9 @@ describe("Protected Calendar Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("id", testCalendarEntry.id);
-			expect(response.body).toHaveProperty("title", "Test PTO Entry");
+			const entryData = response.body as CalendarEntry;
+			expect(entryData).toHaveProperty("id", testCalendarEntry.id);
+			expect(entryData).toHaveProperty("title", "Test PTO Entry");
 		});
 
 		it("should allow POST /api/calendar-entries with valid session", async () => {
@@ -122,11 +123,13 @@ describe("Protected Calendar Routes", () => {
 				.send(newEntryData)
 				.expect(201);
 
-			expect(response.body).toHaveProperty("title", "New Year Holiday");
-			expect(response.body).toHaveProperty("entry_type", "holiday");
+			const createdEntry = response.body as CalendarEntry;
+			expect(createdEntry).toHaveProperty("title", "New Year Holiday");
+			expect(createdEntry).toHaveProperty("entry_type", "holiday");
 
 			// Clean up the created entry
-			await CalendarEntryModel.delete(response.body.id);
+			const responseEntry = response.body as CalendarEntry;
+			await CalendarEntryModel.delete(responseEntry.id);
 		});
 
 		it("should allow PUT /api/calendar-entries/:id with valid session", async () => {
@@ -147,8 +150,9 @@ describe("Protected Calendar Routes", () => {
 				.send(updateData)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("title", "Updated PTO Entry");
-			expect(response.body).toHaveProperty("entry_type", "personal");
+			const updatedEntry = response.body as CalendarEntry;
+			expect(updatedEntry).toHaveProperty("title", "Updated PTO Entry");
+			expect(updatedEntry).toHaveProperty("entry_type", "personal");
 		});
 
 		it("should allow DELETE /api/calendar-entries/:id with valid session", async () => {
@@ -180,19 +184,17 @@ describe("Protected Calendar Routes", () => {
 
 	describe("Unauthenticated Access Denied", () => {
 		it("should deny GET /api/calendar-entries without session", async () => {
-			const response = await request(app)
-				.get("/api/calendar-entries")
-				.expect(401);
+			const response = await request(app).get("/api/calendar-entries").expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny GET /api/calendar-entries/:id without session", async () => {
-			const response = await request(app)
-				.get(`/api/calendar-entries/${testCalendarEntry.id}`)
-				.expect(401);
+			const response = await request(app).get(`/api/calendar-entries/${testCalendarEntry.id}`).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny POST /api/calendar-entries without session", async () => {
@@ -207,12 +209,10 @@ describe("Protected Calendar Routes", () => {
 				all_day: true
 			};
 
-			const response = await request(app)
-				.post("/api/calendar-entries")
-				.send(newEntryData)
-				.expect(401);
+			const response = await request(app).post("/api/calendar-entries").send(newEntryData).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny PUT /api/calendar-entries/:id without session", async () => {
@@ -225,15 +225,15 @@ describe("Protected Calendar Routes", () => {
 				.send(updateData)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should deny DELETE /api/calendar-entries/:id without session", async () => {
-			const response = await request(app)
-				.delete(`/api/calendar-entries/${testCalendarEntry.id}`)
-				.expect(401);
+			const response = await request(app).delete(`/api/calendar-entries/${testCalendarEntry.id}`).expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Authentication required");
 		});
 	});
 
@@ -244,7 +244,8 @@ describe("Protected Calendar Routes", () => {
 				.set("Cookie", "sessionToken=invalid-calendar-token-12345")
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Invalid or expired session");
 		});
 
 		it("should deny access with expired session", async () => {
@@ -256,7 +257,8 @@ describe("Protected Calendar Routes", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const errorResponse = response.body as Record<string, unknown>;
+			expect(errorResponse).toHaveProperty("message", "Invalid or expired session");
 		});
 	});
 });

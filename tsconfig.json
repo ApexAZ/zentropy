@@ -36,5 +36,5 @@
 		}
 	},
 	"include": ["src/**/*", "src/**/*.json"],
-	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.js"]
+	"exclude": ["node_modules", "dist"]
 }

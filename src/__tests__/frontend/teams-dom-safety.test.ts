@@ -39,7 +39,7 @@ describe("Frontend DOM Type Safety", () => {
 			expect(element).toBeNull();
 
 			// Safe type assertion with null check
-			const safeElement = document.getElementById("non-existent") as HTMLElement | null;
+			const safeElement = document.getElementById("non-existent");
 			expect(safeElement).toBeNull();
 		});
 
@@ -59,9 +59,10 @@ describe("Frontend DOM Type Safety", () => {
 			expect(inputElement.value).toBe("Test Team");
 
 			// Test input-specific methods
-			inputElement.focus = vi.fn();
+			const mockFocus = vi.fn();
+			inputElement.focus = mockFocus;
 			inputElement.focus();
-			expect(inputElement.focus).toHaveBeenCalled();
+			expect(mockFocus).toHaveBeenCalled();
 		});
 
 		it("should safely cast HTMLTextAreaElement types", () => {
@@ -138,9 +139,10 @@ describe("Frontend DOM Type Safety", () => {
 			expect(formElement.tagName).toBe("FORM");
 
 			// Test form-specific methods
-			formElement.reset = vi.fn();
+			const mockReset = vi.fn();
+			formElement.reset = mockReset;
 			formElement.reset();
-			expect(formElement.reset).toHaveBeenCalled();
+			expect(mockReset).toHaveBeenCalled();
 		});
 	});
 
@@ -162,8 +164,8 @@ describe("Frontend DOM Type Safety", () => {
 			const errorElements = document.querySelectorAll<HTMLElement>(".field-error");
 
 			expect(errorElements).toHaveLength(2);
-			expect(errorElements[0].textContent).toBe("Error 1");
-			expect(errorElements[1].textContent).toBe("Error 2");
+			expect(errorElements[0]?.textContent).toBe("Error 1");
+			expect(errorElements[1]?.textContent).toBe("Error 2");
 
 			// Test HTMLElement methods
 			errorElements.forEach((el: HTMLElement) => {
@@ -329,8 +331,8 @@ describe("Frontend DOM Type Safety", () => {
 			element.innerHTML = htmlContent;
 
 			expect(element.children).toHaveLength(2);
-			expect(element.children[0].textContent).toBe("Team 1");
-			expect(element.children[1].textContent).toBe("Team 2");
+			expect(element.children[0]?.textContent).toBe("Team 1");
+			expect(element.children[1]?.textContent).toBe("Team 2");
 		});
 	});
 });

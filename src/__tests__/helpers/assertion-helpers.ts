@@ -3,25 +3,87 @@
  */
 import { expect, type Mock } from "vitest";
 
+// Type definitions for test assertions
+interface ApiResponse {
+	status: number;
+	body: Record<string, unknown>;
+}
+
+interface EntityWithTimestamps {
+	created_at: string | Date;
+	updated_at: string | Date;
+}
+
+interface UserResponse extends EntityWithTimestamps {
+	id: string;
+	email: string;
+	first_name: string;
+	last_name: string;
+	role: string;
+}
+
+interface TeamResponse extends EntityWithTimestamps {
+	id: string;
+	name: string;
+	velocity_baseline: number;
+	sprint_length_days: number;
+	working_days_per_week: number;
+}
+
+interface CalendarEntryResponse extends EntityWithTimestamps {
+	id: string;
+	user_id: string;
+	team_id: string;
+	entry_type: string;
+	title: string;
+	start_date: string | Date;
+	end_date: string | Date;
+	all_day: boolean;
+}
+
+interface SessionResponse extends EntityWithTimestamps {
+	id: string;
+	user_id: string;
+	session_token: string;
+	expires_at: string | Date;
+	is_active: boolean;
+	ip_address?: string;
+	user_agent?: string;
+}
+
+interface PaginatedResponse<T> {
+	data: T[];
+	pagination: {
+		total: number;
+		page: number;
+		limit: number;
+	};
+}
+
+interface ValidationError {
+	field: string;
+	message: string;
+}
+
 export class AssertionHelpers {
 	/**
 	 * Standardized async error testing
 	 */
-	static async expectAsyncError(promise: Promise<any>, expectedMessage: string, _context?: string): Promise<void> {
+	static async expectAsyncError(promise: Promise<unknown>, expectedMessage: string): Promise<void> {
 		await expect(promise).rejects.toThrow(expectedMessage);
 	}
 
 	/**
 	 * Standardized synchronous error testing
 	 */
-	static expectSyncError(fn: () => void, expectedError: any, _context?: string): void {
+	static expectSyncError(fn: () => void, expectedError: string | RegExp | Error): void {
 		expect(fn).toThrow(expectedError);
 	}
 
 	/**
 	 * Standardized user response validation (without password hash)
 	 */
-	static expectUserResponse(actual: any, expected: Partial<any>): void {
+	static expectUserResponse(actual: UserResponse, expected: Partial<UserResponse>): void {
 		expect(actual).not.toHaveProperty("password_hash");
 		expect(actual).toMatchObject(expected);
 		expect(actual.created_at).toEqual(expect.any(String));
@@ -31,7 +93,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized team response validation
 	 */
-	static expectTeamResponse(actual: any, expected: Partial<any>): void {
+	static expectTeamResponse(actual: TeamResponse, expected: Partial<TeamResponse>): void {
 		expect(actual).toMatchObject(expected);
 		expect(actual.created_at).toEqual(expect.any(String));
 		expect(actual.updated_at).toEqual(expect.any(String));
@@ -40,7 +102,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized calendar entry response validation
 	 */
-	static expectCalendarEntryResponse(actual: any, expected: Partial<any>): void {
+	static expectCalendarEntryResponse(actual: CalendarEntryResponse, expected: Partial<CalendarEntryResponse>): void {
 		expect(actual).toMatchObject(expected);
 		expect(actual.created_at).toEqual(expect.any(String));
 		expect(actual.updated_at).toEqual(expect.any(String));
@@ -51,21 +113,25 @@ export class AssertionHelpers {
 	/**
 	 * Standardized database query verification
 	 */
-	static expectDatabaseCall(mockQuery: Mock, expectedSql: string, expectedParams: any[]): void {
+	static expectDatabaseCall(mockQuery: Mock, expectedSql: string, expectedParams: unknown[]): void {
 		expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining(expectedSql), expectedParams);
 	}
 
 	/**
 	 * Standardized database query verification with regex
 	 */
-	static expectDatabaseCallWithPattern(mockQuery: Mock, sqlPattern: RegExp, expectedParams: any[]): void {
+	static expectDatabaseCallWithPattern(mockQuery: Mock, sqlPattern: RegExp, expectedParams: unknown[]): void {
 		expect(mockQuery).toHaveBeenCalledWith(expect.stringMatching(sqlPattern), expectedParams);
 	}
 
 	/**
 	 * Standardized API success response validation
 	 */
-	static expectApiSuccess(response: any, expectedStatus: number, expectedData?: any): void {
+	static expectApiSuccess(
+		response: ApiResponse,
+		expectedStatus: number,
+		expectedData?: Record<string, unknown>
+	): void {
 		expect(response.status).toBe(expectedStatus);
 		if (expectedData) {
 			expect(response.body).toMatchObject(expectedData);
@@ -75,16 +141,21 @@ export class AssertionHelpers {
 	/**
 	 * Standardized API error response validation
 	 */
-	static expectApiError(response: any, expectedStatus: number, expectedMessage: string): void {
+	static expectApiError(response: ApiResponse, expectedStatus: number, expectedMessage: string): void {
 		expect(response.status).toBe(expectedStatus);
 		expect(response.body).toHaveProperty("message");
-		expect(response.body.message).toBe(expectedMessage);
+		const responseBody = response.body as { message: string };
+		expect(responseBody.message).toBe(expectedMessage);
 	}
 
 	/**
 	 * Standardized array response validation
 	 */
-	static expectArrayResponse(actual: any[], expectedLength: number, elementValidator?: (element: any) => void): void {
+	static expectArrayResponse(
+		actual: unknown[],
+		expectedLength: number,
+		elementValidator?: (element: unknown) => void
+	): void {
 		expect(actual).toHaveLength(expectedLength);
 		if (elementValidator) {
 			actual.forEach(elementValidator);
@@ -94,7 +165,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized empty response validation
 	 */
-	static expectEmptyResponse(actual: any[]): void {
+	static expectEmptyResponse(actual: unknown[]): void {
 		expect(actual).toHaveLength(0);
 		expect(Array.isArray(actual)).toBe(true);
 	}
@@ -102,8 +173,8 @@ export class AssertionHelpers {
 	/**
 	 * Standardized pagination response validation
 	 */
-	static expectPaginatedResponse(
-		response: any,
+	static expectPaginatedResponse<T>(
+		response: PaginatedResponse<T>,
 		expectedTotal: number,
 		expectedPage: number,
 		expectedLimit: number
@@ -125,7 +196,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized mock call with parameters verification
 	 */
-	static expectMockCalledWith(mock: Mock, ...expectedArgs: any[]): void {
+	static expectMockCalledWith(mock: Mock, ...expectedArgs: unknown[]): void {
 		expect(mock).toHaveBeenCalledWith(...expectedArgs);
 	}
 
@@ -139,7 +210,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized date field validation (handles both Date objects and string dates)
 	 */
-	static expectValidDateFields(entity: any): void {
+	static expectValidDateFields(entity: EntityWithTimestamps): void {
 		// Accept either Date objects (from models) or strings (from API)
 		if (entity.created_at instanceof Date) {
 			expect(entity.created_at).toBeInstanceOf(Date);
@@ -157,23 +228,23 @@ export class AssertionHelpers {
 	/**
 	 * Standardized ID field validation
 	 */
-	static expectValidId(id: any): void {
+	static expectValidId(id: unknown): void {
 		expect(typeof id).toBe("string");
-		expect(id.length).toBeGreaterThan(0);
+		expect((id as string).length).toBeGreaterThan(0);
 	}
 
 	/**
 	 * Standardized email field validation
 	 */
-	static expectValidEmail(email: any): void {
+	static expectValidEmail(email: unknown): void {
 		expect(typeof email).toBe("string");
-		expect(email).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+		expect(email as string).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
 	}
 
 	/**
 	 * Standardized security field validation (no sensitive data exposed)
 	 */
-	static expectNoSensitiveData(response: any): void {
+	static expectNoSensitiveData(response: Record<string, unknown>): void {
 		expect(response).not.toHaveProperty("password");
 		expect(response).not.toHaveProperty("password_hash");
 		expect(response).not.toHaveProperty("token");
@@ -183,7 +254,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized object property validation
 	 */
-	static expectHasProperties(obj: any, properties: string[]): void {
+	static expectHasProperties(obj: Record<string, unknown>, properties: string[]): void {
 		properties.forEach(prop => {
 			expect(obj).toHaveProperty(prop);
 		});
@@ -192,7 +263,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized object property absence validation
 	 */
-	static expectMissingProperties(obj: any, properties: string[]): void {
+	static expectMissingProperties(obj: Record<string, unknown>, properties: string[]): void {
 		properties.forEach(prop => {
 			expect(obj).not.toHaveProperty(prop);
 		});
@@ -210,7 +281,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized validation error testing
 	 */
-	static expectValidationError(error: any, expectedField?: string, expectedMessage?: string): void {
+	static expectValidationError(error: ValidationError, expectedField?: string, expectedMessage?: string): void {
 		expect(error).toHaveProperty("field");
 		expect(error).toHaveProperty("message");
 
@@ -226,7 +297,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized database error testing
 	 */
-	static async expectDatabaseError(promise: Promise<any>, context?: string): Promise<void> {
+	static async expectDatabaseError(promise: Promise<unknown>, context?: string): Promise<void> {
 		const errorMessage = context ? `Database connection failed: ${context}` : "Database connection failed";
 		await expect(promise).rejects.toThrow(errorMessage);
 	}
@@ -234,7 +305,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized security error testing
 	 */
-	static async expectSecurityError(promise: Promise<any>, context?: string): Promise<void> {
+	static async expectSecurityError(promise: Promise<unknown>, context?: string): Promise<void> {
 		const errorMessage = context ? `Security violation: ${context}` : "Unauthorized access";
 		await expect(promise).rejects.toThrow(errorMessage);
 	}
@@ -242,7 +313,7 @@ export class AssertionHelpers {
 	/**
 	 * Standardized business rule error testing
 	 */
-	static async expectBusinessRuleError(promise: Promise<any>, rule: string): Promise<void> {
+	static async expectBusinessRuleError(promise: Promise<unknown>, rule: string): Promise<void> {
 		const errorMessage = `Business rule violation: ${rule}`;
 		await expect(promise).rejects.toThrow(errorMessage);
 	}
@@ -250,17 +321,22 @@ export class AssertionHelpers {
 	/**
 	 * Standardized validation error response testing (for API)
 	 */
-	static expectValidationErrorResponse(response: any, expectedField?: string, expectedMessage?: string): void {
+	static expectValidationErrorResponse(
+		response: ApiResponse,
+		expectedField?: string,
+		expectedMessage?: string
+	): void {
 		expect(response.status).toBe(400);
 		expect(response.body).toHaveProperty("message");
 
-		if (expectedField || expectedMessage) {
+		if (expectedField ?? expectedMessage) {
 			expect(response.body).toHaveProperty("field");
+			const responseBody = response.body as { field: string; message: string };
 			if (expectedField) {
-				expect(response.body.field).toBe(expectedField);
+				expect(responseBody.field).toBe(expectedField);
 			}
 			if (expectedMessage) {
-				expect(response.body.message).toContain(expectedMessage);
+				expect(responseBody.message).toContain(expectedMessage);
 			}
 		}
 	}
@@ -268,36 +344,39 @@ export class AssertionHelpers {
 	/**
 	 * Standardized conflict error response testing (for API)
 	 */
-	static expectConflictErrorResponse(response: any, expectedMessage: string): void {
+	static expectConflictErrorResponse(response: ApiResponse, expectedMessage: string): void {
 		expect(response.status).toBe(409);
 		expect(response.body).toHaveProperty("message");
-		expect(response.body.message).toBe(expectedMessage);
+		const responseBody = response.body as { message: string };
+		expect(responseBody.message).toBe(expectedMessage);
 	}
 
 	/**
 	 * Standardized not found error response testing (for API)
 	 */
-	static expectNotFoundErrorResponse(response: any, expectedMessage: string): void {
+	static expectNotFoundErrorResponse(response: ApiResponse, expectedMessage: string): void {
 		expect(response.status).toBe(404);
 		expect(response.body).toHaveProperty("message");
-		expect(response.body.message).toBe(expectedMessage);
+		const responseBody = response.body as { message: string };
+		expect(responseBody.message).toBe(expectedMessage);
 	}
 
 	/**
 	 * Standardized server error response testing (for API)
 	 */
-	static expectServerErrorResponse(response: any, expectedMessage?: string): void {
+	static expectServerErrorResponse(response: ApiResponse, expectedMessage?: string): void {
 		expect(response.status).toBe(500);
 		expect(response.body).toHaveProperty("message");
 		if (expectedMessage) {
-			expect(response.body.message).toBe(expectedMessage);
+			const responseBody = response.body as { message: string };
+			expect(responseBody.message).toBe(expectedMessage);
 		}
 	}
 
 	/**
 	 * Standardized partial message error testing
 	 */
-	static async expectAsyncErrorContaining(promise: Promise<any>, expectedMessagePart: string): Promise<void> {
+	static async expectAsyncErrorContaining(promise: Promise<unknown>, expectedMessagePart: string): Promise<void> {
 		try {
 			await promise;
 			throw new Error(`Expected promise to reject with message containing "${expectedMessagePart}"`);
@@ -309,10 +388,10 @@ export class AssertionHelpers {
 	/**
 	 * Standardized error type testing
 	 */
-	static expectErrorType(error: any, expectedType: any, context?: string): void {
+	static expectErrorType(error: unknown, expectedType: new (...args: unknown[]) => Error, context?: string): void {
 		expect(error instanceof expectedType).toBe(true);
 		if (context) {
-			expect(error.message).toContain(context);
+			expect((error as Error).message).toContain(context);
 		}
 	}
 }
@@ -324,7 +403,7 @@ export class DomainAssertionHelpers extends AssertionHelpers {
 	/**
 	 * Calendar entry specific validations
 	 */
-	static expectValidCalendarEntry(entry: any): void {
+	static expectValidCalendarEntry(entry: CalendarEntryResponse): void {
 		this.expectHasProperties(entry, [
 			"id",
 			"user_id",
@@ -350,7 +429,7 @@ export class DomainAssertionHelpers extends AssertionHelpers {
 	/**
 	 * Team specific validations
 	 */
-	static expectValidTeam(team: any): void {
+	static expectValidTeam(team: TeamResponse): void {
 		this.expectHasProperties(team, [
 			"id",
 			"name",
@@ -371,7 +450,7 @@ export class DomainAssertionHelpers extends AssertionHelpers {
 	/**
 	 * User specific validations
 	 */
-	static expectValidUser(user: any): void {
+	static expectValidUser(user: UserResponse): void {
 		this.expectHasProperties(user, ["id", "email", "first_name", "last_name", "role"]);
 		this.expectValidId(user.id);
 		this.expectValidEmail(user.email);
@@ -384,7 +463,7 @@ export class DomainAssertionHelpers extends AssertionHelpers {
 	/**
 	 * Session specific validations
 	 */
-	static expectValidSession(session: any): void {
+	static expectValidSession(session: SessionResponse): void {
 		this.expectHasProperties(session, [
 			"id",
 			"user_id",

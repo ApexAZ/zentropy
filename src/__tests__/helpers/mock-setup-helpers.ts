@@ -61,12 +61,19 @@ export class MockSetupHelpers {
 	/**
 	 * Database mock helpers for common scenarios
 	 */
-	static createDatabaseHelpers(mockPool: MockedDatabasePool) {
+	static createDatabaseHelpers(mockPool: MockedDatabasePool): {
+		mockSuccessfulQuery: (returnValue: unknown) => void;
+		mockFailedQuery: (error?: Error) => void;
+		mockEmptyQuery: () => void;
+		mockDeleteSuccess: (rowCount?: number) => void;
+		mockDeleteFailure: () => void;
+		resetDatabaseMocks: () => void;
+	} {
 		return {
 			/**
 			 * Mock successful database query with return data
 			 */
-			mockSuccessfulQuery: (returnValue: any[] | any) => {
+			mockSuccessfulQuery: (returnValue: unknown): void => {
 				const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
 				mockPool.query.mockResolvedValue({
 					rows,
@@ -77,14 +84,14 @@ export class MockSetupHelpers {
 			/**
 			 * Mock failed database query with error
 			 */
-			mockFailedQuery: (error: Error = new Error("Database connection failed")) => {
+			mockFailedQuery: (error: Error = new Error("Database connection failed")): void => {
 				mockPool.query.mockRejectedValue(error);
 			},
 
 			/**
 			 * Mock empty database query result
 			 */
-			mockEmptyQuery: () => {
+			mockEmptyQuery: (): void => {
 				mockPool.query.mockResolvedValue({
 					rows: [],
 					rowCount: 0
@@ -94,7 +101,7 @@ export class MockSetupHelpers {
 			/**
 			 * Mock successful delete operation
 			 */
-			mockDeleteSuccess: (rowCount: number = 1) => {
+			mockDeleteSuccess: (rowCount: number = 1): void => {
 				mockPool.query.mockResolvedValue({
 					rows: [],
 					rowCount
@@ -104,7 +111,7 @@ export class MockSetupHelpers {
 			/**
 			 * Mock failed delete operation (no rows affected)
 			 */
-			mockDeleteFailure: () => {
+			mockDeleteFailure: (): void => {
 				mockPool.query.mockResolvedValue({
 					rows: [],
 					rowCount: 0
@@ -114,7 +121,7 @@ export class MockSetupHelpers {
 			/**
 			 * Reset all database mocks
 			 */
-			resetDatabaseMocks: () => {
+			resetDatabaseMocks: (): void => {
 				mockPool.query.mockReset();
 			}
 		};
@@ -171,7 +178,7 @@ export class MockSetupHelpers {
 	/**
 	 * Setup Express app mocks for API testing
 	 */
-	static setupExpressMocks() {
+	static setupExpressMocks(): Record<string, unknown> {
 		const mockRequest = {
 			body: {},
 			params: {},
@@ -194,7 +201,7 @@ export class MockSetupHelpers {
 	/**
 	 * Standard mock configurations for different test scenarios
 	 */
-	static getStandardMockConfigs() {
+	static getStandardMockConfigs(): Record<string, unknown> {
 		return {
 			/**
 			 * Configuration for successful operations
@@ -249,6 +256,7 @@ export class MockSetupHelpers {
 	/**
 	 * Apply standard mock configurations
 	 */
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	static applyMockConfiguration<T extends Record<string, Mock>>(mocks: T, config: Record<keyof T, any>): void {
 		Object.keys(config).forEach(key => {
 			const mockKey = key as keyof T;
@@ -261,7 +269,28 @@ export class MockSetupHelpers {
 	/**
 	 * Setup complete test environment with all mocks
 	 */
-	static setupCompleteTestEnvironment() {
+	static setupCompleteTestEnvironment(): {
+		database: {
+			mocks: MockedDatabasePool;
+			helpers: {
+				mockSuccessfulQuery: (returnValue: unknown) => void;
+				mockFailedQuery: (error?: Error) => void;
+				mockEmptyQuery: () => void;
+				mockDeleteSuccess: (rowCount?: number) => void;
+				mockDeleteFailure: () => void;
+				resetDatabaseMocks: () => void;
+			};
+		};
+		models: {
+			user: MockedUserModel;
+			team: MockedTeamModel;
+			calendar: MockedCalendarEntryModel;
+		};
+		express: Record<string, unknown>;
+		configs: Record<string, unknown>;
+		applyConfig: typeof MockSetupHelpers.applyMockConfiguration;
+		resetAll: () => void;
+	} {
 		const databaseMocks = this.setupDatabaseMocks();
 		const databaseHelpers = this.createDatabaseHelpers(databaseMocks);
 		const userMocks = this.setupUserModelMocks();
@@ -282,12 +311,12 @@ export class MockSetupHelpers {
 			},
 			express: expressMocks,
 			configs,
-			applyConfig: this.applyMockConfiguration,
+			applyConfig: this.applyMockConfiguration.bind(this),
 
 			/**
 			 * Reset all mocks in the environment
 			 */
-			resetAll: () => {
+			resetAll: (): void => {
 				vi.clearAllMocks();
 				databaseHelpers.resetDatabaseMocks();
 			}
@@ -297,29 +326,30 @@ export class MockSetupHelpers {
 	/**
 	 * Get common error scenarios for consistent error testing
 	 */
-	static getCommonErrors() {
+	static getCommonErrors(): Record<string, unknown> {
 		const configs = this.getStandardMockConfigs();
 		return {
-			...configs.error,
+			...(configs.error as Record<string, unknown>),
 
 			/**
 			 * Create contextual database errors
 			 */
-			createDatabaseError: (operation: string) => new Error(`Database connection failed during ${operation}`),
+			createDatabaseError: (operation: string): Error =>
+				new Error(`Database connection failed during ${operation}`),
 
 			/**
 			 * Create validation errors with field context
 			 */
-			createValidationError: (field: string, reason: string) => {
-				const error = new Error(`Validation failed: ${reason}`);
-				(error as any).field = field;
+			createValidationError: (field: string, reason: string): Error & { field: string } => {
+				const error = new Error(`Validation failed: ${reason}`) as Error & { field: string };
+				error.field = field;
 				return error;
 			},
 
 			/**
 			 * Create business rule errors
 			 */
-			createBusinessRuleError: (rule: string) => new Error(`Business rule violation: ${rule}`),
+			createBusinessRuleError: (rule: string): Error => new Error(`Business rule violation: ${rule}`),
 
 			/**
 			 * Create security errors with context
@@ -341,12 +371,22 @@ export class MockSetupHelpers {
 	/**
 	 * Common mock scenarios for quick setup
 	 */
-	static createCommonScenarios() {
+	static createCommonScenarios(): {
+		userCreationSuccess: (mockUser: MockedUserModel, userData: unknown, createdUser: User) => void;
+		userCreationEmailConflict: (mockUser: MockedUserModel, existingUser: User) => void;
+		teamCreationSuccess: (mockTeam: MockedTeamModel, teamData: unknown, createdTeam: Team) => void;
+		calendarEntryCreationSuccess: (
+			mockCalendar: MockedCalendarEntryModel,
+			entryData: unknown,
+			createdEntry: CalendarEntry
+		) => void;
+		calendarEntryConflict: (mockCalendar: MockedCalendarEntryModel, conflictingEntries: CalendarEntry[]) => void;
+	} {
 		return {
 			/**
 			 * Setup mocks for successful user creation flow
 			 */
-			userCreationSuccess: (mockUser: MockedUserModel, _userData: any, createdUser: User) => {
+			userCreationSuccess: (mockUser: MockedUserModel, _userData: unknown, createdUser: User): void => {
 				mockUser.findByEmail.mockResolvedValue(null); // Email doesn't exist
 				mockUser.create.mockResolvedValue(createdUser);
 			},
@@ -354,14 +394,14 @@ export class MockSetupHelpers {
 			/**
 			 * Setup mocks for user creation with email conflict
 			 */
-			userCreationEmailConflict: (mockUser: MockedUserModel, existingUser: User) => {
+			userCreationEmailConflict: (mockUser: MockedUserModel, existingUser: User): void => {
 				mockUser.findByEmail.mockResolvedValue(existingUser);
 			},
 
 			/**
 			 * Setup mocks for successful team creation flow
 			 */
-			teamCreationSuccess: (mockTeam: MockedTeamModel, _teamData: any, createdTeam: Team) => {
+			teamCreationSuccess: (mockTeam: MockedTeamModel, _teamData: unknown, createdTeam: Team): void => {
 				mockTeam.create.mockResolvedValue(createdTeam);
 			},
 
@@ -370,9 +410,9 @@ export class MockSetupHelpers {
 			 */
 			calendarEntryCreationSuccess: (
 				mockCalendar: MockedCalendarEntryModel,
-				_entryData: any,
+				_entryData: unknown,
 				createdEntry: CalendarEntry
-			) => {
+			): void => {
 				mockCalendar.findConflicts.mockResolvedValue([]);
 				mockCalendar.create.mockResolvedValue(createdEntry);
 			},
@@ -380,7 +420,10 @@ export class MockSetupHelpers {
 			/**
 			 * Setup mocks for calendar entry with conflicts
 			 */
-			calendarEntryConflict: (mockCalendar: MockedCalendarEntryModel, conflictingEntries: CalendarEntry[]) => {
+			calendarEntryConflict: (
+				mockCalendar: MockedCalendarEntryModel,
+				conflictingEntries: CalendarEntry[]
+			): void => {
 				mockCalendar.findConflicts.mockResolvedValue(conflictingEntries);
 			}
 		};
@@ -394,6 +437,7 @@ export class MockVerificationHelpers {
 	/**
 	 * Verify that a mock was called with specific SQL pattern
 	 */
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	static verifyDatabaseCall(mockQuery: Mock, expectedSqlPattern: string | RegExp, expectedParams?: any[]): void {
 		const calls = mockQuery.mock.calls;
 		const matchingCall = calls.find(call => {

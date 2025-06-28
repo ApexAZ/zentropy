@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import type { QueryResult } from "pg";
 import { UserModel } from "../../models/User";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
@@ -7,7 +8,7 @@ import { pool } from "../../database/connection";
 // Mock the database connection
 vi.mock("../../database/connection", () => ({
 	pool: {
-		query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 })
+		query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 } as QueryResult)
 	}
 }));
 
@@ -24,17 +25,19 @@ describe("UserModel", () => {
 	});
 
 	// Helper functions for common mock scenarios
-	const mockSuccessfulQuery = (returnValue: any) => {
+	const mockSuccessfulQuery = (returnValue: unknown): void => {
 		const rows = Array.isArray(returnValue) ? returnValue : [returnValue];
-		(mockPool.query as any).mockResolvedValue({ rows, rowCount: rows.length });
+		const mockResult: QueryResult = { rows, rowCount: rows.length, command: "SELECT", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
-	const mockEmptyQuery = () => {
-		(mockPool.query as any).mockResolvedValue({ rows: [], rowCount: 0 });
+	const mockEmptyQuery = (): void => {
+		const mockResult: QueryResult = { rows: [], rowCount: 0, command: "SELECT", oid: 0, fields: [] };
+		(mockPool.query as Mock).mockResolvedValue(mockResult);
 	};
 
-	const mockFailedQuery = (error = new Error("Database connection failed")) => {
-		mockPool.query.mockRejectedValue(error);
+	const mockFailedQuery = (error = new Error("Database connection failed")): void => {
+		(mockPool.query as Mock).mockRejectedValue(error);
 	};
 
 	describe("emailExists", () => {
@@ -45,7 +48,9 @@ describe("UserModel", () => {
 			const result = await UserModel.emailExists(mockUser.email);
 
 			expect(result).toBe(true);
-			AssertionHelpers.expectDatabaseCall(mockPool.query, "LOWER(email) = LOWER($1)", [mockUser.email]);
+			// eslint-disable-next-line @typescript-eslint/unbound-method
+			const queryFn = mockPool.query;
+			expect(queryFn).toHaveBeenCalledWith(expect.stringContaining("LOWER(email) = LOWER($1)"), [mockUser.email]);
 		});
 
 		it("should return false when email does not exist", async () => {
@@ -73,8 +78,11 @@ describe("UserModel", () => {
 
 			const result = await UserModel.findByEmail(mockUser.email);
 
-			DomainAssertionHelpers.expectValidUser(result!);
-			expect(result!.email).toBe(mockUser.email);
+			if (!result) {
+				throw new Error("Expected user to be found");
+			}
+			DomainAssertionHelpers.expectValidUser(result);
+			expect(result.email).toBe(mockUser.email);
 		});
 
 		it("should return null when user not found", async () => {
@@ -93,8 +101,11 @@ describe("UserModel", () => {
 
 			const result = await UserModel.findById(mockUser.id);
 
-			DomainAssertionHelpers.expectValidUser(result!);
-			expect(result!.id).toBe(mockUser.id);
+			if (!result) {
+				throw new Error("Expected user to be found");
+			}
+			DomainAssertionHelpers.expectValidUser(result);
+			expect(result.id).toBe(mockUser.id);
 		});
 
 		it("should return null when user not found", async () => {
@@ -114,8 +125,10 @@ describe("UserModel", () => {
 
 			const result = await UserModel.update(mockUser.id, { first_name: "Updated" });
 
-			expect(result).toBeDefined();
-			expect(result!.first_name).toBe("Updated");
+			if (!result) {
+				throw new Error("Expected user to be updated");
+			}
+			expect(result.first_name).toBe("Updated");
 		});
 
 		it("should return null when user not found", async () => {
@@ -129,7 +142,8 @@ describe("UserModel", () => {
 
 	describe("delete", () => {
 		it("should delete user", async () => {
-			(mockPool.query as any).mockResolvedValue({ rows: [], rowCount: 1 });
+			const mockResult: QueryResult = { rows: [], rowCount: 1, command: "DELETE", oid: 0, fields: [] };
+			(mockPool.query as Mock).mockResolvedValue(mockResult);
 
 			const result = await UserModel.delete("user-id");
 
@@ -137,7 +151,8 @@ describe("UserModel", () => {
 		});
 
 		it("should return false when user not found", async () => {
-			(mockPool.query as any).mockResolvedValue({ rows: [], rowCount: 0 });
+			const mockResult: QueryResult = { rows: [], rowCount: 0, command: "DELETE", oid: 0, fields: [] };
+			(mockPool.query as Mock).mockResolvedValue(mockResult);
 
 			const result = await UserModel.delete("nonexistent-id");
 
@@ -152,12 +167,16 @@ describe("UserModel", () => {
 
 			const result = await UserModel.findById(mockUser.id);
 
+			if (!result) {
+				throw new Error("Expected user to be found");
+			}
+
 			// Validate that sensitive data is preserved in model layer
 			expect(result).toHaveProperty("password_hash");
-			expect(result!.password_hash).toBe(mockUser.password_hash);
+			expect(result.password_hash).toBe(mockUser.password_hash);
 
 			// Validate all required fields are present
-			DomainAssertionHelpers.expectValidUser(result!);
+			DomainAssertionHelpers.expectValidUser(result);
 		});
 
 		it("should handle user role validation", async () => {
@@ -166,8 +185,11 @@ describe("UserModel", () => {
 
 			const result = await UserModel.findById(teamLeadUser.id);
 
-			expect(result!.role).toBe("team_lead");
-			expect(["team_lead", "team_member"]).toContain(result!.role);
+			if (!result) {
+				throw new Error("Expected user to be found");
+			}
+			expect(result.role).toBe("team_lead");
+			expect(["team_lead", "team_member"]).toContain(result.role);
 		});
 	});
 });

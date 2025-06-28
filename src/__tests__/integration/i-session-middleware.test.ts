@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express, { Request, Response } from "express";
-import { UserModel } from "../../models/User";
-import { SessionModel } from "../../models/Session";
+import { UserModel, type User } from "../../models/User";
+import { SessionModel, type Session } from "../../models/Session";
 import sessionAuthMiddleware from "../../middleware/session-auth";
 
 // Integration test for session validation middleware
 describe("Session Authentication Middleware", () => {
 	let app: express.Application;
-	let testUser: any;
-	let testSession: any;
+	let testUser: User;
+	let testSession: Session;
 
 	beforeEach(async () => {
 		app = express();
@@ -35,7 +35,7 @@ describe("Session Authentication Middleware", () => {
 		app.get("/protected", sessionAuthMiddleware, (_req: Request, res: Response) => {
 			res.json({
 				message: "Access granted",
-				user: res.locals.user
+				user: res.locals.user as User
 			});
 		});
 	});
@@ -59,11 +59,12 @@ describe("Session Authentication Middleware", () => {
 				.expect(200);
 
 			// Assert: Should get successful response with user data
-			expect(response.body).toHaveProperty("message", "Access granted");
-			expect(response.body).toHaveProperty("user");
-			expect(response.body.user).toHaveProperty("id", testUser.id);
-			expect(response.body.user).toHaveProperty("email", testUser.email);
-			expect(response.body.user).not.toHaveProperty("password_hash");
+			const responseBody = response.body as { message: string; user: User };
+			expect(responseBody).toHaveProperty("message", "Access granted");
+			expect(responseBody).toHaveProperty("user");
+			expect(responseBody.user).toHaveProperty("id", testUser.id);
+			expect(responseBody.user).toHaveProperty("email", testUser.email);
+			expect(responseBody.user).not.toHaveProperty("password_hash");
 		});
 
 		it("should update session activity on valid access", async () => {
@@ -77,7 +78,10 @@ describe("Session Authentication Middleware", () => {
 
 			// Check that session activity was updated
 			const updatedSession = await SessionModel.findByToken(testSession.session_token);
-			expect(updatedSession?.updated_at.getTime()).toBeGreaterThan(originalUpdatedAt!.getTime());
+			if (!originalUpdatedAt) {
+				throw new Error("Original session updated_at should be defined");
+			}
+			expect(updatedSession?.updated_at.getTime()).toBeGreaterThan(originalUpdatedAt.getTime());
 		});
 
 		it("should work with session that has user data", async () => {
@@ -87,10 +91,11 @@ describe("Session Authentication Middleware", () => {
 				.expect(200);
 
 			// Verify user data is complete
-			expect(response.body.user.first_name).toBe("John");
-			expect(response.body.user.last_name).toBe("Smith");
-			expect(response.body.user.role).toBe("team_member");
-			expect(response.body.user.is_active).toBe(true);
+			const responseBody = response.body as { user: User };
+			expect(responseBody.user.first_name).toBe("John");
+			expect(responseBody.user.last_name).toBe("Smith");
+			expect(responseBody.user.role).toBe("team_member");
+			expect(responseBody.user.is_active).toBe(true);
 		});
 	});
 
@@ -98,7 +103,8 @@ describe("Session Authentication Middleware", () => {
 		it("should reject request with no session cookie", async () => {
 			const response = await request(app).get("/protected").expect(401);
 
-			expect(response.body).toHaveProperty("message", "Authentication required");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Authentication required");
 		});
 
 		it("should reject request with invalid session token", async () => {
@@ -107,7 +113,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", "sessionToken=invalid-token-12345")
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 
 		it("should reject request with expired session", async () => {
@@ -126,7 +133,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", `sessionToken=${expiredSession.session_token}`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 
 		it("should reject request with inactive session", async () => {
@@ -138,7 +146,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 
 		it("should reject request with malformed session cookie", async () => {
@@ -147,7 +156,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", "sessionToken=malformed-cookie")
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "Invalid or expired session");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Invalid or expired session");
 		});
 	});
 
@@ -163,7 +173,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", `sessionToken=${testSession.session_token}`)
 				.expect(401);
 
-			expect(response.body).toHaveProperty("message", "User account is not active");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "User account is not active");
 		});
 	});
 
@@ -179,7 +190,8 @@ describe("Session Authentication Middleware", () => {
 				)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("message", "Access granted");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Access granted");
 		});
 
 		it("should handle cookie with extra whitespace", async () => {
@@ -188,7 +200,8 @@ describe("Session Authentication Middleware", () => {
 				.set("Cookie", ` sessionToken=${testSession.session_token} ; other=value `)
 				.expect(200);
 
-			expect(response.body).toHaveProperty("message", "Access granted");
+			const responseBody = response.body as { message: string };
+			expect(responseBody).toHaveProperty("message", "Access granted");
 		});
 	});
 });

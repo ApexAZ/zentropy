@@ -62,7 +62,6 @@ describe("Frontend TypeScript Type Safety", () => {
 			const teamWithoutDescription: Team = {
 				id: "1",
 				name: "Backend Team",
-				description: undefined,
 				velocity_baseline: 30,
 				sprint_length_days: 21,
 				working_days_per_week: 4,
@@ -75,7 +74,7 @@ describe("Frontend TypeScript Type Safety", () => {
 		});
 
 		it("should validate team object without description property", () => {
-			const { description, ...teamWithoutDescriptionProperty } = {
+			const teamWithDescriptionProperty = {
 				id: "1",
 				name: "DevOps Team",
 				description: "Infrastructure",
@@ -85,9 +84,12 @@ describe("Frontend TypeScript Type Safety", () => {
 				created_at: "2024-01-01T00:00:00Z",
 				updated_at: "2024-01-01T00:00:00Z"
 			};
+			const { description, ...teamWithoutDescriptionProperty } = teamWithDescriptionProperty;
 
 			// This should still be a valid Team due to optional description
 			const team = teamWithoutDescriptionProperty as Team;
+			// Verify description was removed
+			expect(description).toBe("Infrastructure");
 			expect(team.name).toBe("DevOps Team");
 			expect(team.description).toBeUndefined();
 		});
@@ -123,7 +125,6 @@ describe("Frontend TypeScript Type Safety", () => {
 		it("should validate create team data with undefined description", () => {
 			const createDataWithUndefined: CreateTeamData = {
 				name: "Team with Undefined",
-				description: undefined,
 				velocity_baseline: 25,
 				sprint_length_days: 28,
 				working_days_per_week: 6
@@ -158,9 +159,7 @@ describe("Frontend TypeScript Type Safety", () => {
 
 		it("should validate validation error with optional fields undefined", () => {
 			const errorWithUndefined: ValidationError = {
-				message: "Error occurred",
-				field: undefined,
-				details: undefined
+				message: "Error occurred"
 			};
 
 			expect(errorWithUndefined.message).toBe("Error occurred");
@@ -198,8 +197,8 @@ describe("Frontend TypeScript Type Safety", () => {
 
 			expect(Array.isArray(teams)).toBe(true);
 			expect(teams).toHaveLength(2);
-			expect(teams[0].name).toBe("Team 1");
-			expect(teams[1].description).toBe("Second team");
+			expect(teams[0]?.name).toBe("Team 1");
+			expect(teams[1]?.description).toBe("Second team");
 		});
 
 		it("should handle API response casting for single Team", () => {
@@ -248,7 +247,7 @@ describe("Frontend TypeScript Type Safety", () => {
 					sprint_length_days: "14",
 					working_days_per_week: "5"
 				};
-				return formData[key] || null;
+				return formData[key] ?? null;
 			};
 
 			// Test string fields
@@ -267,7 +266,7 @@ describe("Frontend TypeScript Type Safety", () => {
 					sprint_length_days: "14",
 					working_days_per_week: "5"
 				};
-				return formData[key] || null;
+				return formData[key] ?? null;
 			};
 
 			// Test numeric field conversion
@@ -301,13 +300,19 @@ describe("Frontend TypeScript Type Safety", () => {
 
 			// Test error type guards
 			expect(jsError instanceof Error).toBe(true);
-			expect(customError instanceof Error).toBe(false);
-			expect(stringError instanceof Error).toBe(false);
+			expect((customError as unknown as object) instanceof Error).toBe(false);
+			expect((stringError as unknown as object) instanceof Error).toBe(false);
 
 			// Test error message extraction
 			const errorMessage1 = jsError instanceof Error ? jsError.message : "Unknown error";
-			const errorMessage2 = customError instanceof Error ? customError.message : "Unknown error";
-			const errorMessage3 = stringError instanceof Error ? stringError.message : "Unknown error";
+			const errorMessage2 =
+				(customError as unknown as object) instanceof Error
+					? (customError as unknown as Error).message
+					: "Unknown error";
+			const errorMessage3 =
+				(stringError as unknown as object) instanceof Error
+					? (stringError as unknown as Error).message
+					: "Unknown error";
 
 			expect(errorMessage1).toBe("JavaScript Error");
 			expect(errorMessage2).toBe("Unknown error");
@@ -339,8 +344,8 @@ describe("Frontend TypeScript Type Safety", () => {
 			const falseValue = false;
 
 			// Logical OR (||) - all falsy values trigger fallback
-			expect(nullValue || "fallback").toBe("fallback");
-			expect(undefinedValue || "fallback").toBe("fallback");
+			expect(nullValue ?? "fallback").toBe("fallback");
+			expect(undefinedValue ?? "fallback").toBe("fallback");
 			expect(emptyString || "fallback").toBe("fallback"); // Empty string IS falsy
 			expect(zeroValue || "fallback").toBe("fallback"); // Zero IS falsy
 			expect(falseValue || "fallback").toBe("fallback"); // False IS falsy

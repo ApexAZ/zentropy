@@ -16,10 +16,11 @@ describe("Rate Limiter Middleware", () => {
 		app.use(express.json());
 
 		// Test routes that mirror actual usage
-		app.post("/test/login", loginRateLimit, (req: Request, res: Response) => {
+		app.post("/test/login", loginRateLimit, (req: Request, res: Response): void => {
 			const body = req.body as { email?: string };
 			if (!body.email) {
-				return res.status(400).json({ message: "Email required" });
+				res.status(400).json({ message: "Email required" });
+				return;
 			}
 			res.json({ success: true, email: body.email });
 		});
@@ -28,11 +29,11 @@ describe("Rate Limiter Middleware", () => {
 			res.json({ success: true, userId: req.params.id });
 		});
 
-		app.post("/test/users", userCreationRateLimit, (req: Request, res: Response) => {
+		app.post("/test/users", userCreationRateLimit, (_req: Request, res: Response) => {
 			res.status(201).json({ success: true });
 		});
 
-		app.get("/test/general", generalApiRateLimit, (req: Request, res: Response) => {
+		app.get("/test/general", generalApiRateLimit, (_req: Request, res: Response) => {
 			res.json({ success: true });
 		});
 	});
@@ -53,7 +54,7 @@ describe("Rate Limiter Middleware", () => {
 					.set("X-Forwarded-For", "127.0.0.1");
 
 				expect(response.status).toBe(200);
-				expect(response.body.success).toBe(true);
+				expect((response.body as { success: boolean }).success).toBe(true);
 			}
 		});
 
@@ -69,7 +70,7 @@ describe("Rate Limiter Middleware", () => {
 			const response = await request(app).post("/test/login").send({ email }).set("X-Forwarded-For", "127.0.0.1");
 
 			expect(response.status).toBe(429);
-			expect(response.body.error).toBe("Too many login attempts");
+			expect((response.body as { error: string }).error).toBe("Too many login attempts");
 		});
 
 		test("should use IP+email combination for rate limiting", async () => {
@@ -111,7 +112,7 @@ describe("Rate Limiter Middleware", () => {
 					.set("X-Forwarded-For", "127.0.0.1");
 
 				expect(response.status).toBe(200);
-				expect(response.body.success).toBe(true);
+				expect((response.body as { success: boolean }).success).toBe(true);
 			}
 		});
 
@@ -133,7 +134,7 @@ describe("Rate Limiter Middleware", () => {
 				.set("X-Forwarded-For", "127.0.0.1");
 
 			expect(response.status).toBe(429);
-			expect(response.body.error).toBe("Too many password update attempts");
+			expect((response.body as { error: string }).error).toBe("Too many password update attempts");
 		});
 
 		test("should use IP+userId combination for rate limiting", async () => {
@@ -162,7 +163,7 @@ describe("Rate Limiter Middleware", () => {
 					.set("X-Forwarded-For", "127.0.0.1");
 
 				expect(response.status).toBe(201);
-				expect(response.body.success).toBe(true);
+				expect((response.body as { success: boolean }).success).toBe(true);
 			}
 		});
 
@@ -182,7 +183,7 @@ describe("Rate Limiter Middleware", () => {
 				.set("X-Forwarded-For", "127.0.0.1");
 
 			expect(response.status).toBe(429);
-			expect(response.body.error).toBe("Too many account creation attempts");
+			expect((response.body as { error: string }).error).toBe("Too many account creation attempts");
 		});
 	});
 
@@ -193,7 +194,7 @@ describe("Rate Limiter Middleware", () => {
 				const response = await request(app).get("/test/general").set("X-Forwarded-For", "127.0.0.1");
 
 				expect(response.status).toBe(200);
-				expect(response.body.success).toBe(true);
+				expect((response.body as { success: boolean }).success).toBe(true);
 			}
 		});
 
@@ -201,7 +202,7 @@ describe("Rate Limiter Middleware", () => {
 			const response = await request(app).get("/test/general").set("X-Forwarded-For", "127.0.0.1");
 
 			expect(response.headers["ratelimit-limit"]).toBe("100");
-			expect(parseInt(response.headers["ratelimit-remaining"])).toBeLessThan(100);
+			expect(parseInt(response.headers["ratelimit-remaining"] ?? "0")).toBeLessThan(100);
 		});
 	});
 
@@ -224,7 +225,7 @@ describe("Rate Limiter Middleware", () => {
 			expect(response.body).toHaveProperty("error");
 			expect(response.body).toHaveProperty("message");
 			expect(response.body).toHaveProperty("retryAfter");
-			expect(response.body.retryAfter).toBe("15 minutes");
+			expect((response.body as { retryAfter: string }).retryAfter).toBe("15 minutes");
 		});
 	});
 

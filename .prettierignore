@@ -1,0 +1,30 @@
+# Build output
+dist/
+node_modules/
+
+# Dependencies
+node_modules
+
+# Generated files
+*.d.ts
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package files
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Documentation that shouldn't be formatted
+CHANGELOG.md

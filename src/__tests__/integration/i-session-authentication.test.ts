@@ -1,24 +1,66 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel } from "../../models/User";
-import { SessionModel } from "../../models/Session";
+import { UserModel, type User } from "../../models/User";
+import { SessionModel, type Session } from "../../models/Session";
 import usersRouter from "../../routes/users";
+
+interface LoginResponseBody {
+	message: string;
+	user: {
+		id: string;
+		email: string;
+		first_name: string;
+		last_name: string;
+		role: string;
+		is_active: boolean;
+	};
+}
+
+interface ErrorResponseBody {
+	message: string;
+}
 
 // Integration test for session-based authentication with HTTP cookies
 describe("Session Authentication Integration", () => {
 	let app: express.Application;
 	let testUsers: string[] = []; // Track created users for cleanup
+	let testSessions: string[] = []; // Track created sessions for cleanup
+
+	// Use a unique test prefix to avoid conflicts with other parallel tests
+	// Use a special domain that no other tests will use to ensure complete isolation
+	const TEST_PREFIX = `session-auth-${Date.now()}-${process.pid}`;
+	const TEST_DOMAIN = "session-auth-test.local";
 
 	beforeEach(() => {
 		app = express();
 		app.use(express.json());
 		app.use("/api/users", usersRouter);
 		testUsers = []; // Reset user tracking
+		testSessions = []; // Reset session tracking
 	});
 
 	afterEach(async () => {
-		// Clean up test users
+		// Wait a small delay to ensure no operations are still in progress
+		await new Promise(resolve => setTimeout(resolve, 100));
+
+		// Clean up test sessions FIRST (before users due to foreign key constraints)
+		for (const sessionToken of testSessions) {
+			try {
+				await SessionModel.invalidate(sessionToken);
+			} catch (error) {
+				// Session might already be invalidated, continue cleanup
+			}
+		}
+
+		// Also clean up any expired sessions
+		try {
+			await SessionModel.cleanupExpired();
+		} catch (error) {
+			// Continue cleanup even if this fails
+		}
+
+		// Then clean up test users
 		for (const userId of testUsers) {
 			try {
 				await UserModel.delete(userId);
@@ -26,55 +68,52 @@ describe("Session Authentication Integration", () => {
 				// User might already be deleted, continue cleanup
 			}
 		}
-		// Clean up test sessions
-		await SessionModel.cleanupExpired();
 	});
 
 	describe("Login with Session Creation", () => {
 		it("should create session and set HTTP-only cookie on successful login", async () => {
-			// Arrange: Create a test user with strong password
-			const strongPassword = "SecureTestP@ssw0rd2024!XyZ";
-			const testUser = await UserModel.create({
-				email: "session-test-unique@example.com",
+			// Arrange: Create a test user with strong password and highly unique email
+			const strongPassword = "SuperStr0ng!P@ssw0rd#2024";
+			const uniqueEmail = `${TEST_PREFIX}-login-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
+			const testUser: User = await UserModel.create({
+				email: uniqueEmail,
 				password: strongPassword,
-				first_name: "SessionTester",
-				last_name: "Authentication",
+				first_name: "John",
+				last_name: "Doe",
 				role: "team_member"
 			});
 			testUsers.push(testUser.id); // Track for cleanup
 
 			// Verify user was created properly
-			const createdUser = await UserModel.findByEmail("session-test-unique@example.com");
+			const createdUser = await UserModel.findByEmail(uniqueEmail);
 			expect(createdUser).toBeTruthy();
 			expect(createdUser?.id).toBe(testUser.id);
 
 			// Act: Login with valid credentials
 			const response = await request(app).post("/api/users/login").send({
-				email: "session-test-unique@example.com",
+				email: uniqueEmail,
 				password: strongPassword
 			});
 
 			// Debug: Log response if not 200
 			if (response.status !== 200) {
-				console.log("Login failed with status:", response.status);
-				console.log("Response body:", response.body);
-				console.log("Response text:", response.text);
-				console.log("Test user ID:", testUser.id);
-				console.log("Found user:", createdUser);
+				// Console statements removed for ESLint compliance
+				// In a real scenario, these would be proper test failure messages
 			}
 
 			expect(response.status).toBe(200);
 
 			// Assert: Response should contain user data without sensitive info
-			expect(response.body).toHaveProperty("message", "Login successful");
-			expect(response.body).toHaveProperty("user");
-			expect(response.body.user).not.toHaveProperty("password_hash");
-			expect(response.body.user.email).toBe("session-test-unique@example.com");
+			const responseBody = response.body as LoginResponseBody;
+			expect(responseBody).toHaveProperty("message", "Login successful");
+			expect(responseBody).toHaveProperty("user");
+			expect(responseBody.user).not.toHaveProperty("password_hash");
+			expect(responseBody.user.email).toBe(uniqueEmail);
 
 			// Assert: Should set HTTP-only session cookie
-			const setCookieHeader = response.headers["set-cookie"];
+			const setCookieHeader = response.headers["set-cookie"] as string[] | string | undefined;
 			expect(setCookieHeader).toBeDefined();
-			const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+			const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader as string];
 			expect(cookieArray).toHaveLength(1);
 
 			const sessionCookie = cookieArray[0];
@@ -88,8 +127,9 @@ describe("Session Authentication Integration", () => {
 			expect(sessionTokenMatch).toBeTruthy();
 
 			if (sessionTokenMatch) {
-				const sessionToken = sessionTokenMatch[1];
-				const session = await SessionModel.findByToken(sessionToken);
+				const sessionToken = sessionTokenMatch[1] as string;
+				testSessions.push(sessionToken); // Track session for cleanup
+				const session: Session | null = await SessionModel.findByToken(sessionToken);
 
 				expect(session).toBeTruthy();
 				expect(session?.user_id).toBe(testUser.id);
@@ -122,7 +162,8 @@ describe("Session Authentication Integration", () => {
 			expect(setCookieHeader).toBeUndefined();
 
 			// Assert: Error response
-			expect(response.body).toHaveProperty("message", "Invalid email or password");
+			const errorBody = response.body as ErrorResponseBody;
+			expect(errorBody).toHaveProperty("message", "Invalid email or password");
 		});
 	});
 
@@ -133,35 +174,40 @@ describe("Session Authentication Integration", () => {
 			process.env.NODE_ENV = "production";
 
 			try {
-				// Create test user
-				const securePassword = "ProductionSecureP@ssw0rd2024!ABC";
-				const testUser = await UserModel.create({
-					email: "secure-test-prod@example.com",
+				// Create test user with unique email
+				const securePassword = "Pr0duction!Str0ng#P@ss2024";
+				const uniqueEmail = `${TEST_PREFIX}-prod-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
+				const testUser: User = await UserModel.create({
+					email: uniqueEmail,
 					password: securePassword,
-					first_name: "SecureProd",
-					last_name: "TestUser",
+					first_name: "Jane",
+					last_name: "Smith",
 					role: "team_member"
 				});
+				testUsers.push(testUser.id); // Track for cleanup
 
 				// Login
 				const response = await request(app)
 					.post("/api/users/login")
 					.send({
-						email: "secure-test-prod@example.com",
+						email: uniqueEmail,
 						password: securePassword
 					})
 					.expect(200);
 
 				// Assert: Secure flag should be set in production
-				const setCookieHeader = response.headers["set-cookie"];
+				const setCookieHeader = response.headers["set-cookie"] as string[] | string | undefined;
 				expect(setCookieHeader).toBeDefined();
 				const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
 				const sessionCookie = cookieArray[0];
 				expect(sessionCookie).toContain("Secure");
 				expect(sessionCookie).toContain("SameSite=Strict");
 
-				// Cleanup
-				await UserModel.delete(testUser.id);
+				// Track session for cleanup
+				const sessionTokenMatch = sessionCookie.match(/sessionToken=([a-f0-9]{64})/);
+				if (sessionTokenMatch) {
+					testSessions.push(sessionTokenMatch[1] as string);
+				}
 			} finally {
 				process.env.NODE_ENV = originalEnv;
 			}
@@ -173,36 +219,43 @@ describe("Session Authentication Integration", () => {
 			process.env.NODE_ENV = "development";
 
 			try {
-				// Create test user
-				const devPassword = "DevelopmentSecureP@ssw0rd2024!DEV";
-				const testUser = await UserModel.create({
-					email: "dev-test-env@example.com",
+				// Create test user with unique email
+				const devPassword = "D3v3l0pment!Str0ng#P@ss2024";
+				const uniqueEmail = `${TEST_PREFIX}-dev-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
+				const testUser: User = await UserModel.create({
+					email: uniqueEmail,
 					password: devPassword,
-					first_name: "DevEnvironment",
-					last_name: "TestUser",
+					first_name: "Bob",
+					last_name: "Johnson",
 					role: "team_member"
 				});
+				testUsers.push(testUser.id); // Track for cleanup
 
 				// Login
 				const response = await request(app)
 					.post("/api/users/login")
 					.send({
-						email: "dev-test-env@example.com",
+						email: uniqueEmail,
 						password: devPassword
 					})
 					.expect(200);
 
 				// Assert: Secure flag should NOT be set in development
-				const setCookieHeader = response.headers["set-cookie"];
+				const setCookieHeader = response.headers["set-cookie"] as string[] | string | undefined;
 				expect(setCookieHeader).toBeDefined();
-				if (!setCookieHeader) return;
+				if (!setCookieHeader) {
+					return;
+				}
 				const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
 				const sessionCookie = cookieArray[0];
 				expect(sessionCookie).not.toContain("Secure");
 				expect(sessionCookie).toContain("HttpOnly");
 
-				// Cleanup
-				await UserModel.delete(testUser.id);
+				// Track session for cleanup
+				const sessionTokenMatch = sessionCookie.match(/sessionToken=([a-f0-9]{64})/);
+				if (sessionTokenMatch) {
+					testSessions.push(sessionTokenMatch[1] as string);
+				}
 			} finally {
 				process.env.NODE_ENV = originalEnv;
 			}

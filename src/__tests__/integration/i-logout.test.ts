@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
-import express, { Request, Response } from "express";
-import { UserModel } from "../../models/User";
-import { SessionModel } from "../../models/Session";
+import express from "express";
+import { UserModel, type User } from "../../models/User";
+import { SessionModel, type Session } from "../../models/Session";
 import usersRouter from "../../routes/users";
 
 // Integration test for logout functionality
 describe("Logout Integration", () => {
 	let app: express.Application;
-	let testUser: any;
-	let testSession: any;
+	let testUser: User;
+	let testSession: Session;
 
 	beforeEach(async () => {
 		app = express();
@@ -59,7 +59,7 @@ describe("Logout Integration", () => {
 			expect(setCookieHeader).toBeDefined();
 			const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
 
-			const sessionCookie = cookieArray.find((cookie: string) => cookie.startsWith("sessionToken="));
+			const sessionCookie = cookieArray.find((cookie: string) => cookie.startsWith("sessionToken=")) as string;
 			expect(sessionCookie).toBeDefined();
 
 			// Cookie should be expired (Max-Age=0 or expires in the past)
@@ -128,7 +128,7 @@ describe("Logout Integration", () => {
 			expect(setCookieHeader).toBeDefined();
 			const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
 
-			const sessionCookie = cookieArray.find((cookie: string) => cookie.startsWith("sessionToken="));
+			const sessionCookie = cookieArray.find((cookie: string) => cookie.startsWith("sessionToken=")) as string;
 			expect(sessionCookie).toBeDefined();
 			expect(sessionCookie).toMatch(/Max-Age=0|expires=.*Thu.*01.*Jan.*1970/);
 		});
@@ -170,7 +170,9 @@ describe("Logout Integration", () => {
 
 				const setCookieHeader = response.headers["set-cookie"];
 				const cookieArray = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
-				const sessionCookie = cookieArray.find((cookie: string) => cookie.startsWith("sessionToken="));
+				const sessionCookie = cookieArray.find((cookie: string) =>
+					cookie.startsWith("sessionToken=")
+				) as string;
 
 				// Should have security flags in production
 				expect(sessionCookie).toContain("Secure");

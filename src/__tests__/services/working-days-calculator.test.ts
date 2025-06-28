@@ -3,7 +3,6 @@ import {
 	WorkingDaysCalculator,
 	TeamWorkingDaysConfig,
 	DateRange,
-	WorkingDayResult,
 	CalendarEntry
 } from "../../services/working-days-calculator";
 import { TestDataFactory as BaseTestDataFactory } from "../helpers/test-data-factory";
@@ -116,30 +115,28 @@ class TestAssertions {
 		startDate: Date,
 		endDate: Date,
 		config: TeamWorkingDaysConfig,
-		expectedCount: number,
-		description: string
+		expectedCount: number
 	): void {
 		const result = calculator.calculateWorkingDays(startDate, endDate, config);
-		expect(result).toBe(expectedCount); // ${description}
+		expect(result).toBe(expectedCount);
 	}
 
 	static expectWorkingDayResult(
 		calculator: WorkingDaysCalculator,
 		date: Date,
 		config: TeamWorkingDaysConfig,
-		expected: boolean,
-		description: string
+		expected: boolean
 	): void {
 		const result = calculator.isWorkingDay(date, config);
-		expect(result).toBe(expected); // ${description}
+		expect(result).toBe(expected);
 	}
 
-	static expectArrayLength(actual: unknown[], expectedLength: number, description: string): void {
-		expect(actual).toHaveLength(expectedLength); // ${description}
+	static expectArrayLength(actual: unknown[], expectedLength: number): void {
+		expect(actual).toHaveLength(expectedLength);
 	}
 
-	static expectErrorToBeThrown(fn: () => void, expectedMessage: string, description: string): void {
-		expect(fn).toThrow(expectedMessage); // ${description}
+	static expectErrorToBeThrown(fn: () => void, expectedMessage: string): void {
+		expect(fn).toThrow(expectedMessage);
 	}
 }
 
@@ -351,7 +348,7 @@ describe("WorkingDaysCalculator", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createSimpleWeekRange();
 				const result = calculator.getWorkingDaysInRange(startDate, endDate, standardConfig);
 
-				TestAssertions.expectArrayLength(result, 5, "Should return 5 working days");
+				TestAssertions.expectArrayLength(result, 5);
 				expect(result[0]).toEqual(TEST_DATES.MONDAY_JULY_1);
 				expect(result[4]).toEqual(TEST_DATES.FRIDAY_JULY_5);
 			});
@@ -360,7 +357,7 @@ describe("WorkingDaysCalculator", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createWeekWithWeekendsRange();
 				const result = calculator.getWorkingDaysInRange(startDate, endDate, standardConfig);
 
-				TestAssertions.expectArrayLength(result, 5, "Should exclude weekends");
+				TestAssertions.expectArrayLength(result, 5);
 				expect(result.every(date => date.getUTCDay() !== 0 && date.getUTCDay() !== 6)).toBe(true);
 			});
 		});
@@ -371,7 +368,7 @@ describe("WorkingDaysCalculator", () => {
 				const { startDate, endDate } = WorkingDaysTestDataFactory.createSimpleWeekRange();
 				const result = calculator.getWorkingDaysInRange(startDate, endDate, configWithHoliday);
 
-				TestAssertions.expectArrayLength(result, 4, "Should exclude holiday");
+				TestAssertions.expectArrayLength(result, 4);
 				expect(result.find(date => date.getTime() === TEST_DATES.THURSDAY_JULY_4.getTime())).toBeUndefined();
 			});
 		});
