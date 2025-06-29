@@ -56,7 +56,7 @@ describe("Server Startup Reliability Tests", () => {
 				}, SERVER_STARTUP_TIMEOUT);
 
 				// Check if server is responding
-				const checkServer = async () => {
+				const checkServer = async (): Promise<void> => {
 					try {
 						const response = await fetch(`http://localhost:${TEST_PORT}/health`);
 						if (response.ok) {
@@ -65,12 +65,16 @@ describe("Server Startup Reliability Tests", () => {
 						}
 					} catch (error) {
 						// Server not ready yet, continue checking
-						setTimeout(checkServer, 500);
+						setTimeout(() => {
+							void checkServer();
+						}, 500);
 					}
 				};
 
 				// Start checking after 1 second
-				setTimeout(checkServer, 1000);
+				setTimeout(() => {
+					void checkServer();
+				}, 1000);
 			});
 
 			const startupTime = Date.now() - startTime;
@@ -130,7 +134,7 @@ describe("Server Startup Reliability Tests", () => {
 		});
 
 		let errorReceived = false;
-		secondServer.stderr?.on("data", data => {
+		secondServer.stderr?.on("data", (data: Buffer) => {
 			const error = data.toString();
 			if (error.includes("EADDRINUSE") || error.includes("port")) {
 				errorReceived = true;

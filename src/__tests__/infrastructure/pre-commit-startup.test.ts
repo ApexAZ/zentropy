@@ -74,7 +74,12 @@ describe("Pre-Commit: Server Startup Health Check", () => {
 			await execAsync("npm run port:check");
 
 			// Start server in background with timeout
-			execAsync("timeout 15s node dist/server/index.js");
+			const serverPromise = execAsync("timeout 15s node dist/server/index.js");
+
+			// Handle the promise to prevent unhandled rejection
+			serverPromise.catch(() => {
+				// Expected - timeout will kill the server process
+			});
 
 			// Wait a moment for server to start
 			await new Promise(resolve => setTimeout(resolve, 4000));

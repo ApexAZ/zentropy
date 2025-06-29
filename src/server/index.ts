@@ -132,21 +132,25 @@ async function startServer(): Promise<void> {
 
 // Process-level error handlers to prevent crashes
 process.on("unhandledRejection", (reason, promise) => {
+	// eslint-disable-next-line no-console
 	console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
 process.on("uncaughtException", error => {
+	// eslint-disable-next-line no-console
 	console.error("Uncaught Exception:", error);
 	process.exit(1);
 });
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
+	// eslint-disable-next-line no-console
 	console.log("SIGTERM received, shutting down gracefully");
 	process.exit(0);
 });
 
 process.on("SIGINT", () => {
+	// eslint-disable-next-line no-console
 	console.log("SIGINT received, shutting down gracefully");
 	process.exit(0);
 });

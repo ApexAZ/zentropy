@@ -171,7 +171,7 @@ describe("Deployment Readiness - Production Environment Simulation", () => {
 			const healthResponse = await fetch("http://localhost:3000/health");
 			expect(healthResponse.ok).toBe(true);
 
-			const healthData = await healthResponse.json();
+			const healthData = (await healthResponse.json()) as { database: string };
 			expect(healthData.database).toBe("connected");
 
 			console.log("✅ Database connectivity validated");
