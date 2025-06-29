@@ -244,10 +244,14 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 		}
 
 		// Use sanitized data for the API request
-		const profileUpdateData: ProfileUpdateData = (validation.sanitizedData as ProfileUpdateData) ?? {
-			first_name: "",
-			last_name: "",
-			email: ""
+		if (!validation.sanitizedData) {
+			throw new Error("Validation failed - no sanitized data available");
+		}
+		
+		const profileUpdateData: ProfileUpdateData = {
+			first_name: validation.sanitizedData.first_name,
+			last_name: validation.sanitizedData.last_name,
+			email: validation.sanitizedData.email
 		};
 
 		// Show loading state
