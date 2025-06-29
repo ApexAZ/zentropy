@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Notes
 - ✅ Streamlined development commands - removed 7 redundant/obsolete scripts
 - ✅ Server hanging issue resolved - emergency recovery procedures in place
+- ✅ **Enhanced pre-commit testing** - Full quality check + server startup validation prevents bad commits
 
 ## Project Overview
 
@@ -46,6 +47,9 @@ npm run test:watch                    # Run tests in watch mode
 npm run test:integration              # Run integration tests only
 npm run test:ui                       # Open Vitest UI
 npm run test:quality                  # Run tests + lint + format + type-check (RECOMMENDED)
+npm run test:pre-commit               # Pre-commit startup health check (15s) - PREVENTS SERVER HANGING
+npm run test:reliability              # Full server reliability tests
+npm run test:ci                       # Complete CI test suite
 
 # Code Quality
 npm run lint                          # Auto-fix ESLint issues

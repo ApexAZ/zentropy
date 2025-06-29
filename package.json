@@ -30,7 +30,12 @@
 		"test:ui": "vitest --ui",
 		"test:integration": "vitest tests/integration/",
 		"test:all": "vitest",
-		"test:quality": "npm test && npm run lint && npm run format && npm run type-check"
+		"test:quality": "npm test && npm run lint && npm run format && npm run type-check",
+		"test:reliability": "vitest src/__tests__/infrastructure/ --run",
+		"test:deployment": "vitest src/__tests__/ci/ --run",
+		"test:pre-commit": "vitest src/__tests__/infrastructure/pre-commit-startup.test.ts --run",
+		"test:ci": "npm run test:reliability && npm run test:deployment && npm run test:quality",
+		"prepare": "husky"
 	},
 	"keywords": [],
 	"author": "",
@@ -43,6 +48,7 @@
 		"@typescript-eslint/eslint-plugin": "^6.21.0",
 		"@typescript-eslint/parser": "^6.21.0",
 		"eslint": "^8.57.0",
+		"husky": "^9.1.7",
 		"jsdom": "^26.1.0",
 		"prettier": "^3.2.5",
 		"supertest": "^7.1.1",

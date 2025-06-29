@@ -1,0 +1,196 @@
+name: Server Reliability & Deployment Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  reliability-tests:
+    name: Server Startup Reliability
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: capacity_planner_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup test environment
+      run: |
+        cp .env.example .env.test || echo "No .env.example found"
+        echo "DATABASE_URL=postgresql://testuser:testpassword@localhost:5432/capacity_planner_test" >> .env.test
+        echo "NODE_ENV=test" >> .env.test
+    
+    - name: Run build health check
+      run: |
+        echo "🧹 Testing clean build process..."
+        rm -rf dist/ .tsbuildinfo || true
+        npm run build
+        echo "✅ Clean build successful"
+    
+    - name: Run server reliability tests
+      run: |
+        echo "🚀 Running server startup reliability tests..."
+        npm run test:reliability
+        echo "✅ Server reliability tests passed"
+      timeout-minutes: 10
+    
+    - name: Run deployment readiness tests
+      run: |
+        echo "📦 Running deployment readiness tests..."
+        npm run test:deployment
+        echo "✅ Deployment readiness tests passed"
+      timeout-minutes: 15
+    
+    - name: Test emergency recovery procedures
+      run: |
+        echo "🚨 Testing emergency recovery..."
+        # Simulate server hanging scenario
+        timeout 30s npm run dev &
+        sleep 5
+        pkill -f "node dist/server" || true
+        
+        # Test emergency recovery
+        npm run emergency
+        echo "✅ Emergency recovery tested"
+    
+    - name: Archive test artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: |
+          logs/
+          dist/
+          .env.test
+        retention-days: 7
+
+  import-dependency-analysis:
+    name: Import Dependency Health
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install analysis tools
+      run: npm install -g madge
+    
+    - name: Analyze circular dependencies
+      run: |
+        echo "🔍 Analyzing import dependencies..."
+        madge --circular src/ --extensions ts > circular-deps.txt || true
+        
+        if [ -s circular-deps.txt ]; then
+          echo "⚠️ Circular dependencies detected:"
+          cat circular-deps.txt
+          echo "::warning::Circular dependencies found - consider refactoring"
+        else
+          echo "✅ No circular dependencies detected"
+        fi
+    
+    - name: Count utility files
+      run: |
+        UTILS_COUNT=$(find src/utils -name "*.ts" | wc -l)
+        echo "📊 Utility files count: $UTILS_COUNT"
+        echo "UTILS_COUNT=$UTILS_COUNT" >> $GITHUB_ENV
+        
+        if [ "$UTILS_COUNT" -gt 35 ]; then
+          echo "::warning::High utility file count ($UTILS_COUNT) - consider consolidation"
+        fi
+    
+    - name: Generate dependency graph
+      run: |
+        madge --image deps-graph.svg src/ --extensions ts || true
+    
+    - name: Upload dependency analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-analysis
+        path: |
+          circular-deps.txt
+          deps-graph.svg
+        retention-days: 30
+
+  startup-stress-test:
+    name: Startup Stress Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build project
+      run: npm run build
+    
+    - name: Startup stress test
+      run: |
+        echo "🔥 Running startup stress test - 10 consecutive starts..."
+        
+        for i in {1..10}; do
+          echo "Startup attempt $i/10"
+          
+          # Start server with timeout
+          timeout 15s npm run dev &
+          SERVER_PID=$!
+          
+          # Wait for startup
+          sleep 3
+          
+          # Check if responsive
+          if curl -s http://localhost:3000/health > /dev/null; then
+            echo "✅ Startup $i successful"
+          else
+            echo "❌ Startup $i failed"
+            exit 1
+          fi
+          
+          # Kill server
+          kill $SERVER_PID 2>/dev/null || true
+          pkill -f "node dist/server" || true
+          
+          # Brief pause between tests
+          sleep 1
+        done
+        
+        echo "🎉 All 10 startup attempts successful!"
+      timeout-minutes: 20

@@ -6,9 +6,7 @@ import {
 	canActOnInvitation,
 	shouldPromoteUserOnAccept
 } from "../utils/team-invitation-utils";
-import {
-	determineUserRoleForTeam
-} from "../utils/team-membership-utils";
+import { determineUserRoleForTeam } from "../utils/team-membership-utils";
 import type { UserRole } from "../models/User";
 import { UserModel } from "../models/User";
 import { TeamInvitationModel } from "../models/TeamInvitation";

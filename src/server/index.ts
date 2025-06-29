@@ -73,15 +73,15 @@ app.post("/api/sprints/generate", (_req: Request, res: Response) => {
 // Start server
 async function startServer(): Promise<void> {
 	const handleServerError = (error: NodeJS.ErrnoException): void => {
-		if (error.code === 'EADDRINUSE') {
+		if (error.code === "EADDRINUSE") {
 			// eslint-disable-next-line no-console
 			console.error(`Port ${PORT} is already in use`);
-		} else if (error.code === 'EACCES') {
+		} else if (error.code === "EACCES") {
 			// eslint-disable-next-line no-console
 			console.error(`Permission denied to bind to port ${PORT}`);
 		} else {
 			// eslint-disable-next-line no-console
-			console.error('Server error:', error);
+			console.error("Server error:", error);
 		}
 		process.exit(1);
 	};
@@ -99,7 +99,7 @@ async function startServer(): Promise<void> {
 
 		// Configurable host binding for WSL2 compatibility
 		const host = process.env.HOST;
-		
+
 		if (host) {
 			// Bind to specific host if provided
 			const server = app.listen(PORT, host, () => {
@@ -110,8 +110,8 @@ async function startServer(): Promise<void> {
 				// eslint-disable-next-line no-console
 				console.log(`🌐 Listening on: ${host}:${PORT}`);
 			});
-			
-			server.on('error', handleServerError);
+
+			server.on("error", handleServerError);
 		} else {
 			// Default binding (localhost)
 			const server = app.listen(PORT, () => {
@@ -120,8 +120,8 @@ async function startServer(): Promise<void> {
 				// eslint-disable-next-line no-console
 				console.log(`📊 Health check: http://localhost:${PORT}/health`);
 			});
-			
-			server.on('error', handleServerError);
+
+			server.on("error", handleServerError);
 		}
 	} catch (error) {
 		// eslint-disable-next-line no-console
@@ -131,23 +131,23 @@ async function startServer(): Promise<void> {
 }
 
 // Process-level error handlers to prevent crashes
-process.on('unhandledRejection', (reason, promise) => {
-	console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+	console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-process.on('uncaughtException', (error) => {
-	console.error('Uncaught Exception:', error);
+process.on("uncaughtException", error => {
+	console.error("Uncaught Exception:", error);
 	process.exit(1);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-	console.log('SIGTERM received, shutting down gracefully');
+process.on("SIGTERM", () => {
+	console.log("SIGTERM received, shutting down gracefully");
 	process.exit(0);
 });
 
-process.on('SIGINT', () => {
-	console.log('SIGINT received, shutting down gracefully');
+process.on("SIGINT", () => {
+	console.log("SIGINT received, shutting down gracefully");
 	process.exit(0);
 });
 
