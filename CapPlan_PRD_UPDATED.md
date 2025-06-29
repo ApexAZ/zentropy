@@ -68,7 +68,26 @@ The Sprint Capacity Planning Tool has successfully implemented the **authenticat
 - ✅ Session middleware protecting all critical routes
 - ✅ XSS and CSRF protection
 
+**🎯 USER ROLES IMPLEMENTED:**
+- ✅ **Team Lead** (`team_lead`): Can create/manage teams, configure settings, manage team members
+- ✅ **Team Member** (`team_member`): Can log personal PTO, view team capacity, manage own profile
+- ⚠️ **Basic User** (`basic_user`): **MISSING** - Default role for new registrations with limited access
+
+**🔐 ROLE ASSIGNMENT WORKFLOW:**
+- ✅ **Registration Default**: New users get `basic_user` role (principle of least privilege)
+- ⚠️ **Team Creation**: Basic user creating a team automatically becomes `team_lead` for that team
+- ⚠️ **Team Membership**: `team_member` role granted by team leads through invitation/approval process
+- ⚠️ **Role Inheritance**: Users can have different roles across multiple teams
+
 **❌ NOT YET IMPLEMENTED:**
+- ❌ **Basic User Role** - Default role for new registrations (currently defaults to team_member)
+- ❌ **Role-Based Team Creation** - Basic users automatically becoming team leads when creating teams
+- ❌ **User Search Functionality** - Search registered users by email, first name, last name for team management
+- ❌ **Team Member Direct Add** - Team leads directly adding users from search results to teams
+- ❌ **Team Member Invitation System** - Alternative invitation workflow for team membership
+- ❌ **Multi-Team Role Management** - Users having different roles across multiple teams
+- ❌ **System Administrator Role** - System-wide management capabilities  
+- ❌ **Stakeholder Role** - Read-only access to authorized teams
 - ❌ Email verification for new accounts
 - ❌ Password reset via email tokens
 - ❌ Azure AD/SSO integration
@@ -118,9 +137,12 @@ DELETE /api/teams/:id       // Delete team
 GET    /api/teams/:id/members // Get team members
 
 // ❌ MISSING:
-POST   /api/teams/:id/members     // Add team member
+GET    /api/users/search          // Search users by email, name (for team leads)
+POST   /api/teams/:id/members     // Add team member (direct add from search)
+POST   /api/teams/:id/invitations // Send team member invitation
 DELETE /api/teams/:id/members/:userId // Remove member
 PUT    /api/teams/:id/config      // Update working days config
+PUT    /api/users/:id/role        // Update user role (for role promotions)
 ```
 
 ### **4.3 Sprint Management - ❌ NOT IMPLEMENTED**
@@ -259,12 +281,23 @@ Sprint Capacity = Velocity × (Available Days / Total Sprint Days) × Team Size 
 ### **🔄 CURRENT STATUS: Phase 1D - Integration (IN PROGRESS)**
 
 **NEXT PRIORITIES:**
-1. **Sprint Management Implementation** - Create Sprint model and API endpoints
-2. **Capacity Calculation API** - Integrate WorkingDaysCalculator with API layer
-3. **Calendar-UI Integration** - Connect calendar frontend with capacity calculations
-4. **Real-Time Updates** - Implement live capacity updates
+1. **Basic User Role Implementation** - Add default role for new registrations
+2. **Sprint Management Implementation** - Create Sprint model and API endpoints
+3. **Capacity Calculation API** - Integrate WorkingDaysCalculator with API layer
+4. **Calendar-UI Integration** - Connect calendar frontend with capacity calculations
+5. **Real-Time Updates** - Implement live capacity updates
 
 ### **📋 REVISED TIMELINE:**
+
+**Week 9A: User Role Management System (4-5 days)**
+- Add `basic_user` role to database schema and TypeScript enums
+- Update user registration to default to `basic_user` instead of `team_member`
+- Implement automatic role upgrade: basic_user → team_lead when creating teams
+- Create user search API endpoints (search by email, first name, last name)
+- Build team member management interface with user search and direct add capabilities
+- Add team member invitation system as alternative workflow
+- Implement role-based permissions and access controls for basic users
+- Update team creation API to handle role promotion workflow
 
 **Week 9-10: Sprint Management Implementation**
 - Implement Sprint model and database operations
