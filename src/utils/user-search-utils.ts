@@ -28,7 +28,7 @@ export interface SanitizedUser {
 
 /**
  * Search users by email, first name, or last name with case-insensitive matching
- * 
+ *
  * @param users - Array of users to search through
  * @param query - Search query string
  * @returns Filtered array of users matching the search query
@@ -40,7 +40,7 @@ export function searchUsers(users: User[], query: string): User[] {
 	}
 
 	const searchTerm = query.toLowerCase().trim();
-	
+
 	return users.filter(user => {
 		// Only search active users
 		if (!user.is_active) {
@@ -52,15 +52,13 @@ export function searchUsers(users: User[], query: string): User[] {
 		const firstName = user.first_name.toLowerCase();
 		const lastName = user.last_name.toLowerCase();
 
-		return email.includes(searchTerm) || 
-			firstName.includes(searchTerm) || 
-			lastName.includes(searchTerm);
+		return email.includes(searchTerm) || firstName.includes(searchTerm) || lastName.includes(searchTerm);
 	});
 }
 
 /**
  * Filter users by their role
- * 
+ *
  * @param users - Array of users to filter
  * @param role - User role to filter by
  * @returns Filtered array of users with the specified role
@@ -71,7 +69,7 @@ export function filterUsersByRole(users: User[], role: UserRole): User[] {
 
 /**
  * Exclude the current user from the search results
- * 
+ *
  * @param users - Array of users to filter
  * @param currentUserId - ID of the current user to exclude
  * @returns Filtered array of users without the current user
@@ -82,7 +80,7 @@ export function excludeCurrentUser(users: User[], currentUserId: string): User[]
 
 /**
  * Remove sensitive data (password hash) from user object for search results
- * 
+ *
  * @param user - User object to sanitize
  * @returns Sanitized user object without password hash
  */
@@ -94,7 +92,7 @@ export function sanitizeUserForSearch(user: User): SanitizedUser {
 
 /**
  * Perform comprehensive user search with filtering, exclusion, and sanitization
- * 
+ *
  * This function orchestrates the complete user search workflow:
  * 1. Fetch all users from the database
  * 2. Apply search query filtering
@@ -102,7 +100,7 @@ export function sanitizeUserForSearch(user: User): SanitizedUser {
  * 4. Exclude current user from results
  * 5. Apply result limit
  * 6. Sanitize user data for safe response
- * 
+ *
  * @param params - Search parameters including query, role filter, current user, and limit
  * @returns Promise<SanitizedUser[]> - Array of sanitized users matching search criteria
  * @throws Error if database query fails
@@ -139,7 +137,7 @@ export async function performUserSearch(params: UserSearchParams): Promise<Sanit
 
 /**
  * Validate user search query to prevent potential issues
- * 
+ *
  * @param query - Search query to validate
  * @returns true if query is valid, false otherwise
  */
@@ -174,7 +172,7 @@ export function validateSearchQuery(query: string): boolean {
 
 /**
  * Validate search limit parameter
- * 
+ *
  * @param limit - Limit value to validate
  * @returns Validated and normalized limit value
  */
@@ -200,7 +198,7 @@ export function validateSearchLimit(limit: number): number {
 /**
  * Check if user has permission to search for other users
  * Only team_lead users can search for users to add to teams
- * 
+ *
  * @param userRole - Role of the user performing the search
  * @returns true if user has search permission, false otherwise
  */

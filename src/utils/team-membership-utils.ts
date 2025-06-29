@@ -85,7 +85,7 @@ export type ConflictType = "duplicate_membership" | "role_conflict" | "unknown_c
 
 /**
  * Validate if a user can be added to a team
- * 
+ *
  * @param user - User to validate
  * @param teamId - ID of the team
  * @returns Validation result with errors if any
@@ -116,21 +116,19 @@ export function validateTeamMembership(user: User, teamId: string): ValidationRe
 
 /**
  * Check if a user can be added to a team (no existing membership)
- * 
+ *
  * @param userId - ID of the user to add
  * @param teamId - ID of the team
  * @param existingMembers - Array of existing team memberships
  * @returns Result indicating if user can be added and any conflicts
  */
 export function canAddUserToTeam(
-	userId: string, 
-	teamId: string, 
+	userId: string,
+	teamId: string,
 	existingMembers: TeamMembership[]
 ): MembershipConflictResult {
 	// Check if user is already a member of this team
-	const existingMembership = existingMembers.find(
-		member => member.user_id === userId && member.team_id === teamId
-	);
+	const existingMembership = existingMembers.find(member => member.user_id === userId && member.team_id === teamId);
 
 	if (existingMembership) {
 		return {
@@ -147,7 +145,7 @@ export function canAddUserToTeam(
 
 /**
  * Determine the appropriate role for a user when adding to a team
- * 
+ *
  * @param currentRole - User's current role
  * @returns Role to assign for team membership
  */
@@ -166,7 +164,7 @@ export function determineUserRoleForTeam(currentRole: UserRole): UserRole {
 
 /**
  * Create appropriate conflict message for membership issues
- * 
+ *
  * @param conflictType - Type of conflict encountered
  * @param userName - Name of the user (optional)
  * @param teamName - Name of the team (optional)
@@ -193,7 +191,7 @@ export function createMembershipConflictMessage(
 
 /**
  * Validate membership request data
- * 
+ *
  * @param request - Membership request to validate
  * @returns Validation result with errors if any
  */
@@ -228,21 +226,27 @@ export function validateMembershipRequest(request: MembershipRequest): Validatio
 
 /**
  * Sanitize membership request data to prevent XSS and injection attacks
- * 
+ *
  * @param request - Raw membership request data
  * @returns Sanitized membership request
  */
 export function sanitizeMembershipData(request: MembershipRequest): MembershipRequest {
 	return {
-		userId: request.userId.trim().replace(/<[^>]*>/g, "").replace(/[()]/g, ""),
-		teamId: request.teamId.trim().replace(/<[^>]*>/g, "").replace(/[()]/g, ""),
+		userId: request.userId
+			.trim()
+			.replace(/<[^>]*>/g, "")
+			.replace(/[()]/g, ""),
+		teamId: request.teamId
+			.trim()
+			.replace(/<[^>]*>/g, "")
+			.replace(/[()]/g, ""),
 		role: request.role
 	};
 }
 
 /**
  * Format membership response for API consumption
- * 
+ *
  * @param membershipRecord - Database membership record
  * @param userData - User data for response
  * @param roleChanged - Whether user role was changed during addition
@@ -254,7 +258,7 @@ export function formatMembershipResponse(
 	roleChanged: boolean = false
 ): MembershipResponse {
 	const displayName = `${userData.first_name} ${userData.last_name}`.trim() || "User";
-	
+
 	let message = `${displayName} successfully added to team`;
 	if (roleChanged) {
 		message += ` and promoted to team member`;

@@ -38,13 +38,13 @@ describe("Team Membership API Client", () => {
 	describe("createAddMemberRequest", () => {
 		it("should create correct request configuration", () => {
 			const request = createAddMemberRequest("user-123", "team_member");
-			
+
 			expect(request.method).toBe("POST");
 			expect(request.credentials).toBe("include");
 			expect(request.headers).toEqual({
 				"Content-Type": "application/json"
 			});
-			
+
 			const body = JSON.parse(request.body as string) as { userId: string; role: string };
 			expect(body).toEqual({
 				userId: "user-123",
@@ -54,14 +54,14 @@ describe("Team Membership API Client", () => {
 
 		it("should handle different roles correctly", () => {
 			const request = createAddMemberRequest("user-456", "team_lead");
-			
+
 			const body = JSON.parse(request.body as string) as { userId: string; role: string };
 			expect(body.role).toBe("team_lead");
 		});
 
 		it("should include proper headers", () => {
 			const request = createAddMemberRequest("user-123", "team_member");
-			
+
 			expect(request.headers).toHaveProperty("Content-Type", "application/json");
 			expect(request.credentials).toBe("include");
 		});
@@ -103,8 +103,7 @@ describe("Team Membership API Client", () => {
 				json: () => Promise.resolve(errorData)
 			} as Response;
 
-			await expect(handleAddMemberResponse(mockResponse))
-				.rejects.toThrow("User already exists in team");
+			await expect(handleAddMemberResponse(mockResponse)).rejects.toThrow("User already exists in team");
 		});
 
 		it("should handle JSON parsing errors", async () => {
@@ -113,8 +112,7 @@ describe("Team Membership API Client", () => {
 				json: () => Promise.reject(new Error("Invalid JSON"))
 			} as Response;
 
-			await expect(handleAddMemberResponse(mockResponse))
-				.rejects.toThrow("Invalid JSON");
+			await expect(handleAddMemberResponse(mockResponse)).rejects.toThrow("Invalid JSON");
 		});
 
 		it("should handle responses without error message", async () => {
@@ -124,50 +122,49 @@ describe("Team Membership API Client", () => {
 				json: () => Promise.resolve({})
 			} as Response;
 
-			await expect(handleAddMemberResponse(mockResponse))
-				.rejects.toThrow("Failed to add user to team");
+			await expect(handleAddMemberResponse(mockResponse)).rejects.toThrow("Failed to add user to team");
 		});
 	});
 
 	describe("validateAddMemberParams", () => {
 		it("should validate correct parameters", () => {
 			const result = validateAddMemberParams("team-123", "user-456", "team_member");
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
 
 		it("should reject empty team ID", () => {
 			const result = validateAddMemberParams("", "user-456", "team_member");
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Team ID is required");
 		});
 
 		it("should reject empty user ID", () => {
 			const result = validateAddMemberParams("team-123", "", "team_member");
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("User ID is required");
 		});
 
 		it("should reject invalid role", () => {
 			const result = validateAddMemberParams("team-123", "user-456", "invalid_role" as UserRole);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid role specified");
 		});
 
 		it("should accumulate multiple validation errors", () => {
 			const result = validateAddMemberParams("", "", "invalid_role" as UserRole);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toHaveLength(3);
 		});
 
 		it("should reject parameters with HTML tags", () => {
 			const result = validateAddMemberParams("<script>team</script>", "<img>user</img>", "team_member");
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid characters in team ID");
 			expect(result.errors).toContain("Invalid characters in user ID");
@@ -200,20 +197,17 @@ describe("Team Membership API Client", () => {
 
 			const result = await makeAddMemberRequest("team-123", "user-456", "team_member");
 
-			expect(mockFetch).toHaveBeenCalledWith(
-				"/api/teams/team-123/members",
-				{
-					method: "POST",
-					credentials: "include",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify({
-						userId: "user-456",
-						role: "team_member"
-					})
-				}
-			);
+			expect(mockFetch).toHaveBeenCalledWith("/api/teams/team-123/members", {
+				method: "POST",
+				credentials: "include",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					userId: "user-456",
+					role: "team_member"
+				})
+			});
 			expect(result).toEqual(mockResponseData);
 		});
 
@@ -224,27 +218,23 @@ describe("Team Membership API Client", () => {
 				json: () => Promise.resolve({ message: "Conflict error" })
 			});
 
-			await expect(makeAddMemberRequest("team-123", "user-456", "team_member"))
-				.rejects.toThrow("Conflict error");
+			await expect(makeAddMemberRequest("team-123", "user-456", "team_member")).rejects.toThrow("Conflict error");
 		});
 
 		it("should handle network errors", async () => {
 			mockFetch.mockRejectedValue(new Error("Network error"));
 
-			await expect(makeAddMemberRequest("team-123", "user-456", "team_member"))
-				.rejects.toThrow("Network error");
+			await expect(makeAddMemberRequest("team-123", "user-456", "team_member")).rejects.toThrow("Network error");
 		});
 
 		it("should handle unknown errors as network errors", async () => {
 			mockFetch.mockRejectedValue("Unknown error");
 
-			await expect(makeAddMemberRequest("team-123", "user-456", "team_member"))
-				.rejects.toThrow("Network error");
+			await expect(makeAddMemberRequest("team-123", "user-456", "team_member")).rejects.toThrow("Network error");
 		});
 
 		it("should validate parameters before making request", async () => {
-			await expect(makeAddMemberRequest("", "user-456", "team_member"))
-				.rejects.toThrow("Team ID is required");
+			await expect(makeAddMemberRequest("", "user-456", "team_member")).rejects.toThrow("Team ID is required");
 
 			expect(mockFetch).not.toHaveBeenCalled();
 		});

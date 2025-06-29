@@ -1,9 +1,17 @@
 /**
  * Tests for TypeScript type safety features in teams.ts frontend code
  * These tests ensure type assertions and casting work correctly
+ * Following hybrid testing approach - form processing logic tested in utils
  */
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import {
+	extractStringFromFormData,
+	extractNumberFromFormData,
+	validateTeamFormData,
+	createMockFormDataGetter,
+	type CreateTeamData
+} from "../../utils/team-form-processing-utils";
 
 // Type definitions matching teams.ts
 interface Team {
@@ -15,14 +23,6 @@ interface Team {
 	working_days_per_week: number;
 	created_at: string;
 	updated_at: string;
-}
-
-interface CreateTeamData {
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
 }
 
 interface ValidationError {
@@ -236,59 +236,60 @@ describe("Frontend TypeScript Type Safety", () => {
 		});
 	});
 
-	describe("Form Data Type Processing", () => {
-		it("should handle FormData string extraction", () => {
-			// Simulate FormData.get() returning string | null
-			const mockFormDataGet = (key: string): string | null => {
-				const formData: Record<string, string> = {
-					name: "Test Team",
-					description: "Test Description",
-					velocity_baseline: "25",
-					sprint_length_days: "14",
-					working_days_per_week: "5"
-				};
-				return formData[key] ?? null;
-			};
+	describe("Form Data Integration with Utilities", () => {
+		it("should integrate with extractStringFromFormData utility", () => {
+			// Integration test - business logic tested in team-form-processing-utils.test.ts
+			const formData = new FormData();
+			formData.set("name", "Test Team");
+			formData.set("description", "Test Description");
 
-			// Test string fields
-			const name = mockFormDataGet("name") as string;
-			const description = mockFormDataGet("description") as string;
+			const name = extractStringFromFormData(formData, "name");
+			const description = extractStringFromFormData(formData, "description");
 
 			expect(name).toBe("Test Team");
 			expect(description).toBe("Test Description");
 		});
 
-		it("should handle FormData numeric conversion", () => {
-			// Simulate FormData.get() for numeric fields
-			const mockFormDataGet = (key: string): string | null => {
-				const formData: Record<string, string> = {
-					velocity_baseline: "25",
-					sprint_length_days: "14",
-					working_days_per_week: "5"
-				};
-				return formData[key] ?? null;
-			};
+		it("should integrate with extractNumberFromFormData utility", () => {
+			// Integration test - business logic tested in team-form-processing-utils.test.ts
+			const formData = new FormData();
+			formData.set("velocity_baseline", "25");
+			formData.set("sprint_length_days", "14");
+			formData.set("working_days_per_week", "5");
 
-			// Test numeric field conversion
-			const velocityBaseline = parseInt(mockFormDataGet("velocity_baseline") as string, 10) || 0;
-			const sprintLength = parseInt(mockFormDataGet("sprint_length_days") as string, 10);
-			const workingDays = parseInt(mockFormDataGet("working_days_per_week") as string, 10);
+			const velocityBaseline = extractNumberFromFormData(formData, "velocity_baseline");
+			const sprintLength = extractNumberFromFormData(formData, "sprint_length_days");
+			const workingDays = extractNumberFromFormData(formData, "working_days_per_week");
 
 			expect(velocityBaseline).toBe(25);
 			expect(sprintLength).toBe(14);
 			expect(workingDays).toBe(5);
 		});
 
-		it("should handle FormData null values with fallbacks", () => {
-			// Simulate FormData.get() returning null
-			const mockFormDataGet = (): string | null => null;
+		it("should integrate with validateTeamFormData utility", () => {
+			// Integration test - validation logic tested in team-form-processing-utils.test.ts
+			const formData = new FormData();
+			formData.set("name", "Valid Team");
+			formData.set("velocity_baseline", "25");
+			formData.set("sprint_length_days", "14");
+			formData.set("working_days_per_week", "5");
 
-			// Test fallback behavior
-			const velocityBaseline = parseInt(mockFormDataGet() as string, 10) || 0;
-			const name = (mockFormDataGet() as string)?.trim() || "";
+			const result = validateTeamFormData(formData);
 
-			expect(velocityBaseline).toBe(0); // Fallback to 0
-			expect(name).toBe(""); // Fallback to empty string
+			expect(result.isValid).toBe(true);
+			expect(result.sanitizedData?.name).toBe("Valid Team");
+		});
+
+		it("should integrate with createMockFormDataGetter for testing", () => {
+			// Integration test - testing utility functionality
+			const mockGetter = createMockFormDataGetter({
+				name: "Test Team",
+				velocity_baseline: "25"
+			});
+
+			expect(mockGetter("name")).toBe("Test Team");
+			expect(mockGetter("velocity_baseline")).toBe("25");
+			expect(mockGetter("nonexistent")).toBeNull();
 		});
 	});
 

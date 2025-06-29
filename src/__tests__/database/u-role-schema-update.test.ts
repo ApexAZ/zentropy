@@ -125,11 +125,11 @@ describe("Database Role Schema Update", () => {
 			};
 
 			// ACT - Insert without specifying role
-			const result = await testClient.query(
+			const result = (await testClient.query(
 				`INSERT INTO users (email, password_hash, first_name, last_name) 
 				 VALUES ($1, $2, $3, $4) RETURNING role`,
 				[testUser.email, testUser.password_hash, testUser.first_name, testUser.last_name]
-			) as UserQueryResult;
+			)) as UserQueryResult;
 
 			// ASSERT
 			expect(result.rows[0]?.role).toBe("basic_user");

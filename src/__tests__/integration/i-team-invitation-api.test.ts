@@ -5,7 +5,6 @@ import { UserModel } from "../../models/User";
 import { TeamModel } from "../../models/Team";
 import { TeamInvitationModel } from "../../models/TeamInvitation";
 
-
 // Simple test of invitation system
 describe("Team Invitation API Integration Tests", () => {
 	beforeEach(async () => {
@@ -29,7 +28,9 @@ describe("Team Invitation API Integration Tests", () => {
 			const role = "team_member" as const;
 
 			// This tests our utility functions work without database calls
-			const { validateInvitationData, sanitizeInvitationData, createInvitationToken } = await import("../../utils/team-invitation-utils");
+			const { validateInvitationData, sanitizeInvitationData, createInvitationToken } = await import(
+				"../../utils/team-invitation-utils"
+			);
 
 			const invitationData = {
 				teamId,
@@ -49,12 +50,14 @@ describe("Team Invitation API Integration Tests", () => {
 		});
 
 		it("should create and validate invitation tokens", async () => {
-			const { createInvitationToken, isInvitationExpired, getInvitationExpiryDate } = await import("../../utils/team-invitation-utils");
+			const { createInvitationToken, isInvitationExpired, getInvitationExpiryDate } = await import(
+				"../../utils/team-invitation-utils"
+			);
 
 			// Test token creation
 			const token1 = createInvitationToken();
 			const token2 = createInvitationToken();
-			
+
 			expect(token1).not.toBe(token2);
 			expect(token1).toMatch(/^[a-f0-9]{64}$/);
 
@@ -67,7 +70,9 @@ describe("Team Invitation API Integration Tests", () => {
 		});
 
 		it("should validate role permissions correctly", async () => {
-			const { canUserInviteToTeam, shouldPromoteUserOnAccept } = await import("../../utils/team-invitation-utils");
+			const { canUserInviteToTeam, shouldPromoteUserOnAccept } = await import(
+				"../../utils/team-invitation-utils"
+			);
 
 			// Test invitation permissions
 			expect(canUserInviteToTeam("team_lead")).toBe(true);
@@ -83,9 +88,9 @@ describe("Team Invitation API Integration Tests", () => {
 
 	describe("API Client Integration", () => {
 		it("should build correct API URLs and requests", async () => {
-			const { 
-				buildInvitationUrl, 
-				buildInvitationResponseUrl, 
+			const {
+				buildInvitationUrl,
+				buildInvitationResponseUrl,
 				createSendInvitationRequest,
 				createInvitationResponseRequest,
 				validateInvitationApiParams
@@ -102,7 +107,7 @@ describe("Team Invitation API Integration Tests", () => {
 
 			const responseRequest = createInvitationResponseRequest("token-123", "accept");
 			expect(responseRequest.method).toBe("POST");
-			
+
 			const body = JSON.parse(responseRequest.body as string) as { token: string; action: string };
 			expect(body.action).toBe("accept");
 
@@ -131,8 +136,10 @@ describe("Team Invitation API Integration Tests", () => {
 			const team = await TeamModel.create(teamData);
 
 			// Test invitation creation
-			const { createInvitationToken, getInvitationExpiryDate } = await import("../../utils/team-invitation-utils");
-			
+			const { createInvitationToken, getInvitationExpiryDate } = await import(
+				"../../utils/team-invitation-utils"
+			);
+
 			const token = createInvitationToken();
 			const expiresAt = getInvitationExpiryDate(7);
 
@@ -188,10 +195,10 @@ describe("Team Invitation API Integration Tests", () => {
 			const team = await TeamModel.create(teamData);
 
 			// Test invitation creation workflow
-			const { 
-				validateInvitationData, 
-				sanitizeInvitationData, 
-				createInvitationToken, 
+			const {
+				validateInvitationData,
+				sanitizeInvitationData,
+				createInvitationToken,
 				getInvitationExpiryDate,
 				canActOnInvitation,
 				formatInvitationForResponse
@@ -209,7 +216,7 @@ describe("Team Invitation API Integration Tests", () => {
 			expect(validation.isValid).toBe(true);
 
 			const sanitized = sanitizeInvitationData(invitationData);
-			
+
 			// Create invitation in database
 			const token = createInvitationToken();
 			const expiresAt = getInvitationExpiryDate(7);
@@ -227,7 +234,11 @@ describe("Team Invitation API Integration Tests", () => {
 			expect(canActOnInvitation(invitation)).toBe(true);
 
 			// Test invitation formatting
-			const formatted = formatInvitationForResponse(invitation, team.name, `${inviter.first_name} ${inviter.last_name}`);
+			const formatted = formatInvitationForResponse(
+				invitation,
+				team.name,
+				`${inviter.first_name} ${inviter.last_name}`
+			);
 			expect(formatted.teamName).toBe(team.name);
 			expect(formatted.status).toBe("pending");
 

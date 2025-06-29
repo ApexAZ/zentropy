@@ -5,18 +5,18 @@ import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation";
 import { validateTeamInput } from "../utils/team-validation";
 import { handleTeamCreationWithRolePromotion } from "../utils/role-promotion-utils";
-import { 
-	performUserSearch, 
-	validateSearchQuery, 
-	validateSearchLimit, 
-	hasUserSearchPermission 
+import {
+	performUserSearch,
+	validateSearchQuery,
+	validateSearchLimit,
+	hasUserSearchPermission
 } from "../utils/user-search-utils";
 import type { UserSearchParams } from "../utils/user-search-utils";
 import type { UserRole } from "../models/User";
 import { TeamModelExtensions } from "../utils/team-model-extensions";
-import { 
-	validateTeamMembership, 
-	canAddUserToTeam, 
+import {
+	validateTeamMembership,
+	canAddUserToTeam,
 	determineUserRoleForTeam,
 	validateMembershipRequest,
 	sanitizeMembershipData,
@@ -129,7 +129,7 @@ app.post("/api/teams", sessionAuthMiddleware, async (req: Request, res: Response
 
 		// Validate input data
 		const teamData = validateTeamInput(req.body);
-		
+
 		// Set the team creator to the authenticated user
 		const teamDataWithCreator = {
 			...teamData,
@@ -144,7 +144,7 @@ app.post("/api/teams", sessionAuthMiddleware, async (req: Request, res: Response
 			team: result.team,
 			userPromoted: result.userPromoted,
 			membership: result.membership,
-			message: result.userPromoted 
+			message: result.userPromoted
 				? "Team created successfully. You have been promoted to team lead!"
 				: "Team created successfully."
 		});
@@ -280,8 +280,8 @@ app.post("/api/teams/:id/members", sessionAuthMiddleware, async (req: Request, r
 
 		// Check if user has permission to add team members
 		if (!hasUserSearchPermission(user.role as UserRole)) {
-			res.status(403).json({ 
-				message: "Insufficient permissions. Only team leads can add users to teams." 
+			res.status(403).json({
+				message: "Insufficient permissions. Only team leads can add users to teams."
 			});
 			return;
 		}
@@ -392,8 +392,8 @@ app.post("/api/teams/:id/invitations", sessionAuthMiddleware, async (req: Reques
 
 		// Check if user has permission to send invitations
 		if (!canUserInviteToTeam(user.role as UserRole)) {
-			res.status(403).json({ 
-				message: "Insufficient permissions. Only team leads can send team invitations." 
+			res.status(403).json({
+				message: "Insufficient permissions. Only team leads can send team invitations."
 			});
 			return;
 		}
@@ -436,7 +436,7 @@ app.post("/api/teams/:id/invitations", sessionAuthMiddleware, async (req: Reques
 		// Check if user is already a team member
 		const existingMemberships = await TeamModelExtensions.getTeamMemberships(teamId);
 		const existingUser = await UserModel.findByEmail(sanitizedData.invitedEmail);
-		
+
 		if (existingUser) {
 			const membershipConflict = canAddUserToTeam(existingUser.id, teamId, existingMemberships);
 			if (!membershipConflict.canAdd) {
@@ -448,7 +448,10 @@ app.post("/api/teams/:id/invitations", sessionAuthMiddleware, async (req: Reques
 		}
 
 		// Check for existing pending invitation
-		const existingInvitation = await TeamInvitationModel.findPendingForTeamAndEmail(teamId, sanitizedData.invitedEmail);
+		const existingInvitation = await TeamInvitationModel.findPendingForTeamAndEmail(
+			teamId,
+			sanitizedData.invitedEmail
+		);
 		if (existingInvitation) {
 			res.status(409).json({
 				message: "User already has a pending invitation for this team"
@@ -508,7 +511,7 @@ app.post("/api/invitations/respond", sessionAuthMiddleware, async (req: Request,
 		const requestBody = req.body as { token?: string; action?: "accept" | "decline" };
 		const responseData = {
 			token: requestBody.token ?? "",
-			action: requestBody.action ?? "accept" as "accept" | "decline"
+			action: requestBody.action ?? ("accept" as "accept" | "decline")
 		};
 
 		// Validate response data
@@ -549,7 +552,7 @@ app.post("/api/invitations/respond", sessionAuthMiddleware, async (req: Request,
 		if (responseData.action === "decline") {
 			// Update invitation status to declined
 			await TeamInvitationModel.update(invitation.id, { status: "declined" });
-			
+
 			res.json({
 				message: `You have declined the invitation to join ${invitationWithDetails.team.name}`
 			});
@@ -591,7 +594,7 @@ app.post("/api/invitations/respond", sessionAuthMiddleware, async (req: Request,
 					email: user.email,
 					displayName: `${user.first_name} ${user.last_name}`.trim()
 				},
-				message: shouldPromote 
+				message: shouldPromote
 					? `You have joined ${invitationWithDetails.team.name} and been promoted to ${roleForTeam}`
 					: `You have joined ${invitationWithDetails.team.name}`
 			};
@@ -621,16 +624,16 @@ app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Re
 
 		// Check if user has permission to search for other users
 		if (!hasUserSearchPermission(user.role as UserRole)) {
-			res.status(403).json({ 
-				message: "Insufficient permissions. Only team leads can search for users to add to teams." 
+			res.status(403).json({
+				message: "Insufficient permissions. Only team leads can search for users to add to teams."
 			});
 			return;
 		}
 
 		// Extract and validate query parameters
-		const query = req.query.q as string ?? "";
+		const query = (req.query.q as string) ?? "";
 		const roleFilterParam = req.query.role as string | undefined;
-		const limitParam = parseInt(req.query.limit as string ?? "20");
+		const limitParam = parseInt((req.query.limit as string) ?? "20");
 
 		// Validate role filter if provided
 		let roleFilter: UserRole | undefined;
@@ -639,8 +642,8 @@ app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Re
 			if (validRoles.includes(roleFilterParam as UserRole)) {
 				roleFilter = roleFilterParam as UserRole;
 			} else {
-				res.status(400).json({ 
-					message: "Invalid role filter. Must be one of: basic_user, team_member, team_lead" 
+				res.status(400).json({
+					message: "Invalid role filter. Must be one of: basic_user, team_member, team_lead"
 				});
 				return;
 			}
@@ -648,8 +651,8 @@ app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Re
 
 		// Validate search parameters
 		if (!validateSearchQuery(query)) {
-			res.status(400).json({ 
-				message: "Invalid search query. Query must be a string with no HTML tags and under 100 characters." 
+			res.status(400).json({
+				message: "Invalid search query. Query must be a string with no HTML tags and under 100 characters."
 			});
 			return;
 		}

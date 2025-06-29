@@ -24,7 +24,7 @@ export interface AddMemberApiResponse {
 
 /**
  * Build URL for adding a member to a team
- * 
+ *
  * @param teamId - ID of the team
  * @returns API endpoint URL for adding team member
  */
@@ -34,7 +34,7 @@ export function buildAddMemberUrl(teamId: string): string {
 
 /**
  * Create request configuration for adding a member to a team
- * 
+ *
  * @param userId - ID of the user to add
  * @param role - Role to assign to the user
  * @returns RequestInit configuration object
@@ -55,7 +55,7 @@ export function createAddMemberRequest(userId: string, role: UserRole): RequestI
 
 /**
  * Handle add member API response
- * 
+ *
  * @param response - Fetch response object
  * @returns Promise<AddMemberApiResponse> - Parsed response data
  * @throws Error if response is not ok or parsing fails
@@ -64,7 +64,7 @@ export async function handleAddMemberResponse(response: Response): Promise<AddMe
 	if (!response.ok) {
 		let errorMessage = "Failed to add user to team";
 		try {
-			const errorData = await response.json() as { message?: string };
+			const errorData = (await response.json()) as { message?: string };
 			errorMessage = errorData.message ?? errorMessage;
 		} catch {
 			// If JSON parsing fails, use default message
@@ -72,12 +72,12 @@ export async function handleAddMemberResponse(response: Response): Promise<AddMe
 		throw new Error(errorMessage);
 	}
 
-	return await response.json() as AddMemberApiResponse;
+	return (await response.json()) as AddMemberApiResponse;
 }
 
 /**
  * Validate parameters for adding member to team
- * 
+ *
  * @param teamId - ID of the team
  * @param userId - ID of the user to add
  * @param role - Role to assign
@@ -114,7 +114,7 @@ export function validateAddMemberParams(teamId: string, userId: string, role: Us
 
 /**
  * Make complete API request to add user to team
- * 
+ *
  * @param teamId - ID of the team
  * @param userId - ID of the user to add
  * @param role - Role to assign to the user
@@ -122,8 +122,8 @@ export function validateAddMemberParams(teamId: string, userId: string, role: Us
  * @throws Error if validation fails or API request fails
  */
 export async function makeAddMemberRequest(
-	teamId: string, 
-	userId: string, 
+	teamId: string,
+	userId: string,
 	role: UserRole
 ): Promise<AddMemberApiResponse> {
 	// Validate parameters first
@@ -135,7 +135,7 @@ export async function makeAddMemberRequest(
 	try {
 		const url = buildAddMemberUrl(teamId);
 		const requestConfig = createAddMemberRequest(userId, role);
-		
+
 		const response = await fetch(url, requestConfig);
 		return await handleAddMemberResponse(response);
 	} catch (error) {

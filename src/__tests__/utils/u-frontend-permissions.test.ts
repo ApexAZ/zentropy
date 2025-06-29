@@ -174,7 +174,7 @@ describe("Frontend Permissions", () => {
 
 		it("should return safe CSS class names", () => {
 			const roles: UserRole[] = ["basic_user", "team_member", "team_lead"];
-			
+
 			roles.forEach(role => {
 				const cssClass = getRoleStyleClass(role);
 				expect(cssClass).toMatch(/^[a-z-]+$/);
@@ -241,21 +241,21 @@ describe("Frontend Permissions", () => {
 	describe("Integration Scenarios", () => {
 		it("should provide consistent results across related functions", () => {
 			const role: UserRole = "team_member";
-			
+
 			// Team features should be shown if user can access teams
 			const showTeamFeatures = shouldShowTeamFeatures(role);
 			const permissions = checkUserPermissions(role);
-			
+
 			expect(showTeamFeatures).toBe(permissions.canAccessTeams);
 		});
 
 		it("should provide helpful messaging for each role type", () => {
 			const roles: UserRole[] = ["basic_user", "team_member", "team_lead"];
-			
+
 			roles.forEach(role => {
 				const displayName = formatRoleForDisplay(role);
 				const cssClass = getRoleStyleClass(role);
-				
+
 				expect(displayName).toBeTruthy();
 				expect(cssClass).toBeTruthy();
 				expect(displayName).not.toBe(cssClass);
@@ -265,10 +265,10 @@ describe("Frontend Permissions", () => {
 		it("should handle role progression logic correctly", () => {
 			// Basic users should be able to create teams to become team leads
 			expect(checkUserPermissions("basic_user").canCreateTeam).toBe(true);
-			
+
 			// Team members should be able to create teams to become team leads
 			expect(checkUserPermissions("team_member").canCreateTeam).toBe(true);
-			
+
 			// Team leads should retain all permissions
 			expect(checkUserPermissions("team_lead").canCreateTeam).toBe(true);
 		});
@@ -289,7 +289,7 @@ describe("Frontend Permissions", () => {
 
 		it("should provide safe defaults for invalid inputs", () => {
 			const invalidRole = "totally_invalid" as UserRole;
-			
+
 			expect(formatRoleForDisplay(invalidRole)).toBe("Unknown Role");
 			expect(getRoleStyleClass(invalidRole)).toBe("user-role-unknown");
 			expect(shouldShowTeamFeatures(invalidRole)).toBe(false);

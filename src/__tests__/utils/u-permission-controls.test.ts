@@ -16,7 +16,7 @@ import {
 	isEffectiveTeamLead,
 	isAtLeastTeamMember,
 	getRoleDisplayName,
-	getRoleDescription,
+	getRoleDescription
 } from "../../utils/permission-controls";
 import type { UserRole } from "../../models/User";
 
@@ -389,12 +389,12 @@ describe("Permission Controls", () => {
 
 		it("should be consistent across all permission checks", () => {
 			const roles: UserRole[] = ["basic_user", "team_member", "team_lead"];
-			
+
 			roles.forEach(role => {
 				// Ensure consistent behavior across all permission functions
 				const accessTeams = canUserAccessTeams(role);
 				const viewDetails = canUserViewTeamDetails(role);
-				
+
 				// Access and view permissions should be consistent
 				expect(accessTeams).toBe(viewDetails);
 			});

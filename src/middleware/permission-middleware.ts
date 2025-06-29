@@ -22,7 +22,7 @@ interface AuthenticatedRequest extends Request {
  */
 export function requireTeamAccess(req: Request, res: Response, next: NextFunction): void {
 	const authReq = req as AuthenticatedRequest;
-	
+
 	if (!authReq.user) {
 		res.status(403).json({
 			message: "You do not have sufficient permissions to perform this action."
@@ -31,7 +31,7 @@ export function requireTeamAccess(req: Request, res: Response, next: NextFunctio
 	}
 
 	const permissionCheck = validateUserPermissions(authReq.user.role, "access_teams");
-	
+
 	if (!permissionCheck.hasPermission) {
 		res.status(403).json({
 			message: permissionCheck.message
@@ -48,7 +48,7 @@ export function requireTeamAccess(req: Request, res: Response, next: NextFunctio
  */
 export function requireTeamManagement(req: Request, res: Response, next: NextFunction): void {
 	const authReq = req as AuthenticatedRequest;
-	
+
 	if (!authReq.user) {
 		res.status(403).json({
 			message: "You do not have sufficient permissions to perform this action."
@@ -57,7 +57,7 @@ export function requireTeamManagement(req: Request, res: Response, next: NextFun
 	}
 
 	const permissionCheck = validateUserPermissions(authReq.user.role, "manage_team");
-	
+
 	if (!permissionCheck.hasPermission) {
 		res.status(403).json({
 			message: permissionCheck.message
@@ -74,7 +74,7 @@ export function requireTeamManagement(req: Request, res: Response, next: NextFun
  */
 export function requireMemberManagement(req: Request, res: Response, next: NextFunction): void {
 	const authReq = req as AuthenticatedRequest;
-	
+
 	if (!authReq.user) {
 		res.status(403).json({
 			message: "You do not have sufficient permissions to perform this action."
@@ -83,7 +83,7 @@ export function requireMemberManagement(req: Request, res: Response, next: NextF
 	}
 
 	const permissionCheck = validateUserPermissions(authReq.user.role, "add_members");
-	
+
 	if (!permissionCheck.hasPermission) {
 		res.status(403).json({
 			message: permissionCheck.message
@@ -100,7 +100,7 @@ export function requireMemberManagement(req: Request, res: Response, next: NextF
  */
 export function requireTeamLead(req: Request, res: Response, next: NextFunction): void {
 	const authReq = req as AuthenticatedRequest;
-	
+
 	if (!authReq.user) {
 		res.status(403).json({
 			message: "You do not have sufficient permissions to perform this action."
@@ -125,7 +125,7 @@ export function requireTeamLead(req: Request, res: Response, next: NextFunction)
 export function createPermissionMiddleware(action: PermissionAction) {
 	return (req: Request, res: Response, next: NextFunction): void => {
 		const authReq = req as AuthenticatedRequest;
-		
+
 		if (!authReq.user) {
 			res.status(403).json({
 				message: "You do not have sufficient permissions to perform this action."
@@ -134,7 +134,7 @@ export function createPermissionMiddleware(action: PermissionAction) {
 		}
 
 		const permissionCheck = validateUserPermissions(authReq.user.role, action);
-		
+
 		if (!permissionCheck.hasPermission) {
 			res.status(403).json({
 				message: permissionCheck.message
@@ -188,7 +188,7 @@ export function getUserId(req: Request): string | null {
  */
 export function hasPermission(req: Request, action: PermissionAction): boolean {
 	const authReq = req as AuthenticatedRequest;
-	
+
 	if (!authReq.user) {
 		return false;
 	}

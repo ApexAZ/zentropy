@@ -1,6 +1,6 @@
 /**
  * Profile Page Functionality Tests - Simplified Hybrid Approach
- * 
+ *
  * Following hybrid testing pattern:
  * - Profile utilities are tested in profile-ui-utils.test.ts and profile-utils.test.ts (pure functions)
  * - This file tests only critical UI integration and API coordination
@@ -30,11 +30,7 @@ vi.mock("../../utils/auth-utils", () => ({
 }));
 
 // Import functions being tested
-import {
-	initializeProfilePage,
-	displayProfileData,
-	handleProfileFormSubmit
-} from "../../public/profile";
+import { initializeProfilePage, displayProfileData, handleProfileFormSubmit } from "../../public/profile";
 
 // Import mocked utilities for assertions
 import { fetchUserProfile } from "../../utils/profile-utils";
@@ -44,13 +40,13 @@ import { getSessionInfo } from "../../utils/auth-utils";
 describe("Profile Page Integration Tests", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// Simple DOM mock - just enough for integration testing
 		const mockGetElement = vi.fn();
 		global.document = {
 			getElementById: mockGetElement
 		} as unknown as Document;
-		
+
 		// Return mock elements when requested
 		mockGetElement.mockImplementation((id: string) => ({
 			id,
@@ -75,7 +71,7 @@ describe("Profile Page Integration Tests", () => {
 				name: "Test User",
 				role: "team_member" as const
 			};
-			
+
 			const mockProfile = {
 				id: "user-123",
 				email: "test@example.com",
@@ -119,7 +115,7 @@ describe("Profile Page Integration Tests", () => {
 			// Setup: Valid session but profile fetch fails
 			const mockSession = {
 				id: "user-123",
-				email: "test@example.com", 
+				email: "test@example.com",
 				name: "Test User",
 				role: "team_member" as const
 			};
@@ -143,7 +139,7 @@ describe("Profile Page Integration Tests", () => {
 				id: "user-123",
 				email: "john.doe@example.com",
 				first_name: "John",
-				last_name: "Doe", 
+				last_name: "Doe",
 				role: "team_lead" as const,
 				is_active: true
 			};
@@ -200,7 +196,7 @@ describe("Profile Page Integration Tests", () => {
 			// Setup: Mock invalid form data
 			const formData = {
 				first_name: "",
-				last_name: "Doe", 
+				last_name: "Doe",
 				email: "invalid-email"
 			};
 
@@ -237,7 +233,7 @@ describe("Profile Page Integration Tests", () => {
 			const mockSession = {
 				id: "user-123",
 				email: "test@example.com",
-				name: "Test User", 
+				name: "Test User",
 				role: "team_member" as const
 			};
 

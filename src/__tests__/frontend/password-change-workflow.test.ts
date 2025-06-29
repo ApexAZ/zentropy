@@ -178,7 +178,7 @@ describe("Password Change Workflow Tests", () => {
 		it("should display real-time password strength feedback using policy utilities", () => {
 			// Integration test - verify UI uses password policy utilities correctly
 			// (Password strength logic is tested in password-policy.test.ts)
-			
+
 			const strongPassword = "StrongPassword123!";
 			const weakPassword = "weak";
 
@@ -194,10 +194,10 @@ describe("Password Change Workflow Tests", () => {
 				feedback: ["Strong password"]
 			});
 
-			// Verify weak password gets proper strength evaluation  
+			// Verify weak password gets proper strength evaluation
 			mockPasswordPolicy.calculateStrength.mockReturnValue({
 				score: 15,
-				strength: "Very Weak", 
+				strength: "Very Weak",
 				feedback: ["Password too short", "Add uppercase letters", "Add numbers"]
 			});
 
@@ -209,9 +209,9 @@ describe("Password Change Workflow Tests", () => {
 		it("should display password requirements checklist using utilities", () => {
 			// Integration test - verify UI integrates with password policy
 			// (Password validation logic is tested in password-policy.test.ts)
-			
+
 			const testPassword = "TestPassword123!";
-			
+
 			// Mock the password policy utility response
 			const mockValidationResult = {
 				isValid: true,

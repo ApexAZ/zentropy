@@ -52,7 +52,7 @@ describe("User Search API Client", () => {
 	describe("createUserSearchRequest", () => {
 		it("should create correct request configuration", () => {
 			const request = createUserSearchRequest("john");
-			
+
 			expect(request.method).toBe("GET");
 			expect(request.credentials).toBe("include");
 		});
@@ -60,7 +60,7 @@ describe("User Search API Client", () => {
 		it("should create same configuration regardless of parameters", () => {
 			const request1 = createUserSearchRequest("john");
 			const request2 = createUserSearchRequest("jane", "team_lead", 10);
-			
+
 			expect(request1).toEqual(request2);
 		});
 	});
@@ -68,16 +68,18 @@ describe("User Search API Client", () => {
 	describe("handleUserSearchResponse", () => {
 		it("should parse successful response", async () => {
 			const mockResponseData: UserSearchResponse = {
-				users: [{
-					id: "user-1",
-					email: "john@example.com",
-					first_name: "John",
-					last_name: "Doe",
-					role: "basic_user",
-					is_active: true,
-					created_at: "2024-01-01T00:00:00.000Z",
-					updated_at: "2024-01-01T00:00:00.000Z"
-				}],
+				users: [
+					{
+						id: "user-1",
+						email: "john@example.com",
+						first_name: "John",
+						last_name: "Doe",
+						role: "basic_user",
+						is_active: true,
+						created_at: "2024-01-01T00:00:00.000Z",
+						updated_at: "2024-01-01T00:00:00.000Z"
+					}
+				],
 				query: "john",
 				roleFilter: null,
 				limit: 20,
@@ -101,8 +103,7 @@ describe("User Search API Client", () => {
 				json: () => Promise.resolve(errorData)
 			} as Response;
 
-			await expect(handleUserSearchResponse(mockResponse))
-				.rejects.toThrow("Insufficient permissions");
+			await expect(handleUserSearchResponse(mockResponse)).rejects.toThrow("Insufficient permissions");
 		});
 
 		it("should handle JSON parsing errors", async () => {
@@ -111,8 +112,7 @@ describe("User Search API Client", () => {
 				json: () => Promise.reject(new Error("Invalid JSON"))
 			} as Response;
 
-			await expect(handleUserSearchResponse(mockResponse))
-				.rejects.toThrow("Invalid JSON");
+			await expect(handleUserSearchResponse(mockResponse)).rejects.toThrow("Invalid JSON");
 		});
 	});
 
@@ -134,13 +134,10 @@ describe("User Search API Client", () => {
 
 			const result = await makeUserSearchRequest("john");
 
-			expect(mockFetch).toHaveBeenCalledWith(
-				"/api/users/search?q=john&limit=20",
-				{
-					method: "GET",
-					credentials: "include"
-				}
-			);
+			expect(mockFetch).toHaveBeenCalledWith("/api/users/search?q=john&limit=20", {
+				method: "GET",
+				credentials: "include"
+			});
 			expect(result).toEqual(mockResponseData);
 		});
 
@@ -161,13 +158,10 @@ describe("User Search API Client", () => {
 
 			await makeUserSearchRequest("john", "basic_user");
 
-			expect(mockFetch).toHaveBeenCalledWith(
-				"/api/users/search?q=john&role=basic_user&limit=20",
-				{
-					method: "GET",
-					credentials: "include"
-				}
-			);
+			expect(mockFetch).toHaveBeenCalledWith("/api/users/search?q=john&role=basic_user&limit=20", {
+				method: "GET",
+				credentials: "include"
+			});
 		});
 
 		it("should make request with custom limit", async () => {
@@ -187,13 +181,10 @@ describe("User Search API Client", () => {
 
 			await makeUserSearchRequest("john", undefined, 10);
 
-			expect(mockFetch).toHaveBeenCalledWith(
-				"/api/users/search?q=john&limit=10",
-				{
-					method: "GET",
-					credentials: "include"
-				}
-			);
+			expect(mockFetch).toHaveBeenCalledWith("/api/users/search?q=john&limit=10", {
+				method: "GET",
+				credentials: "include"
+			});
 		});
 
 		it("should handle API errors", async () => {
@@ -202,22 +193,19 @@ describe("User Search API Client", () => {
 				json: () => Promise.resolve({ message: "Unauthorized" })
 			});
 
-			await expect(makeUserSearchRequest("john"))
-				.rejects.toThrow("Unauthorized");
+			await expect(makeUserSearchRequest("john")).rejects.toThrow("Unauthorized");
 		});
 
 		it("should handle network errors", async () => {
 			mockFetch.mockRejectedValue(new Error("Network error"));
 
-			await expect(makeUserSearchRequest("john"))
-				.rejects.toThrow("Network error");
+			await expect(makeUserSearchRequest("john")).rejects.toThrow("Network error");
 		});
 
 		it("should handle unknown errors as network errors", async () => {
 			mockFetch.mockRejectedValue("Unknown error");
 
-			await expect(makeUserSearchRequest("john"))
-				.rejects.toThrow("Network error");
+			await expect(makeUserSearchRequest("john")).rejects.toThrow("Network error");
 		});
 
 		it("should handle response parsing errors", async () => {
@@ -226,8 +214,7 @@ describe("User Search API Client", () => {
 				json: () => Promise.reject(new Error("Parse error"))
 			});
 
-			await expect(makeUserSearchRequest("john"))
-				.rejects.toThrow("Parse error");
+			await expect(makeUserSearchRequest("john")).rejects.toThrow("Parse error");
 		});
 	});
 });

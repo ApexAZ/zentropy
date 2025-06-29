@@ -1,9 +1,9 @@
 import type { User } from "../models/User";
-import { 
-	formatUserForDisplay, 
-	validateTeamManagementPermissions, 
-	createErrorMessage, 
-	isRetryableError 
+import {
+	formatUserForDisplay,
+	validateTeamManagementPermissions,
+	createErrorMessage,
+	isRetryableError
 } from "./user-display-utils";
 import { makeUserSearchRequest } from "./user-search-api-client";
 
@@ -21,7 +21,7 @@ interface ApiUser {
 
 /**
  * Render user search results in the specified container using tested utilities
- * 
+ *
  * @param users - Array of users to render
  * @param container - DOM container element to render results in
  */
@@ -43,7 +43,7 @@ export function renderUserSearchResults(users: User[] | ApiUser[], container: HT
 		// Convert ApiUser to User-compatible format for display
 		const userForDisplay = user as User;
 		const displayData = formatUserForDisplay(userForDisplay);
-		
+
 		const userItem = document.createElement("div");
 		userItem.className = "user-search-item";
 		userItem.dataset.userId = user.id;
@@ -120,7 +120,7 @@ export async function handleUserSearch(): Promise<void> {
 
 /**
  * Show or hide team management UI based on user permissions using tested utilities
- * 
+ *
  * @param user - Current user object
  * @param teamId - ID of the team being managed
  */
@@ -163,16 +163,12 @@ export function showTeamManagementUI(user: User, teamId: string): void {
 
 /**
  * Display search error message in the results container
- * 
+ *
  * @param message - Error message to display
  * @param container - Container element to display error in
  * @param showRetry - Whether to show a retry button (default: false)
  */
-export function displaySearchError(
-	message: string, 
-	container: HTMLElement, 
-	showRetry: boolean = false
-): void {
+export function displaySearchError(message: string, container: HTMLElement, showRetry: boolean = false): void {
 	// Clear existing content
 	container.innerHTML = "";
 
@@ -195,7 +191,7 @@ export function displaySearchError(
 
 /**
  * Show loading indicator in the search results container
- * 
+ *
  * @param container - Container element to show loading state in
  */
 export function showLoadingState(container: HTMLElement): void {
@@ -210,7 +206,7 @@ export function showLoadingState(container: HTMLElement): void {
 
 /**
  * Remove loading indicator from the search results container
- * 
+ *
  * @param container - Container element to remove loading state from
  */
 export function hideLoadingState(container: HTMLElement): void {

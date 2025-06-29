@@ -35,18 +35,20 @@ describe("Team Management UI Integration", () => {
 			const container = document.createElement("div");
 			document.body.appendChild(container);
 
-			const users: User[] = [{
-				id: "user-1",
-				email: "john@example.com",
-				first_name: "John",
-				last_name: "Doe",
-				role: "team_member",
-				is_active: true,
-				password_hash: "hash",
-				last_login_at: null,
-				created_at: new Date("2024-01-01"),
-				updated_at: new Date("2024-01-01")
-			}];
+			const users: User[] = [
+				{
+					id: "user-1",
+					email: "john@example.com",
+					first_name: "John",
+					last_name: "Doe",
+					role: "team_member",
+					is_active: true,
+					password_hash: "hash",
+					last_login_at: null,
+					created_at: new Date("2024-01-01"),
+					updated_at: new Date("2024-01-01")
+				}
+			];
 
 			// ACT
 			renderUserSearchResults(users, container);
@@ -55,7 +57,7 @@ describe("Team Management UI Integration", () => {
 			const userItem = container.querySelector(".user-search-item") as HTMLElement;
 			expect(userItem).toBeTruthy();
 			expect(userItem.dataset.userId).toBe("user-1");
-			
+
 			const addButton = container.querySelector("[data-action='add-user-to-team']") as HTMLElement;
 			expect(addButton).toBeTruthy();
 			expect(addButton.textContent).toContain("Add to Team");

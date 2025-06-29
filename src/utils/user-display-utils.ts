@@ -13,7 +13,7 @@ export interface UserDisplayData {
 
 /**
  * Format user data for display in search results
- * 
+ *
  * @param user - User object to format
  * @returns UserDisplayData - Formatted display data
  */
@@ -29,7 +29,7 @@ export function formatUserForDisplay(user: User): UserDisplayData {
 
 /**
  * Format user role for display
- * 
+ *
  * @param role - User role to format
  * @returns Formatted role string for display
  */
@@ -48,7 +48,7 @@ export function formatRoleForDisplay(role: UserRole): string {
 
 /**
  * Sanitize search input to prevent XSS attacks
- * 
+ *
  * @param input - Raw input string
  * @returns Sanitized input string with HTML tags and content removed
  */
@@ -62,7 +62,7 @@ export function sanitizeSearchInput(input: string): string {
 
 /**
  * Validate if user has permissions for team management
- * 
+ *
  * @param user - User object to check permissions for
  * @returns true if user can manage teams, false otherwise
  */
@@ -73,7 +73,7 @@ export function validateTeamManagementPermissions(user: User): boolean {
 
 /**
  * Validate search query input
- * 
+ *
  * @param query - Search query to validate
  * @returns true if query is valid, false otherwise
  */
@@ -108,7 +108,7 @@ export function validateSearchQuery(query: string): boolean {
 
 /**
  * Determine if search should be performed based on query length
- * 
+ *
  * @param query - Search query string
  * @returns true if search should be performed, false otherwise
  */
@@ -119,7 +119,7 @@ export function shouldPerformSearch(query: string): boolean {
 
 /**
  * Create error message for display
- * 
+ *
  * @param error - Error object or message
  * @param context - Context where error occurred
  * @returns Formatted error message for display
@@ -133,15 +133,17 @@ export function createErrorMessage(error: unknown, context: string = "operation"
 
 /**
  * Determine if error is a network error that should show retry option
- * 
+ *
  * @param error - Error object or message
  * @returns true if retry option should be shown, false otherwise
  */
 export function isRetryableError(error: unknown): boolean {
 	if (error instanceof Error) {
-		return error.message.toLowerCase().includes("network") ||
+		return (
+			error.message.toLowerCase().includes("network") ||
 			error.message.toLowerCase().includes("fetch") ||
-			error.message.toLowerCase().includes("connection");
+			error.message.toLowerCase().includes("connection")
+		);
 	}
 	return false;
 }

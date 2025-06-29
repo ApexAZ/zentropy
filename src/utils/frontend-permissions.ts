@@ -1,6 +1,6 @@
-import { 
-	getUserPermissions, 
-	validateUserPermissions, 
+import {
+	getUserPermissions,
+	validateUserPermissions,
 	getRestrictedActionMessage,
 	shouldRedirectToUpgrade,
 	getRoleDisplayName,
@@ -32,7 +32,7 @@ export function checkUserPermissions(role: UserRole): UserPermissions {
  */
 export function checkUIPermission(role: UserRole, action: PermissionAction): UIPermissionResult {
 	const result = validateUserPermissions(role, action);
-	
+
 	return {
 		allowed: result.hasPermission,
 		message: result.message,
@@ -84,7 +84,7 @@ export function getUpgradeMessage(role: UserRole, action: PermissionAction): str
 export function requiresTeamLead(action: PermissionAction): boolean {
 	const teamLeadActions: PermissionAction[] = [
 		"manage_team",
-		"add_members", 
+		"add_members",
 		"remove_members",
 		"send_invitations",
 		"modify_team_settings"
@@ -124,7 +124,7 @@ export function canPerformBulkOperations(role: UserRole): boolean {
 export function getPermissionStatus(role: UserRole, actions: PermissionAction[]): Record<PermissionAction, boolean> {
 	const permissions = getUserPermissions(role);
 	const result: Partial<Record<PermissionAction, boolean>> = {};
-	
+
 	actions.forEach(action => {
 		switch (action) {
 			case "access_teams":
@@ -156,6 +156,6 @@ export function getPermissionStatus(role: UserRole, actions: PermissionAction[])
 				(result as any)[action] = false;
 		}
 	});
-	
+
 	return result as Record<PermissionAction, boolean>;
 }

@@ -3,14 +3,14 @@ import type { UserRole } from "../models/User";
 /**
  * Available permission actions in the system
  */
-export type PermissionAction = 
-	| "access_teams" 
-	| "create_team" 
-	| "manage_team" 
+export type PermissionAction =
+	| "access_teams"
+	| "create_team"
+	| "manage_team"
 	| "view_team_details"
-	| "add_members" 
-	| "remove_members" 
-	| "send_invitations" 
+	| "add_members"
+	| "remove_members"
+	| "send_invitations"
 	| "modify_team_settings";
 
 /**

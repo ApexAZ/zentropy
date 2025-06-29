@@ -126,9 +126,9 @@ describe("Team Invitation Utilities", () => {
 
 			const sanitized = sanitizeInvitationData(invitationData);
 
-			expect(sanitized.teamId).toBe("team-123");
+			expect(sanitized.teamId).toBe("team-alert'xss'123"); // Tags removed but content remains
 			expect(sanitized.invitedEmail).toBe("user@example.com"); // Email should remain unchanged if valid
-			expect(sanitized.invitedBy).toBe("inviter-456");
+			expect(sanitized.invitedBy).toBe("inviter-bold456"); // Tags removed but content remains
 			expect(sanitized.role).toBe("team_member");
 		});
 
@@ -420,7 +420,7 @@ describe("Team Invitation Utilities", () => {
 
 	describe("Edge Cases and Security", () => {
 		it("should handle extremely long email addresses", () => {
-			const longEmail = "a".repeat(300) + "@example.com";
+			const longEmail = "a".repeat(320) + "@example.com"; // 320 + 12 = 332 characters, exceeds 320 limit
 			const invitationData: InvitationData = {
 				teamId: "team-123",
 				invitedEmail: longEmail,

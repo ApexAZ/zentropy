@@ -29,7 +29,7 @@ export interface CreateTeamMembershipData {
 export class TeamModelExtensions {
 	/**
 	 * Add user to team with specific role
-	 * 
+	 *
 	 * @param membershipData - Data for creating team membership
 	 * @returns Promise<TeamMembershipWithRole> - Created membership record
 	 */
@@ -40,11 +40,7 @@ export class TeamModelExtensions {
 				VALUES ($1, $2, $3)
 				RETURNING *
 			`;
-			const values = [
-				membershipData.team_id,
-				membershipData.user_id,
-				membershipData.role
-			];
+			const values = [membershipData.team_id, membershipData.user_id, membershipData.role];
 
 			const result = await pool.query(query, values);
 			return result.rows[0] as TeamMembershipWithRole;
@@ -57,7 +53,7 @@ export class TeamModelExtensions {
 
 	/**
 	 * Get all team memberships for a team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @returns Promise<TeamMembershipWithRole[]> - Array of team memberships
 	 */
@@ -79,7 +75,7 @@ export class TeamModelExtensions {
 
 	/**
 	 * Check if user is already a member of the team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @param userId - ID of the user
 	 * @returns Promise<TeamMembershipWithRole | null> - Existing membership or null
@@ -91,7 +87,7 @@ export class TeamModelExtensions {
 				WHERE team_id = $1 AND user_id = $2
 			`;
 			const result = await pool.query(query, [teamId, userId]);
-			return result.rows[0] as TeamMembershipWithRole || null;
+			return (result.rows[0] as TeamMembershipWithRole) || null;
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error("Error finding existing membership:", error);
@@ -101,13 +97,17 @@ export class TeamModelExtensions {
 
 	/**
 	 * Update user role in team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @param userId - ID of the user
 	 * @param newRole - New role to assign
 	 * @returns Promise<TeamMembershipWithRole | null> - Updated membership or null
 	 */
-	static async updateMemberRole(teamId: string, userId: string, newRole: UserRole): Promise<TeamMembershipWithRole | null> {
+	static async updateMemberRole(
+		teamId: string,
+		userId: string,
+		newRole: UserRole
+	): Promise<TeamMembershipWithRole | null> {
 		try {
 			const query = `
 				UPDATE team_memberships 
@@ -116,7 +116,7 @@ export class TeamModelExtensions {
 				RETURNING *
 			`;
 			const result = await pool.query(query, [teamId, userId, newRole]);
-			return result.rows[0] as TeamMembershipWithRole || null;
+			return (result.rows[0] as TeamMembershipWithRole) || null;
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error("Error updating member role:", error);
@@ -126,7 +126,7 @@ export class TeamModelExtensions {
 
 	/**
 	 * Remove user from team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @param userId - ID of the user
 	 * @returns Promise<boolean> - True if member was removed
@@ -145,20 +145,22 @@ export class TeamModelExtensions {
 
 	/**
 	 * Get team members with their roles
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @returns Promise<Array> - Array of users with their team roles
 	 */
-	static async getMembersWithRoles(teamId: string): Promise<Array<{
-		id: string;
-		email: string;
-		first_name: string;
-		last_name: string;
-		role: UserRole;
-		is_active: boolean;
-		team_role: UserRole;
-		joined_at: Date;
-	}>> {
+	static async getMembersWithRoles(teamId: string): Promise<
+		Array<{
+			id: string;
+			email: string;
+			first_name: string;
+			last_name: string;
+			role: UserRole;
+			is_active: boolean;
+			team_role: UserRole;
+			joined_at: Date;
+		}>
+	> {
 		try {
 			const query = `
 				SELECT 

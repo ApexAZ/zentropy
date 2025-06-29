@@ -22,8 +22,8 @@ import { SessionModel } from "../../models/Session";
 import usersRouter from "../../routes/users";
 
 // Import all profile utilities for integration validation
-import { 
-	validateProfileData, 
+import {
+	validateProfileData,
 	sanitizeProfileInput,
 	createProfileUpdateRequest,
 	type UserProfile
@@ -103,12 +103,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			testUsers.push(testUser.id);
 
 			// Step 1: Authentication (Login)
-			const loginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginResponse = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			expect(loginResponse.status).toBe(200);
 			expect(loginResponse.body.user.email).toBe(uniqueEmail);
@@ -131,7 +129,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 			const profileResponse = await request(app)
 				.get(`/api/users/${testUser.id}`)
 				.set("Cookie", `sessionToken=${sessionToken}`);
-				
+
 			expect(profileResponse.status).toBe(200);
 			const profile = profileResponse.body;
 			expect(profile.id).toBe(testUser.id);
@@ -230,23 +228,19 @@ describe("Complete Profile Management System Integration Tests", () => {
 			expect(passwordResponse.body.message).toBeDefined();
 
 			// Step 10: Verify password change worked
-			const loginWithNewPassword = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: newPassword
-				});
+			const loginWithNewPassword = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: newPassword
+			});
 
 			expect(loginWithNewPassword.status).toBe(200);
 			expect(loginWithNewPassword.body.user.email).toBe(uniqueEmail);
 
 			// Verify old password no longer works
-			const loginWithOldPassword = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginWithOldPassword = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			expect(loginWithOldPassword.status).toBe(401);
 		});
@@ -255,7 +249,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 			// Arrange: Create team lead and team member
 			const teamLeadPassword = "TeamLeadPass!Mx7#Nz4P";
 			const teamMemberPassword = "MemberPass!Qw3#Rt8Y";
-			
+
 			const teamLeadEmail = `${TEST_PREFIX}-lead-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 			const teamMemberEmail = `${TEST_PREFIX}-member-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 
@@ -278,12 +272,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			testUsers.push(teamMember.id);
 
 			// Step 1: Team lead login
-			const leadLoginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: teamLeadEmail,
-					password: teamLeadPassword
-				});
+			const leadLoginResponse = await request(app).post("/api/users/login").send({
+				email: teamLeadEmail,
+				password: teamLeadPassword
+			});
 
 			expect(leadLoginResponse.status).toBe(200);
 
@@ -292,7 +284,9 @@ describe("Complete Profile Management System Integration Tests", () => {
 				: leadLoginResponse.headers["set-cookie"];
 
 			const leadSessionToken = leadSessionCookie?.split(";")[0].split("=")[1];
-			if (!leadSessionToken) {throw new Error("No session token found");}
+			if (!leadSessionToken) {
+				throw new Error("No session token found");
+			}
 			testSessions.push(leadSessionToken);
 
 			// Step 2: Validate team lead can access team member profile
@@ -303,7 +297,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 			const memberProfileResponse = await request(app)
 				.get(`/api/users/${teamMember.id}`)
 				.set("Cookie", `sessionToken=${leadSessionToken}`);
-				
+
 			expect(memberProfileResponse.status).toBe(200);
 			const memberProfile = memberProfileResponse.body;
 			expect(memberProfile.id).toBe(teamMember.id);
@@ -325,19 +319,19 @@ describe("Complete Profile Management System Integration Tests", () => {
 			expect(updateResponse.body.first_name).toBe("Robert");
 
 			// Step 5: Verify team member cannot access team lead profile
-			const memberLoginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: teamMemberEmail,
-					password: teamMemberPassword
-				});
+			const memberLoginResponse = await request(app).post("/api/users/login").send({
+				email: teamMemberEmail,
+				password: teamMemberPassword
+			});
 
 			const memberSessionCookie = Array.isArray(memberLoginResponse.headers["set-cookie"])
 				? memberLoginResponse.headers["set-cookie"].find((cookie: string) => cookie.startsWith("sessionToken="))
 				: memberLoginResponse.headers["set-cookie"];
 
 			const memberSessionToken = memberSessionCookie?.split(";")[0].split("=")[1];
-			if (!memberSessionToken) {throw new Error("No member session token found");}
+			if (!memberSessionToken) {
+				throw new Error("No member session token found");
+			}
 			testSessions.push(memberSessionToken);
 
 			const memberHasAccess = validateProfileAccess(teamMember.id, teamLead.id, "team_member");
@@ -364,12 +358,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			testUsers.push(testUser.id);
 
 			// Step 1: Login
-			const loginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginResponse = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			const sessionCookie = Array.isArray(loginResponse.headers["set-cookie"])
 				? loginResponse.headers["set-cookie"].find((cookie: string) => cookie.startsWith("sessionToken="))
@@ -434,7 +426,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 			// Arrange: Create test users
 			const user1Password = "ComplexPass!Cx9#Dt4L";
 			const user2Password = "SecurePass!Fy2#Gw7M";
-			
+
 			const user1Email = `${TEST_PREFIX}-user1-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 			const user2Email = `${TEST_PREFIX}-user2-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 
@@ -457,12 +449,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			testUsers.push(user2.id);
 
 			// Step 1: User 1 login
-			const user1LoginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: user1Email,
-					password: user1Password
-				});
+			const user1LoginResponse = await request(app).post("/api/users/login").send({
+				email: user1Email,
+				password: user1Password
+			});
 
 			const user1SessionCookie = Array.isArray(user1LoginResponse.headers["set-cookie"])
 				? user1LoginResponse.headers["set-cookie"].find((cookie: string) => cookie.startsWith("sessionToken="))
@@ -512,12 +502,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			testUsers.push(testUser.id);
 
 			// Step 1: Login
-			const loginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginResponse = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			const sessionCookie = Array.isArray(loginResponse.headers["set-cookie"])
 				? loginResponse.headers["set-cookie"].find((cookie: string) => cookie.startsWith("sessionToken="))
@@ -588,12 +576,12 @@ describe("Complete Profile Management System Integration Tests", () => {
 				id: "test-id",
 				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 				email: sanitizedProfile.email || "test@example.com", // Use valid email for validation test
-				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing  
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 				first_name: sanitizedProfile.first_name || "Test",
 				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 				last_name: sanitizedProfile.last_name || "User"
 			});
-			
+
 			// If we provide valid fallback data, validation should pass
 			expect(profileValidation.isValid).toBe(true);
 		});
@@ -608,15 +596,15 @@ describe("Complete Profile Management System Integration Tests", () => {
 
 			const firstNames = ["James", "Emma", "Robert", "Olivia", "William"];
 			const lastNames = ["Brown", "Davis", "Miller", "Wilson", "Moore"];
-			
+
 			for (let i = 0; i < 5; i++) {
 				const firstName = firstNames[i];
 				const lastName = lastNames[i];
-				
+
 				if (!firstName || !lastName) {
 					throw new Error(`Missing name for user ${i}`);
 				}
-				
+
 				const password = `ConcurrentFlow${i}!Zx8#Vm2N`;
 				const email = `${TEST_PREFIX}-concurrent-${i}-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 
@@ -627,7 +615,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 					last_name: lastName,
 					role: "team_member"
 				});
-				
+
 				users.push(user);
 				passwords.push(password);
 				testUsers.push(user.id);
@@ -642,16 +630,16 @@ describe("Complete Profile Management System Integration Tests", () => {
 					: loginResponse.headers["set-cookie"];
 
 				const sessionToken = sessionCookie?.split(";")[0].split("=")[1];
-				if (!sessionToken) {throw new Error(`No session token found for user ${i}`);}
+				if (!sessionToken) {
+					throw new Error(`No session token found for user ${i}`);
+				}
 				sessionTokens.push(sessionToken);
 				testSessions.push(sessionToken);
 			}
 
 			// Step 1: Concurrent profile fetches via API
-			const fetchPromises = users.map((user, index) => 
-				request(app)
-					.get(`/api/users/${user.id}`)
-					.set("Cookie", `sessionToken=${sessionTokens[index]}`)
+			const fetchPromises = users.map((user, index) =>
+				request(app).get(`/api/users/${user.id}`).set("Cookie", `sessionToken=${sessionTokens[index]}`)
 			);
 			const profileResponses = await Promise.all(fetchPromises);
 
@@ -659,22 +647,28 @@ describe("Complete Profile Management System Integration Tests", () => {
 			profileResponses.forEach((response, index) => {
 				const expectedFirstName = firstNames[index];
 				const user = users[index];
-				if (!expectedFirstName) {throw new Error(`Missing first name for index ${index}`);}
-				if (!user) {throw new Error(`Missing user for index ${index}`);}
-				
+				if (!expectedFirstName) {
+					throw new Error(`Missing first name for index ${index}`);
+				}
+				if (!user) {
+					throw new Error(`Missing user for index ${index}`);
+				}
+
 				expect(response.status).toBe(200);
 				expect(response.body.id).toBe(user.id);
 				expect(response.body.first_name).toBe(expectedFirstName);
 			});
-			
+
 			const profiles = profileResponses.map(response => response.body as UserProfile);
 
 			// Step 2: Concurrent profile updates
 			const updatePromises = users.map((user, index) => {
 				const firstName = firstNames[index];
 				const lastName = lastNames[index];
-				if (!firstName || !lastName) {throw new Error(`Missing names for update ${index}`);}
-				
+				if (!firstName || !lastName) {
+					throw new Error(`Missing names for update ${index}`);
+				}
+
 				const updateData = {
 					first_name: firstName,
 					last_name: `Updated${lastName}`,
@@ -692,8 +686,10 @@ describe("Complete Profile Management System Integration Tests", () => {
 			updateResponses.forEach((response, index) => {
 				const firstName = firstNames[index];
 				const lastName = lastNames[index];
-				if (!firstName || !lastName) {throw new Error(`Missing names for validation ${index}`);}
-				
+				if (!firstName || !lastName) {
+					throw new Error(`Missing names for validation ${index}`);
+				}
+
 				expect(response.status).toBe(200);
 				expect(response.body.first_name).toBe(firstName);
 				expect(response.body.last_name).toBe(`Updated${lastName}`);

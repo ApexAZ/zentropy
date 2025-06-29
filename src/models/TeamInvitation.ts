@@ -27,7 +27,7 @@ export interface UpdateInvitationData {
 export class TeamInvitationModel {
 	/**
 	 * Create a new team invitation
-	 * 
+	 *
 	 * @param invitationData - Data for creating invitation
 	 * @returns Promise<InvitationRecord> - Created invitation record
 	 */
@@ -58,7 +58,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Find invitation by token
-	 * 
+	 *
 	 * @param token - Invitation token
 	 * @returns Promise<InvitationRecord | null> - Invitation record or null
 	 */
@@ -76,7 +76,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Find invitation by ID
-	 * 
+	 *
 	 * @param id - Invitation ID
 	 * @returns Promise<InvitationRecord | null> - Invitation record or null
 	 */
@@ -94,7 +94,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Get all invitations for a team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @param status - Optional status filter
 	 * @returns Promise<InvitationRecord[]> - Array of invitations
@@ -125,7 +125,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Get all invitations for an email address
-	 * 
+	 *
 	 * @param email - Email address
 	 * @param status - Optional status filter
 	 * @returns Promise<InvitationRecord[]> - Array of invitations
@@ -156,7 +156,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Update invitation status
-	 * 
+	 *
 	 * @param id - Invitation ID
 	 * @param updateData - Data to update
 	 * @returns Promise<InvitationRecord | null> - Updated invitation or null
@@ -182,7 +182,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Delete invitation
-	 * 
+	 *
 	 * @param id - Invitation ID
 	 * @returns Promise<boolean> - True if invitation was deleted
 	 */
@@ -200,7 +200,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Check if user already has pending invitation for team
-	 * 
+	 *
 	 * @param teamId - ID of the team
 	 * @param email - Email address
 	 * @returns Promise<InvitationRecord | null> - Existing pending invitation or null
@@ -224,7 +224,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Mark expired invitations
-	 * 
+	 *
 	 * @returns Promise<number> - Number of invitations marked as expired
 	 */
 	static async markExpiredInvitations(): Promise<number> {
@@ -245,7 +245,7 @@ export class TeamInvitationModel {
 
 	/**
 	 * Get invitation with team and inviter details
-	 * 
+	 *
 	 * @param token - Invitation token
 	 * @returns Promise<object | null> - Invitation with related data or null
 	 */
@@ -268,7 +268,7 @@ export class TeamInvitationModel {
 				WHERE ti.token = $1
 			`;
 			const result = await pool.query(query, [token]);
-			
+
 			if (result.rows.length === 0) {
 				return null;
 			}

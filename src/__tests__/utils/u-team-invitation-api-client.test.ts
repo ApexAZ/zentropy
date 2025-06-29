@@ -7,7 +7,7 @@ import {
 	handleInvitationApiResponse,
 	validateInvitationApiParams,
 	makeSendInvitationRequest,
-	makeInvitationResponseRequest,
+	makeInvitationResponseRequest
 } from "../../utils/team-invitation-api-client";
 import type { UserRole } from "../../models/User";
 
@@ -190,14 +190,22 @@ describe("Team Invitation API Client", () => {
 		});
 
 		it("should reject team ID with XSS attempts", () => {
-			const result = validateInvitationApiParams("<script>alert('xss')</script>", "user@example.com", "team_member");
+			const result = validateInvitationApiParams(
+				"<script>alert('xss')</script>",
+				"user@example.com",
+				"team_member"
+			);
 
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid characters in team ID");
 		});
 
 		it("should reject email with XSS attempts", () => {
-			const result = validateInvitationApiParams("team-123", "<script>alert('xss')</script>@example.com", "team_member");
+			const result = validateInvitationApiParams(
+				"team-123",
+				"<script>alert('xss')</script>@example.com",
+				"team_member"
+			);
 
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid email format");
@@ -242,9 +250,9 @@ describe("Team Invitation API Client", () => {
 		});
 
 		it("should handle validation errors before API call", async () => {
-			await expect(
-				makeSendInvitationRequest("", "user@example.com", "team_member")
-			).rejects.toThrow("Team ID is required");
+			await expect(makeSendInvitationRequest("", "user@example.com", "team_member")).rejects.toThrow(
+				"Team ID is required"
+			);
 
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
@@ -258,17 +266,17 @@ describe("Team Invitation API Client", () => {
 				})
 			});
 
-			await expect(
-				makeSendInvitationRequest("team-456", "user@example.com", "team_member")
-			).rejects.toThrow("User is already a member of this team");
+			await expect(makeSendInvitationRequest("team-456", "user@example.com", "team_member")).rejects.toThrow(
+				"User is already a member of this team"
+			);
 		});
 
 		it("should handle network errors", async () => {
 			mockFetch.mockRejectedValue(new Error("Network failure"));
 
-			await expect(
-				makeSendInvitationRequest("team-456", "user@example.com", "team_member")
-			).rejects.toThrow("Network error");
+			await expect(makeSendInvitationRequest("team-456", "user@example.com", "team_member")).rejects.toThrow(
+				"Network failure"
+			);
 		});
 
 		it("should validate and use correct role parameter", async () => {
@@ -369,9 +377,9 @@ describe("Team Invitation API Client", () => {
 				})
 			});
 
-			await expect(
-				makeInvitationResponseRequest("token-123", "accept")
-			).rejects.toThrow("Invitation has expired");
+			await expect(makeInvitationResponseRequest("token-123", "accept")).rejects.toThrow(
+				"Invitation has expired"
+			);
 		});
 
 		it("should handle invalid token errors", async () => {
@@ -383,9 +391,9 @@ describe("Team Invitation API Client", () => {
 				})
 			});
 
-			await expect(
-				makeInvitationResponseRequest("invalid-token", "accept")
-			).rejects.toThrow("Invalid invitation token");
+			await expect(makeInvitationResponseRequest("invalid-token", "accept")).rejects.toThrow(
+				"Invalid invitation token"
+			);
 		});
 	});
 });

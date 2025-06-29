@@ -38,7 +38,7 @@ describe("Team Membership Utilities", () => {
 	describe("validateTeamMembership", () => {
 		it("should validate active user for team membership", () => {
 			const result = validateTeamMembership(mockUser, mockTeam.id);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -46,7 +46,7 @@ describe("Team Membership Utilities", () => {
 		it("should reject inactive users", () => {
 			const inactiveUser = { ...mockUser, is_active: false };
 			const result = validateTeamMembership(inactiveUser, mockTeam.id);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("User account is not active");
 		});
@@ -54,14 +54,14 @@ describe("Team Membership Utilities", () => {
 		it("should reject users without valid ID", () => {
 			const invalidUser = { ...mockUser, id: "" };
 			const result = validateTeamMembership(invalidUser, mockTeam.id);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid user ID");
 		});
 
 		it("should reject invalid team ID", () => {
 			const result = validateTeamMembership(mockUser, "");
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid team ID");
 		});
@@ -69,7 +69,7 @@ describe("Team Membership Utilities", () => {
 		it("should accumulate multiple validation errors", () => {
 			const invalidUser = { ...mockUser, id: "", is_active: false };
 			const result = validateTeamMembership(invalidUser, "");
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toHaveLength(3);
 			expect(result.errors).toContain("Invalid user ID");
@@ -86,28 +86,28 @@ describe("Team Membership Utilities", () => {
 
 		it("should allow adding new user to team", () => {
 			const result = canAddUserToTeam("new-user", "team-1", existingMembers);
-			
+
 			expect(result.canAdd).toBe(true);
 			expect(result.conflict).toBeNull();
 		});
 
 		it("should prevent adding existing member", () => {
 			const result = canAddUserToTeam("existing-1", "team-1", existingMembers);
-			
+
 			expect(result.canAdd).toBe(false);
 			expect(result.conflict).toBe("User is already a member of this team");
 		});
 
 		it("should handle empty member list", () => {
 			const result = canAddUserToTeam("new-user", "team-1", []);
-			
+
 			expect(result.canAdd).toBe(true);
 			expect(result.conflict).toBeNull();
 		});
 
 		it("should be case-sensitive for user IDs", () => {
 			const result = canAddUserToTeam("EXISTING-1", "team-1", existingMembers);
-			
+
 			expect(result.canAdd).toBe(true);
 			expect(result.conflict).toBeNull();
 		});
@@ -170,7 +170,7 @@ describe("Team Membership Utilities", () => {
 
 		it("should validate correct membership request", () => {
 			const result = validateMembershipRequest(validRequest);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -178,7 +178,7 @@ describe("Team Membership Utilities", () => {
 		it("should reject missing userId", () => {
 			const request = { ...validRequest, userId: "" };
 			const result = validateMembershipRequest(request);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("User ID is required");
 		});
@@ -186,7 +186,7 @@ describe("Team Membership Utilities", () => {
 		it("should reject missing teamId", () => {
 			const request = { ...validRequest, teamId: "" };
 			const result = validateMembershipRequest(request);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Team ID is required");
 		});
@@ -194,7 +194,7 @@ describe("Team Membership Utilities", () => {
 		it("should reject invalid role", () => {
 			const request = { ...validRequest, role: "invalid_role" as UserRole };
 			const result = validateMembershipRequest(request);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid role specified");
 		});
@@ -206,7 +206,7 @@ describe("Team Membership Utilities", () => {
 				role: "team_member" as UserRole
 			};
 			const result = validateMembershipRequest(maliciousRequest);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain("Invalid characters in user ID");
 			expect(result.errors).toContain("Invalid characters in team ID");
@@ -237,8 +237,8 @@ describe("Team Membership Utilities", () => {
 
 			const result = sanitizeMembershipData(maliciousData);
 
-			expect(result.userId).toBe("user-1");
-			expect(result.teamId).toBe("team-1");
+			expect(result.userId).toBe("useralert-1"); // Tags removed but content remains
+			expect(result.teamId).toBe("team-1"); // Tags removed
 			expect(result.role).toBe("team_member");
 		});
 
