@@ -1,22 +1,63 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { testConnection, closePool } from "../../database/connection";
+import { testConnection } from "../../database/connection";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { UserModel } from "../../models/User";
 import { TeamModel } from "../../models/Team";
 import { TeamInvitationModel } from "../../models/TeamInvitation";
 
-// Simple test of invitation system
+// Integration test for team invitation system
 describe("Team Invitation API Integration Tests", () => {
+	let createdUsers: string[] = [];
+	let createdTeams: string[] = [];
+	let createdInvitations: string[] = [];
+
 	beforeEach(async () => {
 		// Ensure database connection
 		const isConnected = await testConnection();
 		if (!isConnected) {
 			throw new Error("Database connection failed");
 		}
+
+		// Reset cleanup arrays
+		createdUsers = [];
+		createdTeams = [];
+		createdInvitations = [];
 	});
 
 	afterEach(async () => {
-		await closePool();
+		// Clean up test data in proper order (invitations -> teams -> users)
+		await new Promise(resolve => setTimeout(resolve, 50));
+
+		try {
+			// Clean up invitations first
+			for (const invitationId of createdInvitations) {
+				try {
+					await TeamInvitationModel.delete(invitationId);
+				} catch (error) {
+					// Invitation might already be deleted
+				}
+			}
+
+			// Clean up teams
+			for (const teamId of createdTeams) {
+				try {
+					await TeamModel.delete(teamId);
+				} catch (error) {
+					// Team might already be deleted
+				}
+			}
+
+			// Clean up users
+			for (const userId of createdUsers) {
+				try {
+					await UserModel.delete(userId);
+				} catch (error) {
+					// User might already be deleted
+				}
+			}
+		} catch (error) {
+			// Continue cleanup even if some fails
+		}
 	});
 
 	describe("Invitation Utilities Integration", () => {
@@ -122,18 +163,23 @@ describe("Team Invitation API Integration Tests", () => {
 
 	describe("Database Model Integration", () => {
 		it("should interact with invitation model correctly", async () => {
-			// Create test user and team first
+			// Create test user and team first with secure password
 			const userData = TestDataFactory.createUserData({
 				email: "inviter@example.com",
+				password: "ComplexSecureP@ssw0rd2024!ZqX7",
+				first_name: "John",
+				last_name: "Doe",
 				role: "team_lead"
 			});
 			const user = await UserModel.create(userData);
+			createdUsers.push(user.id);
 
 			const teamData = TestDataFactory.createTeamData({
 				name: "Test Team",
 				created_by: user.id
 			});
 			const team = await TeamModel.create(teamData);
+			createdTeams.push(team.id);
 
 			// Test invitation creation
 			const { createInvitationToken, getInvitationExpiryDate } = await import(
@@ -151,6 +197,7 @@ describe("Team Invitation API Integration Tests", () => {
 				token: token,
 				expires_at: expiresAt
 			});
+			createdInvitations.push(invitation.id);
 
 			expect(invitation.id).toBeDefined();
 			expect(invitation.status).toBe("pending");
@@ -165,34 +212,38 @@ describe("Team Invitation API Integration Tests", () => {
 			expect(withDetails?.invitation.id).toBe(invitation.id);
 			expect(withDetails?.team.name).toBe(team.name);
 			expect(withDetails?.inviter.email).toBe(user.email);
-
-			// Clean up
-			await TeamInvitationModel.delete(invitation.id);
-			await TeamModel.delete(team.id);
-			await UserModel.delete(user.id);
 		});
 	});
 
 	describe("Complete Invitation Workflow", () => {
 		it("should support full invitation lifecycle", async () => {
-			// Create test users and team
+			// Create test users and team with secure passwords
 			const inviterData = TestDataFactory.createUserData({
 				email: "team.lead@example.com",
+				password: "ComplexSecureP@ssw0rd2024!ZqX7",
+				first_name: "Alice",
+				last_name: "Manager",
 				role: "team_lead"
 			});
 			const inviter = await UserModel.create(inviterData);
+			createdUsers.push(inviter.id);
 
 			const inviteeData = TestDataFactory.createUserData({
 				email: "new.member@example.com",
+				password: "AnotherSecureP@ssw0rd2024!Bx9",
+				first_name: "Bob",
+				last_name: "Member",
 				role: "basic_user"
 			});
 			const invitee = await UserModel.create(inviteeData);
+			createdUsers.push(invitee.id);
 
 			const teamData = TestDataFactory.createTeamData({
 				name: "Development Team",
 				created_by: inviter.id
 			});
 			const team = await TeamModel.create(teamData);
+			createdTeams.push(team.id);
 
 			// Test invitation creation workflow
 			const {
@@ -229,6 +280,7 @@ describe("Team Invitation API Integration Tests", () => {
 				token: token,
 				expires_at: expiresAt
 			});
+			createdInvitations.push(invitation.id);
 
 			// Test invitation can be acted upon
 			expect(canActOnInvitation(invitation)).toBe(true);
@@ -241,12 +293,6 @@ describe("Team Invitation API Integration Tests", () => {
 			);
 			expect(formatted.teamName).toBe(team.name);
 			expect(formatted.status).toBe("pending");
-
-			// Clean up
-			await TeamInvitationModel.delete(invitation.id);
-			await TeamModel.delete(team.id);
-			await UserModel.delete(inviter.id);
-			await UserModel.delete(invitee.id);
 		});
 	});
 });

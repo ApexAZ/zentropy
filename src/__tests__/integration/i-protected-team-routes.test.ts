@@ -3,6 +3,7 @@ import request from "supertest";
 import { UserModel, type User } from "../../models/User";
 import { SessionModel, type Session } from "../../models/Session";
 import { TeamModel, type Team } from "../../models/Team";
+import { type TeamMembershipWithRole } from "../../utils/team-model-extensions";
 import { testConnection } from "../../database/connection";
 import type { Request, Response, NextFunction } from "express";
 
@@ -102,12 +103,20 @@ describe("Protected Team Routes", () => {
 				.send(newTeamData)
 				.expect(201);
 
-			const responseBody = response.body as Team;
-			expect(responseBody).toHaveProperty("name", "New Authenticated Team");
-			expect(responseBody).toHaveProperty("velocity_baseline", 40);
+			const responseBody = response.body as {
+				team: Team;
+				userPromoted: boolean;
+				membership: TeamMembershipWithRole;
+				message: string;
+			};
+			expect(responseBody).toHaveProperty("team");
+			expect(responseBody.team).toHaveProperty("name", "New Authenticated Team");
+			expect(responseBody.team).toHaveProperty("velocity_baseline", 40);
+			expect(responseBody).toHaveProperty("userPromoted");
+			expect(responseBody).toHaveProperty("message");
 
 			// Clean up the created team
-			await TeamModel.delete(responseBody.id);
+			await TeamModel.delete(responseBody.team.id);
 		});
 
 		it("should allow PUT /api/teams/:id with valid session", async () => {
