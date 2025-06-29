@@ -114,6 +114,28 @@ This file contains project roadmap, development tasks, priorities, and implement
 
 ## Outstanding Tasks
 
+### 🚨 **HIGHEST PRIORITY: Frontend Navigation Enhancement**
+
+**Added**: 2025-06-29 23:50:00 (PST)
+
+**Critical Issue**: Missing authentication navigation on main pages
+- **Problem**: Users cannot easily navigate to login/register from main application pages
+- **Impact**: Poor user experience and difficult onboarding for new users
+- **Required**: Profile navigation function with frontend buttons/links to register and login
+
+**Implementation Requirements:**
+- Add prominent login/register links to main pages when user is not authenticated
+- Implement profile dropdown/menu when user is authenticated
+- Ensure consistent navigation across all application pages
+- Follow existing design patterns and responsive design principles
+
+**Acceptance Criteria:**
+- ✅ Unauthenticated users see clear "Login" and "Register" links
+- ✅ Authenticated users see profile menu with user info and logout option
+- ✅ Navigation is consistent across all pages (teams, calendar, etc.)
+- ✅ Mobile-responsive design maintained
+- ✅ Integration with existing authentication system
+
 ### 🔄 **Next Priority: Task 3B - Sprint Capacity Dashboard Implementation**
 
 **Objective**: Create comprehensive sprint planning and capacity visualization system
