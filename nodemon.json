@@ -1,0 +1,13 @@
+{
+  "watch": false,
+  "ext": "js",
+  "ignore": [
+    "node_modules"
+  ],
+  "delay": 1000,
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "verbose": true,
+  "restartable": "rs"
+}
