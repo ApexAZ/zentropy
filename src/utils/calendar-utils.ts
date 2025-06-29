@@ -166,11 +166,7 @@ export function calculateWorkingDays(startDate: Date, endDate: Date): number {
  * @param endDate - End date of the absence
  * @returns Working days count and percentage impact
  */
-export function calculateCapacityImpact(
-	team: Team,
-	startDate: Date,
-	endDate: Date
-): CapacityImpact {
+export function calculateCapacityImpact(team: Team, startDate: Date, endDate: Date): CapacityImpact {
 	const workingDays = calculateWorkingDays(startDate, endDate);
 	const sprintWorkingDays = (team.sprint_length_days / 7) * team.working_days_per_week;
 	const percentage = Math.round((workingDays / sprintWorkingDays) * 100);
@@ -193,7 +189,7 @@ export function escapeHtml(text: string): string {
 		div.textContent = text;
 		return div.innerHTML;
 	}
-	
+
 	// Fallback for server-side or test environments
 	return text
 		.replace(/&/g, "&amp;")

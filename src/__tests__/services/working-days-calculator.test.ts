@@ -143,14 +143,23 @@ class TestAssertions {
 describe("WorkingDaysCalculator", () => {
 	let calculator: WorkingDaysCalculator;
 	let standardConfig: TeamWorkingDaysConfig;
+	let originalConsoleError: typeof console.error;
 
 	beforeEach(() => {
 		calculator = new WorkingDaysCalculator();
 		standardConfig = TestConfigFactory.createStandardConfig();
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
 	});
 
 	afterEach(() => {
 		vi.resetAllMocks();
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
 	});
 
 	describe("calculateWorkingDays", () => {

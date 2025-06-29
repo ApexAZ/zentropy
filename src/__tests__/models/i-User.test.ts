@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { UserModel, USER_ROLES, type CreateUserData, type UpdatePasswordData } from "../../models/User";
 import { pool } from "../../database/connection";
 
@@ -25,7 +25,15 @@ describe("UserModel with PasswordService Integration", () => {
 		password: "JohnDoePassword123!"
 	};
 
+	let originalConsoleError: typeof console.error;
+
 	beforeEach(async () => {
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
+
 		// Clean up test data - only delete users created by THIS test file
 		await pool.query("DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1)", [
 			`%@${TEST_DOMAIN}`
@@ -34,6 +42,10 @@ describe("UserModel with PasswordService Integration", () => {
 	});
 
 	afterEach(async () => {
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
+
 		// Clean up test data - only delete users created by THIS test file
 		await pool.query("DELETE FROM password_history WHERE user_id IN (SELECT id FROM users WHERE email LIKE $1)", [
 			`%@${TEST_DOMAIN}`

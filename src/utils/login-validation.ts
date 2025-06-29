@@ -23,13 +23,14 @@ export interface LoginValidationResult {
  */
 export function isValidEmail(email: string): boolean {
 	// More strict email validation
-	const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
-	
+	const emailRegex =
+		/^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+
 	// Additional checks for edge cases
-	if (email.includes('..') || email.includes('@@')) {
+	if (email.includes("..") || email.includes("@@")) {
 		return false;
 	}
-	
+
 	return emailRegex.test(email);
 }
 
@@ -53,29 +54,29 @@ export function sanitizeLoginInput(input: string): string {
  */
 export function validateLoginForm(formData: LoginFormData): LoginValidationResult {
 	const errors: Record<string, string> = {};
-	
+
 	// Sanitize inputs first
 	const sanitizedEmail = sanitizeLoginInput(formData.email);
 	const sanitizedPassword = formData.password; // Don't trim passwords
-	
+
 	// Validate email
 	if (!sanitizedEmail) {
 		errors.email = "Email is required";
 	} else if (!isValidEmail(sanitizedEmail)) {
 		errors.email = "Please enter a valid email address";
 	}
-	
+
 	// Validate password (don't trim, but check if it's only whitespace)
 	if (!sanitizedPassword?.trim()) {
 		errors.password = "Password is required";
 	}
-	
+
 	// Create sanitized data
 	const sanitizedData: LoginFormData = {
 		email: sanitizedEmail,
 		password: sanitizedPassword
 	};
-	
+
 	return {
 		isValid: Object.keys(errors).length === 0,
 		errors,

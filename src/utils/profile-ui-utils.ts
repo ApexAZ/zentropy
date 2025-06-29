@@ -86,7 +86,6 @@ export function formatProfileDates(dateString: string | null): string {
 		}
 
 		return `<span class="date-formatted">${formatted}</span> <span class="date-relative">(${relative})</span>`;
-
 	} catch {
 		return "Invalid date";
 	}
@@ -110,19 +109,19 @@ export function getRoleBadgeClass(role?: "team_lead" | "team_member"): string {
 export function formatUserName(firstName: string, lastName: string): string {
 	const trimmedFirst = firstName.trim();
 	const trimmedLast = lastName.trim();
-	
+
 	if (!trimmedFirst && !trimmedLast) {
 		return "Unknown User";
 	}
-	
+
 	if (!trimmedFirst) {
 		return trimmedLast;
 	}
-	
+
 	if (!trimmedLast) {
 		return trimmedFirst;
 	}
-	
+
 	return `${trimmedFirst} ${trimmedLast}`;
 }
 
@@ -133,21 +132,21 @@ export function formatUserName(firstName: string, lastName: string): string {
  */
 export function validateProfileFormData(formData: ProfileFormData): ProfileFormValidationResult {
 	const errors: Record<string, string> = {};
-	
+
 	// Validate first name
 	if (!formData.first_name.trim()) {
 		errors.first_name = "First name is required";
 	} else if (formData.first_name.length > 50) {
 		errors.first_name = "First name must be less than 50 characters";
 	}
-	
+
 	// Validate last name
 	if (!formData.last_name.trim()) {
 		errors.last_name = "Last name is required";
 	} else if (formData.last_name.length > 50) {
 		errors.last_name = "Last name must be less than 50 characters";
 	}
-	
+
 	// Validate email
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	if (!formData.email.trim()) {
@@ -157,14 +156,14 @@ export function validateProfileFormData(formData: ProfileFormData): ProfileFormV
 	} else if (formData.email.length > 255) {
 		errors.email = "Email must be less than 255 characters";
 	}
-	
+
 	// Sanitize the data (remove XSS)
 	const sanitizedData: ProfileFormData = {
 		first_name: sanitizeInput(formData.first_name),
 		last_name: sanitizeInput(formData.last_name),
 		email: formData.email.trim().toLowerCase()
 	};
-	
+
 	return {
 		isValid: Object.keys(errors).length === 0,
 		errors,
@@ -182,22 +181,22 @@ export function createProfileDisplayData(userProfile: UserProfileBase): ProfileD
 	const roleText = userProfile.role === "team_lead" ? "Team Lead" : "Team Member";
 	const roleBadgeClass = getRoleBadgeClass(userProfile.role);
 	const lastLoginFormatted = formatProfileDates(userProfile.last_login_at ?? null);
-	
+
 	const result: ProfileDisplayData = {
 		fullName,
 		roleText,
 		roleBadgeClass,
 		lastLoginFormatted
 	};
-	
+
 	// Add optional formatted dates if available
 	if (userProfile.created_at) {
 		result.createdDateFormatted = formatProfileDates(userProfile.created_at);
 	}
-	
+
 	if (userProfile.updated_at) {
 		result.updatedDateFormatted = formatProfileDates(userProfile.updated_at);
 	}
-	
+
 	return result;
 }

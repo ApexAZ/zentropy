@@ -25,22 +25,24 @@ interface MockResponse {
 	text: () => Promise<string>;
 }
 
-global.Response = vi.fn().mockImplementation((body: unknown, init?: MockResponseInit): MockResponse => ({
-	ok: init?.status ? init.status >= 200 && init.status < 300 : true,
-	status: init?.status ?? 200,
-	statusText: init?.statusText ?? "OK",
-	json: vi.fn().mockImplementation(() => {
-		if (typeof body === "string") {
-			try {
-				return Promise.resolve(JSON.parse(body));
-			} catch {
-				return Promise.reject(new Error("Invalid JSON"));
+global.Response = vi.fn().mockImplementation(
+	(body: unknown, init?: MockResponseInit): MockResponse => ({
+		ok: init?.status ? init.status >= 200 && init.status < 300 : true,
+		status: init?.status ?? 200,
+		statusText: init?.statusText ?? "OK",
+		json: vi.fn().mockImplementation(() => {
+			if (typeof body === "string") {
+				try {
+					return Promise.resolve(JSON.parse(body));
+				} catch {
+					return Promise.reject(new Error("Invalid JSON"));
+				}
 			}
-		}
-		return Promise.resolve(body);
-	}),
-	text: vi.fn().mockResolvedValue(typeof body === "string" ? body : JSON.stringify(body))
-})) as unknown as typeof Response;
+			return Promise.resolve(body);
+		}),
+		text: vi.fn().mockResolvedValue(typeof body === "string" ? body : JSON.stringify(body))
+	})
+) as unknown as typeof Response;
 
 describe("Profile Utilities", () => {
 	beforeEach(() => {
@@ -60,9 +62,11 @@ describe("Profile Utilities", () => {
 				updated_at: "2024-01-01T00:00:00.000Z"
 			};
 
-			mockFetch.mockResolvedValue(new Response(JSON.stringify(mockProfileData), {
-				status: 200
-			}));
+			mockFetch.mockResolvedValue(
+				new Response(JSON.stringify(mockProfileData), {
+					status: 200
+				})
+			);
 
 			const result = await fetchUserProfile("user-123");
 
@@ -75,9 +79,11 @@ describe("Profile Utilities", () => {
 		});
 
 		it("should throw error for non-200 response", async () => {
-			mockFetch.mockResolvedValue(new Response(JSON.stringify({ message: "User not found" }), {
-				status: 404
-			}));
+			mockFetch.mockResolvedValue(
+				new Response(JSON.stringify({ message: "User not found" }), {
+					status: 404
+				})
+			);
 
 			await expect(fetchUserProfile("invalid-id")).rejects.toThrow("Failed to fetch profile: User not found");
 		});
@@ -145,7 +151,7 @@ describe("Profile Utilities", () => {
 				id: "user-123",
 				email: "test@example.com",
 				first_name: "A".repeat(101), // Too long
-				last_name: "B".repeat(101)   // Too long
+				last_name: "B".repeat(101) // Too long
 			};
 
 			const result = validateProfileData(invalidProfile);
@@ -159,12 +165,12 @@ describe("Profile Utilities", () => {
 		it("should sanitize XSS attempts in profile data", () => {
 			const maliciousInput = {
 				first_name: '<script>alert("xss")</script>John',
-				last_name: '<img src=x onerror=alert(1)>Doe',
+				last_name: "<img src=x onerror=alert(1)>Doe",
 				email: "test@example.com"
 			};
 
 			const result = sanitizeProfileInput(maliciousInput);
-			
+
 			expect(result.first_name).toBe("John");
 			expect(result.last_name).toBe("Doe");
 			expect(result.email).toBe("test@example.com");
@@ -180,7 +186,7 @@ describe("Profile Utilities", () => {
 			};
 
 			const result = sanitizeProfileInput(maliciousInput);
-			
+
 			expect(result.first_name).toBe("alert('xss')");
 			expect(result.last_name).toBe("");
 			expect(result.email).toBe("test@example.com");
@@ -194,7 +200,7 @@ describe("Profile Utilities", () => {
 			};
 
 			const result = sanitizeProfileInput(normalInput);
-			
+
 			expect(result).toEqual(normalInput);
 		});
 
@@ -206,7 +212,7 @@ describe("Profile Utilities", () => {
 			};
 
 			const result = sanitizeProfileInput(emptyInput);
-			
+
 			expect(result.first_name).toBe("");
 			expect(result.last_name).toBe("");
 			expect(result.email).toBe("");
@@ -229,7 +235,7 @@ describe("Profile Utilities", () => {
 				"Content-Type": "application/json"
 			});
 			expect(request.options.credentials).toBe("include");
-			
+
 			const body = JSON.parse(request.options.body) as Record<string, unknown>;
 			expect(body).toEqual(profileData);
 		});
@@ -251,7 +257,7 @@ describe("Profile Utilities", () => {
 
 			const request = createProfileUpdateRequest("user-123", maliciousData);
 			const body = JSON.parse(request.options.body) as Record<string, unknown>;
-			
+
 			expect(body.first_name).toBe("John");
 			expect(body.first_name as string).not.toContain("<script>");
 		});
@@ -269,7 +275,7 @@ describe("Profile Utilities", () => {
 		});
 
 		it("should handle 400 Bad Request with validation errors", async () => {
-			const errorData = { 
+			const errorData = {
 				message: "Validation failed",
 				errors: { email: "Email already exists" }
 			};

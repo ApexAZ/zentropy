@@ -33,6 +33,20 @@ export interface LoginApiError {
 
 export type LoginApiResult = LoginApiResponse | LoginApiError;
 
+// Internal interfaces for response parsing
+interface ApiSuccessData {
+	message?: string;
+	user?: LoginUser;
+	[key: string]: unknown;
+}
+
+interface ApiErrorData {
+	message?: string;
+	error?: string;
+	field?: string;
+	[key: string]: unknown;
+}
+
 /**
  * Create login request configuration
  * @param credentials - Login credentials
@@ -68,13 +82,17 @@ export function createSessionCheckRequest(): RequestInit {
  * @param data - Response data from login API
  * @returns Parsed login response
  */
-export function parseLoginResponse(data: any): LoginApiResponse {
-	return {
+export function parseLoginResponse(data: ApiSuccessData): LoginApiResponse {
+	const response: LoginApiResponse = {
 		success: true,
-		message: data.message || "",
-		user: data.user,
-		...data // Preserve any additional fields
+		message: data.message ?? ""
 	};
+
+	if (data.user) {
+		response.user = data.user;
+	}
+
+	return response;
 }
 
 /**
@@ -82,13 +100,21 @@ export function parseLoginResponse(data: any): LoginApiResponse {
  * @param data - Error response data
  * @returns Parsed error response
  */
-export function parseErrorResponse(data: any): LoginApiError {
-	return {
+export function parseErrorResponse(data: ApiErrorData): LoginApiError {
+	const response: LoginApiError = {
 		success: false,
-		message: data.message || "",
-		error: data.error,
-		field: data.field
+		message: data.message ?? ""
 	};
+
+	if (data.error) {
+		response.error = data.error;
+	}
+
+	if (data.field) {
+		response.field = data.field;
+	}
+
+	return response;
 }
 
 /**
@@ -98,8 +124,8 @@ export function parseErrorResponse(data: any): LoginApiError {
  */
 export async function handleLoginResponse(response: Response): Promise<LoginApiResult> {
 	try {
-		const data = await response.json();
-		
+		const data = (await response.json()) as ApiSuccessData | ApiErrorData;
+
 		if (response.ok) {
 			return parseLoginResponse(data);
 		} else {

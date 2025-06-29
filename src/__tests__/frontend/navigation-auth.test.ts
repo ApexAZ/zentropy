@@ -97,9 +97,17 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 		addEventListener: Mock;
 	};
 
+	let originalConsoleError: typeof console.error;
+
 	beforeEach(() => {
 		// Reset all mocks
 		vi.clearAllMocks();
+
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
 
 		// Reset location state
 		mockLocation.href = "";
@@ -199,6 +207,9 @@ describe("Auth-Utils and Navigation-Auth Integration Tests", () => {
 
 	afterEach(() => {
 		vi.resetAllMocks();
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
 	});
 
 	describe("Auth-Utils Integration - Session Status Checking", () => {

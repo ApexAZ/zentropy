@@ -40,14 +40,14 @@ describe("Profile UI Utilities", () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 			const result = formatProfileDates(yesterday.toISOString());
-			
+
 			expect(result).toContain("1 day ago");
 		});
 
 		it("should handle timezone differences correctly", () => {
 			const utcDate = "2024-06-15T14:30:00.000Z";
 			const result = formatProfileDates(utcDate);
-			
+
 			expect(result).toContain("June 15, 2024");
 		});
 	});
@@ -109,7 +109,7 @@ describe("Profile UI Utilities", () => {
 
 		it("should validate correct form data", () => {
 			const result = validateProfileFormData(validFormData);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(Object.keys(result.errors)).toHaveLength(0);
 		});
@@ -117,7 +117,7 @@ describe("Profile UI Utilities", () => {
 		it("should reject missing first name", () => {
 			const formData = { ...validFormData, first_name: "" };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.first_name).toContain("required");
 		});
@@ -125,7 +125,7 @@ describe("Profile UI Utilities", () => {
 		it("should reject missing last name", () => {
 			const formData = { ...validFormData, last_name: "" };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.last_name).toContain("required");
 		});
@@ -133,7 +133,7 @@ describe("Profile UI Utilities", () => {
 		it("should reject invalid email format", () => {
 			const formData = { ...validFormData, email: "invalid-email" };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("valid email");
 		});
@@ -141,7 +141,7 @@ describe("Profile UI Utilities", () => {
 		it("should reject first name too long", () => {
 			const formData = { ...validFormData, first_name: "a".repeat(51) };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.first_name).toContain("50 characters");
 		});
@@ -149,7 +149,7 @@ describe("Profile UI Utilities", () => {
 		it("should reject last name too long", () => {
 			const formData = { ...validFormData, last_name: "a".repeat(51) };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.last_name).toContain("50 characters");
 		});
@@ -157,7 +157,7 @@ describe("Profile UI Utilities", () => {
 		it("should validate email length limits", () => {
 			const formData = { ...validFormData, email: "a".repeat(250) + "@example.com" };
 			const result = validateProfileFormData(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("255 characters");
 		});
@@ -169,7 +169,7 @@ describe("Profile UI Utilities", () => {
 				email: "john.doe@example.com"
 			};
 			const result = validateProfileFormData(formData);
-			
+
 			// Should remove script tags but keep the name
 			expect(result.sanitizedData?.first_name).toBe("John");
 			expect(result.sanitizedData?.last_name).toBe("Doe");

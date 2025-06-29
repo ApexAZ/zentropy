@@ -9,8 +9,7 @@ import {
 	isValidEmail,
 	validateLoginForm,
 	sanitizeLoginInput,
-	type LoginFormData,
-	type LoginValidationResult
+	type LoginFormData
 } from "../../utils/login-validation.js";
 
 describe("Login Validation Utilities", () => {
@@ -82,7 +81,7 @@ describe("Login Validation Utilities", () => {
 		it("should preserve expected text after removing scripts", () => {
 			expect(sanitizeLoginInput('<script>alert("xss")</script>Hello')).toBe("Hello");
 			expect(sanitizeLoginInput('Hello<script>alert("xss")</script>World')).toBe("HelloWorld");
-			expect(sanitizeLoginInput('<script>bad()</script>Clean Text')).toBe("Clean Text");
+			expect(sanitizeLoginInput("<script>bad()</script>Clean Text")).toBe("Clean Text");
 		});
 
 		it("should remove all HTML tags", () => {
@@ -110,7 +109,7 @@ describe("Login Validation Utilities", () => {
 		it("should handle mixed script and HTML tags", () => {
 			const complexInput = '<div><script>alert("xss")</script>Safe<span>Text</span></div>';
 			const result = sanitizeLoginInput(complexInput);
-			
+
 			expect(result).toBe("SafeText");
 			expect(result).not.toContain("<");
 			expect(result).not.toContain(">");
@@ -163,7 +162,7 @@ describe("Login Validation Utilities", () => {
 
 		it("should validate correct form data", () => {
 			const result = validateLoginForm(validFormData);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors.email).toBeUndefined();
 			expect(result.errors.password).toBeUndefined();
@@ -175,9 +174,9 @@ describe("Login Validation Utilities", () => {
 				email: "  test@example.com  ",
 				password: "password123"
 			};
-			
+
 			const result = validateLoginForm(formDataWithWhitespace);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.sanitizedData?.email).toBe("test@example.com");
 			expect(result.sanitizedData?.password).toBe("password123"); // Passwords not trimmed
@@ -188,9 +187,9 @@ describe("Login Validation Utilities", () => {
 				email: '<script>alert("xss")</script>test@example.com',
 				password: "password123"
 			};
-			
+
 			const result = validateLoginForm(maliciousFormData);
-			
+
 			expect(result.sanitizedData?.email).toBe("test@example.com");
 			expect(result.sanitizedData?.email).not.toContain("script");
 			expect(result.sanitizedData?.email).not.toContain("alert");
@@ -199,7 +198,7 @@ describe("Login Validation Utilities", () => {
 		it("should reject missing email", () => {
 			const formData = { ...validFormData, email: "" };
 			const result = validateLoginForm(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("required");
 		});
@@ -207,7 +206,7 @@ describe("Login Validation Utilities", () => {
 		it("should reject whitespace-only email", () => {
 			const formData = { ...validFormData, email: "   " };
 			const result = validateLoginForm(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("required");
 		});
@@ -225,7 +224,7 @@ describe("Login Validation Utilities", () => {
 			invalidEmails.forEach(email => {
 				const formData = { ...validFormData, email };
 				const result = validateLoginForm(formData);
-				
+
 				expect(result.isValid).toBe(false);
 				expect(result.errors.email).toContain("valid email");
 			});
@@ -234,7 +233,7 @@ describe("Login Validation Utilities", () => {
 		it("should reject missing password", () => {
 			const formData = { ...validFormData, password: "" };
 			const result = validateLoginForm(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.password).toContain("required");
 		});
@@ -242,7 +241,7 @@ describe("Login Validation Utilities", () => {
 		it("should reject whitespace-only password", () => {
 			const formData = { ...validFormData, password: "   " };
 			const result = validateLoginForm(formData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.password).toContain("required");
 		});
@@ -252,9 +251,9 @@ describe("Login Validation Utilities", () => {
 				email: "",
 				password: ""
 			};
-			
+
 			const result = validateLoginForm(invalidFormData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("required");
 			expect(result.errors.password).toContain("required");
@@ -266,9 +265,9 @@ describe("Login Validation Utilities", () => {
 				email: "invalid-email-format",
 				password: ""
 			};
-			
+
 			const result = validateLoginForm(complexInvalidData);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.email).toContain("valid email");
 			expect(result.errors.password).toContain("required");
@@ -279,21 +278,21 @@ describe("Login Validation Utilities", () => {
 				email: "test@example.com",
 				password: "  password with spaces  "
 			};
-			
+
 			const result = validateLoginForm(formDataWithPasswordSpaces);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.sanitizedData?.password).toBe("  password with spaces  ");
 		});
 
 		it("should handle XSS in email while preserving valid parts", () => {
 			const xssFormData = {
-				email: '<img src=x onerror=alert(1)>user@example.com',
+				email: "<img src=x onerror=alert(1)>user@example.com",
 				password: "password123"
 			};
-			
+
 			const result = validateLoginForm(xssFormData);
-			
+
 			expect(result.sanitizedData?.email).toBe("user@example.com");
 			expect(result.isValid).toBe(true); // Valid after sanitization
 		});
@@ -308,7 +307,7 @@ describe("Login Validation Utilities", () => {
 			edgeCaseEmails.forEach(email => {
 				const formData = { ...validFormData, email };
 				const result = validateLoginForm(formData);
-				
+
 				expect(result.isValid).toBe(true);
 				expect(result.errors.email).toBeUndefined();
 			});

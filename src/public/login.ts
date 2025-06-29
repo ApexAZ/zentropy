@@ -5,44 +5,22 @@
  * Uses tested pure functions from login utilities
  */
 
-import { 
+import {
 	isValidEmail,
 	validateLoginForm as validateLoginFormData,
 	sanitizeLoginInput,
-	type LoginFormData,
-	type LoginValidationResult
+	type LoginFormData
 } from "../utils/login-validation.js";
 
 import {
 	createLoginRequest,
 	handleLoginResponse,
-	createSessionCheckRequest,
 	type LoginCredentials,
 	type LoginApiResult
 } from "../utils/login-api.js";
 
 (function (): void {
-	// Type definitions (extending the base LoginFormData with remember option)
-	interface ExtendedLoginFormData extends LoginFormData {
-		remember?: boolean;
-	}
-
-	interface LoginResponse {
-		message: string;
-		user?: {
-			id: string;
-			email: string;
-			first_name: string;
-			last_name: string;
-			role: string;
-		};
-	}
-
-	interface ErrorResponse {
-		message: string;
-		error?: string;
-		field?: string;
-	}
+	// Type definitions for local use
 
 	// State management
 	let isLoading = false;
@@ -158,11 +136,11 @@ import {
 
 		// Use tested validation utility
 		const validation = validateLoginFormData(formResult.loginData);
-		
+
 		// Clear any existing errors
 		clearFieldError("email");
 		clearFieldError("password");
-		
+
 		// Display validation errors in UI
 		if (!validation.isValid) {
 			if (validation.errors.email) {
@@ -172,7 +150,7 @@ import {
 					showFieldError(emailInput, emailError, validation.errors.email);
 				}
 			}
-			
+
 			if (validation.errors.password) {
 				const passwordInput = document.getElementById("password") as HTMLInputElement;
 				const passwordError = document.getElementById("password-error");
@@ -227,7 +205,6 @@ import {
 		}
 	}
 
-
 	/**
 	 * Show field-specific error
 	 */
@@ -270,7 +247,6 @@ import {
 		};
 	}
 
-
 	/**
 	 * Perform login API call using tested utilities
 	 */
@@ -286,7 +262,7 @@ import {
 
 			// Use tested API utility to handle response
 			const result = await handleLoginResponse(response);
-			
+
 			if (result.success) {
 				handleSuccessfulLogin(result);
 			} else {
@@ -305,26 +281,31 @@ import {
 	 * Handle successful login result
 	 */
 	function handleSuccessfulLogin(result: LoginApiResult): void {
-		if (!result.success) {return;}
-		
+		if (!result.success) {
+			return;
+		}
+
 		// Show success message
 		showSuccessToast("Login successful! Redirecting...");
 
 		// Store user info if needed (avoid storing sensitive data)
 		if (result.user) {
 			// Store minimal user info for navigation
-			sessionStorage.setItem("user_info", JSON.stringify({
-				id: result.user.id,
-				email: result.user.email,
-				name: `${result.user.first_name} ${result.user.last_name}`,
-				role: result.user.role
-			}));
+			sessionStorage.setItem(
+				"user_info",
+				JSON.stringify({
+					id: result.user.id,
+					email: result.user.email,
+					name: `${result.user.first_name} ${result.user.last_name}`,
+					role: result.user.role
+				})
+			);
 		}
 
 		// Redirect to dashboard or intended page
 		const returnUrl = new URLSearchParams(window.location.search).get("returnUrl");
-		const redirectUrl = returnUrl || "/teams.html";
-		
+		const redirectUrl = returnUrl ?? "/teams.html";
+
 		setTimeout(() => {
 			window.location.href = redirectUrl;
 		}, 1500);
@@ -334,12 +315,13 @@ import {
 	 * Handle login error result
 	 */
 	function handleLoginError(result: LoginApiResult): void {
-		if (result.success) {return;}
-		
-		// Show appropriate error message
-		showGeneralError(result.message || "Login failed. Please try again.");
-	}
+		if (result.success) {
+			return;
+		}
 
+		// Show appropriate error message
+		showGeneralError(result.message ?? "Login failed. Please try again.");
+	}
 
 	/**
 	 * Redirect to intended page or dashboard

@@ -107,9 +107,13 @@ describe("Navigation Authentication Integration", () => {
 		vi.clearAllMocks();
 
 		// Mock console methods to prevent error outputs during testing
+		// eslint-disable-next-line no-console
 		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
 		originalConsoleLog = console.log;
+		// eslint-disable-next-line no-console
 		console.error = vi.fn();
+		// eslint-disable-next-line no-console
 		console.log = vi.fn();
 
 		// Reset DOM element states
@@ -152,7 +156,9 @@ describe("Navigation Authentication Integration", () => {
 		vi.restoreAllMocks();
 
 		// Restore console methods
+		// eslint-disable-next-line no-console
 		console.error = originalConsoleError;
+		// eslint-disable-next-line no-console
 		console.log = originalConsoleLog;
 	});
 

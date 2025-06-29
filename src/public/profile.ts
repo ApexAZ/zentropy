@@ -1,23 +1,19 @@
 // Profile page functionality with strict TypeScript compliance
 // Following established patterns from login.ts and register.ts
 
-import { 
-	fetchUserProfile, 
+import {
+	fetchUserProfile,
 	createProfileUpdateRequest,
 	handleProfileApiResponse,
 	type UserProfile,
-	type ProfileUpdateData 
+	type ProfileUpdateData
 } from "../utils/profile-utils.js";
 
-import { 
-	getSessionInfo, 
-	redirectToLogin, 
-	handleAuthError 
-} from "../utils/auth-utils.js";
+import { getSessionInfo, redirectToLogin, handleAuthError } from "../utils/auth-utils.js";
 
 import { initializeNavigation } from "../utils/navigation-auth.js";
 
-import { 
+import {
 	getRoleBadgeClass,
 	validateProfileFormData,
 	createProfileDisplayData,
@@ -35,7 +31,7 @@ let currentProfileData: UserProfile | null = null;
 export async function initializeProfilePage(): Promise<void> {
 	try {
 		// Initialize navigation first
-		void initializeNavigation();
+		void initializeNavigation("");
 
 		// Check authentication
 		const sessionInfo = getSessionInfo();
@@ -54,10 +50,14 @@ export async function initializeProfilePage(): Promise<void> {
 
 		// Set up event listeners
 		setupEventListeners();
-
 	} catch (error) {
 		// console.error("Error initializing profile page:", error);
-		handleAuthError(error as Error);
+		const authError = {
+			type: "server" as const,
+			message: error instanceof Error ? error.message : "Unknown error",
+			redirectRequired: true
+		};
+		handleAuthError(authError);
 	}
 }
 
@@ -68,21 +68,20 @@ export async function initializeProfilePage(): Promise<void> {
 async function loadProfileData(userId: string): Promise<void> {
 	try {
 		currentProfileData = await fetchUserProfile(userId);
-		
+
 		// Display the profile data
 		displayProfileData(currentProfileData);
-		
+
 		// Show profile content
 		hideProfileSection("loading-state");
 		showProfileSection("profile-content");
-
 	} catch (error) {
 		// console.error("Error loading profile data:", error);
-		
+
 		// Show error state
 		hideProfileSection("loading-state");
 		showProfileSection("error-state");
-		
+
 		const errorElement = document.getElementById("error-message-text");
 		if (errorElement) {
 			errorElement.textContent = (error as Error).message || "Failed to load profile";
@@ -146,18 +145,19 @@ export function displayProfileData(profileData: UserProfile): void {
 	}
 }
 
-
 /**
  * Update role badge styling
  * @param role - The user role
  */
 export function updateRoleBadge(role: "team_lead" | "team_member"): void {
 	const badgeElement = document.getElementById("display-role-badge");
-	if (!badgeElement) {return;}
+	if (!badgeElement) {
+		return;
+	}
 
 	// Remove existing role classes
 	badgeElement.classList.remove("team-lead", "team-member");
-	
+
 	// Add new role class using tested pure function
 	const badgeClass = getRoleBadgeClass(role);
 	badgeElement.classList.add(badgeClass);
@@ -177,12 +177,20 @@ export function enterEditMode(profileData: UserProfile): void {
 	const lastNameInput = document.getElementById("edit-last-name") as HTMLInputElement;
 	const emailInput = document.getElementById("edit-email") as HTMLInputElement;
 
-	if (firstNameInput) {firstNameInput.value = profileData.first_name;}
-	if (lastNameInput) {lastNameInput.value = profileData.last_name;}
-	if (emailInput) {emailInput.value = profileData.email;}
+	if (firstNameInput) {
+		firstNameInput.value = profileData.first_name;
+	}
+	if (lastNameInput) {
+		lastNameInput.value = profileData.last_name;
+	}
+	if (emailInput) {
+		emailInput.value = profileData.email;
+	}
 
 	// Focus first input
-	if (firstNameInput) {firstNameInput.focus();}
+	if (firstNameInput) {
+		firstNameInput.focus();
+	}
 }
 
 /**
@@ -212,7 +220,7 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 
 	const form = event.target as HTMLFormElement;
 	const sessionInfo = getSessionInfo();
-	
+
 	if (!sessionInfo) {
 		redirectToLogin();
 		return;
@@ -235,8 +243,8 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 			return;
 		}
 
-		// Use sanitized data for the API request  
-		const profileUpdateData: ProfileUpdateData = validation.sanitizedData ?? {
+		// Use sanitized data for the API request
+		const profileUpdateData: ProfileUpdateData = (validation.sanitizedData as ProfileUpdateData) ?? {
 			first_name: "",
 			last_name: "",
 			email: ""
@@ -248,7 +256,7 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 		// Create and send request
 		const requestConfig = createProfileUpdateRequest(sessionInfo.id, profileUpdateData);
 		const response = await fetch(requestConfig.url, requestConfig.options);
-		
+
 		// Handle response
 		await handleProfileApiResponse(response);
 
@@ -256,16 +264,20 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 		await loadProfileData(sessionInfo.id);
 		exitEditMode();
 		showProfileToast("Profile updated successfully", "success");
-
 	} catch (error) {
 		// console.error("Error updating profile:", error);
-		
+
 		const errorMessage = (error as Error).message ?? "Failed to update profile";
 		showProfileToast(errorMessage, "error");
-		
+
 		// Handle auth errors
 		if (errorMessage.includes("Session") || errorMessage.includes("Unauthorized")) {
-			handleAuthError(error as Error);
+			const authError = {
+				type: "unauthorized" as const,
+				message: errorMessage,
+				redirectRequired: true
+			};
+			handleAuthError(authError);
 		}
 	} finally {
 		setFormLoading(false);
@@ -356,7 +368,7 @@ export function showProfileToast(message: string, type: "success" | "error"): vo
 	if (toastElement && messageElement) {
 		messageElement.textContent = message;
 		toastElement.style.display = "block";
-		
+
 		// Remove existing type classes and add new one
 		toastElement.classList.remove("toast-success", "toast-error");
 		toastElement.classList.add(`toast-${type}`);

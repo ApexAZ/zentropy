@@ -68,12 +68,22 @@ app.use(express.json());
 app.use("/api/users", usersRouter);
 
 describe("Users API - Route Layer Specifics", () => {
+	let originalConsoleError: typeof console.error;
+
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
 	});
 
 	afterEach(() => {
 		vi.resetAllMocks();
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
 	});
 
 	describe("Security Transformations", () => {

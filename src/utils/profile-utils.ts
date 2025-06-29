@@ -66,12 +66,12 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile> {
 		});
 
 		if (!response.ok) {
-			const errorData = await response.json() as { message?: string };
+			const errorData = (await response.json()) as { message?: string };
 			const errorMessage = errorData.message ?? "Unknown error occurred";
 			throw new Error(`Failed to fetch profile: ${errorMessage}`);
 		}
 
-		const profileData = await response.json() as UserProfile;
+		const profileData = (await response.json()) as UserProfile;
 		return profileData;
 	} catch (error) {
 		if (error instanceof Error && error.message.startsWith("Failed to fetch profile")) {
@@ -135,9 +135,9 @@ export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateDat
 		if (value === null || value === undefined) {
 			return "";
 		}
-		
+
 		let stringValue = String(value);
-		
+
 		// Remove dangerous protocols - check for these first and return empty if found
 		if (/^(javascript|data|vbscript):/gi.test(stringValue)) {
 			// For data: URLs, completely remove them as they can contain arbitrary content
@@ -147,16 +147,16 @@ export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateDat
 			// For javascript: and vbscript:, remove the protocol part
 			stringValue = stringValue.replace(/^(javascript|vbscript):/gi, "");
 		}
-		
+
 		// Remove HTML tags and their contents for script, style, and other dangerous tags
 		stringValue = stringValue.replace(/<(script|style|object|embed|iframe)[^>]*>.*?<\/\1>/gis, "");
-		
+
 		// Remove all remaining HTML tags
 		stringValue = stringValue.replace(/<[^>]*>/g, "");
-		
+
 		// Remove HTML entities that could be used for XSS
 		stringValue = stringValue.replace(/&[#\w]+;/g, "");
-		
+
 		return stringValue.trim();
 	};
 
@@ -164,11 +164,11 @@ export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateDat
 	if ("first_name" in input) {
 		sanitized.first_name = sanitizeString(input.first_name);
 	}
-	
+
 	if ("last_name" in input) {
 		sanitized.last_name = sanitizeString(input.last_name);
 	}
-	
+
 	if ("email" in input) {
 		sanitized.email = sanitizeString(input.email);
 	}
@@ -216,7 +216,7 @@ export async function handleProfileApiResponse<T>(response: Response): Promise<T
 	let responseData: { message?: string; errors?: Record<string, string> };
 
 	try {
-		responseData = await response.json() as { message?: string; errors?: Record<string, string> };
+		responseData = (await response.json()) as { message?: string; errors?: Record<string, string> };
 	} catch {
 		throw new Error("Server returned invalid response");
 	}

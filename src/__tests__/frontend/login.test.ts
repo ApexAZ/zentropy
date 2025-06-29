@@ -33,10 +33,17 @@ describe("Login Page Frontend Integration", () => {
 	let document: Document;
 	let window: Window & typeof globalThis;
 	let loginPageFunctions: LoginPageFunctions;
+	let originalConsoleError: typeof console.error;
 
 	beforeEach(() => {
 		// Reset all mocks
 		vi.clearAllMocks();
+
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
 
 		// Read the actual HTML file
 		const htmlPath = path.join(process.cwd(), "src/public/login.html");
@@ -84,14 +91,22 @@ describe("Login Page Frontend Integration", () => {
 
 			performLogin: async (email: string, password: string): Promise<void> => {
 				// Simple API integration - actual API client logic tested in login-api.test.ts
-				const response = await fetch("/api/users/login", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					credentials: "include",
-					body: JSON.stringify({ email, password })
-				});
+				try {
+					const response = await fetch("/api/users/login", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({ email, password })
+					});
 
-				if (!response.ok) {
+					if (!response.ok) {
+						const generalError = document.getElementById("general-error");
+						if (generalError) {
+							generalError.style.display = "block";
+						}
+					}
+				} catch (error) {
+					// Handle network errors
 					const generalError = document.getElementById("general-error");
 					if (generalError) {
 						generalError.style.display = "block";
@@ -128,6 +143,9 @@ describe("Login Page Frontend Integration", () => {
 	afterEach(() => {
 		dom.window.close();
 		vi.resetAllMocks();
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
 	});
 
 	// Note: Form validation logic tested in src/__tests__/utils/login-validation.test.ts
@@ -279,11 +297,14 @@ describe("Login Page Frontend Integration", () => {
 			await loginPageFunctions.performLogin("test@example.com", "password123");
 
 			// Assert: API called correctly
-			expect(fetch).toHaveBeenCalledWith("/api/users/login", expect.objectContaining({
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				credentials: "include"
-			}));
+			expect(fetch).toHaveBeenCalledWith(
+				"/api/users/login",
+				expect.objectContaining({
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include"
+				})
+			);
 		});
 	});
 });

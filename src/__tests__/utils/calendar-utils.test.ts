@@ -4,7 +4,7 @@
  * TDD implementation with comprehensive edge case coverage for calendar business logic
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
 	getEntriesForDate,
 	getEntryTitle,
@@ -26,8 +26,14 @@ describe("Calendar Utilities", () => {
 	let mockUsers: User[];
 	let mockTeams: Team[];
 	let mockCalendarEntries: CalendarEntry[];
+	let originalConsoleError: typeof console.error;
 
 	beforeEach(() => {
+		// Mock console.error to suppress expected error logs during error handling tests
+		// eslint-disable-next-line no-console
+		originalConsoleError = console.error;
+		// eslint-disable-next-line no-console
+		console.error = vi.fn();
 		mockUsers = [
 			{
 				id: "user1",
@@ -104,6 +110,13 @@ describe("Calendar Utilities", () => {
 				updated_at: "2024-07-01T00:00:00Z"
 			}
 		];
+	});
+
+	afterEach(() => {
+		vi.resetAllMocks();
+		// Restore original console.error
+		// eslint-disable-next-line no-console
+		console.error = originalConsoleError;
 	});
 
 	describe("getEntriesForDate", () => {
@@ -527,9 +540,11 @@ describe("Calendar Utilities", () => {
 
 	describe("escapeHtml", () => {
 		it("should escape HTML special characters", () => {
-			expect(escapeHtml("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
+			expect(escapeHtml("<script>alert('xss')</script>")).toBe(
+				"&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;"
+			);
 			expect(escapeHtml("John & Jane")).toBe("John &amp; Jane");
-			expect(escapeHtml('Say "Hello"')).toBe('Say &quot;Hello&quot;');
+			expect(escapeHtml('Say "Hello"')).toBe("Say &quot;Hello&quot;");
 		});
 
 		it("should handle empty strings", () => {
@@ -543,7 +558,7 @@ describe("Calendar Utilities", () => {
 		it("should handle all dangerous HTML characters", () => {
 			const dangerous = `<script>alert('xss')</script> & "quotes" 'single'`;
 			const result = escapeHtml(dangerous);
-			
+
 			expect(result).toContain("&lt;script&gt;");
 			expect(result).toContain("&amp;");
 			expect(result).toContain("&quot;");
