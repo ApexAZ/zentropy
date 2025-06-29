@@ -12,6 +12,7 @@ import {
 	getPermissionStatus
 } from "../../utils/frontend-permissions";
 import type { UserRole } from "../../models/User";
+import type { PermissionAction } from "../../utils/permission-controls";
 
 describe("Frontend Permissions", () => {
 	describe("checkUserPermissions", () => {
@@ -194,7 +195,7 @@ describe("Frontend Permissions", () => {
 
 	describe("getPermissionStatus", () => {
 		it("should return status for multiple actions for team lead", () => {
-			const actions = ["access_teams", "manage_team", "add_members"];
+			const actions: PermissionAction[] = ["access_teams", "manage_team", "add_members"];
 			const status = getPermissionStatus("team_lead", actions);
 
 			expect(status.access_teams).toBe(true);
@@ -203,7 +204,7 @@ describe("Frontend Permissions", () => {
 		});
 
 		it("should return mixed status for team member", () => {
-			const actions = ["access_teams", "manage_team", "view_team_details"];
+			const actions: PermissionAction[] = ["access_teams", "manage_team", "view_team_details"];
 			const status = getPermissionStatus("team_member", actions);
 
 			expect(status.access_teams).toBe(true);
@@ -212,7 +213,7 @@ describe("Frontend Permissions", () => {
 		});
 
 		it("should return mostly false status for basic user", () => {
-			const actions = ["access_teams", "create_team", "manage_team"];
+			const actions: PermissionAction[] = ["access_teams", "create_team", "manage_team"];
 			const status = getPermissionStatus("basic_user", actions);
 
 			expect(status.access_teams).toBe(false);
