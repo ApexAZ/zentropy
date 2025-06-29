@@ -13,6 +13,30 @@ import {
 } from "../utils/user-search-utils";
 import type { UserSearchParams } from "../utils/user-search-utils";
 import type { UserRole } from "../models/User";
+import { TeamModelExtensions } from "../utils/team-model-extensions";
+import { 
+	validateTeamMembership, 
+	canAddUserToTeam, 
+	determineUserRoleForTeam,
+	validateMembershipRequest,
+	sanitizeMembershipData,
+	formatMembershipResponse
+} from "../utils/team-membership-utils";
+import {
+	validateInvitationData,
+	sanitizeInvitationData,
+	createInvitationToken,
+	canUserInviteToTeam,
+	validateInvitationResponse,
+	formatInvitationForResponse,
+	getInvitationExpiryDate,
+	isInvitationExpired,
+	canActOnInvitation,
+	shouldPromoteUserOnAccept,
+	type InvitationData
+} from "../utils/team-invitation-utils";
+import { UserModel } from "../models/User";
+import { TeamInvitationModel } from "../models/TeamInvitation";
 import sessionAuthMiddleware from "../middleware/session-auth";
 import calendarEntriesRouter from "../routes/calendar-entries";
 import usersRouter from "../routes/users";
@@ -244,6 +268,347 @@ app.get("/api/teams/:id/members", sessionAuthMiddleware, async (req: Request, re
 	}
 });
 
+// POST /api/teams/:id/members - Add user to team (requires team_lead role)
+app.post("/api/teams/:id/members", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
+	try {
+		// Get authenticated user from session middleware
+		const user = req.user;
+		if (!user) {
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
+		// Check if user has permission to add team members
+		if (!hasUserSearchPermission(user.role as UserRole)) {
+			res.status(403).json({ 
+				message: "Insufficient permissions. Only team leads can add users to teams." 
+			});
+			return;
+		}
+
+		const teamId = req.params.id;
+		if (!teamId) {
+			res.status(400).json({ message: "Team ID is required" });
+			return;
+		}
+
+		// Validate team exists
+		const team = await TeamModel.findById(teamId);
+		if (!team) {
+			res.status(404).json({ message: "Team not found" });
+			return;
+		}
+
+		// Extract and validate request data
+		const rawRequest = {
+			userId: (req.body as { userId?: string }).userId ?? "",
+			teamId: teamId,
+			role: ((req.body as { role?: UserRole }).role ?? "team_member") as UserRole
+		};
+
+		// Validate membership request
+		const validation = validateMembershipRequest(rawRequest);
+		if (!validation.isValid) {
+			res.status(400).json({
+				message: "Invalid request data",
+				errors: validation.errors
+			});
+			return;
+		}
+
+		// Sanitize input data
+		const sanitizedRequest = sanitizeMembershipData(rawRequest);
+
+		// Get user to add
+		const userToAdd = await UserModel.findById(sanitizedRequest.userId);
+		if (!userToAdd) {
+			res.status(404).json({ message: "User not found" });
+			return;
+		}
+
+		// Validate user can be added to team
+		const userValidation = validateTeamMembership(userToAdd, teamId);
+		if (!userValidation.isValid) {
+			res.status(400).json({
+				message: "Cannot add user to team",
+				errors: userValidation.errors
+			});
+			return;
+		}
+
+		// Check for existing membership
+		const existingMemberships = await TeamModelExtensions.getTeamMemberships(teamId);
+		const conflictCheck = canAddUserToTeam(sanitizedRequest.userId, teamId, existingMemberships);
+		if (!conflictCheck.canAdd) {
+			res.status(409).json({
+				message: conflictCheck.conflict
+			});
+			return;
+		}
+
+		// Determine appropriate role for user
+		const assignedRole = determineUserRoleForTeam(userToAdd.role);
+		const roleChanged = userToAdd.role === "basic_user" && assignedRole === "team_member";
+
+		// Add user to team
+		const membership = await TeamModelExtensions.addMemberWithRole({
+			team_id: teamId,
+			user_id: sanitizedRequest.userId,
+			role: assignedRole
+		});
+
+		// Format response
+		const response = formatMembershipResponse(
+			membership,
+			{
+				id: userToAdd.id,
+				email: userToAdd.email,
+				first_name: userToAdd.first_name,
+				last_name: userToAdd.last_name
+			},
+			roleChanged
+		);
+
+		res.status(201).json(response);
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error("Error adding team member:", error);
+		res.status(500).json({
+			message: "Failed to add user to team",
+			error: error instanceof Error ? error.message : "Unknown error"
+		});
+	}
+});
+
+// POST /api/teams/:id/invitations - Send team invitation (requires team_lead role)
+app.post("/api/teams/:id/invitations", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
+	try {
+		// Get authenticated user from session middleware
+		const user = req.user;
+		if (!user) {
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
+		// Check if user has permission to send invitations
+		if (!canUserInviteToTeam(user.role as UserRole)) {
+			res.status(403).json({ 
+				message: "Insufficient permissions. Only team leads can send team invitations." 
+			});
+			return;
+		}
+
+		const teamId = req.params.id;
+		if (!teamId) {
+			res.status(400).json({ message: "Team ID is required" });
+			return;
+		}
+
+		// Validate team exists
+		const team = await TeamModel.findById(teamId);
+		if (!team) {
+			res.status(404).json({ message: "Team not found" });
+			return;
+		}
+
+		// Extract and validate request data
+		const requestBody = req.body as { email?: string; role?: UserRole };
+		const invitationData: InvitationData = {
+			teamId: teamId,
+			invitedEmail: requestBody.email ?? "",
+			invitedBy: user.id,
+			role: requestBody.role ?? "team_member"
+		};
+
+		// Validate invitation data
+		const validation = validateInvitationData(invitationData);
+		if (!validation.isValid) {
+			res.status(400).json({
+				message: "Invalid invitation data",
+				errors: validation.errors
+			});
+			return;
+		}
+
+		// Sanitize input data
+		const sanitizedData = sanitizeInvitationData(invitationData);
+
+		// Check if user is already a team member
+		const existingMemberships = await TeamModelExtensions.getTeamMemberships(teamId);
+		const existingUser = await UserModel.findByEmail(sanitizedData.invitedEmail);
+		
+		if (existingUser) {
+			const membershipConflict = canAddUserToTeam(existingUser.id, teamId, existingMemberships);
+			if (!membershipConflict.canAdd) {
+				res.status(409).json({
+					message: "User is already a member of this team"
+				});
+				return;
+			}
+		}
+
+		// Check for existing pending invitation
+		const existingInvitation = await TeamInvitationModel.findPendingForTeamAndEmail(teamId, sanitizedData.invitedEmail);
+		if (existingInvitation) {
+			res.status(409).json({
+				message: "User already has a pending invitation for this team"
+			});
+			return;
+		}
+
+		// Create invitation
+		const token = createInvitationToken();
+		const expiresAt = getInvitationExpiryDate(7); // 7 days expiry
+
+		const invitation = await TeamInvitationModel.create({
+			team_id: teamId,
+			invited_email: sanitizedData.invitedEmail,
+			invited_by: user.id,
+			role: sanitizedData.role,
+			token: token,
+			expires_at: expiresAt
+		});
+
+		// Format response
+		const inviterName = `${user.first_name} ${user.last_name}`.trim() || "Team Lead";
+		const response = formatInvitationForResponse(invitation, team.name, inviterName);
+
+		res.status(201).json({
+			invitation: {
+				id: response.id,
+				teamId: response.teamId,
+				invitedEmail: response.invitedEmail,
+				role: response.role,
+				status: response.status,
+				expiresAt: response.expiresAt
+			},
+			message: `Invitation sent to ${sanitizedData.invitedEmail} to join ${team.name}`
+		});
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error("Error sending team invitation:", error);
+		res.status(500).json({
+			message: "Failed to send invitation",
+			error: error instanceof Error ? error.message : "Unknown error"
+		});
+	}
+});
+
+// POST /api/invitations/respond - Accept or decline team invitation
+app.post("/api/invitations/respond", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
+	try {
+		// Get authenticated user from session middleware
+		const user = req.user;
+		if (!user) {
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
+		// Extract and validate request data
+		const requestBody = req.body as { token?: string; action?: "accept" | "decline" };
+		const responseData = {
+			token: requestBody.token ?? "",
+			action: requestBody.action ?? "accept" as "accept" | "decline"
+		};
+
+		// Validate response data
+		const validation = validateInvitationResponse(responseData);
+		if (!validation.isValid) {
+			res.status(400).json({
+				message: "Invalid response data",
+				errors: validation.errors
+			});
+			return;
+		}
+
+		// Find invitation with details
+		const invitationWithDetails = await TeamInvitationModel.findByTokenWithDetails(responseData.token);
+		if (!invitationWithDetails) {
+			res.status(404).json({ message: "Invitation not found" });
+			return;
+		}
+
+		const invitation = invitationWithDetails.invitation;
+
+		// Check if invitation can be acted upon
+		if (!canActOnInvitation(invitation)) {
+			if (isInvitationExpired(invitation.expires_at)) {
+				res.status(410).json({ message: "Invitation has expired" });
+				return;
+			}
+			res.status(400).json({ message: "Invitation cannot be processed" });
+			return;
+		}
+
+		// Check if the invitation is for the authenticated user
+		if (invitation.invited_email.toLowerCase() !== user.email.toLowerCase()) {
+			res.status(403).json({ message: "This invitation is not for your account" });
+			return;
+		}
+
+		if (responseData.action === "decline") {
+			// Update invitation status to declined
+			await TeamInvitationModel.update(invitation.id, { status: "declined" });
+			
+			res.json({
+				message: `You have declined the invitation to join ${invitationWithDetails.team.name}`
+			});
+			return;
+		}
+
+		// Handle acceptance
+		if (responseData.action === "accept") {
+			// Check if user should be promoted
+			const roleForTeam = determineUserRoleForTeam(user.role as UserRole);
+			const shouldPromote = shouldPromoteUserOnAccept(user.role as UserRole, invitation.role);
+
+			// Add user to team
+			const membership = await TeamModelExtensions.addMemberWithRole({
+				team_id: invitation.team_id,
+				user_id: user.id,
+				role: roleForTeam
+			});
+
+			// Update invitation status
+			await TeamInvitationModel.update(invitation.id, { status: "accepted" });
+
+			// Update user role if needed
+			if (shouldPromote) {
+				await UserModel.update(user.id, { role: roleForTeam });
+			}
+
+			// Format response
+			const response = {
+				membership: {
+					id: membership.id,
+					userId: membership.user_id,
+					teamId: membership.team_id,
+					role: membership.role,
+					joinedAt: membership.joined_at.toISOString()
+				},
+				user: {
+					id: user.id,
+					email: user.email,
+					displayName: `${user.first_name} ${user.last_name}`.trim()
+				},
+				message: shouldPromote 
+					? `You have joined ${invitationWithDetails.team.name} and been promoted to ${roleForTeam}`
+					: `You have joined ${invitationWithDetails.team.name}`
+			};
+
+			res.json(response);
+			return;
+		}
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error("Error responding to invitation:", error);
+		res.status(500).json({
+			message: "Failed to process invitation response",
+			error: error instanceof Error ? error.message : "Unknown error"
+		});
+	}
+});
+
 // GET /api/users/search - Search users for team management (requires team_lead role)
 app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
@@ -255,7 +620,7 @@ app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Re
 		}
 
 		// Check if user has permission to search for other users
-		if (!hasUserSearchPermission(user.role)) {
+		if (!hasUserSearchPermission(user.role as UserRole)) {
 			res.status(403).json({ 
 				message: "Insufficient permissions. Only team leads can search for users to add to teams." 
 			});
