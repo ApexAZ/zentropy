@@ -154,6 +154,48 @@ curl http://localhost:3000/health      # Check server and database status
 
 **Development environment is ready for continued capacity planner development work with robust error handling and recovery systems in place.**
 
+### 🏗️ **CURRENT SESSION: Architecture Consolidation (2025-06-29 14:15:00 PST)**
+
+**Goal**: Reduce complexity from 29 utils files to 8 core modules (66% reduction)
+**Approach**: Test-Driven Development with comprehensive test analysis and targeted quality checks
+**Status**: Environment verified, clean baseline established, ready to implement with test consolidation
+
+**Architecture Consolidation Plan**:
+1. **auth-core.ts** ← Consolidate: auth-utils, navigation-auth, login-validation, login-api, password-change-utils
+2. **team-core.ts** ← Consolidate: teams-business-logic, team-validation, team-model-extensions, team-form-processing-utils, team-management-ui-utils  
+3. **api-client-core.ts** ← Consolidate: api-client, team-invitation-api-client, team-membership-api-client, user-search-api-client
+4. **permission-core.ts** ← Consolidate: permission-controls, frontend-permissions, role-promotion-utils
+5. **validation-core.ts** ← Consolidate: validation, password-policy
+6. **ui-core.ts** ← Consolidate: user-display-utils, navigation-display-utils, profile-ui-utils
+7. **profile-core.ts** ← Consolidate: profile-business-logic, profile-coordination-utils, profile-utils
+8. **Keep Specialized**: calendar-utils (domain-specific)
+
+**Enhanced TDD Implementation Pattern**:
+- **Analyze**: Deep analysis of existing tests to identify reusable coverage and gaps
+- **Reconcile**: Plan test consolidation - reuse existing, remove obsolete, identify new tests needed
+- **Red**: Write/adapt failing tests for new consolidated module API
+- **Green**: Implement minimum code to pass tests  
+- **Refactor**: Optimize implementation
+- **Migrate**: Update all imports to use new module
+- **Test Cleanup**: Remove obsolete utility tests, update remaining ones for new core modules
+- **Quality Check**: Run targeted linting/type-checking on affected files only
+- **Verify**: Test server startup and functionality
+- **Commit**: Save working state with session recap update before next module
+
+**Test Strategy Enhancements**:
+- **Deep Test Analysis**: Examine existing auth/team/validation/etc tests before creating new ones
+- **Reuse Over Recreate**: Leverage existing comprehensive test coverage where possible
+- **Obsolete Test Removal**: Clean up fragmented utility tests after consolidation
+- **Coverage Verification**: Ensure no gaps in test coverage during consolidation
+- **Integration Preservation**: Maintain all existing integration and workflow tests
+
+**Progress Tracking**:
+- ✅ **Environment verified**: Post-WSL crash recovery successful, bulletproof system operational
+- ✅ **Clean baseline**: Git reset to stable commit, ready for architecture work
+- 🔄 **Current**: About to commit clean state and begin auth-core analysis and implementation
+
+**Recovery Context**: If WSL crashes, continue from current todo list with enhanced TDD approach including comprehensive test analysis. Each core module is independent - can resume from any point. Session recap updated after each major commit for seamless recovery.
+
 ## Context Files for Claude Code
 
 - **CLAUDE.md** - Project memory, session recaps, development commands
