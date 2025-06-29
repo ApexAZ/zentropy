@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Task Management & Timestamping Standards (Established 2025-06-29)
+- **Timestamp Requirement**: All tasks and sub-tasks must include date and time stamps when added to project documentation
+- **Completion Tracking**: Include completion timestamps for all finished tasks and sub-tasks in CLAUDETasks.md
+- **Format Standard**: Use format "YYYY-MM-DD HH:MM:SS (timezone)" for consistency across all project documentation
+- **Status Tracking**: Include start times, completion times, and duration calculations where applicable
+- **Progress Documentation**: Maintain clear task progression history for project planning and retrospectives
+- **Session Continuity**: Timestamps enable seamless session resumption and accurate progress measurement
+
 ## Project Overview
 
 A Sprint Capacity Planning Tool for agile teams built with Node.js, Express, PostgreSQL, and TypeScript. The application helps teams calculate sprint capacity based on team velocity and calendar availability (PTO, holidays, etc.).

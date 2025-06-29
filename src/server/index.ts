@@ -4,6 +4,15 @@ import { testConnection } from "../database/connection";
 import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation";
 import { validateTeamInput } from "../utils/team-validation";
+import { handleTeamCreationWithRolePromotion } from "../utils/role-promotion-utils";
+import { 
+	performUserSearch, 
+	validateSearchQuery, 
+	validateSearchLimit, 
+	hasUserSearchPermission 
+} from "../utils/user-search-utils";
+import type { UserSearchParams } from "../utils/user-search-utils";
+import type { UserRole } from "../models/User";
 import sessionAuthMiddleware from "../middleware/session-auth";
 import calendarEntriesRouter from "../routes/calendar-entries";
 import usersRouter from "../routes/users";
@@ -87,11 +96,34 @@ app.get("/api/teams/:id", sessionAuthMiddleware, async (req: Request, res: Respo
 // POST /api/teams - Create new team (requires authentication)
 app.post("/api/teams", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
 	try {
+		// Get authenticated user from session middleware
+		const user = req.user;
+		if (!user) {
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
 		// Validate input data
 		const teamData = validateTeamInput(req.body);
+		
+		// Set the team creator to the authenticated user
+		const teamDataWithCreator = {
+			...teamData,
+			created_by: user.id
+		};
 
-		const newTeam = await TeamModel.create(teamData);
-		res.status(201).json(newTeam);
+		// Handle team creation with automatic role promotion
+		const result = await handleTeamCreationWithRolePromotion(teamDataWithCreator);
+
+		// Return comprehensive response including promotion information
+		res.status(201).json({
+			team: result.team,
+			userPromoted: result.userPromoted,
+			membership: result.membership,
+			message: result.userPromoted 
+				? "Team created successfully. You have been promoted to team lead!"
+				: "Team created successfully."
+		});
 	} catch (error) {
 		// eslint-disable-next-line no-console
 		console.error("Error creating team:", error);
@@ -207,6 +239,83 @@ app.get("/api/teams/:id/members", sessionAuthMiddleware, async (req: Request, re
 		console.error("Error fetching team members:", error);
 		res.status(500).json({
 			message: "Failed to fetch team members",
+			error: error instanceof Error ? error.message : "Unknown error"
+		});
+	}
+});
+
+// GET /api/users/search - Search users for team management (requires team_lead role)
+app.get("/api/users/search", sessionAuthMiddleware, async (req: Request, res: Response): Promise<void> => {
+	try {
+		// Get authenticated user from session middleware
+		const user = req.user;
+		if (!user) {
+			res.status(401).json({ message: "Authentication required" });
+			return;
+		}
+
+		// Check if user has permission to search for other users
+		if (!hasUserSearchPermission(user.role)) {
+			res.status(403).json({ 
+				message: "Insufficient permissions. Only team leads can search for users to add to teams." 
+			});
+			return;
+		}
+
+		// Extract and validate query parameters
+		const query = req.query.q as string ?? "";
+		const roleFilterParam = req.query.role as string | undefined;
+		const limitParam = parseInt(req.query.limit as string ?? "20");
+
+		// Validate role filter if provided
+		let roleFilter: UserRole | undefined;
+		if (roleFilterParam) {
+			const validRoles: UserRole[] = ["basic_user", "team_member", "team_lead"];
+			if (validRoles.includes(roleFilterParam as UserRole)) {
+				roleFilter = roleFilterParam as UserRole;
+			} else {
+				res.status(400).json({ 
+					message: "Invalid role filter. Must be one of: basic_user, team_member, team_lead" 
+				});
+				return;
+			}
+		}
+
+		// Validate search parameters
+		if (!validateSearchQuery(query)) {
+			res.status(400).json({ 
+				message: "Invalid search query. Query must be a string with no HTML tags and under 100 characters." 
+			});
+			return;
+		}
+
+		const limit = validateSearchLimit(limitParam);
+
+		// Prepare search parameters
+		const searchParams: UserSearchParams = {
+			query: query.trim(),
+			role: roleFilter,
+			currentUserId: user.id,
+			limit: limit
+		};
+
+		// Perform user search
+		const searchResults = await performUserSearch(searchParams);
+
+		// Return search results with metadata
+		res.json({
+			users: searchResults,
+			query: query.trim(),
+			roleFilter: roleFilter ?? null,
+			limit: limit,
+			count: searchResults.length,
+			hasMore: searchResults.length === limit // Indicates there might be more results
+		});
+	} catch (error) {
+		// eslint-disable-next-line no-console
+		console.error("Error searching users:", error);
+		res.status(500).json({
+			message: "Failed to search users",
 			error: error instanceof Error ? error.message : "Unknown error"
 		});
 	}

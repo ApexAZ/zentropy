@@ -6,8 +6,9 @@ import type { PasswordValidationOptions } from "../utils/password-policy";
  * User role enumeration for type safety
  */
 export const USER_ROLES = {
-	TEAM_LEAD: "team_lead",
-	TEAM_MEMBER: "team_member"
+	BASIC_USER: "basic_user",
+	TEAM_MEMBER: "team_member",
+	TEAM_LEAD: "team_lead"
 } as const;
 
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];

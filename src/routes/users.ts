@@ -229,7 +229,7 @@ router.post("/", userCreationRateLimit, async (req: Request, res: Response): Pro
 			password,
 			first_name: first_name ?? "",
 			last_name: last_name ?? "",
-			role: role ?? "team_member"
+			role: role ?? "basic_user"
 		};
 		const user = await UserModel.create(userData);
 
