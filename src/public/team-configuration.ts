@@ -3,7 +3,7 @@
  * Handles team configuration, member management, and sprint planning
  */
 
-import { initializeNavigation } from "../utils/navigation-auth.js";
+import { initializeNavigation } from "../utils/auth-core.js";
 
 (function (): void {
 	// Type definitions
@@ -89,7 +89,7 @@ import { initializeNavigation } from "../utils/navigation-auth.js";
 	// Initialize page
 	document.addEventListener("DOMContentLoaded", () => {
 		// Initialize authentication-aware navigation
-		initializeNavigation("nav-container");
+		void initializeNavigation();
 
 		// Initialize team configuration functionality
 		loadTeamConfiguration();

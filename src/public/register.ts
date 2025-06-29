@@ -5,7 +5,7 @@
  */
 
 // Import utilities following established patterns
-import { validateReturnUrl, handleAuthError, type AuthError } from "../utils/auth-utils.js";
+import { handleAuthError, validateReturnUrl, type AuthError } from "../utils/auth-core.js";
 
 // Type definitions for registration
 interface RegistrationData {

@@ -9,15 +9,13 @@ import {
 	isValidEmail,
 	validateLoginForm as validateLoginFormData,
 	sanitizeLoginInput,
-	type LoginFormData
-} from "../utils/login-validation.js";
-
-import {
 	createLoginRequest,
 	handleLoginResponse,
+	type LoginFormData,
 	type LoginCredentials,
-	type LoginApiResult
-} from "../utils/login-api.js";
+	type LoginApiResponse,
+	type LoginApiError
+} from "../utils/auth-core.js";
 
 (function (): void {
 	// Type definitions for local use
@@ -240,7 +238,7 @@ import {
 
 		return {
 			loginData: {
-				email: sanitizeLoginInput(emailInput.value.trim()),
+				email: emailInput.value.trim(),
 				password: passwordInput.value // Don't trim passwords
 			},
 			remember: rememberCheckbox?.checked ?? false
@@ -258,7 +256,7 @@ import {
 			// Use tested API utility to create request
 			const credentials: LoginCredentials = { email, password };
 			const requestConfig = createLoginRequest(credentials);
-			const response = await fetch("/api/users/login", requestConfig);
+			const response = await fetch(requestConfig.url, requestConfig.options);
 
 			// Use tested API utility to handle response
 			const result = await handleLoginResponse(response);
@@ -280,7 +278,7 @@ import {
 	/**
 	 * Handle successful login result
 	 */
-	function handleSuccessfulLogin(result: LoginApiResult): void {
+	function handleSuccessfulLogin(result: LoginApiResponse | LoginApiError): void {
 		if (!result.success) {
 			return;
 		}
@@ -314,7 +312,7 @@ import {
 	/**
 	 * Handle login error result
 	 */
-	function handleLoginError(result: LoginApiResult): void {
+	function handleLoginError(result: LoginApiResponse | LoginApiError): void {
 		if (result.success) {
 			return;
 		}

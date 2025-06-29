@@ -9,9 +9,7 @@ import {
 	type ProfileUpdateData
 } from "../utils/profile-utils.js";
 
-import { getSessionInfo, redirectToLogin, handleAuthError } from "../utils/auth-utils.js";
-
-import { initializeNavigation } from "../utils/navigation-auth.js";
+import { redirectToLogin, handleAuthError, initializeNavigation, getSessionInfo } from "../utils/auth-core.js";
 
 import {
 	getRoleBadgeClass,
@@ -24,9 +22,8 @@ import {
 	validatePasswordChangeForm,
 	createPasswordChangeRequest,
 	handlePasswordChangeResponse,
-	type PasswordChangeFormData,
-	type PasswordChangeData
-} from "../utils/password-change-utils.js";
+	type PasswordChangeFormData
+} from "../utils/auth-core.js";
 
 /**
  * Current profile data cache
@@ -39,7 +36,7 @@ let currentProfileData: UserProfile | null = null;
 export async function initializeProfilePage(): Promise<void> {
 	try {
 		// Initialize navigation first
-		void initializeNavigation("");
+		void initializeNavigation();
 
 		// Check authentication
 		const sessionInfo = getSessionInfo();
@@ -584,16 +581,17 @@ export async function handlePasswordFormSubmit(event: Event): Promise<void> {
 			throw new Error("Validation failed - no sanitized data available");
 		}
 
-		const passwordChangeData: PasswordChangeData = {
+		const passwordChangeData: PasswordChangeFormData = {
 			currentPassword: validation.sanitizedData.currentPassword,
-			newPassword: validation.sanitizedData.newPassword
+			newPassword: validation.sanitizedData.newPassword,
+			confirmPassword: validation.sanitizedData.confirmPassword
 		};
 
 		// Show loading state
 		setPasswordFormLoading(true);
 
 		// Create and send request using tested utility functions
-		const requestConfig = createPasswordChangeRequest(sessionInfo.id, passwordChangeData);
+		const requestConfig = createPasswordChangeRequest(passwordChangeData);
 		const response = await fetch(requestConfig.url, requestConfig.options);
 
 		// Handle response using tested utility function
@@ -605,14 +603,14 @@ export async function handlePasswordFormSubmit(event: Event): Promise<void> {
 			showProfileToast("Password updated successfully", "success");
 		} else {
 			// Handle various error scenarios
-			if (apiResponse.requiresReauth) {
+			if (apiResponse.message.includes("unauthorized")) {
 				const authError = {
 					type: "unauthorized" as const,
 					message: apiResponse.message,
 					redirectRequired: true
 				};
 				handleAuthError(authError);
-			} else if (apiResponse.rateLimited) {
+			} else if (apiResponse.message.includes("rate limit")) {
 				showRateLimitInfo();
 				showProfileToast(apiResponse.message, "error");
 			} else {
