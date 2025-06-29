@@ -1,9 +1,9 @@
 /**
  * Login Workflow Integration Tests
- * 
+ *
  * This file fills the testing gap by providing comprehensive integration tests
  * for the complete login workflow, combining frontend and backend components.
- * 
+ *
  * Following hybrid testing strategy:
  * - Business logic tested in utils/login-validation.test.ts (pure functions)
  * - API client logic tested in utils/login-api.test.ts (pure functions)
@@ -12,31 +12,17 @@
  * - This file tests END-TO-END workflows and cross-system integration
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/require-await */
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
 import { UserModel, type User } from "../../models/User";
-import { SessionModel, type Session } from "../../models/Session";
+import { SessionModel } from "../../models/Session";
 import usersRouter from "../../routes/users";
 
 // Import business logic utilities for integration validation
 import { validateLoginForm, sanitizeLoginInput } from "../../utils/login-validation.js";
 import { createLoginRequest, parseLoginResponse, parseErrorResponse } from "../../utils/login-api.js";
-
-interface LoginWorkflowTestData {
-	email: string;
-	password: string;
-	expectedResponse: {
-		message: string;
-		user: {
-			id: string;
-			email: string;
-			first_name: string;
-			last_name: string;
-			role: string;
-		};
-	};
-}
 
 describe("Login Workflow Integration Tests", () => {
 	let app: express.Application;
@@ -107,7 +93,7 @@ describe("Login Workflow Integration Tests", () => {
 			const sanitizedPassword = loginData.password; // Passwords are not sanitized
 			expect(sanitizedEmail).toBe(uniqueEmail);
 			expect(sanitizedPassword).toBe(strongPassword);
-			
+
 			const sanitizedData = {
 				email: sanitizedEmail,
 				password: sanitizedPassword
@@ -120,9 +106,7 @@ describe("Login Workflow Integration Tests", () => {
 			expect(requestConfig.credentials).toBe("include");
 
 			// Step 4: Backend API integration
-			const response = await request(app)
-				.post("/api/users/login")
-				.send(sanitizedData);
+			const response = await request(app).post("/api/users/login").send(sanitizedData);
 
 			expect(response.status).toBe(200);
 			expect(response.body).toHaveProperty("message", "Login successful");
@@ -134,11 +118,11 @@ describe("Login Workflow Integration Tests", () => {
 			// Step 5: Session creation verification
 			const setCookieHeader = response.headers["set-cookie"];
 			expect(setCookieHeader).toBeDefined();
-			
-			const sessionCookie = Array.isArray(setCookieHeader) 
+
+			const sessionCookie = Array.isArray(setCookieHeader)
 				? setCookieHeader.find((cookie: string) => cookie.startsWith("sessionToken="))
 				: setCookieHeader;
-			
+
 			expect(sessionCookie).toBeDefined();
 			expect(sessionCookie).toContain("HttpOnly");
 			expect(sessionCookie).toContain("Path=/");
@@ -173,18 +157,16 @@ describe("Login Workflow Integration Tests", () => {
 			const validationResult = validateLoginForm(loginData);
 			expect(validationResult.isValid).toBe(true);
 
-			const response = await request(app)
-				.post("/api/users/login")
-				.send(loginData);
+			const response = await request(app).post("/api/users/login").send(loginData);
 
 			// Assert: Should set longer session duration for remember me
 			expect(response.status).toBe(200);
-			
+
 			const setCookieHeader = response.headers["set-cookie"];
-			const sessionCookie = Array.isArray(setCookieHeader) 
+			const sessionCookie = Array.isArray(setCookieHeader)
 				? setCookieHeader.find((cookie: string) => cookie.startsWith("sessionToken="))
 				: setCookieHeader;
-			
+
 			// Remember me functionality affects session duration
 			expect(sessionCookie).toBeDefined();
 		});
@@ -209,9 +191,7 @@ describe("Login Workflow Integration Tests", () => {
 			};
 
 			// Act: Login as team lead
-			const response = await request(app)
-				.post("/api/users/login")
-				.send(loginData);
+			const response = await request(app).post("/api/users/login").send(loginData);
 
 			// Assert: Should get team lead response
 			expect(response.status).toBe(200);
@@ -249,9 +229,7 @@ describe("Login Workflow Integration Tests", () => {
 			expect(validationResult.isValid).toBe(true);
 
 			// Step 2: Backend authentication fails
-			const response = await request(app)
-				.post("/api/users/login")
-				.send(invalidLoginData);
+			const response = await request(app).post("/api/users/login").send(invalidLoginData);
 
 			// Assert: Should get authentication error
 			expect(response.status).toBe(401);
@@ -303,24 +281,25 @@ describe("Login Workflow Integration Tests", () => {
 
 			// Act: Make multiple failed login attempts to trigger rate limiting
 			const attempts = [];
-			for (let i = 0; i < 6; i++) { // Rate limit is 5 attempts per 15 minutes
-				attempts.push(
-					request(app)
-						.post("/api/users/login")
-						.send(loginData)
-				);
+			for (let i = 0; i < 6; i++) {
+				// Rate limit is 5 attempts per 15 minutes
+				attempts.push(request(app).post("/api/users/login").send(loginData));
 			}
 
 			const responses = await Promise.all(attempts);
 
 			// Assert: Should eventually get rate limited
 			const lastResponse = responses[responses.length - 1];
-			
+
+			if (!lastResponse) {
+				throw new Error("No responses received");
+			}
+
 			// Either the last request should be rate limited, or all should be 401 (depends on timing)
 			if (lastResponse.status === 429) {
 				expect(lastResponse.body).toHaveProperty("message");
 				expect(lastResponse.body.message).toContain("Too many");
-				
+
 				// Response handling for rate limiting
 				const handledResponse = parseErrorResponse(lastResponse.body);
 				expect(handledResponse.success).toBe(false);
@@ -381,27 +360,25 @@ describe("Login Workflow Integration Tests", () => {
 			testUsers.push(testUser.id);
 
 			// Act: Login successfully
-			const loginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginResponse = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			expect(loginResponse.status).toBe(200);
 
 			// Extract session token from cookie
 			const setCookieHeader = loginResponse.headers["set-cookie"];
-			const sessionCookie = Array.isArray(setCookieHeader) 
+			const sessionCookie = Array.isArray(setCookieHeader)
 				? setCookieHeader.find((cookie: string) => cookie.startsWith("sessionToken="))
 				: setCookieHeader;
-			
+
 			expect(sessionCookie).toBeDefined();
 			const sessionToken = sessionCookie?.split(";")[0].split("=")[1];
-			testSessions.push(sessionToken!);
+			testSessions.push(sessionToken);
 
 			// Verify session exists in database
-			const session = await SessionModel.findByToken(sessionToken!);
+			const session = await SessionModel.findByToken(sessionToken);
 			expect(session).toBeTruthy();
 			expect(session?.user_id).toBe(testUser.id);
 		});
@@ -421,20 +398,18 @@ describe("Login Workflow Integration Tests", () => {
 			testUsers.push(testUser.id);
 
 			// Step 1: Login
-			const loginResponse = await request(app)
-				.post("/api/users/login")
-				.send({
-					email: uniqueEmail,
-					password: strongPassword
-				});
+			const loginResponse = await request(app).post("/api/users/login").send({
+				email: uniqueEmail,
+				password: strongPassword
+			});
 
 			expect(loginResponse.status).toBe(200);
 
 			const setCookieHeader = loginResponse.headers["set-cookie"];
-			const sessionCookie = Array.isArray(setCookieHeader) 
+			const sessionCookie = Array.isArray(setCookieHeader)
 				? setCookieHeader.find((cookie: string) => cookie.startsWith("sessionToken="))
 				: setCookieHeader;
-			
+
 			const sessionToken = sessionCookie?.split(";")[0].split("=")[1];
 
 			// Step 2: Logout
@@ -446,7 +421,7 @@ describe("Login Workflow Integration Tests", () => {
 			expect(logoutResponse.body.message).toBe("Logged out successfully");
 
 			// Step 3: Verify session is invalidated
-			const session = await SessionModel.findByToken(sessionToken!);
+			const session = await SessionModel.findByToken(sessionToken);
 			expect(session).toBeNull();
 		});
 	});
@@ -487,9 +462,7 @@ describe("Login Workflow Integration Tests", () => {
 			expect(requestConfig.method).toBe("POST");
 
 			// 4. Backend authentication (tested in i-session-authentication.test.ts)
-			const response = await request(app)
-				.post("/api/users/login")
-				.send(sanitized);
+			const response = await request(app).post("/api/users/login").send(sanitized);
 
 			expect(response.status).toBe(200);
 

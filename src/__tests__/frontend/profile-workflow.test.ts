@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion, @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
  * Profile Workflow Tests - Hybrid Approach
- * 
+ *
  * This file replaces the complex DOM mocking in profile-functionality.test.ts
  * with lightweight workflow testing that focuses on business logic and API integration.
- * 
+ *
  * Following hybrid testing strategy:
  * - Business logic is tested in profile-business-logic.test.ts (pure functions)
  * - This file tests critical workflows and API integration
@@ -22,7 +23,7 @@ vi.mock("../../utils/profile-business-logic", () => ({
 	validateProfileAccess: vi.fn()
 }));
 
-// Mock profile utilities  
+// Mock profile utilities
 vi.mock("../../utils/profile-utils", () => ({
 	fetchUserProfile: vi.fn(),
 	createProfileUpdateRequest: vi.fn(),
@@ -45,17 +46,9 @@ import {
 	validateProfileAccess
 } from "../../utils/profile-business-logic";
 
-import {
-	fetchUserProfile,
-	createProfileUpdateRequest,
-	handleProfileApiResponse
-} from "../../utils/profile-utils";
+import { fetchUserProfile, createProfileUpdateRequest, handleProfileApiResponse } from "../../utils/profile-utils";
 
-import {
-	getSessionInfo,
-	redirectToLogin,
-	handleAuthError
-} from "../../utils/auth-utils";
+import { getSessionInfo, redirectToLogin } from "../../utils/auth-utils";
 
 describe("Profile Workflow Tests", () => {
 	beforeEach(() => {
@@ -78,6 +71,7 @@ describe("Profile Workflow Tests", () => {
 				last_name: "Doe",
 				role: "team_member" as const,
 				is_active: true,
+				last_login_at: null,
 				created_at: "2024-01-01T00:00:00.000Z",
 				updated_at: "2024-01-01T00:00:00.000Z"
 			};
@@ -132,7 +126,7 @@ describe("Profile Workflow Tests", () => {
 			vi.mocked(fetchUserProfile).mockRejectedValue(new Error("Network error"));
 
 			const session = getSessionInfo();
-			
+
 			try {
 				await fetchUserProfile(session!.id);
 			} catch (error) {
@@ -199,14 +193,21 @@ describe("Profile Workflow Tests", () => {
 			const validationResult = validateProfileUpdate(formData);
 
 			if (validationResult.success) {
-				const submissionData = formatProfileForSubmission(formData, session!.id);
-				const apiRequest = createProfileUpdateRequest(session!.id, submissionData);
-				const updatedProfile = await handleProfileApiResponse(apiRequest);
+				const submissionData = formatProfileForSubmission(formData);
+				createProfileUpdateRequest(session!.id, submissionData);
+
+				// Mock fetch response
+				const mockResponse = new Response(JSON.stringify(mockApiResponse), {
+					status: 200,
+					headers: { "Content-Type": "application/json" }
+				});
+
+				const updatedProfile = await handleProfileApiResponse(mockResponse);
 
 				expect(validateProfileUpdate).toHaveBeenCalledWith(formData);
-				expect(formatProfileForSubmission).toHaveBeenCalledWith(formData, "user123");
+				expect(formatProfileForSubmission).toHaveBeenCalledWith(formData);
 				expect(createProfileUpdateRequest).toHaveBeenCalledWith("user123", mockSubmissionData);
-				expect(handleProfileApiResponse).toHaveBeenCalledWith(mockApiRequest);
+				expect(handleProfileApiResponse).toHaveBeenCalledWith(mockResponse);
 				expect(updatedProfile).toEqual(mockApiResponse);
 			}
 		});
@@ -271,11 +272,17 @@ describe("Profile Workflow Tests", () => {
 			const validationResult = validateProfileUpdate(formData);
 
 			if (validationResult.success) {
-				const submissionData = formatProfileForSubmission(formData, session!.id);
-				const apiRequest = createProfileUpdateRequest(session!.id, submissionData);
+				const submissionData = formatProfileForSubmission(formData);
+				createProfileUpdateRequest(session!.id, submissionData);
+
+				// Mock error response
+				const errorResponse = new Response(JSON.stringify({ message: "Email already exists" }), {
+					status: 400,
+					headers: { "Content-Type": "application/json" }
+				});
 
 				try {
-					await handleProfileApiResponse(apiRequest);
+					await handleProfileApiResponse(errorResponse);
 				} catch (error) {
 					expect(error).toBeInstanceOf(Error);
 					expect((error as Error).message).toBe("Email already exists");

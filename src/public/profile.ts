@@ -20,6 +20,14 @@ import {
 	type ProfileFormData
 } from "../utils/profile-ui-utils.js";
 
+import {
+	validatePasswordChangeForm,
+	createPasswordChangeRequest,
+	handlePasswordChangeResponse,
+	type PasswordChangeFormData,
+	type PasswordChangeData
+} from "../utils/password-change-utils.js";
+
 /**
  * Current profile data cache
  */
@@ -247,7 +255,7 @@ export async function handleProfileFormSubmit(event: Event): Promise<void> {
 		if (!validation.sanitizedData) {
 			throw new Error("Validation failed - no sanitized data available");
 		}
-		
+
 		const profileUpdateData: ProfileUpdateData = {
 			first_name: validation.sanitizedData.first_name,
 			last_name: validation.sanitizedData.last_name,
@@ -315,6 +323,50 @@ function setupEventListeners(): void {
 	if (profileForm) {
 		profileForm.addEventListener("submit", (event: Event) => {
 			void handleProfileFormSubmit(event);
+		});
+	}
+
+	// Password change button
+	const changePasswordBtn = document.getElementById("change-password-btn");
+	if (changePasswordBtn) {
+		changePasswordBtn.addEventListener("click", () => {
+			enterPasswordChangeMode();
+		});
+	}
+
+	// Cancel password change button
+	const cancelPasswordBtn = document.getElementById("cancel-password-btn");
+	if (cancelPasswordBtn) {
+		cancelPasswordBtn.addEventListener("click", () => {
+			exitPasswordChangeMode();
+		});
+	}
+
+	// Password form submission
+	const passwordForm = document.getElementById("password-form");
+	if (passwordForm) {
+		passwordForm.addEventListener("submit", (event: Event) => {
+			void handlePasswordFormSubmit(event);
+		});
+	}
+
+	// Password visibility toggles
+	document.addEventListener("click", (event: Event) => {
+		const target = event.target as HTMLElement;
+		if (target.dataset.action === "toggle-password") {
+			const targetId = target.dataset.target;
+			if (targetId) {
+				togglePasswordVisibility(targetId);
+			}
+		}
+	});
+
+	// Real-time password validation
+	const newPasswordInput = document.getElementById("new-password") as HTMLInputElement;
+	if (newPasswordInput) {
+		newPasswordInput.addEventListener("input", () => {
+			updatePasswordStrengthIndicator(newPasswordInput.value);
+			updatePasswordRequirements(newPasswordInput.value);
 		});
 	}
 
@@ -443,6 +495,376 @@ function setFormLoading(loading: boolean): void {
 			spinner.style.display = "none";
 			text.style.display = "inline-block";
 		}
+	}
+}
+
+/**
+ * Enter password change mode
+ */
+export function enterPasswordChangeMode(): void {
+	// Hide password display mode, show password change mode
+	hideProfileSection("password-display");
+	showProfileSection("password-change");
+
+	// Focus current password input
+	const currentPasswordInput = document.getElementById("current-password") as HTMLInputElement;
+	if (currentPasswordInput) {
+		currentPasswordInput.focus();
+	}
+
+	// Clear any existing errors and reset form
+	clearPasswordFormErrors();
+	const passwordForm = document.getElementById("password-form") as HTMLFormElement;
+	if (passwordForm) {
+		passwordForm.reset();
+	}
+
+	// Hide password strength indicator initially
+	hideProfileSection("new-password-strength");
+}
+
+/**
+ * Exit password change mode and return to display mode
+ */
+export function exitPasswordChangeMode(): void {
+	// Show password display mode, hide password change mode
+	showProfileSection("password-display");
+	hideProfileSection("password-change");
+
+	// Reset form
+	const passwordForm = document.getElementById("password-form") as HTMLFormElement;
+	if (passwordForm) {
+		passwordForm.reset();
+	}
+
+	// Clear any error messages
+	clearPasswordFormErrors();
+
+	// Hide password strength indicator
+	hideProfileSection("new-password-strength");
+
+	// Reset password requirements display
+	resetPasswordRequirements();
+}
+
+/**
+ * Handle password form submission with comprehensive validation and API integration
+ * @param event - Form submit event
+ */
+export async function handlePasswordFormSubmit(event: Event): Promise<void> {
+	event.preventDefault();
+
+	const form = event.target as HTMLFormElement;
+	const sessionInfo = getSessionInfo();
+
+	if (!sessionInfo) {
+		redirectToLogin();
+		return;
+	}
+
+	try {
+		// Get form data
+		const formData = new FormData(form);
+		const passwordFormData: PasswordChangeFormData = {
+			currentPassword: (formData.get("current_password") as string) ?? "",
+			newPassword: (formData.get("new_password") as string) ?? "",
+			confirmPassword: (formData.get("confirm_new_password") as string) ?? ""
+		};
+
+		// Validate using tested utility function
+		const validation = validatePasswordChangeForm(passwordFormData);
+
+		if (!validation.isValid) {
+			displayPasswordFormErrors(validation.errors);
+			return;
+		}
+
+		// Use sanitized data for the API request
+		if (!validation.sanitizedData) {
+			throw new Error("Validation failed - no sanitized data available");
+		}
+
+		const passwordChangeData: PasswordChangeData = {
+			currentPassword: validation.sanitizedData.currentPassword,
+			newPassword: validation.sanitizedData.newPassword
+		};
+
+		// Show loading state
+		setPasswordFormLoading(true);
+
+		// Create and send request using tested utility functions
+		const requestConfig = createPasswordChangeRequest(sessionInfo.id, passwordChangeData);
+		const response = await fetch(requestConfig.url, requestConfig.options);
+
+		// Handle response using tested utility function
+		const apiResponse = await handlePasswordChangeResponse(response);
+
+		if (apiResponse.success) {
+			// Success - exit password change mode and show success message
+			exitPasswordChangeMode();
+			showProfileToast("Password updated successfully", "success");
+		} else {
+			// Handle various error scenarios
+			if (apiResponse.requiresReauth) {
+				const authError = {
+					type: "unauthorized" as const,
+					message: apiResponse.message,
+					redirectRequired: true
+				};
+				handleAuthError(authError);
+			} else if (apiResponse.rateLimited) {
+				showRateLimitInfo();
+				showProfileToast(apiResponse.message, "error");
+			} else {
+				showProfileToast(apiResponse.message, "error");
+			}
+		}
+	} catch (error) {
+		// console.error("Error updating password:", error);
+
+		const errorMessage = (error as Error).message ?? "Failed to update password";
+		showProfileToast(errorMessage, "error");
+
+		// Handle auth errors
+		if (errorMessage.includes("Session") || errorMessage.includes("Unauthorized")) {
+			const authError = {
+				type: "unauthorized" as const,
+				message: errorMessage,
+				redirectRequired: true
+			};
+			handleAuthError(authError);
+		}
+	} finally {
+		setPasswordFormLoading(false);
+	}
+}
+
+/**
+ * Toggle password visibility for a specific input field
+ * @param inputId - The ID of the password input to toggle
+ */
+export function togglePasswordVisibility(inputId: string): void {
+	const passwordInput = document.getElementById(inputId) as HTMLInputElement;
+	const toggleButton = document.querySelector(`[data-target="${inputId}"]`) as HTMLElement;
+	const toggleText = toggleButton?.querySelector(".password-toggle-text") as HTMLElement;
+
+	if (passwordInput && toggleButton && toggleText) {
+		if (passwordInput.type === "password") {
+			passwordInput.type = "text";
+			toggleText.textContent = "Hide";
+		} else {
+			passwordInput.type = "password";
+			toggleText.textContent = "Show";
+		}
+	}
+}
+
+/**
+ * Update password strength indicator based on password value
+ * @param password - The password to analyze
+ */
+export function updatePasswordStrengthIndicator(password: string): void {
+	const strengthContainer = document.getElementById("new-password-strength");
+	const strengthBar = document.getElementById("new-strength-bar");
+	const strengthText = document.getElementById("new-strength-text");
+
+	if (!strengthContainer || !strengthBar || !strengthText) {
+		return;
+	}
+
+	if (!password.trim()) {
+		hideProfileSection("new-password-strength");
+		return;
+	}
+
+	// Show strength indicator
+	showProfileSection("new-password-strength");
+
+	// Calculate password strength (simplified version for UI feedback)
+	let score = 0;
+	let strengthClass = "";
+	let strengthLabel = "";
+
+	// Length scoring
+	if (password.length >= 8) {
+		score += 20;
+	}
+	if (password.length >= 12) {
+		score += 10;
+	}
+
+	// Character type scoring
+	if (/[A-Z]/.test(password)) {
+		score += 20;
+	}
+	if (/[a-z]/.test(password)) {
+		score += 20;
+	}
+	if (/\d/.test(password)) {
+		score += 15;
+	}
+	if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+		score += 15;
+	}
+
+	// Determine strength level
+	if (score < 20) {
+		strengthClass = "very-weak";
+		strengthLabel = "Very Weak";
+	} else if (score < 40) {
+		strengthClass = "weak";
+		strengthLabel = "Weak";
+	} else if (score < 60) {
+		strengthClass = "fair";
+		strengthLabel = "Fair";
+	} else if (score < 80) {
+		strengthClass = "good";
+		strengthLabel = "Good";
+	} else {
+		strengthClass = "excellent";
+		strengthLabel = "Excellent";
+	}
+
+	// Update visual indicator
+	strengthBar.className = `strength-bar ${strengthClass}`;
+	strengthBar.style.width = `${Math.min(score, 100)}%`;
+	strengthText.textContent = strengthLabel;
+	strengthText.className = `strength-text ${strengthClass}`;
+}
+
+/**
+ * Update password requirements checklist based on password value
+ * @param password - The password to check against requirements
+ */
+export function updatePasswordRequirements(password: string): void {
+	const requirements = [
+		{ id: "new-req-length", test: (pwd: string): boolean => pwd.length >= 8 },
+		{ id: "new-req-uppercase", test: (pwd: string): boolean => /[A-Z]/.test(pwd) },
+		{ id: "new-req-lowercase", test: (pwd: string): boolean => /[a-z]/.test(pwd) },
+		{ id: "new-req-number", test: (pwd: string): boolean => /\d/.test(pwd) },
+		{ id: "new-req-symbol", test: (pwd: string): boolean => /[!@#$%^&*(),.?":{}|<>]/.test(pwd) }
+	];
+
+	requirements.forEach(requirement => {
+		const element = document.getElementById(requirement.id);
+		const icon = element?.querySelector(".requirement-icon");
+
+		if (element && icon) {
+			if (requirement.test(password)) {
+				element.classList.add("requirement-met");
+				icon.textContent = "✓";
+			} else {
+				element.classList.remove("requirement-met");
+				icon.textContent = "✗";
+			}
+		}
+	});
+}
+
+/**
+ * Reset password requirements display to initial state
+ */
+export function resetPasswordRequirements(): void {
+	const requirementIds = [
+		"new-req-length",
+		"new-req-uppercase",
+		"new-req-lowercase",
+		"new-req-number",
+		"new-req-symbol"
+	];
+
+	requirementIds.forEach(id => {
+		const element = document.getElementById(id);
+		const icon = element?.querySelector(".requirement-icon");
+
+		if (element && icon) {
+			element.classList.remove("requirement-met");
+			icon.textContent = "✗";
+		}
+	});
+}
+
+/**
+ * Display password form validation errors
+ * @param errors - Validation errors object
+ */
+function displayPasswordFormErrors(errors: Record<string, string>): void {
+	// Clear existing errors first
+	clearPasswordFormErrors();
+
+	// Display each error
+	Object.entries(errors).forEach(([field, message]) => {
+		let errorElementId = "";
+
+		if (field === "currentPassword") {
+			errorElementId = "current-password-error";
+		} else if (field === "newPassword") {
+			errorElementId = "new-password-error";
+		} else if (field === "confirmPassword") {
+			errorElementId = "confirm-new-password-error";
+		}
+
+		if (errorElementId) {
+			const errorElement = document.getElementById(errorElementId);
+			if (errorElement) {
+				errorElement.textContent = message;
+				errorElement.style.display = "block";
+			}
+		}
+	});
+}
+
+/**
+ * Clear all password form validation errors
+ */
+function clearPasswordFormErrors(): void {
+	const errorIds = ["current-password-error", "new-password-error", "confirm-new-password-error"];
+
+	errorIds.forEach(id => {
+		const errorElement = document.getElementById(id);
+		if (errorElement) {
+			errorElement.textContent = "";
+			errorElement.style.display = "none";
+		}
+	});
+}
+
+/**
+ * Set password form loading state
+ * @param loading - Whether form is loading
+ */
+function setPasswordFormLoading(loading: boolean): void {
+	const saveBtn = document.getElementById("save-password-btn");
+	const spinner = saveBtn?.querySelector(".btn-spinner") as HTMLElement;
+	const text = saveBtn?.querySelector(".btn-text") as HTMLElement;
+
+	if (saveBtn && spinner && text) {
+		if (loading) {
+			(saveBtn as HTMLButtonElement).disabled = true;
+			spinner.style.display = "inline-block";
+			text.style.display = "none";
+		} else {
+			(saveBtn as HTMLButtonElement).disabled = false;
+			spinner.style.display = "none";
+			text.style.display = "inline-block";
+		}
+	}
+}
+
+/**
+ * Show rate limiting information
+ */
+function showRateLimitInfo(): void {
+	const rateLimitInfo = document.getElementById("rate-limit-info");
+	if (rateLimitInfo) {
+		rateLimitInfo.style.display = "block";
+
+		// Auto-hide after 10 seconds
+		setTimeout(() => {
+			if (rateLimitInfo) {
+				rateLimitInfo.style.display = "none";
+			}
+		}, 10000);
 	}
 }
 

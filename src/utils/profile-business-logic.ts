@@ -5,7 +5,15 @@
  */
 
 import { sanitizeInput } from "./validation.js";
-import { validateProfileFormData, createProfileDisplayData, type ProfileFormData, type ProfileFormValidationResult, type ProfileDisplayData } from "./profile-ui-utils.js";
+import {
+	validateProfileFormData,
+	createProfileDisplayData,
+	type ProfileFormData,
+	type ProfileDisplayData
+} from "./profile-ui-utils.js";
+
+// Re-export types for test consumption
+export type { ProfileFormData } from "./profile-ui-utils.js";
 
 // Core profile interfaces
 export interface UserProfile {
@@ -13,17 +21,18 @@ export interface UserProfile {
 	email: string;
 	first_name: string;
 	last_name: string;
-	role: "team_lead" | "team_member";
-	is_active: boolean;
+	role?: "team_lead" | "team_member";
+	is_active?: boolean;
 	last_login_at?: string | null;
-	created_at: string;
-	updated_at: string;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface ProfileUpdateData {
 	first_name: string;
 	last_name: string;
 	email: string;
+	[key: string]: unknown;
 }
 
 export interface ProfileBusinessLogicResult {
@@ -89,7 +98,7 @@ export function validateProfileUpdate(formData: ProfileFormData): ProfileBusines
 		if (validationResult.sanitizedData) {
 			// Check for suspicious patterns in names
 			const { first_name, last_name, email } = validationResult.sanitizedData;
-			
+
 			if (first_name.toLowerCase() === last_name.toLowerCase()) {
 				return {
 					success: false,
@@ -112,8 +121,7 @@ export function validateProfileUpdate(formData: ProfileFormData): ProfileBusines
 		}
 
 		return {
-			success: true,
-			data: undefined // No display data for validation-only operation
+			success: true
 		};
 	} catch (error) {
 		return {
@@ -131,13 +139,13 @@ export function calculateProfileCompleteness(userProfile: UserProfile): number {
 	let completedFields = 0;
 	const totalFields = 4; // first_name, last_name, email, role
 
-	if (userProfile.first_name && userProfile.first_name.trim()) {
+	if (userProfile.first_name?.trim()) {
 		completedFields++;
 	}
-	if (userProfile.last_name && userProfile.last_name.trim()) {
+	if (userProfile.last_name?.trim()) {
 		completedFields++;
 	}
-	if (userProfile.email && userProfile.email.trim()) {
+	if (userProfile.email?.trim()) {
 		completedFields++;
 	}
 	if (userProfile.role) {
@@ -160,19 +168,23 @@ export function generateSecurityRecommendations(userProfile: UserProfile): strin
 	} else {
 		const lastLogin = new Date(userProfile.last_login_at);
 		const daysSinceLogin = Math.floor((Date.now() - lastLogin.getTime()) / (1000 * 60 * 60 * 24));
-		
+
 		if (daysSinceLogin > 30) {
 			recommendations.push("It's been a while since your last login. Consider updating your password");
 		}
 	}
 
 	// Check for weak name patterns
-	if (userProfile.first_name.toLowerCase() === userProfile.last_name.toLowerCase()) {
+	if (
+		userProfile.first_name &&
+		userProfile.last_name &&
+		userProfile.first_name.toLowerCase() === userProfile.last_name.toLowerCase()
+	) {
 		recommendations.push("Consider using your full legal name for better account verification");
 	}
 
 	// Check email domain
-	const emailDomain = userProfile.email.split("@")[1];
+	const emailDomain = userProfile.email?.split("@")[1];
 	if (emailDomain && ["gmail.com", "yahoo.com", "hotmail.com"].includes(emailDomain.toLowerCase())) {
 		recommendations.push("Consider using your work email for better team integration");
 	}
@@ -184,7 +196,7 @@ export function generateSecurityRecommendations(userProfile: UserProfile): strin
  * Format profile data for API submission
  * Ensures data is properly formatted for backend
  */
-export function formatProfileForSubmission(formData: ProfileFormData, userId: string): ProfileUpdateData {
+export function formatProfileForSubmission(formData: ProfileFormData): ProfileUpdateData {
 	return {
 		first_name: sanitizeInput(formData.first_name.trim()),
 		last_name: sanitizeInput(formData.last_name.trim()),

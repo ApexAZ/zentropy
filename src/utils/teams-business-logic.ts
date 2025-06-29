@@ -100,24 +100,35 @@ export function validateTeamData(data: CreateTeamData): TeamValidationResult {
 		}
 	}
 
-	return {
-		isValid: Object.keys(errors).length === 0,
-		errors,
-		sanitizedData: Object.keys(errors).length === 0 ? data : undefined
+	const isValid = Object.keys(errors).length === 0;
+	const result: TeamValidationResult = {
+		isValid,
+		errors
 	};
+
+	if (isValid) {
+		result.sanitizedData = data;
+	}
+
+	return result;
 }
 
 /**
  * Process form data into team data with type conversion and sanitization
  */
 export function processTeamFormData(formData: TeamFormData): CreateTeamData {
-	return {
+	const result: CreateTeamData = {
 		name: escapeHtml(formData.name.trim()),
-		description: formData.description ? escapeHtml(formData.description.trim()) : undefined,
 		velocity_baseline: parseInt(formData.velocity_baseline, 10) || 0,
 		sprint_length_days: parseInt(formData.sprint_length_days, 10) || 14,
 		working_days_per_week: parseInt(formData.working_days_per_week, 10) || 5
 	};
+
+	if (formData.description?.trim()) {
+		result.description = escapeHtml(formData.description.trim());
+	}
+
+	return result;
 }
 
 /**
@@ -137,7 +148,7 @@ export function escapeHtml(text: string): string {
 		"/": "&#x2F;"
 	};
 
-	return text.replace(/[&<>"'/]/g, (match) => htmlEscapes[match] || match);
+	return text.replace(/[&<>"'/]/g, match => htmlEscapes[match] ?? match);
 }
 
 /**
@@ -202,16 +213,10 @@ export function calculateTeamCapacity(team: Team): {
 /**
  * Validate team name for uniqueness (used with existing teams list)
  */
-export function validateTeamNameUniqueness(
-	newName: string, 
-	existingTeams: Team[], 
-	excludeTeamId?: string
-): boolean {
+export function validateTeamNameUniqueness(newName: string, existingTeams: Team[], excludeTeamId?: string): boolean {
 	const trimmedName = newName.trim().toLowerCase();
-	
-	return !existingTeams.some(team => 
-		team.name.toLowerCase() === trimmedName && team.id !== excludeTeamId
-	);
+
+	return !existingTeams.some(team => team.name.toLowerCase() === trimmedName && team.id !== excludeTeamId);
 }
 
 /**
@@ -219,19 +224,21 @@ export function validateTeamNameUniqueness(
  */
 export function generateTeamSummary(team: Team): string {
 	const capacity = calculateTeamCapacity(team);
-	
+
 	return `Sprint: ${team.sprint_length_days}d | Velocity: ${team.velocity_baseline} pts | Daily: ${capacity.dailyVelocity} pts`;
 }
 
 /**
  * Validate sprint configuration for business rules
  */
-export function validateSprintConfiguration(sprintDays: number, workingDays: number): {
+export function validateSprintConfiguration(
+	sprintDays: number,
+	workingDays: number
+): {
 	isValid: boolean;
 	warnings: string[];
 } {
 	const warnings: string[] = [];
-	let isValid = true;
 
 	// Check if sprint is too short
 	if (sprintDays < 7) {
@@ -244,7 +251,6 @@ export function validateSprintConfiguration(sprintDays: number, workingDays: num
 	}
 
 	// Check working days vs sprint length
-	const maxWorkingDaysInSprint = Math.floor(sprintDays / 7) * workingDays + Math.min(sprintDays % 7, workingDays);
 	if (workingDays * 2 > sprintDays) {
 		warnings.push("Working days per week seems high relative to sprint length");
 	}
@@ -264,8 +270,8 @@ export function validateSprintConfiguration(sprintDays: number, workingDays: num
  * Filter and sort teams by various criteria
  */
 export function filterAndSortTeams(
-	teams: Team[], 
-	searchTerm: string = "", 
+	teams: Team[],
+	searchTerm: string = "",
 	sortBy: "name" | "velocity" | "sprint_length" | "created" = "name",
 	sortOrder: "asc" | "desc" = "asc"
 ): Team[] {
@@ -273,9 +279,10 @@ export function filterAndSortTeams(
 	let filteredTeams = teams;
 	if (searchTerm.trim()) {
 		const term = searchTerm.toLowerCase();
-		filteredTeams = teams.filter(team => 
-			team.name.toLowerCase().includes(term) ||
-			(team.description && team.description.toLowerCase().includes(term))
+		filteredTeams = teams.filter(
+			team =>
+				team.name.toLowerCase().includes(term) ||
+				(team.description && team.description.toLowerCase().includes(term))
 		);
 	}
 

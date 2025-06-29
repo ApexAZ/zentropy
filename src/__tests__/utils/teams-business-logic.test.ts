@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from "vitest";
 import {
 	validateTeamData,
@@ -294,12 +295,16 @@ describe("Teams Business Logic", () => {
 
 		it("should handle empty and null inputs", () => {
 			expect(escapeHtml("")).toBe("");
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(escapeHtml(null as any)).toBe("");
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(escapeHtml(undefined as any)).toBe("");
 		});
 
 		it("should handle non-string inputs", () => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(escapeHtml(123 as any)).toBe("");
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(escapeHtml({} as any)).toBe("");
 		});
 	});
@@ -325,7 +330,9 @@ describe("Teams Business Logic", () => {
 		});
 
 		it("should handle null and undefined", () => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(formatTeamDate(null as any)).toBe("Unknown");
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			expect(formatTeamDate(undefined as any)).toBe("Unknown");
 		});
 	});

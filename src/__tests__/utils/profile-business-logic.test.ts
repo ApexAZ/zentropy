@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
 	processProfileForDisplay,
@@ -323,7 +324,9 @@ describe("Profile Business Logic", () => {
 
 			const recommendations = generateSecurityRecommendations(userProfile);
 
-			expect(recommendations).toContain("It's been a while since your last login. Consider updating your password");
+			expect(recommendations).toContain(
+				"It's been a while since your last login. Consider updating your password"
+			);
 		});
 
 		it("should recommend better names for matching first/last names", () => {
@@ -390,7 +393,7 @@ describe("Profile Business Logic", () => {
 				email: "  John.Doe@EXAMPLE.COM  "
 			};
 
-			const result = formatProfileForSubmission(formData, "user123");
+			const result = formatProfileForSubmission(formData);
 
 			expect(result).toEqual({
 				first_name: "John", // Sanitized and trimmed
@@ -406,7 +409,7 @@ describe("Profile Business Logic", () => {
 				email: "john.doe@example.com"
 			};
 
-			const result = formatProfileForSubmission(formData, "user123");
+			const result = formatProfileForSubmission(formData);
 
 			expect(result.first_name).toBe("John"); // Script tags and HTML removed, trimmed
 			expect(result.last_name).toBe("Doe"); // HTML tags removed, trimmed
