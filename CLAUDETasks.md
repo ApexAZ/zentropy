@@ -1,6 +1,6 @@
 # Project Tasks and Development Roadmap
 
-This file contains project roadmap, development tasks, priorities, and implementation tracking for the Capacity Planner project. This is a living document that should be updated regularly.
+This file contains project roadmap, development tasks, priorities, and implementation tracking for the Zentropy Product Management platform. This is a living document that should be updated regularly.
 
 ## Development Standards and Patterns
 

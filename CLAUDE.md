@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A Sprint Capacity Planning Tool for agile teams built with Node.js, Express, PostgreSQL, and TypeScript. The application helps teams calculate sprint capacity based on team velocity and calendar availability (PTO, holidays, etc.).
+A comprehensive Product Management platform with project workflows, team collaboration, and capacity planning built with Node.js, Express, PostgreSQL, and TypeScript. The platform streamlines product development from planning to delivery, featuring sprint capacity calculations, team management, project tracking, and workflow automation.
 
 **📋 For project roadmap, development tasks, and implementation tracking, see [CLAUDETasks.md](./CLAUDETasks.md)**
 
