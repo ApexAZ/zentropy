@@ -16,7 +16,7 @@ import {
 	validateProfileFormData,
 	createProfileDisplayData,
 	type ProfileFormData
-} from "../utils/profile-ui-utils.js";
+} from "../utils/ui-core.js";
 
 import {
 	validatePasswordChangeForm,

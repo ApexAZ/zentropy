@@ -4,16 +4,16 @@
  * These functions handle core business logic without DOM dependencies for easy testing
  */
 
-import { sanitizeInput } from "./validation.js";
+import { sanitizeInput } from "./validation-core.js";
 import {
 	validateProfileFormData,
 	createProfileDisplayData,
 	type ProfileFormData,
 	type ProfileDisplayData
-} from "./profile-ui-utils.js";
+} from "./ui-core.js";
 
 // Re-export types for test consumption
-export type { ProfileFormData } from "./profile-ui-utils.js";
+export type { ProfileFormData } from "./ui-core.js";
 
 // Core profile interfaces
 export interface UserProfile {

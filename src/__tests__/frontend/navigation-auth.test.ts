@@ -25,7 +25,7 @@ import {
 	buildLogoutApiUrl,
 	getLogoutRedirectMessage,
 	createSafeUserDisplayInfo
-} from "../../utils/navigation-display-utils.js";
+} from "../../utils/ui-core.js";
 
 import { checkSessionStatus, type SessionInfo } from "../../utils/auth-utils.js";
 

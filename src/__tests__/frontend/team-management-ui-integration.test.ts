@@ -6,7 +6,7 @@ import { renderUserSearchResults, showTeamManagementUI } from "../../utils/team-
 import type { User } from "../../models/User";
 
 // Mock the utility imports since we're testing integration, not utilities
-vi.mock("../../utils/user-display-utils", () => ({
+vi.mock("../../utils/ui-core", () => ({
 	formatUserForDisplay: vi.fn((user: User) => ({
 		id: user.id,
 		displayName: `${user.first_name} ${user.last_name}`,

@@ -13,7 +13,7 @@ import {
 } from "../../utils/profile-business-logic";
 
 // Mock the dependencies
-vi.mock("../../utils/validation", () => ({
+vi.mock("../../utils/validation-core", () => ({
 	sanitizeInput: vi.fn((input: string) => {
 		if (!input || typeof input !== "string") {
 			return "";
@@ -28,12 +28,12 @@ vi.mock("../../utils/validation", () => ({
 	})
 }));
 
-vi.mock("../../utils/profile-ui-utils", () => ({
+vi.mock("../../utils/ui-core", () => ({
 	validateProfileFormData: vi.fn(),
 	createProfileDisplayData: vi.fn()
 }));
 
-import { validateProfileFormData, createProfileDisplayData } from "../../utils/profile-ui-utils";
+import { validateProfileFormData, createProfileDisplayData } from "../../utils/ui-core";
 
 describe("Profile Business Logic", () => {
 	beforeEach(() => {

@@ -38,7 +38,8 @@ import {
 	// Types
 	type PermissionAction
 } from "../../utils/permission-core";
-import type { UserRole } from "../../models/User";
+import type { UserRole, User } from "../../models/User";
+import type { Team, CreateTeamData, TeamMembership } from "../../models/Team";
 
 // Mock the dependencies for role-promotion-utils tests
 vi.mock("../../models/Team", () => ({
@@ -58,6 +59,18 @@ vi.mock("../../models/User", () => ({
 
 import { TeamModel } from "../../models/Team";
 import { UserModel } from "../../models/User";
+
+// Mock references for role promotion tests
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const mockTeamFindAll = vi.mocked(TeamModel.findAll);
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const mockTeamCreate = vi.mocked(TeamModel.create);
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const mockTeamAddMember = vi.mocked(TeamModel.addMember);
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const mockUserFindById = vi.mocked(UserModel.findById);
+// eslint-disable-next-line @typescript-eslint/unbound-method
+const mockUserUpdate = vi.mocked(UserModel.update);
 
 describe("Permission Core", () => {
 	beforeEach(() => {
@@ -622,38 +635,45 @@ describe("Permission Core", () => {
 
 		describe("checkIfFirstTeamForUser", () => {
 			it("should return true when user has no existing teams", async () => {
-				vi.mocked(TeamModel.findAll).mockResolvedValue([]);
+				mockTeamFindAll.mockResolvedValue([]);
 
 				const result = await checkIfFirstTeamForUser("user-123");
 
 				expect(result).toBe(true);
-				expect(TeamModel.findAll).toHaveBeenCalledOnce();
+				expect(mockTeamFindAll).toHaveBeenCalledOnce();
 			});
 
 			it("should return false when user has existing teams", async () => {
-				vi.mocked(TeamModel.findAll).mockResolvedValue([
-					{ id: "team-1", created_by: "user-123", name: "Existing Team" } as any
-				]);
+				const mockTeam: Partial<Team> = {
+					id: "team-1",
+					created_by: "user-123",
+					name: "Existing Team"
+				};
+				mockTeamFindAll.mockResolvedValue([mockTeam as Team]);
 
 				const result = await checkIfFirstTeamForUser("user-123");
 
 				expect(result).toBe(false);
-				expect(TeamModel.findAll).toHaveBeenCalledOnce();
+				expect(mockTeamFindAll).toHaveBeenCalledOnce();
 			});
 
 			it("should return true when other users have teams but not this user", async () => {
-				vi.mocked(TeamModel.findAll).mockResolvedValue([
-					{ id: "team-1", created_by: "other-user", name: "Other Team" } as any
-				]);
+				const mockTeam: Partial<Team> = {
+					id: "team-1",
+					created_by: "other-user",
+					name: "Other Team"
+				};
+				mockTeamFindAll.mockResolvedValue([mockTeam as Team]);
 
 				const result = await checkIfFirstTeamForUser("user-123");
 
 				expect(result).toBe(true);
+				expect(mockTeamFindAll).toHaveBeenCalledOnce();
 			});
 
 			it("should handle database errors", async () => {
 				const error = new Error("Database connection failed");
-				vi.mocked(TeamModel.findAll).mockRejectedValue(error);
+				mockTeamFindAll.mockRejectedValue(error);
 
 				await expect(checkIfFirstTeamForUser("user-123")).rejects.toThrow("Database connection failed");
 			});
@@ -661,24 +681,24 @@ describe("Permission Core", () => {
 
 		describe("promoteUserToTeamLead", () => {
 			it("should successfully promote user to team lead", async () => {
-				const updatedUser = { id: "user-123", role: "team_lead" } as any;
-				vi.mocked(UserModel.update).mockResolvedValue(updatedUser);
+				const updatedUser: Partial<User> = { id: "user-123", role: "team_lead" };
+				mockUserUpdate.mockResolvedValue(updatedUser as User);
 
 				const result = await promoteUserToTeamLead("user-123");
 
 				expect(result).toEqual(updatedUser);
-				expect(UserModel.update).toHaveBeenCalledWith("user-123", { role: "team_lead" });
+				expect(mockUserUpdate).toHaveBeenCalledWith("user-123", { role: "team_lead" });
 			});
 
 			it("should handle update failure", async () => {
-				vi.mocked(UserModel.update).mockResolvedValue(null);
+				mockUserUpdate.mockResolvedValue(null);
 
 				await expect(promoteUserToTeamLead("user-123")).rejects.toThrow("Failed to promote user to team lead");
 			});
 
 			it("should handle database errors", async () => {
 				const error = new Error("Database update failed");
-				vi.mocked(UserModel.update).mockRejectedValue(error);
+				mockUserUpdate.mockRejectedValue(error);
 
 				await expect(promoteUserToTeamLead("user-123")).rejects.toThrow("Database update failed");
 			});
@@ -686,38 +706,38 @@ describe("Permission Core", () => {
 
 		describe("addUserAsTeamMember", () => {
 			it("should successfully add user as team member", async () => {
-				const membership = { team_id: "team-123", user_id: "user-123" } as any;
-				vi.mocked(TeamModel.addMember).mockResolvedValue(membership);
+				const membership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
+				mockTeamAddMember.mockResolvedValue(membership as TeamMembership);
 
 				const result = await addUserAsTeamMember("team-123", "user-123");
 
 				expect(result).toEqual(membership);
-				expect(TeamModel.addMember).toHaveBeenCalledWith("team-123", "user-123");
+				expect(mockTeamAddMember).toHaveBeenCalledWith("team-123", "user-123");
 			});
 
 			it("should handle membership creation errors", async () => {
 				const error = new Error("Failed to add team member");
-				vi.mocked(TeamModel.addMember).mockRejectedValue(error);
+				mockTeamAddMember.mockRejectedValue(error);
 
 				await expect(addUserAsTeamMember("team-123", "user-123")).rejects.toThrow("Failed to add team member");
 			});
 		});
 
 		describe("handleTeamCreationWithRolePromotion", () => {
-			const mockTeam = { id: "team-123", name: "Test Team" } as any;
-			const mockUser = { id: "user-123", role: "basic_user" } as any;
-			const mockMembership = { team_id: "team-123", user_id: "user-123" } as any;
+			const mockTeam: Partial<Team> = { id: "team-123", name: "Test Team" };
+			const mockUser: Partial<User> = { id: "user-123", role: "basic_user" };
+			const mockMembership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
 
 			beforeEach(() => {
-				vi.mocked(UserModel.findById).mockResolvedValue(mockUser);
-				vi.mocked(TeamModel.findAll).mockResolvedValue([]);
-				vi.mocked(TeamModel.create).mockResolvedValue(mockTeam);
-				vi.mocked(UserModel.update).mockResolvedValue({ ...mockUser, role: "team_lead" });
-				vi.mocked(TeamModel.addMember).mockResolvedValue(mockMembership);
+				mockUserFindById.mockResolvedValue(mockUser as User);
+				mockTeamFindAll.mockResolvedValue([]);
+				mockTeamCreate.mockResolvedValue(mockTeam as Team);
+				mockUserUpdate.mockResolvedValue({ ...mockUser, role: "team_lead" } as User);
+				mockTeamAddMember.mockResolvedValue(mockMembership as TeamMembership);
 			});
 
 			it("should handle complete workflow with promotion for basic user's first team", async () => {
-				const teamData = { name: "New Team", created_by: "user-123" } as any;
+				const teamData: CreateTeamData = { name: "New Team", created_by: "user-123" };
 
 				const result = await handleTeamCreationWithRolePromotion(teamData);
 
@@ -727,16 +747,16 @@ describe("Permission Core", () => {
 					membership: mockMembership
 				});
 
-				expect(UserModel.findById).toHaveBeenCalledWith("user-123");
-				expect(TeamModel.findAll).toHaveBeenCalledOnce();
-				expect(TeamModel.create).toHaveBeenCalledWith(teamData);
-				expect(UserModel.update).toHaveBeenCalledWith("user-123", { role: "team_lead" });
-				expect(TeamModel.addMember).toHaveBeenCalledWith("team-123", "user-123");
+				expect(mockUserFindById).toHaveBeenCalledWith("user-123");
+				expect(mockTeamFindAll).toHaveBeenCalledOnce();
+				expect(mockTeamCreate).toHaveBeenCalledWith(teamData);
+				expect(mockUserUpdate).toHaveBeenCalledWith("user-123", { role: "team_lead" });
+				expect(mockTeamAddMember).toHaveBeenCalledWith("team-123", "user-123");
 			});
 
 			it("should handle workflow without promotion for team member", async () => {
-				vi.mocked(UserModel.findById).mockResolvedValue({ ...mockUser, role: "team_member" });
-				const teamData = { name: "New Team", created_by: "user-123" } as any;
+				mockUserFindById.mockResolvedValue({ ...mockUser, role: "team_member" } as User);
+				const teamData: CreateTeamData = { name: "New Team", created_by: "user-123" };
 
 				const result = await handleTeamCreationWithRolePromotion(teamData);
 
@@ -746,23 +766,22 @@ describe("Permission Core", () => {
 					membership: mockMembership
 				});
 
-				expect(UserModel.update).not.toHaveBeenCalled();
+				expect(mockUserUpdate).not.toHaveBeenCalled();
 			});
 
 			it("should handle workflow without promotion for basic user's non-first team", async () => {
-				vi.mocked(TeamModel.findAll).mockResolvedValue([
-					{ id: "existing-team", created_by: "user-123" } as any
-				]);
-				const teamData = { name: "Second Team", created_by: "user-123" } as any;
+				const existingTeam: Partial<Team> = { id: "existing-team", created_by: "user-123" };
+				mockTeamFindAll.mockResolvedValue([existingTeam as Team]);
+				const teamData: CreateTeamData = { name: "Second Team", created_by: "user-123" };
 
 				const result = await handleTeamCreationWithRolePromotion(teamData);
 
 				expect(result.userPromoted).toBe(false);
-				expect(UserModel.update).not.toHaveBeenCalled();
+				expect(mockUserUpdate).not.toHaveBeenCalled();
 			});
 
 			it("should throw error when created_by is missing", async () => {
-				const teamData = { name: "New Team" } as any;
+				const teamData: CreateTeamData = { name: "New Team" };
 
 				await expect(handleTeamCreationWithRolePromotion(teamData)).rejects.toThrow(
 					"Team creator user ID is required"
@@ -770,16 +789,16 @@ describe("Permission Core", () => {
 			});
 
 			it("should throw error when user not found", async () => {
-				vi.mocked(UserModel.findById).mockResolvedValue(null);
-				const teamData = { name: "New Team", created_by: "user-123" } as any;
+				mockUserFindById.mockResolvedValue(null);
+				const teamData: CreateTeamData = { name: "New Team", created_by: "user-123" };
 
 				await expect(handleTeamCreationWithRolePromotion(teamData)).rejects.toThrow("User not found");
 			});
 
 			it("should handle errors in workflow steps", async () => {
 				const error = new Error("Team creation failed");
-				vi.mocked(TeamModel.create).mockRejectedValue(error);
-				const teamData = { name: "New Team", created_by: "user-123" } as any;
+				mockTeamCreate.mockRejectedValue(error);
+				const teamData: CreateTeamData = { name: "New Team", created_by: "user-123" };
 
 				await expect(handleTeamCreationWithRolePromotion(teamData)).rejects.toThrow("Team creation failed");
 			});

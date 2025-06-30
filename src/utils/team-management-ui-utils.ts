@@ -4,7 +4,7 @@ import {
 	validateTeamManagementPermissions,
 	createErrorMessage,
 	isRetryableError
-} from "./user-display-utils";
+} from "./ui-core";
 import { makeUserSearchRequest } from "./api-client-core";
 
 // API response user type (subset of User for display)
