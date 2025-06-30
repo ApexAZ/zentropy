@@ -437,8 +437,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 50,
 					sprint_length_days: 14,
 					working_days_per_week: 5,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.createTeamDisplayData(team);
@@ -469,8 +469,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 60,
 					sprint_length_days: 10,
 					working_days_per_week: 5,
-					created_at: "2023-06-15T12:30:00Z",
-					updated_at: "2023-06-15T12:30:00Z"
+					created_at: new Date("2023-06-15T12:30:00Z"),
+					updated_at: new Date("2023-06-15T12:30:00Z")
 				};
 
 				const result = teamCore.createTeamDisplayData(team, 8);
@@ -488,8 +488,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 40,
 					sprint_length_days: 21,
 					working_days_per_week: 4,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.createTeamDisplayData(team);
@@ -508,8 +508,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 35,
 					sprint_length_days: 7,
 					working_days_per_week: 5,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.createTeamDisplayData(team);
@@ -527,8 +527,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 60,
 					sprint_length_days: 14,
 					working_days_per_week: 5,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.calculateTeamCapacity(team);
@@ -549,8 +549,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 37,
 					sprint_length_days: 10,
 					working_days_per_week: 3,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.calculateTeamCapacity(team);
@@ -568,8 +568,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 50,
 					sprint_length_days: 14,
 					working_days_per_week: 5,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.calculateTeamCapacity(team, 0.8); // 80% utilization
@@ -587,8 +587,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 1,
 					sprint_length_days: 1,
 					working_days_per_week: 1,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				};
 
 				const result = teamCore.calculateTeamCapacity(team);
@@ -608,8 +608,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 50,
 					sprint_length_days: 14,
 					working_days_per_week: 5,
-					created_at: "2023-01-01T00:00:00Z",
-					updated_at: "2023-01-01T00:00:00Z"
+					created_at: new Date("2023-01-01T00:00:00Z"),
+					updated_at: new Date("2023-01-01T00:00:00Z")
 				},
 				{
 					id: "team-2",
@@ -618,8 +618,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 30,
 					sprint_length_days: 10,
 					working_days_per_week: 4,
-					created_at: "2023-02-01T00:00:00Z",
-					updated_at: "2023-02-01T00:00:00Z"
+					created_at: new Date("2023-02-01T00:00:00Z"),
+					updated_at: new Date("2023-02-01T00:00:00Z")
 				},
 				{
 					id: "team-3",
@@ -628,8 +628,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					velocity_baseline: 70,
 					sprint_length_days: 21,
 					working_days_per_week: 5,
-					created_at: "2023-03-01T00:00:00Z",
-					updated_at: "2023-03-01T00:00:00Z"
+					created_at: new Date("2023-03-01T00:00:00Z"),
+					updated_at: new Date("2023-03-01T00:00:00Z")
 				}
 			];
 
@@ -642,9 +642,9 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
 				expect(result).toHaveLength(3);
-				expect(result[0].name).toBe("Alpha Team");
-				expect(result[1].name).toBe("Beta Team");
-				expect(result[2].name).toBe("Gamma Team");
+				expect(result[0]?.name).toBe("Alpha Team");
+				expect(result[1]?.name).toBe("Beta Team");
+				expect(result[2]?.name).toBe("Gamma Team");
 			});
 
 			it("should sort teams by velocity descending", () => {
@@ -655,9 +655,9 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
-				expect(result[0].velocity_baseline).toBe(70);
-				expect(result[1].velocity_baseline).toBe(50);
-				expect(result[2].velocity_baseline).toBe(30);
+				expect(result[0]?.velocity_baseline).toBe(70);
+				expect(result[1]?.velocity_baseline).toBe(50);
+				expect(result[2]?.velocity_baseline).toBe(30);
 			});
 
 			it("should filter teams by search term", () => {
@@ -670,7 +670,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
 				expect(result).toHaveLength(1);
-				expect(result[0].name).toBe("Alpha Team");
+				expect(result[0]?.name).toBe("Alpha Team");
 			});
 
 			it("should filter teams by description search", () => {
@@ -683,7 +683,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
 				expect(result).toHaveLength(1);
-				expect(result[0].name).toBe("Beta Team");
+				expect(result[0]?.name).toBe("Beta Team");
 			});
 
 			it("should handle case-insensitive search", () => {
@@ -696,7 +696,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
 				expect(result).toHaveLength(1);
-				expect(result[0].name).toBe("Gamma Team");
+				expect(result[0]?.name).toBe("Gamma Team");
 			});
 
 			it("should return empty array for no matches", () => {
@@ -719,9 +719,9 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
-				expect(result[0].id).toBe("team-3"); // March (newest)
-				expect(result[1].id).toBe("team-2"); // February
-				expect(result[2].id).toBe("team-1"); // January (oldest)
+				expect(result[0]?.id).toBe("team-3"); // March (newest)
+				expect(result[1]?.id).toBe("team-2"); // February
+				expect(result[2]?.id).toBe("team-1"); // January (oldest)
 			});
 
 			it("should handle empty teams array", () => {
@@ -745,8 +745,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 						velocity_baseline: 40,
 						sprint_length_days: 14,
 						working_days_per_week: 5,
-						created_at: "2023-04-01T00:00:00Z",
-						updated_at: "2023-04-01T00:00:00Z"
+						created_at: new Date("2023-04-01T00:00:00Z"),
+						updated_at: new Date("2023-04-01T00:00:00Z")
 					}
 				];
 
@@ -759,8 +759,8 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(moreTeams, criteria);
 
 				expect(result).toHaveLength(2);
-				expect(result[0].velocity_baseline).toBe(50); // Higher velocity first
-				expect(result[1].velocity_baseline).toBe(40);
+				expect(result[0]?.velocity_baseline).toBe(50); // Higher velocity first
+				expect(result[1]?.velocity_baseline).toBe(40);
 			});
 
 			it("should handle partial word matches", () => {
@@ -773,7 +773,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				const result = teamCore.filterAndSortTeams(sampleTeams, criteria);
 
 				expect(result).toHaveLength(1);
-				expect(result[0].name).toBe("Beta Team");
+				expect(result[0]?.name).toBe("Beta Team");
 			});
 		});
 	});

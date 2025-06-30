@@ -135,6 +135,23 @@ describe("Deployment Readiness - Production Environment Simulation", () => {
 
 		// Start server in background for testing
 		const serverProcess = execAsync('timeout 20s npm run dev || echo "SERVER_START_FAILED"');
+		let serverCleanedUp = false;
+
+		// Ensure server cleanup on completion
+		const cleanupServer = () => {
+			if (!serverCleanedUp) {
+				serverCleanedUp = true;
+				execAsync('pkill -f "npm run dev" || true').catch(() => {
+					// Ignore cleanup errors
+				});
+				execAsync('pkill -f "node dist/server" || true').catch(() => {
+					// Ignore cleanup errors
+				});
+			}
+		};
+
+		// Handle server process completion
+		void serverProcess.finally(cleanupServer);
 
 		// Wait for server to start
 		await new Promise(resolve => setTimeout(resolve, 8000));
@@ -153,7 +170,16 @@ describe("Deployment Readiness - Production Environment Simulation", () => {
 			}
 		}
 
-		await serverProcess;
+		// Clean up server before test completion
+		cleanupServer();
+
+		// Wait for server process to complete
+		try {
+			await serverProcess;
+		} catch (error) {
+			// Expected if timeout kills the process
+		}
+
 		console.log("✅ All critical routes accessible");
 	}, 30000);
 

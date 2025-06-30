@@ -128,26 +128,37 @@ describe("Protected User Routes", () => {
 			let lastError: Error | null = null;
 			let passwordUpdateUser: User | null = null;
 			let passwordUpdateSession: Session | null = null;
+			const DB_OPERATION_TIMEOUT = 5000; // 5 second timeout per operation
 
 			while (retries > 0) {
 				try {
+					// Use timeout for database operations to prevent hanging
+					const timeoutPromise = new Promise((_, reject) => {
+						setTimeout(() => reject(new Error("Database operation timeout")), DB_OPERATION_TIMEOUT);
+					});
 					// Create dedicated user for this test to avoid race conditions
 					const passwordUpdatePassword = "SecureIsolatedP@ssw0rd2024!ZqX";
 					const passwordUpdateEmail = `${TEST_PREFIX}-password-${Date.now()}-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 
-					passwordUpdateUser = await UserModel.create({
-						email: passwordUpdateEmail,
-						password: passwordUpdatePassword,
-						first_name: "Alice",
-						last_name: "Johnson",
-						role: "team_member"
-					});
+					passwordUpdateUser = (await Promise.race([
+						UserModel.create({
+							email: passwordUpdateEmail,
+							password: passwordUpdatePassword,
+							first_name: "Alice",
+							last_name: "Johnson",
+							role: "team_member"
+						}),
+						timeoutPromise
+					])) as User;
 
-					passwordUpdateSession = await SessionModel.create({
-						user_id: passwordUpdateUser.id,
-						ip_address: "192.168.1.200",
-						user_agent: "Test Browser Password Update v1.0"
-					});
+					passwordUpdateSession = (await Promise.race([
+						SessionModel.create({
+							user_id: passwordUpdateUser.id,
+							ip_address: "192.168.1.200",
+							user_agent: "Test Browser Password Update v1.0"
+						}),
+						timeoutPromise
+					])) as Session;
 
 					// Add a small delay to ensure database operations are complete
 					await new Promise(resolve => setTimeout(resolve, 100));

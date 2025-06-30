@@ -75,11 +75,22 @@ describe("Pre-Commit: Server Startup Health Check", () => {
 
 			// Start server in background with timeout
 			const serverPromise = execAsync("timeout 15s node dist/server/index.js");
+			let serverKilled = false;
 
-			// Handle the promise to prevent unhandled rejection
-			serverPromise.catch(() => {
-				// Expected - timeout will kill the server process
-			});
+			// Handle the promise to prevent unhandled rejection and ensure cleanup
+			serverPromise
+				.catch(() => {
+					// Expected - timeout will kill the server process
+				})
+				.finally(() => {
+					// Ensure server process is killed
+					if (!serverKilled) {
+						serverKilled = true;
+						execAsync('pkill -f "node dist/server" || true').catch(() => {
+							// Ignore cleanup errors
+						});
+					}
+				});
 
 			// Wait a moment for server to start
 			await new Promise(resolve => setTimeout(resolve, 4000));

@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation";
 import { validateTeamInput } from "../utils/team-validation";
-import { handleTeamCreationWithRolePromotion } from "../utils/role-promotion-utils";
+import { handleTeamCreationWithRolePromotion } from "../utils/permission-core";
 import { hasUserSearchPermission } from "../utils/user-search-utils";
 import type { UserRole } from "../models/User";
 import { TeamModelExtensions } from "../utils/team-model-extensions";

@@ -51,23 +51,39 @@ describe("Server Startup Reliability Tests", () => {
 
 			// Wait for server to start or timeout
 			const serverStarted = await new Promise<boolean>(resolve => {
+				let retryCount = 0;
+				const MAX_RETRIES = 30; // 15 seconds max (30 * 500ms)
+				let isResolved = false;
+
 				const timeout = setTimeout(() => {
-					resolve(false);
+					if (!isResolved) {
+						isResolved = true;
+						resolve(false);
+					}
 				}, SERVER_STARTUP_TIMEOUT);
 
 				// Check if server is responding
 				const checkServer = async (): Promise<void> => {
+					if (isResolved || retryCount >= MAX_RETRIES) {
+						return;
+					}
+
+					retryCount++;
+
 					try {
 						const response = await fetch(`http://localhost:${TEST_PORT}/health`);
-						if (response.ok) {
+						if (response.ok && !isResolved) {
+							isResolved = true;
 							clearTimeout(timeout);
 							resolve(true);
 						}
 					} catch (error) {
-						// Server not ready yet, continue checking
-						setTimeout(() => {
-							void checkServer();
-						}, 500);
+						// Server not ready yet, continue checking if retries remain
+						if (retryCount < MAX_RETRIES && !isResolved) {
+							setTimeout(() => {
+								void checkServer();
+							}, 500);
+						}
 					}
 				};
 
