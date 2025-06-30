@@ -711,7 +711,7 @@ describe("Profile Core - Consolidated Profile Management Module", () => {
 				const result = shouldProceedWithSubmission(formData, validationResult);
 
 				expect(result.proceed).toBe(false);
-				expect(result.reason).toContain("Please correct the validation errors");
+				expect(result.reason).toContain("First name is required");
 			});
 
 			it("should block submission with empty required fields", () => {

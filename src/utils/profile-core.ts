@@ -397,7 +397,7 @@ export function createAuthError(error: Error): { type: "server"; message: string
 	return {
 		type: "server",
 		message: error.message || "Unknown error",
-		redirectRequired: true
+		redirectRequired: false
 	};
 }
 

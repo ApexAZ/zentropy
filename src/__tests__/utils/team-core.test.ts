@@ -1304,7 +1304,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				teamCore.renderUserSearchResults([], "search-results");
 
 				const mockContainer = mockDocument.getElementById("search-results");
-				expect(mockContainer.innerHTML).toBe("");
+				expect(mockContainer.innerHTML).toBe('<div class="user-search-empty">No users found</div>');
 			});
 
 			it("should handle missing container", () => {
@@ -1357,7 +1357,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 				teamCore.renderUserSearchResults(users, "search-results");
 
 				const mockContainer = mockDocument.getElementById("search-results");
-				expect(mockContainer.innerHTML).toContain('data-action="add-user"');
+				expect(mockContainer.innerHTML).toContain('data-action="add-user-to-team"');
 				expect(mockContainer.innerHTML).toContain('data-user-id="user-1"');
 				expect(mockContainer.innerHTML).toContain("Add to Team");
 			});
@@ -1450,7 +1450,9 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 			beforeEach(() => {
 				const mockContainer = {
 					innerHTML: "",
-					id: "team-management"
+					id: "team-management",
+					setAttribute: vi.fn(),
+					style: { display: "" }
 				};
 				mockDocument.getElementById.mockReturnValue(mockContainer as unknown as HTMLElement);
 
@@ -1463,7 +1465,7 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 					if (id === "team-management") {
 						return mockContainer as unknown as HTMLElement;
 					}
-					if (id === "user-search") {
+					if (id === "user-search-input") {
 						return mockSearchInput as unknown as HTMLInputElement;
 					}
 					return null;
@@ -1490,7 +1492,9 @@ describe("TeamCore - Consolidated Team Management Module", () => {
 			it("should setup search input event listener", () => {
 				teamCore.showTeamManagementUI("team-123", "team-management");
 
-				const mockSearchInput = mockDocument.getElementById("user-search") as unknown as HTMLInputElement & {
+				const mockSearchInput = mockDocument.getElementById(
+					"user-search-input"
+				) as unknown as HTMLInputElement & {
 					addEventListener: Mock;
 				};
 				expect(mockSearchInput.addEventListener).toHaveBeenCalledWith("input", expect.any(Function));
