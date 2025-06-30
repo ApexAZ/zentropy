@@ -27,6 +27,7 @@ A comprehensive Product Management platform with project workflows, team collabo
 ```bash
 # Database setup
 docker-compose up -d                    # Start PostgreSQL container
+./scripts/setup-database.sh            # Initialize zentropy database with full schema (run once)
 
 # Development (Streamlined)
 npm run dev:full                       # Full environment with auto port-cleanup + safety check (RECOMMENDED)
