@@ -104,7 +104,7 @@ export const appConfig: AppConfig = {
 	database: {
 		host: getOptionalEnv("DB_HOST", "localhost"),
 		port: getEnvAsInt("DB_PORT", 5432),
-		name: getOptionalEnv("DB_NAME", "capacity_planner"),
+		name: getOptionalEnv("DB_NAME", "zentropy"),
 		user: getOptionalEnv("DB_USER", "postgres"),
 		password: getOptionalEnv("DB_PASSWORD", "postgres"),
 		ssl: getEnvAsBoolean("DB_SSL", false),

@@ -1,7 +1,7 @@
 {
-	"name": "capacity-planner",
+	"name": "zentropy",
 	"version": "1.0.0",
-	"description": "",
+	"description": "A Sprint Capacity Planning Tool for agile teams built with Node.js, Express, PostgreSQL, and TypeScript. Helps teams calculate sprint capacity based on team velocity and calendar availability.",
 	"main": "dist/server/index.js",
 	"scripts": {
 		"build": "npm run lint && npm run copy-static && tsc",

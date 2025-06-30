@@ -4,5 +4,7 @@
 - add email verification during account creation
 - add user preference of light and dark mode styling
 - add user preference of ADA colorblind friendly light and dark modes
-- Check the run / quality scripts to see if it can be streamlined
+- Rename the project to Zentropy
+~~- Check the run / quality scripts to see if it can be streamlined~~
 - AI Features to monitor chat and teams/zoom calls to produce artifacts
+- Down the road will need API that other tools can interface with it, with mcp and agent support

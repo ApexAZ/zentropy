@@ -17,7 +17,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: testpassword
           POSTGRES_USER: testuser
-          POSTGRES_DB: capacity_planner_test
+          POSTGRES_DB: zentropy_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -41,7 +41,7 @@ jobs:
     - name: Setup test environment
       run: |
         cp .env.example .env.test || echo "No .env.example found"
-        echo "DATABASE_URL=postgresql://testuser:testpassword@localhost:5432/capacity_planner_test" >> .env.test
+        echo "DATABASE_URL=postgresql://testuser:testpassword@localhost:5432/zentropy_test" >> .env.test
         echo "NODE_ENV=test" >> .env.test
     
     - name: Run build health check

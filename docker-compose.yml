@@ -3,9 +3,9 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: capacity_planner_db
+    container_name: zentropy_db
     environment:
-      POSTGRES_DB: capacity_planner
+      POSTGRES_DB: zentropy
       POSTGRES_USER: dev_user
       POSTGRES_PASSWORD: dev_password
     ports:
