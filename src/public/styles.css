@@ -144,6 +144,19 @@ p {
 	background: #fff;
 	border-bottom: 1px solid var(--gray-200);
 	box-shadow: var(--shadow-sm);
+	padding: var(--spacing-lg) 0;
+}
+
+.main-header > h1 {
+	text-align: center;
+	margin: 0 0 var(--spacing-lg) 0;
+	font-size: 1.75rem;
+}
+
+.main-header > h1 a {
+	text-decoration: none;
+	color: var(--primary-blue);
+	font-weight: 700;
 }
 
 .nav-container {
@@ -152,7 +165,7 @@ p {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: var(--spacing-lg) var(--spacing-2xl);
+	padding: 0 var(--spacing-2xl);
 }
 
 .logo a {
@@ -1486,6 +1499,18 @@ main {
 	border-bottom: 1px solid var(--gray-200);
 	padding: var(--spacing-lg) var(--spacing-2xl);
 	box-shadow: var(--shadow-sm);
+	text-align: center;
+}
+
+.auth-header > h1 {
+	margin: 0 0 var(--spacing-lg) 0;
+	font-size: 1.75rem;
+}
+
+.auth-header > h1 a {
+	text-decoration: none;
+	color: var(--primary-blue);
+	font-weight: 700;
 }
 
 .auth-header .logo h1 {
