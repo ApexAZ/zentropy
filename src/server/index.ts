@@ -1,11 +1,11 @@
 import express, { Request, Response } from "express";
 import path from "path";
-import { testConnection } from "../database/connection";
+import { testConnection } from "./database/connection";
 // TESTING: Restore full original configuration
-import calendarEntriesRouter from "../routes/calendar-entries";
-import usersRouter from "../routes/users";
-import teamsRouter from "../routes/teams";
-import invitationsRouter from "../routes/invitations";
+import calendarEntriesRouter from "./routes/calendar-entries";
+import usersRouter from "./routes/users";
+import teamsRouter from "./routes/teams";
+import invitationsRouter from "./routes/invitations";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3000");
@@ -14,7 +14,7 @@ const PORT = parseInt(process.env.PORT ?? "3000");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static file serving - serve HTML, CSS, JS files from public directory
+// Static file serving - serve React build files
 app.use(express.static(path.join(__dirname, "../public")));
 
 // API Routes - FULL ORIGINAL CONFIGURATION RESTORED

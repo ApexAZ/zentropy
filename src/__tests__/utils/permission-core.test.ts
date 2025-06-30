@@ -649,7 +649,7 @@ describe("Permission Core", () => {
 					created_by: "user-123",
 					name: "Existing Team"
 				};
-				mockTeamFindAll.mockResolvedValue([mockTeam as Team]);
+				mockTeamFindAll.mockResolvedValue([mockTeam]);
 
 				const result = await checkIfFirstTeamForUser("user-123");
 
@@ -663,7 +663,7 @@ describe("Permission Core", () => {
 					created_by: "other-user",
 					name: "Other Team"
 				};
-				mockTeamFindAll.mockResolvedValue([mockTeam as Team]);
+				mockTeamFindAll.mockResolvedValue([mockTeam]);
 
 				const result = await checkIfFirstTeamForUser("user-123");
 
@@ -682,7 +682,7 @@ describe("Permission Core", () => {
 		describe("promoteUserToTeamLead", () => {
 			it("should successfully promote user to team lead", async () => {
 				const updatedUser: Partial<User> = { id: "user-123", role: "team_lead" };
-				mockUserUpdate.mockResolvedValue(updatedUser as User);
+				mockUserUpdate.mockResolvedValue(updatedUser);
 
 				const result = await promoteUserToTeamLead("user-123");
 
@@ -707,7 +707,7 @@ describe("Permission Core", () => {
 		describe("addUserAsTeamMember", () => {
 			it("should successfully add user as team member", async () => {
 				const membership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
-				mockTeamAddMember.mockResolvedValue(membership as TeamMembership);
+				mockTeamAddMember.mockResolvedValue(membership);
 
 				const result = await addUserAsTeamMember("team-123", "user-123");
 
@@ -729,11 +729,11 @@ describe("Permission Core", () => {
 			const mockMembership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
 
 			beforeEach(() => {
-				mockUserFindById.mockResolvedValue(mockUser as User);
+				mockUserFindById.mockResolvedValue(mockUser);
 				mockTeamFindAll.mockResolvedValue([]);
-				mockTeamCreate.mockResolvedValue(mockTeam as Team);
+				mockTeamCreate.mockResolvedValue(mockTeam);
 				mockUserUpdate.mockResolvedValue({ ...mockUser, role: "team_lead" } as User);
-				mockTeamAddMember.mockResolvedValue(mockMembership as TeamMembership);
+				mockTeamAddMember.mockResolvedValue(mockMembership);
 			});
 
 			it("should handle complete workflow with promotion for basic user's first team", async () => {
@@ -771,7 +771,7 @@ describe("Permission Core", () => {
 
 			it("should handle workflow without promotion for basic user's non-first team", async () => {
 				const existingTeam: Partial<Team> = { id: "existing-team", created_by: "user-123" };
-				mockTeamFindAll.mockResolvedValue([existingTeam as Team]);
+				mockTeamFindAll.mockResolvedValue([existingTeam]);
 				const teamData: CreateTeamData = { name: "Second Team", created_by: "user-123" };
 
 				const result = await handleTeamCreationWithRolePromotion(teamData);

@@ -6,6 +6,7 @@
 		"moduleResolution": "node",
 		"allowSyntheticDefaultImports": true,
 		"esModuleInterop": true,
+		"jsx": "react-jsx",
 		"allowJs": true,
 		"checkJs": false,
 		"declaration": true,
