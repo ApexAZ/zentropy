@@ -43,5 +43,5 @@ fi
 
 echo ""
 echo "🎉 Recovery complete! You can now run:"
-echo "   npm run dev:full    # Normal development"
-echo "   npm run dev:safe    # With 10s timeout safety"
+echo "   npm run dev         # Normal development"
+echo "   npm run dev:full    # Full environment (DB + server)"

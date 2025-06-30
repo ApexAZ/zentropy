@@ -1,11 +1,11 @@
 {
-	"watch": false,
+	"watch": ["dist/"],
 	"ext": "js",
 	"ignore": ["node_modules"],
-	"delay": 1000,
+	"delay": 500,
 	"env": {
 		"NODE_ENV": "development"
 	},
-	"verbose": true,
+	"verbose": false,
 	"restartable": "rs"
 }

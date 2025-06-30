@@ -49,11 +49,22 @@ function checkPort() {
 						execSync('pkill -9 -f "node.*3000"', { stdio: "pipe" });
 					} catch (e) {}
 
-					// Wait a moment for processes to die
+					// Wait and verify processes are actually dead
 					setTimeout(() => {
-						console.log("✅ Process cleanup complete");
-						resolve(false);
-					}, 3000);
+						// Verify port is now free
+						const verifyServer = net.createServer();
+						verifyServer.listen(PORT, () => {
+							verifyServer.close(() => {
+								console.log("✅ Process cleanup complete - port now available");
+								resolve(false);
+							});
+						});
+
+						verifyServer.on("error", () => {
+							console.log("⚠️  Port still in use after cleanup - may need emergency recovery");
+							resolve(false);
+						});
+					}, 1000);
 				} catch (killError) {
 					console.log("⚠️  Could not kill processes:", killError.message);
 					resolve(false);

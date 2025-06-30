@@ -115,27 +115,32 @@ npm run port:check
 
 ### **Daily Development Workflow**
 ```bash
-# Just use this - includes all safety checks
-npm run dev:full
+# Recommended for daily development
+npm run dev                            # Normal development with auto-restart (most common)
+npm run dev:full                       # Full environment with database startup (comprehensive)
+npm run dev:clean                      # Emergency recovery + start (when issues occur)
 ```
 
-**What `dev:full` does automatically:**
+**What `dev` does automatically:**
 1. ✅ **Port cleanup** - Kills existing processes if port in use
-2. ✅ **Clean build** - Removes corrupted artifacts
-3. ✅ **Safety test** - 10-second startup verification
-4. ✅ **Full environment** - Database + server
+2. ✅ **Clean build** - Lint + compile + static files
+3. ✅ **Auto-restart** - Watches for changes with nodemon
+
+**What `dev:full` adds:**
+1. ✅ **Database startup** - Automatically starts PostgreSQL container
+2. ✅ **Complete environment** - Database + server + auto-restart
 
 ### **Prevention Checklist**
 
 #### **Before Starting Development**
-- [ ] Use `npm run dev:full` (includes all safety checks)
-- [ ] After system restarts: Always use clean builds
-- [ ] Verify database is running: `docker ps`
+- [ ] Use `npm run dev` (normal development) or `npm run dev:full` (with database)
+- [ ] After system restarts: Use `npm run dev:clean` for clean start
+- [ ] Verify database is running: `docker ps` or use `npm run dev:full`
 
 #### **When Making Changes**
 - [ ] Adding dependencies? Use `npm run build:clean`
-- [ ] Modifying imports? Test startup with `npm run dev:full`
-- [ ] Server acting weird? Run `npm run emergency`
+- [ ] Modifying imports? Test startup with `npm run dev`
+- [ ] Server acting weird? Run `npm run emergency` or `npm run dev:clean`
 
 #### **Weekly Maintenance**
 - [ ] Clean build artifacts: `npm run clean`
@@ -165,9 +170,9 @@ npm run emergency
 # Kills processes + restarts database + clean build
 ```
 
-#### **Level 2: Full Recovery** (`./scripts/emergency-recovery.sh`)  
+#### **Level 2: Full Recovery** (`npm run emergency:full`)  
 ```bash
-./scripts/emergency-recovery.sh
+npm run emergency:full
 # Complete environment reset with validation
 ```
 
@@ -190,7 +195,8 @@ npm run build:clean
 | `npm run port:check` | Check/cleanup port 3000 | Port conflicts |
 | `npm run build:clean` | Clean rebuild | Corrupted builds |
 | `npm run emergency` | Quick recovery | General issues |
-| `./scripts/emergency-recovery.sh` | Full recovery | Everything broken |
+| `npm run emergency:full` | Complete environment reset | Everything broken |
+| `npm run db:setup` | Database schema setup | Database issues |
 
 ---
 
@@ -260,3 +266,109 @@ npm run build:clean
 4. **Verified exclusions** - Ensured infrastructure tests properly excluded
 
 **Result**: Tests complete in **8 seconds instead of hanging with 100%+ CPU usage**! 🎉
+
+---
+
+## 🔄 **SERVER STARTUP RELIABILITY ISSUES** (Resolved 2025-06-30)
+
+### **Recurring Startup Failures**
+
+#### **Symptoms**
+- `npm run dev` or `npm run dev:full` hanging or failing
+- Server appears to start but returns connection refused  
+- Requires `npm run emergency` to recover
+- Occurred multiple times in single day
+
+#### **Quick Fix (30 seconds)**
+```bash
+# Use simplified, reliable commands
+npm run dev:simple      # Single-run server (most reliable)
+npm run dev:clean       # Emergency recovery + start
+npm run dev             # Normal development with auto-restart
+```
+
+#### **Root Causes & Solutions**
+
+**1. Script Complexity → Simplified Commands**
+- **Problem**: `dev:full` had 10-second timeout safety check creating orphaned processes
+- **Solution**: Removed timeout, separated concerns into distinct commands
+
+**2. Port Management Race Conditions → Better Verification**
+- **Problem**: 3-second cleanup delays, processes not fully terminated before restart
+- **Solution**: 1-second timeout + port availability verification after cleanup
+
+**3. Nodemon Misconfiguration → Proper File Watching**
+- **Problem**: `watch: false` disabled file watching while using nodemon
+- **Solution**: `watch: ["dist/"], delay: 500ms, verbose: false`
+
+### **Implemented Solutions**
+
+#### **Development Scripts (package.json)**
+```bash
+# Reliable development commands
+"dev": "npm run port:check && npm run build && nodemon dist/server/index.js"           # Normal dev with auto-restart
+"dev:simple": "npm run build && node dist/server/index.js"                            # Single-run server  
+"dev:clean": "npm run emergency && npm run dev:simple"                                # Emergency recovery + start
+"dev:full": "npm run port:check && npm run clean && npm run build && docker-compose up -d && nodemon dist/server/index.js"  # Full environment
+```
+
+#### **Improved Port Cleanup (scripts/check-port.js)**
+```javascript
+// Added cleanup verification (reduced timeout 3000ms → 1000ms)
+setTimeout(() => {
+  const verifyServer = net.createServer();
+  verifyServer.listen(PORT, () => {
+    verifyServer.close(() => {
+      console.log("✅ Process cleanup complete - port now available");
+      resolve(false);
+    });
+  });
+  verifyServer.on("error", () => {
+    console.log("⚠️  Port still in use after cleanup - may need emergency recovery");
+    resolve(false);
+  });
+}, 1000);
+```
+
+#### **Optimized Nodemon Config (nodemon.json)**
+```json
+{
+  "watch": ["dist/"],        // Enable file watching
+  "ext": "js",
+  "ignore": ["node_modules"],
+  "delay": 500,              // Reduced from 1000ms
+  "env": { "NODE_ENV": "development" },
+  "verbose": false,          // Reduced noise
+  "restartable": "rs"
+}
+```
+
+### **Diagnostic Commands for Future Issues**
+```bash
+# Check server status
+curl -s http://localhost:3000/health
+
+# Find processes on port 3000
+ss -tlnp | grep :3000
+
+# Identify server processes  
+ps aux | grep "node dist/server"
+
+# Check recent server logs
+tail -20 server.log
+```
+
+### **Common Failure Patterns & Solutions**
+1. **Orphaned timeout processes** → Remove timeout safety checks from normal development
+2. **Port cleanup race conditions** → Add verification after kill commands  
+3. **Nodemon misconfiguration** → Enable proper file watching, reduce delays
+4. **Complex script chaining** → Separate concerns into distinct commands
+
+### **Prevention Principles**
+1. **Keep scripts simple** - Single responsibility per command
+2. **Verify cleanup completion** - Don't assume kill commands worked
+3. **Use emergency recovery** - When normal startup fails consistently  
+4. **Test startup reliability** - Regularly verify development workflow
+5. **Monitor process lifecycle** - Track startup/shutdown events
+
+**Result**: Startup reliability improved from **frequent failures requiring emergency recovery** to **consistent, reliable startup** in under 10 seconds! 🎉

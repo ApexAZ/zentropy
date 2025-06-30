@@ -539,7 +539,7 @@ describe("Login Validation Utilities", () => {
 ### Essential Commands
 ```bash
 # Core Testing
-npm test                    # Run complete test suite (470+ tests)
+npm test                    # Run complete test suite (980 tests)
 npm run test:watch         # Run tests in watch mode
 npm run test:quality       # Tests + lint + format + type-check (RECOMMENDED)
 
