@@ -416,9 +416,15 @@ export class PasswordPolicy {
 		const feedback: string[] = [];
 
 		// Length scoring
-		if (password.length >= 8) {score += 5;}
-		if (password.length >= 12) {score += 5;}
-		if (password.length >= 16) {score += 8;}
+		if (password.length >= 8) {
+			score += 5;
+		}
+		if (password.length >= 12) {
+			score += 5;
+		}
+		if (password.length >= 16) {
+			score += 8;
+		}
 
 		// Character type scoring - reuse pre-compiled regexes
 		if (this.LOWERCASE_REGEX.test(password)) {
@@ -447,8 +453,12 @@ export class PasswordPolicy {
 
 		// Character diversity scoring
 		const uniqueChars = new Set(password.toLowerCase()).size;
-		if (uniqueChars >= 6) {score += 5;}
-		if (uniqueChars >= 10) {score += 8;}
+		if (uniqueChars >= 6) {
+			score += 5;
+		}
+		if (uniqueChars >= 10) {
+			score += 8;
+		}
 
 		// Length + diversity bonus
 		if (password.length >= 16 && uniqueChars >= 10) {

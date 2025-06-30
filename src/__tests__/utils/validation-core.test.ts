@@ -526,7 +526,9 @@ describe("Validation Core", () => {
 			});
 
 			test("should return excellent for very strong passwords", () => {
-				const result = PasswordPolicy.calculatePasswordStrength("MyVerySecure2024P@ssw0rd!WithExtra$pecialChars");
+				const result = PasswordPolicy.calculatePasswordStrength(
+					"MyVerySecure2024P@ssw0rd!WithExtra$pecialChars"
+				);
 				expect(result.score).toBeGreaterThanOrEqual(80);
 				expect(result.strength).toBe("Excellent");
 			});
@@ -626,7 +628,7 @@ describe("Validation Core", () => {
 		it("should provide consistent validation approach across utilities", () => {
 			// Test that both validation and password utilities follow same error patterns
 			expect(() => validateString(null, "test", { required: true })).toThrow(ValidationError);
-			
+
 			const passwordResult = PasswordPolicy.validateLength("short");
 			expect(passwordResult.isValid).toBe(false);
 			expect(passwordResult.errors).toBeDefined();
@@ -648,7 +650,7 @@ describe("Validation Core", () => {
 		it("should sanitize input and validate email together", () => {
 			const maliciousEmail = "test@example.com<script>alert('xss')</script>";
 			const sanitized = sanitizeInput(maliciousEmail);
-			
+
 			// Should remove script but preserve email
 			expect(sanitized).toBe("test@example.com");
 			expect(isValidEmail(sanitized)).toBe(true);
@@ -670,7 +672,7 @@ describe("Validation Core", () => {
 				userInfo,
 				previousPasswords: []
 			});
-			
+
 			expect(passwordResult.isValid).toBe(true);
 			expect(passwordResult.strength.strength).toMatch(/Good|Excellent/);
 		});
@@ -683,7 +685,7 @@ describe("Validation Core", () => {
 			expect(() => validateEmail(null)).toThrow(ValidationError);
 			expect(() => validatePositiveInteger(null, "test")).toThrow(ValidationError);
 			expect(() => validateDate(null, "test")).toThrow(ValidationError);
-			
+
 			expect(sanitizeInput(null as unknown as string)).toBe("");
 			expect(isValidReturnUrl(null as unknown as string, "https://example.com")).toBe(false);
 		});
@@ -692,7 +694,7 @@ describe("Validation Core", () => {
 			expect(sanitizeInput("")).toBe("");
 			expect(isValidEmail("")).toBe(false);
 			expect(isValidReturnUrl("", "https://example.com")).toBe(false);
-			
+
 			const emptyPasswordResult = PasswordPolicy.validateLength("");
 			expect(emptyPasswordResult.isValid).toBe(false);
 		});
