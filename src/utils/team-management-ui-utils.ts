@@ -5,7 +5,7 @@ import {
 	createErrorMessage,
 	isRetryableError
 } from "./user-display-utils";
-import { makeUserSearchRequest } from "./user-search-api-client";
+import { makeUserSearchRequest } from "./api-client-core";
 
 // API response user type (subset of User for display)
 interface ApiUser {
@@ -100,7 +100,7 @@ export async function handleUserSearch(): Promise<void> {
 		showLoadingState(resultsContainer);
 
 		// Perform search using tested API client
-		const searchResults = await makeUserSearchRequest(query);
+		const searchResults = await makeUserSearchRequest({ query });
 
 		// Hide loading state
 		hideLoadingState(resultsContainer);
