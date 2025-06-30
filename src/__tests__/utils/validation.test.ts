@@ -11,7 +11,7 @@ import {
 	isValidReturnUrl,
 	validateLoginForm,
 	type LoginValidationResult
-} from "../../utils/validation";
+} from "../../utils/validation-core";
 
 describe("ValidationError", () => {
 	it("should create error with message, field, and value", () => {

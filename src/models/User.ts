@@ -1,6 +1,6 @@
 import { pool } from "../database/connection";
 import { PasswordService } from "../services/password-service";
-import type { PasswordValidationOptions } from "../utils/password-policy";
+import type { PasswordValidationOptions } from "../utils/validation-core";
 
 /**
  * User role enumeration for type safety

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { TeamModel } from "../models/Team";
-import { ValidationError } from "../utils/validation";
+import { ValidationError } from "../utils/validation-core";
 import { validateTeamInput } from "../utils/team-validation";
 import { handleTeamCreationWithRolePromotion } from "../utils/permission-core";
 import { hasUserSearchPermission } from "../utils/user-search-utils";

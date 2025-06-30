@@ -3,7 +3,7 @@ import request from "supertest";
 import express from "express";
 import { TeamModel, CreateTeamData, Team } from "../../models/Team";
 import { User } from "../../models/User";
-import { ValidationError } from "../../utils/validation";
+import { ValidationError } from "../../utils/validation-core";
 
 // Mock the TeamModel for integration tests
 vi.mock("../../models/Team");

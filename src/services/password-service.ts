@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { PasswordPolicy, type PasswordValidationOptions } from "../utils/password-policy";
+import { PasswordPolicy, type PasswordValidationOptions } from "../utils/validation-core";
 
 export class PasswordService {
 	private static readonly SALT_ROUNDS = 12;
