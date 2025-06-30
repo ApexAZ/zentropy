@@ -127,7 +127,7 @@ export async function handleLogout(): Promise<void> {
 			updateNavigationState(false);
 
 			// Redirect to login page
-			redirectToLogin("You have been logged out successfully.");
+			redirectToLogin();
 		} else {
 			// Handle logout API errors
 			const errorData = (await response.json()) as ErrorResponse;
@@ -141,7 +141,7 @@ export async function handleLogout(): Promise<void> {
 			updateNavigationState(false);
 
 			// Redirect with error message
-			redirectToLogin(`Logout incomplete: ${errorMessage}`);
+			redirectToLogin();
 		}
 	} catch (error) {
 		// Handle network errors during logout
@@ -154,7 +154,7 @@ export async function handleLogout(): Promise<void> {
 		updateNavigationState(false);
 
 		// Redirect to login with error message
-		redirectToLogin("Network error during logout. Please try again.");
+		redirectToLogin();
 	}
 }
 

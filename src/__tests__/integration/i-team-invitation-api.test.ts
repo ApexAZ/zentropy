@@ -139,24 +139,39 @@ describe("Team Invitation API Integration Tests", () => {
 
 			// Test URL building
 			expect(buildInvitationUrl("team-123")).toBe("/api/teams/team-123/invitations");
-			expect(buildInvitationResponseUrl()).toBe("/api/invitations/respond");
+			expect(buildInvitationResponseUrl("invitation-123")).toBe("/api/invitations/invitation-123/respond");
 
 			// Test request creation
-			const inviteRequest = createSendInvitationRequest("test@example.com", "team_member");
+			const inviteRequest = createSendInvitationRequest({
+				userEmail: "test@example.com",
+				role: "team_member",
+				teamId: "team-123"
+			});
 			expect(inviteRequest.method).toBe("POST");
 			expect(inviteRequest.credentials).toBe("include");
 
-			const responseRequest = createInvitationResponseRequest("token-123", "accept");
+			const responseRequest = createInvitationResponseRequest({
+				invitationId: "invitation-123",
+				action: "accept"
+			});
 			expect(responseRequest.method).toBe("POST");
 
 			const body = JSON.parse(responseRequest.body as string) as { token: string; action: string };
 			expect(body.action).toBe("accept");
 
 			// Test validation
-			const validation = validateInvitationApiParams("team-123", "test@example.com", "team_member");
+			const validation = validateInvitationApiParams({
+				teamId: "team-123",
+				userEmail: "test@example.com",
+				role: "team_member"
+			});
 			expect(validation.isValid).toBe(true);
 
-			const invalidValidation = validateInvitationApiParams("", "invalid-email", "team_member");
+			const invalidValidation = validateInvitationApiParams({
+				teamId: "",
+				userEmail: "invalid-email",
+				role: "team_member"
+			});
 			expect(invalidValidation.isValid).toBe(false);
 		});
 	});

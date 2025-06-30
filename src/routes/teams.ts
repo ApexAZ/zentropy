@@ -12,7 +12,8 @@ import {
 	determineUserRoleForTeam,
 	validateMembershipRequest,
 	sanitizeMembershipData,
-	formatMembershipResponse
+	formatMembershipResponse,
+	type MembershipRecord
 } from "../utils/team-membership-utils";
 import {
 	validateInvitationData,
@@ -139,7 +140,7 @@ router.put("/:id", sessionAuthMiddleware, async (req: Request, res: Response): P
 		}
 
 		// Validate input data
-		const updateData = validateTeamInput(req.body, true);
+		const updateData = validateTeamInput(req.body);
 
 		const updatedTeam = await TeamModel.update(id, updateData);
 		if (!updatedTeam) {
@@ -312,8 +313,18 @@ router.post("/:id/members", sessionAuthMiddleware, async (req: Request, res: Res
 		});
 
 		// Format response
+		const membershipRecord: MembershipRecord = {
+			id: membership.id,
+			user_id: membership.user_id,
+			team_id: membership.team_id,
+			role: membership.role,
+			joined_at: new Date(membership.created_at),
+			created_at: new Date(membership.created_at),
+			updated_at: new Date(membership.created_at)
+		};
+
 		const response = formatMembershipResponse(
-			membership,
+			membershipRecord,
 			{
 				id: userToAdd.id,
 				email: userToAdd.email,

@@ -256,7 +256,7 @@ export class AuthCore {
 		}
 
 		// Skip DOM manipulation in Node.js test environment
-		if (typeof document === "undefined") {
+		if (typeof document === "undefined" || typeof document.createElement !== "function") {
 			return;
 		}
 

@@ -1,4 +1,7 @@
 /**
+ * @vitest-environment jsdom
+ */
+/**
  * Navigation Authentication Integration Tests (Simplified)
  *
  * Focuses on integration workflows using extracted utilities for business logic testing.
@@ -169,7 +172,7 @@ describe("Navigation Authentication Integration Tests", () => {
 			await checkAuthenticationOnLoad();
 
 			// ASSERT - Integration test focuses on API call and workflow
-			expect(mockFetch).toHaveBeenCalledWith("/api/users/session", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
 				method: "GET",
 				credentials: "include"
 			});
@@ -187,7 +190,7 @@ describe("Navigation Authentication Integration Tests", () => {
 			await checkAuthenticationOnLoad();
 
 			// ASSERT - Verify error handling workflow
-			expect(mockFetch).toHaveBeenCalledWith("/api/users/session", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
 				method: "GET",
 				credentials: "include"
 			});

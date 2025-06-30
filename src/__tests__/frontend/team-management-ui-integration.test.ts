@@ -33,6 +33,7 @@ describe("Team Management UI Integration", () => {
 		it("should render user search results with formatted data", () => {
 			// ARRANGE
 			const container = document.createElement("div");
+			container.id = "test-search-results";
 			document.body.appendChild(container);
 
 			const users: User[] = [
@@ -51,7 +52,7 @@ describe("Team Management UI Integration", () => {
 			];
 
 			// ACT
-			renderUserSearchResults(users, container);
+			renderUserSearchResults(users, "test-search-results");
 
 			// ASSERT
 			const userItem = container.querySelector(".user-search-item") as HTMLElement;
@@ -66,10 +67,11 @@ describe("Team Management UI Integration", () => {
 		it("should render empty state when no users found", () => {
 			// ARRANGE
 			const container = document.createElement("div");
+			container.id = "test-empty-results";
 			document.body.appendChild(container);
 
 			// ACT
-			renderUserSearchResults([], container);
+			renderUserSearchResults([], "test-empty-results");
 
 			// ASSERT
 			const emptyState = container.querySelector(".user-search-empty");
@@ -86,21 +88,8 @@ describe("Team Management UI Integration", () => {
 			container.style.display = "none";
 			document.body.appendChild(container);
 
-			const teamLead: User = {
-				id: "user-1",
-				email: "lead@example.com",
-				first_name: "Team",
-				last_name: "Lead",
-				role: "team_lead",
-				is_active: true,
-				password_hash: "hash",
-				last_login_at: null,
-				created_at: new Date("2024-01-01"),
-				updated_at: new Date("2024-01-01")
-			};
-
 			// ACT
-			showTeamManagementUI(teamLead, "team-123");
+			showTeamManagementUI("team-123", "team-management-container");
 
 			// ASSERT
 			expect(container.style.display).toBe("block");
@@ -112,25 +101,12 @@ describe("Team Management UI Integration", () => {
 		it("should hide UI for non-team leads", () => {
 			// ARRANGE
 			const container = document.createElement("div");
-			container.id = "team-management-container";
+			container.id = "team-management-container-2";
 			container.style.display = "block";
 			document.body.appendChild(container);
 
-			const basicUser: User = {
-				id: "user-1",
-				email: "basic@example.com",
-				first_name: "Basic",
-				last_name: "User",
-				role: "basic_user",
-				is_active: true,
-				password_hash: "hash",
-				last_login_at: null,
-				created_at: new Date("2024-01-01"),
-				updated_at: new Date("2024-01-01")
-			};
-
 			// ACT
-			showTeamManagementUI(basicUser, "team-123");
+			showTeamManagementUI("team-123", "team-management-container-2");
 
 			// ASSERT
 			expect(container.style.display).toBe("none");

@@ -141,10 +141,14 @@ describe("Protected User Routes", () => {
 
 						try {
 							const result = await Promise.race([operation, timeoutPromise]);
-							if (timeoutId) clearTimeout(timeoutId);
+							if (timeoutId) {
+								clearTimeout(timeoutId);
+							}
 							return result;
 						} catch (error) {
-							if (timeoutId) clearTimeout(timeoutId);
+							if (timeoutId) {
+								clearTimeout(timeoutId);
+							}
 							throw error;
 						}
 					};
