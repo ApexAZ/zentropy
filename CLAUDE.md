@@ -36,13 +36,17 @@ Zentropy - A comprehensive Product Management platform with project workflows, t
 docker-compose up -d                    # Start PostgreSQL container
 ./scripts/setup-database.sh            # Initialize zentropy database with full schema (run once)
 
-# Development (Streamlined)
-npm run dev                            # Normal development with auto-restart (RECOMMENDED)
-npm run dev:simple                     # Single-run server (most reliable)
+# Development (React + Express)
+npm run dev                            # Build and start server (RECOMMENDED for production testing)
+npm run dev:simple                     # Single-run server build and start (most reliable)
+npm run dev:client                     # Start React development server with hot reload (port 5173)
+npm run dev:fullstack                  # Run both React dev server and Express API concurrently
 npm run dev:clean                      # Emergency recovery + start
 npm run dev:full                       # Full environment (DB + server + auto-restart)
 npm run dev:watch                      # TypeScript compilation in watch mode
-npm run build                          # Build project (includes linting and static file copy)
+npm run build                          # Build both React client and Express server
+npm run build:client                   # Build React app to dist/public
+npm run build:server                   # Build Express server to dist/server
 npm run build:clean                    # Clean build (removes dist/ first)
 npm run port:check                     # Check/cleanup port 3000 manually
 npm start                             # Start production server
@@ -78,15 +82,22 @@ npm run quality                       # Run all quality checks (TypeScript + HTM
 npm run quality:fix                   # Auto-fix all quality issues
 npm run type-check                    # TypeScript compilation check
 
-# Static Files
-npm run copy-static                   # Copy static files to dist/public
+# Build & Static Files
+npm run copy-static                   # Copy legacy static files to dist/public (for backward compatibility)
 npm run check-static                  # Verify static files are present
 ```
 
 ### Health Checks
 ```bash
 curl http://localhost:3000/health      # Check server and database status
+curl http://localhost:5173             # Check React dev server (when running dev:client)
 ```
+
+### Development Workflow Notes
+- **React Development**: Use `npm run dev:client` for hot reload at http://localhost:5173 (proxies API calls to :3000)
+- **Full-Stack Development**: Use `npm run dev:fullstack` for both React and Express servers
+- **Production Testing**: Use `npm run dev` to test the built React app served by Express
+- **API Development**: Use `npm run dev:simple` for server-only development
 
 ## Project Status
 
@@ -111,15 +122,12 @@ curl http://localhost:3000/health      # Check server and database status
 
 ## Current Session Recap
 
-### **Complete React Migration & Modern Architecture** (2025-06-30 15:30:00 -07:00)
-- ✅ **Header Structure Optimization** - Standardized H1 Zentropy logo across all pages with consistent navigation
-- ✅ **Metadata Enhancement** - Added author attribution and optimized title tag placement for SEO
-- ✅ **Server Issue Documentation** - Created comprehensive ServerIssue-2025-06-30.md for reliability improvements
-- ✅ **Layout Improvement** - Split header with Zentropy logo on left, navigation on right with responsive design
-- ✅ **React Architecture Setup** - Complete migration from vanilla HTML/CSS/JS to React + TypeScript
-- ✅ **Professional Profile Dropdown** - Fully functional flyout with user info, navigation, keyboard support
-- ✅ **Modern Build System** - Vite for fast client builds, separate TypeScript configs for client/server
-- ✅ **Component Architecture** - Reusable Header, ProfileDropdown, and page components with proper TypeScript
-- ✅ **Project Structure** - Clean separation: src/client/ (React), src/server/ (Express), proper build pipeline
-- ✅ **Development Workflow** - Updated npm scripts for React development with hot reload capabilities
-- 🔄 **Current Status**: React application fully functional with modern component architecture, ready for complex features
+### **React Testing Library Integration & Quality Standards** (2025-06-30 16:02:00 -07:00)
+- ✅ **React Testing Library Setup** - Installed @testing-library/react, jest-dom, and user-event for comprehensive component testing
+- ✅ **React ESLint Integration** - Added eslint-plugin-react, react-hooks, and jsx-a11y for React-specific code quality
+- ✅ **Vitest React Configuration** - Updated vitest.config.ts with React plugin, jsdom environment, and test setup file
+- ✅ **Component Test Suite** - Created example tests for Header and ProfileDropdown components with full RTL patterns
+- ✅ **Test Coverage Verification** - All 14 React component tests passing with proper user interaction simulation
+- ✅ **Build Integration** - Confirmed React app builds and serves correctly through Express with production-ready setup
+- ✅ **Testing Infrastructure Complete** - Professional React testing foundation ready for TDD component development
+- 🔄 **Current Status**: Modern React + TypeScript architecture with comprehensive testing capabilities established

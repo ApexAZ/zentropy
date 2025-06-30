@@ -72,7 +72,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange }) => {
         </svg>
       </button>
       
-      <div className={`profile-menu ${isOpen ? 'show' : ''}`} role="menu">
+      {isOpen && (
+        <div className="profile-menu show" role="menu">
         <div className="profile-menu-header">
           <div className="profile-avatar">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
@@ -143,7 +144,8 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange }) => {
           </svg>
           <span>Sign Out</span>
         </button>
-      </div>
+        </div>
+      )}
     </div>
   )
 }
