@@ -45,7 +45,7 @@ import {
 	handleProfileApiResponse
 } from "../../utils/profile-core";
 
-import { getSessionInfo, redirectToLogin } from "../../utils/auth-utils";
+import { getSessionInfo, redirectToLogin } from "../../utils/auth-core";
 
 describe("Profile Workflow Tests", () => {
 	beforeEach(() => {

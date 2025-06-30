@@ -365,7 +365,9 @@ describe("Profile Core - Consolidated Profile Management Module", () => {
 
 				const recommendations = generateSecurityRecommendations(userProfile);
 
-				expect(recommendations).toContain("Consider using your full legal name for better account verification");
+				expect(recommendations).toContain(
+					"Consider using your full legal name for better account verification"
+				);
 			});
 
 			it("should recommend work email for personal email domains", () => {
@@ -1037,7 +1039,9 @@ describe("Profile Core - Consolidated Profile Management Module", () => {
 					json: () => Promise.resolve({})
 				} as Response;
 
-				await expect(handleProfileApiResponse(mockResponse)).rejects.toThrow("Request failed: 500 Internal Server Error");
+				await expect(handleProfileApiResponse(mockResponse)).rejects.toThrow(
+					"Request failed: 500 Internal Server Error"
+				);
 			});
 
 			it("should handle JSON parsing errors", async () => {
@@ -1095,7 +1099,7 @@ describe("Profile Core - Consolidated Profile Management Module", () => {
 
 			// Extract form data
 			const formData = extractProfileFormData(formElements);
-			
+
 			// Mock validation
 			vi.mocked(validateProfileFormData).mockReturnValue({
 				isValid: true,
@@ -1120,7 +1124,7 @@ describe("Profile Core - Consolidated Profile Management Module", () => {
 			// Test error propagation through the system
 			const error = new Error("Database connection failed");
 			const authError = createAuthError(error);
-			
+
 			expect(authError.type).toBe("server");
 			expect(authError.message).toBe("Database connection failed");
 

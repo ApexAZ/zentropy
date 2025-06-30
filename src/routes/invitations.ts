@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { TeamModelExtensions } from "../utils/team-model-extensions";
+import { teamCore, type TeamMembershipWithRole } from "../utils/team-core";
 import {
 	validateInvitationResponse,
 	isInvitationExpired,
@@ -83,7 +83,7 @@ router.post("/respond", sessionAuthMiddleware, async (req: Request, res: Respons
 			const shouldPromote = shouldPromoteUserOnAccept(user.role as UserRole, invitation.role);
 
 			// Add user to team
-			const membership = await TeamModelExtensions.addMemberWithRole({
+			const membership: TeamMembershipWithRole = teamCore.addMemberWithRole({
 				team_id: invitation.team_id,
 				user_id: user.id,
 				role: roleForTeam
@@ -104,7 +104,7 @@ router.post("/respond", sessionAuthMiddleware, async (req: Request, res: Respons
 					userId: membership.user_id,
 					teamId: membership.team_id,
 					role: membership.role,
-					joinedAt: membership.joined_at.toISOString()
+					joinedAt: membership.created_at
 				},
 				user: {
 					id: user.id,

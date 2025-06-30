@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { validateUserPermissions, type PermissionAction } from "../utils/permission-controls";
+import { validateUserPermissions, type PermissionAction } from "../utils/permission-core";
 import type { UserRole } from "../models/User";
 
 /**

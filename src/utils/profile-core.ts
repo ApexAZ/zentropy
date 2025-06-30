@@ -409,12 +409,7 @@ export function getProfileInitializationSteps(sessionInfo: SessionInfo | null): 
 		return ["Redirect to login"];
 	}
 
-	const steps = [
-		"Load user session",
-		"Fetch profile data",
-		"Initialize form",
-		"Setup event handlers"
-	];
+	const steps = ["Load user session", "Fetch profile data", "Initialize form", "Setup event handlers"];
 
 	if (sessionInfo.role === "team_lead") {
 		steps.push("Setup team lead permissions");
@@ -487,7 +482,7 @@ export function validateProfileData(profileData: Partial<UserProfile>): ProfileV
  */
 export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateData {
 	const result: ProfileUpdateData = {};
-	
+
 	if (input.first_name !== undefined) {
 		result.first_name = sanitizeInput(input.first_name);
 	}
@@ -497,14 +492,14 @@ export function sanitizeProfileInput(input: ProfileUpdateData): ProfileUpdateDat
 	if (input.email !== undefined) {
 		result.email = input.email; // Email doesn't need HTML sanitization, just validation
 	}
-	
+
 	// Copy any additional properties
 	Object.keys(input).forEach(key => {
 		if (!["first_name", "last_name", "email"].includes(key)) {
 			result[key] = input[key];
 		}
 	});
-	
+
 	return result;
 }
 
@@ -539,7 +534,7 @@ export async function handleProfileApiResponse<T>(response: Response): Promise<T
 	// Handle error responses
 	let errorMessage: string;
 	try {
-		const errorData = await response.json() as { error?: string };
+		const errorData = (await response.json()) as { error?: string };
 		errorMessage = errorData.error ?? `Request failed: ${response.status} ${response.statusText}`;
 	} catch {
 		errorMessage = `Request failed: ${response.status} ${response.statusText}`;

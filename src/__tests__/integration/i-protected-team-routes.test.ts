@@ -3,7 +3,7 @@ import request from "supertest";
 import { UserModel, type User } from "../../models/User";
 import { SessionModel, type Session } from "../../models/Session";
 import { TeamModel, type Team } from "../../models/Team";
-import { type TeamMembershipWithRole } from "../../utils/team-model-extensions";
+import { type TeamMembershipWithRole } from "../../utils/team-core";
 import { testConnection } from "../../database/connection";
 import type { Request, Response, NextFunction } from "express";
 

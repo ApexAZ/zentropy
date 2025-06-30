@@ -19,7 +19,7 @@ import type { User, UserRole } from "../models/User.js";
 // Type definitions - consolidating all team-related interfaces
 export interface CreateTeamData {
 	name: string;
-	description: string;
+	description?: string;
 	velocity_baseline: number;
 	sprint_length_days: number;
 	working_days_per_week: number;
@@ -120,8 +120,8 @@ export class TeamCore {
 			errors.name = "Team name must be less than 255 characters";
 		}
 
-		// Description validation
-		if (data.description && data.description.length > 1000) {
+		// Description validation (optional field)
+		if (data.description !== undefined && data.description.length > 1000) {
 			errors.description = "Team description must be less than 1000 characters";
 		}
 
@@ -160,13 +160,19 @@ export class TeamCore {
 	 * Sanitize team data to prevent XSS and normalize inputs
 	 */
 	private sanitizeTeamData(data: CreateTeamData): CreateTeamData {
-		return {
+		const sanitized: CreateTeamData = {
 			name: this.escapeHtml(data.name.trim()),
-			description: this.escapeHtml(data.description.trim()),
 			velocity_baseline: data.velocity_baseline,
 			sprint_length_days: data.sprint_length_days,
 			working_days_per_week: data.working_days_per_week
 		};
+
+		// Only include description if it exists
+		if (data.description !== undefined) {
+			sanitized.description = this.escapeHtml(data.description.trim());
+		}
+
+		return sanitized;
 	}
 
 	/**
@@ -424,6 +430,50 @@ export class TeamCore {
 	// ========================
 
 	/**
+	 * Extract string value from FormData
+	 */
+	extractStringFromFormData(formData: FormData, key: string): string {
+		const value = formData.get(key);
+		return typeof value === "string" ? value.trim() : "";
+	}
+
+	/**
+	 * Extract numeric value from FormData
+	 */
+	extractNumberFromFormData(formData: FormData, key: string): number {
+		const value = formData.get(key);
+		const numValue = typeof value === "string" ? parseFloat(value) : NaN;
+		return isNaN(numValue) ? 0 : numValue;
+	}
+
+	/**
+	 * Validate team form data and return validation result
+	 */
+	validateTeamFormData(formData: FormData): TeamValidationResult {
+		const description = this.extractStringFromFormData(formData, "description");
+		const data: CreateTeamData = {
+			name: this.extractStringFromFormData(formData, "name"),
+			velocity_baseline: this.extractNumberFromFormData(formData, "velocity_baseline"),
+			sprint_length_days: this.extractNumberFromFormData(formData, "sprint_length_days"),
+			working_days_per_week: this.extractNumberFromFormData(formData, "working_days_per_week")
+		};
+
+		// Only include description if it's not empty
+		if (description) {
+			data.description = description;
+		}
+
+		return this.validateTeamData(data);
+	}
+
+	/**
+	 * Create mock FormData getter for testing
+	 */
+	createMockFormDataGetter(mockData: Record<string, string>): (key: string) => string | null {
+		return (key: string) => mockData[key] ?? null;
+	}
+
+	/**
 	 * Extract form data from DOM form element
 	 */
 	extractFormData(form: HTMLFormElement): TeamFormData {
@@ -595,6 +645,9 @@ export class TeamCore {
 // Export singleton instance for consistent usage across the application
 export const teamCore = new TeamCore();
 
+// Export class as TeamModelExtensions for backward compatibility
+export const TeamModelExtensions = TeamCore;
+
 // Export individual functions for backward compatibility during migration
 export const validateTeamData = teamCore.validateTeamData.bind(teamCore);
 export const processTeamFormData = teamCore.processTeamFormData.bind(teamCore);
@@ -612,3 +665,9 @@ export const createFormValidator = teamCore.createFormValidator.bind(teamCore);
 export const renderUserSearchResults = teamCore.renderUserSearchResults.bind(teamCore);
 export const handleUserSearch = teamCore.handleUserSearch.bind(teamCore);
 export const showTeamManagementUI = teamCore.showTeamManagementUI.bind(teamCore);
+
+// Export new form data utilities
+export const extractStringFromFormData = teamCore.extractStringFromFormData.bind(teamCore);
+export const extractNumberFromFormData = teamCore.extractNumberFromFormData.bind(teamCore);
+export const validateTeamFormData = teamCore.validateTeamFormData.bind(teamCore);
+export const createMockFormDataGetter = teamCore.createMockFormDataGetter.bind(teamCore);

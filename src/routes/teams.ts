@@ -1,11 +1,11 @@
 import { Router, Request, Response } from "express";
 import { TeamModel } from "../models/Team";
 import { ValidationError } from "../utils/validation-core";
-import { validateTeamInput } from "../utils/team-validation";
+import { validateTeamInput } from "../utils/team-core";
 import { handleTeamCreationWithRolePromotion } from "../utils/permission-core";
 import { hasUserSearchPermission } from "../utils/user-search-utils";
 import type { UserRole } from "../models/User";
-import { TeamModelExtensions } from "../utils/team-model-extensions";
+import { teamCore } from "../utils/team-core";
 import {
 	validateTeamMembership,
 	canAddUserToTeam,
@@ -291,7 +291,7 @@ router.post("/:id/members", sessionAuthMiddleware, async (req: Request, res: Res
 		}
 
 		// Check for existing membership
-		const existingMemberships = await TeamModelExtensions.getTeamMemberships(teamId);
+		const existingMemberships = teamCore.getTeamMemberships();
 		const conflictCheck = canAddUserToTeam(sanitizedRequest.userId, teamId, existingMemberships);
 		if (!conflictCheck.canAdd) {
 			res.status(409).json({
@@ -305,7 +305,7 @@ router.post("/:id/members", sessionAuthMiddleware, async (req: Request, res: Res
 		const roleChanged = userToAdd.role === "basic_user" && assignedRole === "team_member";
 
 		// Add user to team
-		const membership = await TeamModelExtensions.addMemberWithRole({
+		const membership = teamCore.addMemberWithRole({
 			team_id: teamId,
 			user_id: sanitizedRequest.userId,
 			role: assignedRole
@@ -388,7 +388,7 @@ router.post("/:id/invitations", sessionAuthMiddleware, async (req: Request, res:
 		const sanitizedData = sanitizeInvitationData(invitationData);
 
 		// Check if user is already a team member
-		const existingMemberships = await TeamModelExtensions.getTeamMemberships(teamId);
+		const existingMemberships = teamCore.getTeamMemberships();
 		const existingUser = await UserModel.findByEmail(sanitizedData.invitedEmail);
 
 		if (existingUser) {

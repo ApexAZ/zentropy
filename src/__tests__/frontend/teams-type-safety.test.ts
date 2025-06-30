@@ -11,7 +11,7 @@ import {
 	validateTeamFormData,
 	createMockFormDataGetter,
 	type CreateTeamData
-} from "../../utils/team-form-processing-utils";
+} from "../../utils/team-core";
 
 // Type definitions matching teams.ts
 interface Team {

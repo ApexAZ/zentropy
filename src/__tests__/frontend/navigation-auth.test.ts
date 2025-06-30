@@ -27,7 +27,7 @@ import {
 	createSafeUserDisplayInfo
 } from "../../utils/ui-core.js";
 
-import { checkSessionStatus, type SessionInfo } from "../../utils/auth-utils.js";
+import { checkSessionStatus, type SessionInfo } from "../../utils/auth-core.js";
 
 // Minimal mock interfaces for integration testing
 interface MockResponse {

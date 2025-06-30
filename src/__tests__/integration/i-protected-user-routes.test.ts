@@ -132,15 +132,28 @@ describe("Protected User Routes", () => {
 
 			while (retries > 0) {
 				try {
-					// Use timeout for database operations to prevent hanging
-					const timeoutPromise = new Promise((_, reject) => {
-						setTimeout(() => reject(new Error("Database operation timeout")), DB_OPERATION_TIMEOUT);
-					});
+					// Create helper function for timeout operations
+					const withTimeout = async <T>(operation: Promise<T>, timeoutMs: number): Promise<T> => {
+						let timeoutId: NodeJS.Timeout | undefined;
+						const timeoutPromise = new Promise<never>((_, reject) => {
+							timeoutId = setTimeout(() => reject(new Error("Database operation timeout")), timeoutMs);
+						});
+
+						try {
+							const result = await Promise.race([operation, timeoutPromise]);
+							if (timeoutId) clearTimeout(timeoutId);
+							return result;
+						} catch (error) {
+							if (timeoutId) clearTimeout(timeoutId);
+							throw error;
+						}
+					};
+
 					// Create dedicated user for this test to avoid race conditions
 					const passwordUpdatePassword = "SecureIsolatedP@ssw0rd2024!ZqX";
 					const passwordUpdateEmail = `${TEST_PREFIX}-password-${Date.now()}-${Math.random().toString(36).substring(2, 11)}@${TEST_DOMAIN}`;
 
-					passwordUpdateUser = (await Promise.race([
+					passwordUpdateUser = await withTimeout(
 						UserModel.create({
 							email: passwordUpdateEmail,
 							password: passwordUpdatePassword,
@@ -148,17 +161,17 @@ describe("Protected User Routes", () => {
 							last_name: "Johnson",
 							role: "team_member"
 						}),
-						timeoutPromise
-					])) as User;
+						DB_OPERATION_TIMEOUT
+					);
 
-					passwordUpdateSession = (await Promise.race([
+					passwordUpdateSession = await withTimeout(
 						SessionModel.create({
 							user_id: passwordUpdateUser.id,
 							ip_address: "192.168.1.200",
 							user_agent: "Test Browser Password Update v1.0"
 						}),
-						timeoutPromise
-					])) as Session;
+						DB_OPERATION_TIMEOUT
+					);
 
 					// Add a small delay to ensure database operations are complete
 					await new Promise(resolve => setTimeout(resolve, 100));

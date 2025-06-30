@@ -4,13 +4,7 @@
  * Integrates with auth-utils for session management and security
  */
 
-import {
-	checkSessionStatus,
-	clearSessionInfo,
-	redirectToLogin,
-	handleAuthError,
-	type AuthError
-} from "./auth-utils.js";
+import { checkSessionStatus, clearSessionInfo, redirectToLogin, handleAuthError, type AuthError } from "./auth-core.js";
 
 // Type definitions for navigation authentication
 export interface UserDisplayInfo {
@@ -38,6 +32,10 @@ interface ErrorResponse {
  * Checks session and updates navigation accordingly
  */
 export function initializeNavigation(containerId: string): void {
+	if (typeof document === "undefined") {
+		return;
+	}
+
 	const container = document.getElementById(containerId);
 	if (!container) {
 		// eslint-disable-next-line no-console
@@ -196,6 +194,10 @@ function setupNavigationEventListeners(container: HTMLElement): void {
  * Get navigation DOM elements with null safety
  */
 function getNavigationElements(): NavigationElements {
+	if (typeof document === "undefined") {
+		return { container: null, userInfo: null, logoutButton: null };
+	}
+
 	return {
 		container: document.getElementById("nav-container"),
 		userInfo: document.getElementById("user-info"),
@@ -294,6 +296,10 @@ export function createNavigationHTML(): string {
  * Creates consistent navigation structure and applies authentication state
  */
 export function initializeStandardNavigation(containerId: string): void {
+	if (typeof document === "undefined") {
+		return;
+	}
+
 	const container = document.getElementById(containerId);
 	if (!container) {
 		// eslint-disable-next-line no-console

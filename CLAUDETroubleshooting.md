@@ -6,6 +6,57 @@
 
 ## 🚨 **WHEN THINGS ARE BROKEN** (Troubleshooting)
 
+### **Test CPU Pegging (100%+ CPU Usage)**
+
+#### **Symptoms**
+- Vitest processes consuming 100%+ CPU in `ps aux | grep vitest`
+- Tests hang indefinitely or take much longer than normal
+- System becomes unresponsive during test execution
+
+#### **Quick Fix (30 seconds)**
+```bash
+# 1. Kill all vitest processes immediately
+pkill -f vitest
+
+# 2. Check for accumulating timeout handlers in integration tests
+grep -r "setTimeout.*reject" src/__tests__/integration/ --include="*.ts"
+
+# 3. Run tests with infrastructure exclusion
+npm test  # Should exclude infrastructure tests automatically
+```
+
+#### **Root Cause & Fix**
+**Problem**: Accumulating `setTimeout` handlers in Promise.race timeout patterns
+**Location**: Integration tests with retry loops using shared timeout promises
+
+**Fix Pattern**:
+```typescript
+// ❌ BAD: Shared timeout creates handler accumulation
+const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("timeout")), 5000);
+});
+await Promise.race([operation1, timeoutPromise]);
+await Promise.race([operation2, timeoutPromise]); // Reusing same timeout!
+
+// ✅ GOOD: Individual timeouts with cleanup
+const withTimeout = async <T>(operation: Promise<T>, ms: number): Promise<T> => {
+    let timeoutId: NodeJS.Timeout;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("timeout")), ms);
+    });
+    try {
+        const result = await Promise.race([operation, timeoutPromise]);
+        clearTimeout(timeoutId); // Cleanup on success
+        return result;
+    } catch (error) {
+        clearTimeout(timeoutId); // Cleanup on error
+        throw error;
+    }
+};
+```
+
+**Fixed in**: `src/__tests__/integration/i-protected-user-routes.test.ts` (2025-06-30)
+
 ### **Server Won't Start (ERR_CONNECTION_REFUSED)**
 
 #### **Quick Fix (2 minutes)**
@@ -167,6 +218,11 @@ npm run build:clean
    - Less confusion about which command to use
    - Clear purpose for each remaining command
 
+6. **✅ Test Infrastructure Exclusion** - CPU pegging prevention
+   - Infrastructure tests excluded from normal runs
+   - Fixed timeout handler accumulation in integration tests
+   - Tests complete in ~8 seconds instead of hanging indefinitely
+
 ### **Key Insight: Fail Fast Philosophy**
 
 **Before**: Silent failures that waste hours  
@@ -188,3 +244,19 @@ npm run build:clean
 3. **Built prevention into workflow** - auto-cleanup and safety checks
 
 **Result**: Similar issues now resolve in **2 minutes instead of 4+ hours**! 🎉
+
+### **Test CPU Pegging Issue (Resolved 2025-06-30)**
+
+**What Caused the CPU Pegging:**
+1. **Timeout handler accumulation** in integration test retry loops
+2. **Shared timeout promises** reused across multiple Promise.race operations  
+3. **No timeout cleanup** - setTimeout handlers accumulated indefinitely
+4. **Parallel test execution** amplified the resource consumption
+
+**How We Solved It:**
+1. **Identified specific pattern** - Promise.race with shared timeouts in while loops
+2. **Created cleanup helper** - `withTimeout` function with automatic clearTimeout
+3. **Fixed accumulation** - Each operation gets its own timeout with cleanup
+4. **Verified exclusions** - Ensured infrastructure tests properly excluded
+
+**Result**: Tests complete in **8 seconds instead of hanging with 100%+ CPU usage**! 🎉

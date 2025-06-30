@@ -135,7 +135,7 @@ describe("Team Invitation API Integration Tests", () => {
 				createSendInvitationRequest,
 				createInvitationResponseRequest,
 				validateInvitationApiParams
-			} = await import("../../utils/team-invitation-api-client");
+			} = await import("../../utils/api-client-core");
 
 			// Test URL building
 			expect(buildInvitationUrl("team-123")).toBe("/api/teams/team-123/invitations");

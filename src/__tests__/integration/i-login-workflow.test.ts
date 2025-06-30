@@ -21,8 +21,8 @@ import { SessionModel } from "../../models/Session";
 import usersRouter from "../../routes/users";
 
 // Import business logic utilities for integration validation
-import { validateLoginForm, sanitizeLoginInput } from "../../utils/login-validation.js";
-import { createLoginRequest, parseLoginResponse, parseErrorResponse } from "../../utils/login-api.js";
+import { validateLoginForm, sanitizeLoginInput } from "../../utils/auth-core.js";
+import { createLoginRequest, parseLoginResponse, parseErrorResponse } from "../../utils/auth-core.js";
 
 describe("Login Workflow Integration Tests", () => {
 	let app: express.Application;

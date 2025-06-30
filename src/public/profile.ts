@@ -591,7 +591,10 @@ export async function handlePasswordFormSubmit(event: Event): Promise<void> {
 		setPasswordFormLoading(true);
 
 		// Create and send request using tested utility functions
-		const requestConfig = createPasswordChangeRequest(passwordChangeData);
+		const requestConfig = createPasswordChangeRequest(sessionInfo.id, {
+			currentPassword: passwordChangeData.currentPassword,
+			newPassword: passwordChangeData.newPassword
+		});
 		const response = await fetch(requestConfig.url, requestConfig.options);
 
 		// Handle response using tested utility function

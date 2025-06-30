@@ -40,7 +40,7 @@ import {
 	sanitizePasswordChangeInput,
 	validatePasswordChangeForm,
 	createPasswordChangeRequest
-} from "../../utils/password-change-utils.js";
+} from "../../utils/auth-core.js";
 
 // Note: Auth utils would be used for frontend session management
 // In this integration test, we use direct API calls

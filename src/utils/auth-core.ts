@@ -97,12 +97,19 @@ export interface PasswordChangeRequest {
 export interface PasswordChangeApiResponse {
 	success: true;
 	message: string;
+	requiresReauth?: boolean;
+	rateLimited?: boolean;
 }
+
+// Backward compatibility alias - union type for success and error cases
+export type PasswordChangeResponse = PasswordChangeApiResponse | PasswordChangeApiError;
 
 export interface PasswordChangeApiError {
 	success: false;
 	message: string;
 	error?: string;
+	requiresReauth?: boolean;
+	rateLimited?: boolean;
 }
 
 export interface UserDisplayInfo {
@@ -246,6 +253,11 @@ export class AuthCore {
 		if (error.redirectRequired) {
 			this.clearSessionInfo();
 			this.redirectToLogin();
+		}
+
+		// Skip DOM manipulation in Node.js test environment
+		if (typeof document === "undefined") {
+			return;
 		}
 
 		// Remove any existing warning
@@ -485,11 +497,14 @@ export class AuthCore {
 	/**
 	 * Create password change request configuration
 	 */
-	createPasswordChangeRequest(data: PasswordChangeFormData): PasswordChangeRequest {
+	createPasswordChangeRequest(
+		userId: string,
+		data: { currentPassword: string; newPassword: string }
+	): PasswordChangeRequest {
 		return {
-			url: "/api/users/change-password",
+			url: `/api/users/${userId}/password`,
 			options: {
-				method: "POST",
+				method: "PUT",
 				headers: {
 					"Content-Type": "application/json"
 				},
@@ -583,6 +598,10 @@ export class AuthCore {
 	 * Update user display in navigation
 	 */
 	updateUserDisplay(userInfo: UserDisplayInfo): void {
+		if (typeof document === "undefined") {
+			return;
+		}
+
 		const userInfoElement = document.getElementById("user-info");
 		if (userInfoElement) {
 			userInfoElement.textContent = `${userInfo.name} (${userInfo.role})`;
@@ -593,6 +612,10 @@ export class AuthCore {
 	 * Setup logout button event handler
 	 */
 	private setupLogoutHandler(): void {
+		if (typeof document === "undefined") {
+			return;
+		}
+
 		const logoutButton = document.getElementById("logout-btn");
 		if (logoutButton) {
 			logoutButton.addEventListener("click", () => {
@@ -692,3 +715,12 @@ export const initializeNavigation = authCore.initializeNavigation.bind(authCore)
 export const updateUserDisplay = authCore.updateUserDisplay.bind(authCore);
 export const validateReturnUrl = authCore.validateReturnUrl.bind(authCore);
 export const handleLogout = authCore.handleLogout.bind(authCore);
+
+// Backward compatibility exports for missing functions
+export const parseLoginResponse = authCore.handleLoginResponse.bind(authCore);
+export const parseErrorResponse = (error: unknown): { success: false; message: string } => {
+	return {
+		success: false,
+		message: error instanceof Error ? error.message : "Unknown error occurred"
+	};
+};
