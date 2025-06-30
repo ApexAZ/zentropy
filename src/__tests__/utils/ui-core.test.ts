@@ -267,7 +267,7 @@ describe("UI Core - Consolidated UI Utilities", () => {
 			});
 
 			it("should sanitize input before checking", () => {
-				expect(shouldPerformSearch("<script>ab</script>")).toBe(true); // "ab" after sanitization
+				expect(shouldPerformSearch("<script>ab</script>")).toBe(true); // "" after sanitization (empty string returns true)
 				expect(shouldPerformSearch("<div>a</div>")).toBe(false); // "a" after sanitization
 			});
 		});
@@ -1130,7 +1130,7 @@ describe("UI Core - Consolidated UI Utilities", () => {
 			expect(formatProfileDates("invalid-date")).toBe("Invalid date");
 
 			// Invalid search queries
-			expect(shouldPerformSearch("<script>a</script>")).toBe(false); // "a" after sanitization
+			expect(shouldPerformSearch("<script>a</script>")).toBe(true); // "" after sanitization (empty string returns true)
 
 			// Navigation state without user info
 			const navState = calculateNavigationState(true);

@@ -22,7 +22,7 @@ import usersRouter from "../../routes/users";
 
 // Import business logic utilities for integration validation
 import { validateLoginForm, sanitizeLoginInput } from "../../utils/auth-core.js";
-import { createLoginRequest, parseLoginResponse, parseErrorResponse } from "../../utils/auth-core.js";
+import { createLoginRequest, parseErrorResponse } from "../../utils/auth-core.js";
 
 describe("Login Workflow Integration Tests", () => {
 	let app: express.Application;
@@ -89,21 +89,16 @@ describe("Login Workflow Integration Tests", () => {
 			expect(validationResult.errors).toEqual({});
 
 			// Step 2: Input sanitization (using business logic utilities)
-			const sanitizedEmail = sanitizeLoginInput(loginData.email);
-			const sanitizedPassword = loginData.password; // Passwords are not sanitized
-			expect(sanitizedEmail).toBe(uniqueEmail);
-			expect(sanitizedPassword).toBe(strongPassword);
-
-			const sanitizedData = {
-				email: sanitizedEmail,
-				password: sanitizedPassword
-			};
+			const sanitizedData = sanitizeLoginInput(loginData);
+			expect(sanitizedData.email).toBe(uniqueEmail);
+			expect(sanitizedData.password).toBe(strongPassword);
 
 			// Step 3: API request creation (using business logic utilities)
 			const requestConfig = createLoginRequest(sanitizedData);
-			expect(requestConfig.method).toBe("POST");
-			expect(requestConfig.headers).toEqual({ "Content-Type": "application/json" });
-			expect(requestConfig.credentials).toBe("include");
+			expect(requestConfig.url).toBe("/api/users/login");
+			expect(requestConfig.options.method).toBe("POST");
+			expect(requestConfig.options.headers).toEqual({ "Content-Type": "application/json" });
+			expect(requestConfig.options.credentials).toBe("include");
 
 			// Step 4: Backend API integration
 			const response = await request(app).post("/api/users/login").send(sanitizedData);
@@ -127,10 +122,10 @@ describe("Login Workflow Integration Tests", () => {
 			expect(sessionCookie).toContain("HttpOnly");
 			expect(sessionCookie).toContain("Path=/");
 
-			// Step 6: Response handling (using business logic utilities)
-			const handledResponse = parseLoginResponse(response.body);
-			expect(handledResponse.success).toBe(true);
-			expect(handledResponse.user).toEqual(response.body.user);
+			// Step 6: Response handling (verify response structure)
+			expect(response.body.message).toBeDefined();
+			expect(response.body.user).toBeDefined();
+			expect(response.body.user.email).toBe(uniqueEmail);
 		});
 
 		it("should handle login with remember me functionality", async () => {
@@ -198,9 +193,8 @@ describe("Login Workflow Integration Tests", () => {
 			expect(response.body.user.role).toBe("team_lead");
 
 			// Response handling should account for role
-			const handledResponse = parseLoginResponse(response.body);
-			expect(handledResponse.success).toBe(true);
-			expect(handledResponse.user?.role).toBe("team_lead");
+			expect(response.body.user).toBeDefined();
+			expect(response.body.user.role).toBe("team_lead");
 		});
 	});
 
@@ -325,10 +319,10 @@ describe("Login Workflow Integration Tests", () => {
 			expect(validationResult.errors.email).toBeDefined();
 
 			// Step 2: Sanitization should clean input (removes HTML tags, SQL handled by validation)
-			const sanitizedEmail = sanitizeLoginInput(sqlInjectionData.email);
+			const sanitizedData = sanitizeLoginInput(sqlInjectionData);
 			// sanitizeLoginInput only removes HTML tags, not SQL injection patterns
 			// SQL injection protection is handled by validation and parameterized queries
-			expect(sanitizedEmail).toBe(sqlInjectionData.email); // No HTML tags to remove
+			expect(sanitizedData.email).toBe(sqlInjectionData.email); // No HTML tags to remove
 
 			// XSS attempt
 			const xssData = {
@@ -339,8 +333,8 @@ describe("Login Workflow Integration Tests", () => {
 			const xssValidation = validateLoginForm(xssData);
 			expect(xssValidation.isValid).toBe(false);
 
-			const xssSanitized = sanitizeLoginInput(xssData.email);
-			expect(xssSanitized).not.toContain("<script>");
+			const xssSanitized = sanitizeLoginInput(xssData);
+			expect(xssSanitized.email).not.toContain("<script>");
 		});
 	});
 
@@ -451,15 +445,12 @@ describe("Login Workflow Integration Tests", () => {
 			expect(validation.isValid).toBe(true);
 
 			// 2. Sanitization utilities (tested in login-validation.test.ts)
-			const sanitized = {
-				email: sanitizeLoginInput(loginData.email),
-				password: loginData.password
-			};
+			const sanitized = sanitizeLoginInput(loginData);
 			expect(sanitized.email).toBe(uniqueEmail);
 
 			// 3. API client utilities (tested in login-api.test.ts)
 			const requestConfig = createLoginRequest(sanitized);
-			expect(requestConfig.method).toBe("POST");
+			expect(requestConfig.options.method).toBe("POST");
 
 			// 4. Backend authentication (tested in i-session-authentication.test.ts)
 			const response = await request(app).post("/api/users/login").send(sanitized);
@@ -467,12 +458,12 @@ describe("Login Workflow Integration Tests", () => {
 			expect(response.status).toBe(200);
 
 			// 5. Response handling utilities (tested in login-api.test.ts)
-			const handledResponse = parseLoginResponse(response.body);
-			expect(handledResponse.success).toBe(true);
+			expect(response.body.message).toBeDefined();
+			expect(response.body.user).toBeDefined();
 
 			// All components should integrate seamlessly
-			expect(handledResponse.user?.id).toBe(testUser.id);
-			expect(handledResponse.user?.email).toBe(uniqueEmail);
+			expect(response.body.user.id).toBe(testUser.id);
+			expect(response.body.user.email).toBe(uniqueEmail);
 		});
 	});
 });

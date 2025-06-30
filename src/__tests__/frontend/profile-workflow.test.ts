@@ -27,7 +27,7 @@ vi.mock("../../utils/profile-core", () => ({
 }));
 
 // Mock auth utilities
-vi.mock("../../utils/auth-utils", () => ({
+vi.mock("../../utils/auth-core", () => ({
 	getSessionInfo: vi.fn(),
 	redirectToLogin: vi.fn(),
 	handleAuthError: vi.fn()

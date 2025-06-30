@@ -553,16 +553,22 @@ export class TeamCore {
 			return;
 		}
 
+		// Handle empty state
+		if (users.length === 0) {
+			container.innerHTML = '<div class="user-search-empty">No users found</div>';
+			return;
+		}
+
 		container.innerHTML = users
 			.map(
 				user => `
-			<div class="user-result" data-user-id="${user.id}">
+			<div class="user-search-item" data-user-id="${user.id}">
 				<div class="user-info">
 					<strong>${sanitizeInput(user.first_name)} ${sanitizeInput(user.last_name)}</strong>
 					<span class="user-email">${sanitizeInput(user.email)}</span>
 					<span class="user-role">${sanitizeInput(user.role)}</span>
 				</div>
-				<button class="btn btn-primary btn-small" data-action="add-user" data-user-id="${user.id}">
+				<button class="btn btn-primary btn-small" data-action="add-user-to-team" data-user-id="${user.id}">
 					Add to Team
 				</button>
 			</div>
@@ -598,7 +604,7 @@ export class TeamCore {
 	/**
 	 * Show team management UI
 	 */
-	showTeamManagementUI(_teamId: string, containerId: string): void {
+	showTeamManagementUI(teamId: string, containerId: string): void {
 		// Check if we're in a DOM environment
 		if (typeof document === "undefined") {
 			return;
@@ -609,11 +615,15 @@ export class TeamCore {
 			return;
 		}
 
+		// Set team ID and show container
+		container.setAttribute("data-team-id", teamId);
+		container.style.display = "block";
+
 		container.innerHTML = `
 			<div class="team-management">
 				<h3>Manage Team Members</h3>
 				<div class="search-section">
-					<input type="text" id="user-search" placeholder="Search users..." class="form-control">
+					<input type="text" id="user-search-input" placeholder="Search users..." class="form-control">
 					<div id="search-results" class="search-results"></div>
 				</div>
 				<div class="members-section">
@@ -625,7 +635,7 @@ export class TeamCore {
 
 		// Setup search handler (only in DOM environment)
 		if (typeof document !== "undefined") {
-			const searchInput = document.getElementById("user-search") as HTMLInputElement;
+			const searchInput = document.getElementById("user-search-input") as HTMLInputElement;
 			if (searchInput) {
 				let searchTimeout: NodeJS.Timeout;
 				searchInput.addEventListener("input", e => {
