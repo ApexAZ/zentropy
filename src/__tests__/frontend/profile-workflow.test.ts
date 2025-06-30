@@ -13,18 +13,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * - No complex DOM mocking - focus on what can break
  */
 
-// Mock profile business logic
-vi.mock("../../utils/profile-business-logic", () => ({
+// Mock profile core utilities
+vi.mock("../../utils/profile-core", () => ({
 	processProfileForDisplay: vi.fn(),
 	validateProfileUpdate: vi.fn(),
 	calculateProfileCompleteness: vi.fn(),
 	formatProfileForSubmission: vi.fn(),
 	hasProfileChanged: vi.fn(),
-	validateProfileAccess: vi.fn()
-}));
-
-// Mock profile utilities
-vi.mock("../../utils/profile-utils", () => ({
+	validateProfileAccess: vi.fn(),
 	fetchUserProfile: vi.fn(),
 	createProfileUpdateRequest: vi.fn(),
 	handleProfileApiResponse: vi.fn()
@@ -43,10 +39,11 @@ import {
 	calculateProfileCompleteness,
 	formatProfileForSubmission,
 	hasProfileChanged,
-	validateProfileAccess
-} from "../../utils/profile-business-logic";
-
-import { fetchUserProfile, createProfileUpdateRequest, handleProfileApiResponse } from "../../utils/profile-utils";
+	validateProfileAccess,
+	fetchUserProfile,
+	createProfileUpdateRequest,
+	handleProfileApiResponse
+} from "../../utils/profile-core";
 
 import { getSessionInfo, redirectToLogin } from "../../utils/auth-utils";
 

@@ -7,7 +7,7 @@ import {
 	handleProfileApiResponse,
 	type UserProfile,
 	type ProfileUpdateData
-} from "../utils/profile-utils.js";
+} from "../utils/profile-core.js";
 
 import { redirectToLogin, handleAuthError, initializeNavigation, getSessionInfo } from "../utils/auth-core.js";
 

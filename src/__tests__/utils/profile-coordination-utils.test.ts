@@ -17,7 +17,7 @@ import {
 	getProfileInitializationSteps,
 	type SessionInfo,
 	type ProfileFormData
-} from "../../utils/profile-coordination-utils.js";
+} from "../../utils/profile-core";
 
 describe("Profile Coordination Utilities", () => {
 	describe("determineProfilePageState", () => {

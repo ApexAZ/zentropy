@@ -5,7 +5,7 @@ import {
 	sanitizeProfileInput,
 	createProfileUpdateRequest,
 	handleProfileApiResponse
-} from "../../utils/profile-utils";
+} from "../../utils/profile-core";
 
 // Mock fetch globally
 const mockFetch = vi.fn();

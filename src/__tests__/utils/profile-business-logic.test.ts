@@ -10,7 +10,7 @@ import {
 	validateProfileAccess,
 	type UserProfile,
 	type ProfileFormData
-} from "../../utils/profile-business-logic";
+} from "../../utils/profile-core";
 
 // Mock the dependencies
 vi.mock("../../utils/validation-core", () => ({

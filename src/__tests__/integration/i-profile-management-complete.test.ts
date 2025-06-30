@@ -26,10 +26,7 @@ import {
 	validateProfileData,
 	sanitizeProfileInput,
 	createProfileUpdateRequest,
-	type UserProfile
-} from "../../utils/profile-utils.js";
-
-import {
+	type UserProfile,
 	processProfileForDisplay,
 	validateProfileUpdate,
 	calculateProfileCompleteness,
@@ -37,7 +34,7 @@ import {
 	hasProfileChanged,
 	validateProfileAccess,
 	generateSecurityRecommendations
-} from "../../utils/profile-business-logic.js";
+} from "../../utils/profile-core";
 
 import {
 	sanitizePasswordChangeInput,
@@ -144,7 +141,7 @@ describe("Complete Profile Management System Integration Tests", () => {
 			// Step 5: Profile Display Processing
 			const displayResult = processProfileForDisplay(profile);
 			expect(displayResult.success).toBe(true);
-			expect(displayResult.data?.fullName).toBe("John Smith");
+			expect((displayResult.data as { fullName?: string })?.fullName).toBe("John Smith");
 
 			// Step 6: Profile Completeness Calculation
 			const completeness = calculateProfileCompleteness(profile);
