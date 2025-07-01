@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { PasswordService } from "../../services/password-service";
+import { PasswordService } from "../../server/services/password-service";
 
 describe("PasswordService", () => {
 	let passwordService: PasswordService;

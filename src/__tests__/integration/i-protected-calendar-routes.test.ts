@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel, type Session } from "../../models/Session";
-import { CalendarEntryModel, type CalendarEntry } from "../../models/CalendarEntry";
-import { TeamModel, type Team } from "../../models/Team";
-import calendarEntriesRouter from "../../routes/calendar-entries";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel, type Session } from "../../server/models/Session";
+import { CalendarEntryModel, type CalendarEntry } from "../../server/models/CalendarEntry";
+import { TeamModel, type Team } from "../../server/models/Team";
+import calendarEntriesRouter from "../../server/routes/calendar-entries";
 
 // Integration test for protected calendar routes
 describe("Protected Calendar Routes", () => {

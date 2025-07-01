@@ -15,7 +15,7 @@ import {
 	type LoginCredentials,
 	type LoginApiResponse,
 	type LoginApiError
-} from "../utils/auth-core.js";
+} from "../server/utils/auth-core.js";
 
 (function (): void {
 	// Type definitions for local use

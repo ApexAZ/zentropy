@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import request from "supertest";
 import express, { Request, Response, NextFunction } from "express";
-import { UserModel, UserRole } from "../../models/User";
-import usersRouter from "../../routes/users";
+import { UserModel, UserRole } from "../../server/models/User";
+import usersRouter from "../../server/routes/users";
 
 // Mock rate limiting to avoid interference in tests
-vi.mock("../../middleware/rate-limiter", () => ({
+vi.mock("../../server/middleware/rate-limiter", () => ({
 	loginRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	passwordUpdateRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	userCreationRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
@@ -13,12 +13,12 @@ vi.mock("../../middleware/rate-limiter", () => ({
 }));
 
 // Mock session authentication middleware
-vi.mock("../../middleware/session-auth", () => ({
+vi.mock("../../server/middleware/session-auth", () => ({
 	default: vi.fn((_req: Request, _res: Response, next: NextFunction) => next())
 }));
 
 // Mock SessionModel for login tests
-vi.mock("../../models/Session", () => ({
+vi.mock("../../server/models/Session", () => ({
 	SessionModel: {
 		create: vi.fn(),
 		invalidate: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock("../../models/Session", () => ({
 	}
 }));
 
-import { SessionModel } from "../../models/Session";
+import { SessionModel } from "../../server/models/Session";
 const mockSessionModel = SessionModel as unknown as {
 	create: Mock;
 	invalidate: Mock;
@@ -36,7 +36,7 @@ const mockSessionModel = SessionModel as unknown as {
 };
 
 // Mock the UserModel
-vi.mock("../../models/User", () => ({
+vi.mock("../../server/models/User", () => ({
 	UserModel: {
 		findAll: vi.fn(),
 		findById: vi.fn(),

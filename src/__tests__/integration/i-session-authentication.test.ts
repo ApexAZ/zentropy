@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel, type Session } from "../../models/Session";
-import usersRouter from "../../routes/users";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel, type Session } from "../../server/models/Session";
+import usersRouter from "../../server/routes/users";
 
 interface LoginResponseBody {
 	message: string;

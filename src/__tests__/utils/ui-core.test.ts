@@ -32,8 +32,8 @@ import {
 	createProfileDisplayData,
 	formatUserName,
 	type ProfileFormData
-} from "../../utils/ui-core";
-import type { User, UserRole } from "../../models/User";
+} from "../../server/utils/ui-core";
+import type { User, UserRole } from "../../server/models/User";
 
 describe("UI Core - Consolidated UI Utilities", () => {
 	// ============= USER DISPLAY UTILITIES TESTS (from u-user-display-utils.test.ts) =============

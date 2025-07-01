@@ -3,7 +3,7 @@
  * Handles calendar entries for PTO, holidays, and capacity calculation
  */
 
-import { initializeNavigation } from "../utils/auth-core.js";
+import { initializeNavigation } from "../server/utils/auth-core.js";
 
 (function (): void {
 	// Type definitions

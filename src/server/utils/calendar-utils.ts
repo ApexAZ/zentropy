@@ -183,14 +183,8 @@ export function calculateCapacityImpact(team: Team, startDate: Date, endDate: Da
  * @returns HTML-safe text
  */
 export function escapeHtml(text: string): string {
-	// Create a temporary div element for safe HTML escaping
-	if (typeof document !== "undefined") {
-		const div = document.createElement("div");
-		div.textContent = text;
-		return div.innerHTML;
-	}
-
-	// Fallback for server-side or test environments
+	// Always use manual escaping for consistent behavior across environments
+	// (DOM-based escaping can vary between browsers and jsdom)
 	return text
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")

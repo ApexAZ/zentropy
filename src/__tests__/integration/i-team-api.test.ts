@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import express from "express";
-import { TeamModel, CreateTeamData, Team } from "../../models/Team";
-import { User } from "../../models/User";
-import { ValidationError } from "../../utils/validation-core";
+import { TeamModel, CreateTeamData, Team } from "../../server/models/Team";
+import { User } from "../../server/models/User";
+import { ValidationError } from "../../server/utils/validation-core";
 
 // Mock the TeamModel for integration tests
-vi.mock("../../models/Team");
+vi.mock("../../server/models/Team");
 const mockTeamModel = vi.mocked(TeamModel);
 
 // Create a test application that mimics our server setup

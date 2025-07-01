@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { UserRole } from "../../models/User.js";
+import type { UserRole } from "../../server/models/User.js";
 
 // Mock fetch globally for testing
 const mockFetch = vi.fn();
@@ -53,7 +53,7 @@ import {
 	createUserSearchRequest,
 	handleUserSearchResponse,
 	makeUserSearchRequest
-} from "../../utils/api-client-core.js";
+} from "../../server/utils/api-client-core.js";
 
 describe("ApiClientCore - Consolidated API Management Module", () => {
 	beforeEach(() => {

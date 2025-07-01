@@ -16,13 +16,13 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel } from "../../models/Session";
-import usersRouter from "../../routes/users";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel } from "../../server/models/Session";
+import usersRouter from "../../server/routes/users";
 
 // Import business logic utilities for integration validation
-import { validateLoginForm, sanitizeLoginInput } from "../../utils/auth-core.js";
-import { createLoginRequest, parseErrorResponse } from "../../utils/auth-core.js";
+import { validateLoginForm, sanitizeLoginInput } from "../../server/utils/auth-core.js";
+import { createLoginRequest, parseErrorResponse } from "../../server/utils/auth-core.js";
 
 describe("Login Workflow Integration Tests", () => {
 	let app: express.Application;

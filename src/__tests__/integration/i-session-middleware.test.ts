@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express, { Request, Response } from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel, type Session } from "../../models/Session";
-import sessionAuthMiddleware from "../../middleware/session-auth";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel, type Session } from "../../server/models/Session";
+import sessionAuthMiddleware from "../../server/middleware/session-auth";
 
 // Integration test for session validation middleware
 describe("Session Authentication Middleware", () => {

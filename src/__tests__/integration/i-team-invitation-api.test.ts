@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { testConnection } from "../../database/connection";
+import { testConnection } from "../../server/database/connection";
 import { TestDataFactory } from "../helpers/test-data-factory";
-import { UserModel } from "../../models/User";
-import { TeamModel } from "../../models/Team";
-import { TeamInvitationModel } from "../../models/TeamInvitation";
+import { UserModel } from "../../server/models/User";
+import { TeamModel } from "../../server/models/Team";
+import { TeamInvitationModel } from "../../server/models/TeamInvitation";
 
 // Integration test for team invitation system
 describe("Team Invitation API Integration Tests", () => {
@@ -70,7 +70,7 @@ describe("Team Invitation API Integration Tests", () => {
 
 			// This tests our utility functions work without database calls
 			const { validateInvitationData, sanitizeInvitationData, createInvitationToken } = await import(
-				"../../utils/team-invitation-utils"
+				"../../server/utils/team-invitation-utils"
 			);
 
 			const invitationData = {
@@ -86,13 +86,13 @@ describe("Team Invitation API Integration Tests", () => {
 			const sanitized = sanitizeInvitationData(invitationData);
 			expect(sanitized.invitedEmail).toBe(invitedEmail);
 
-			const token = createInvitationToken();
+			const token: string = createInvitationToken();
 			expect(token).toHaveLength(64);
 		});
 
 		it("should create and validate invitation tokens", async () => {
 			const { createInvitationToken, isInvitationExpired, getInvitationExpiryDate } = await import(
-				"../../utils/team-invitation-utils"
+				"../../server/utils/team-invitation-utils"
 			);
 
 			// Test token creation
@@ -112,7 +112,7 @@ describe("Team Invitation API Integration Tests", () => {
 
 		it("should validate role permissions correctly", async () => {
 			const { canUserInviteToTeam, shouldPromoteUserOnAccept } = await import(
-				"../../utils/team-invitation-utils"
+				"../../server/utils/team-invitation-utils"
 			);
 
 			// Test invitation permissions
@@ -135,7 +135,7 @@ describe("Team Invitation API Integration Tests", () => {
 				createSendInvitationRequest,
 				createInvitationResponseRequest,
 				validateInvitationApiParams
-			} = await import("../../utils/api-client-core");
+			} = await import("../../server/utils/api-client-core");
 
 			// Test URL building
 			expect(buildInvitationUrl("team-123")).toBe("/api/teams/team-123/invitations");
@@ -198,10 +198,10 @@ describe("Team Invitation API Integration Tests", () => {
 
 			// Test invitation creation
 			const { createInvitationToken, getInvitationExpiryDate } = await import(
-				"../../utils/team-invitation-utils"
+				"../../server/utils/team-invitation-utils"
 			);
 
-			const token = createInvitationToken();
+			const token: string = createInvitationToken();
 			const expiresAt = getInvitationExpiryDate(7);
 
 			const invitation = await TeamInvitationModel.create({
@@ -268,7 +268,7 @@ describe("Team Invitation API Integration Tests", () => {
 				getInvitationExpiryDate,
 				canActOnInvitation,
 				formatInvitationForResponse
-			} = await import("../../utils/team-invitation-utils");
+			} = await import("../../server/utils/team-invitation-utils");
 
 			const invitationData = {
 				teamId: team.id,
@@ -284,7 +284,7 @@ describe("Team Invitation API Integration Tests", () => {
 			const sanitized = sanitizeInvitationData(invitationData);
 
 			// Create invitation in database
-			const token = createInvitationToken();
+			const token: string = createInvitationToken();
 			const expiresAt = getInvitationExpiryDate(7);
 
 			const invitation = await TeamInvitationModel.create({

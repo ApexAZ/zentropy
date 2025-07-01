@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { SessionModel, CreateSessionData } from "../../models/Session";
+import { SessionModel, CreateSessionData } from "../../server/models/Session";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
-import { pool } from "../../database/connection";
+import { pool } from "../../server/database/connection";
 import crypto from "crypto";
 
 // Mock the database connection
-vi.mock("../../database/connection", () => ({
+vi.mock("../../server/database/connection", () => ({
 	pool: {
 		query: vi.fn().mockResolvedValue({ rows: [], rowCount: 0 })
 	}

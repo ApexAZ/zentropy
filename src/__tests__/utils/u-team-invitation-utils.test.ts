@@ -11,8 +11,8 @@ import {
 	type InvitationData,
 	type InvitationResponse,
 	type InvitationRecord
-} from "../../utils/team-invitation-utils";
-import type { UserRole } from "../../models/User";
+} from "../../server/utils/team-invitation-utils";
+import type { UserRole } from "../../server/models/User";
 
 describe("Team Invitation Utilities", () => {
 	describe("validateInvitationData", () => {

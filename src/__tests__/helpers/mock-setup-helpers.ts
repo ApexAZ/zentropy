@@ -2,9 +2,9 @@
  * Shared mock setup helpers for consistent testing patterns
  */
 import { vi, expect, type Mock } from "vitest";
-import type { User } from "../../models/User";
-import type { Team } from "../../models/Team";
-import type { CalendarEntry } from "../../models/CalendarEntry";
+import type { User } from "../../server/models/User";
+import type { Team } from "../../server/models/Team";
+import type { CalendarEntry } from "../../server/models/CalendarEntry";
 
 /**
  * Type-safe mock definitions for better testing

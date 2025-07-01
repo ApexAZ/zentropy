@@ -1,10 +1,10 @@
 /**
  * Centralized test data factory aligned with actual model interfaces
  */
-import type { User, CreateUserData, UserRole } from "../../models/User";
-import type { Team, CreateTeamData, TeamMembership } from "../../models/Team";
-import type { CalendarEntry, CreateCalendarEntryData } from "../../models/CalendarEntry";
-import type { Session, CreateSessionData } from "../../models/Session";
+import type { User, CreateUserData, UserRole } from "../../server/models/User";
+import type { Team, CreateTeamData, TeamMembership } from "../../server/models/Team";
+import type { CalendarEntry, CreateCalendarEntryData } from "../../server/models/CalendarEntry";
+import type { Session, CreateSessionData } from "../../server/models/Session";
 
 export class TestDataFactory {
 	/**

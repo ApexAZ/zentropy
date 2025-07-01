@@ -3,7 +3,7 @@
  * Handles team configuration, member management, and sprint planning
  */
 
-import { initializeNavigation } from "../utils/auth-core.js";
+import { initializeNavigation } from "../server/utils/auth-core.js";
 
 (function (): void {
 	// Type definitions

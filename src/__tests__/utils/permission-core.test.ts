@@ -37,12 +37,12 @@ import {
 	handleTeamCreationWithRolePromotion,
 	// Types
 	type PermissionAction
-} from "../../utils/permission-core";
-import type { UserRole, User } from "../../models/User";
-import type { Team, CreateTeamData, TeamMembership } from "../../models/Team";
+} from "../../server/utils/permission-core";
+import type { UserRole, User } from "../../server/models/User";
+import type { Team, CreateTeamData, TeamMembership } from "../../server/models/Team";
 
 // Mock the dependencies for role-promotion-utils tests
-vi.mock("../../models/Team", () => ({
+vi.mock("../../server/models/Team", () => ({
 	TeamModel: {
 		findAll: vi.fn(),
 		create: vi.fn(),
@@ -50,15 +50,15 @@ vi.mock("../../models/Team", () => ({
 	}
 }));
 
-vi.mock("../../models/User", () => ({
+vi.mock("../../server/models/User", () => ({
 	UserModel: {
 		findById: vi.fn(),
 		update: vi.fn()
 	}
 }));
 
-import { TeamModel } from "../../models/Team";
-import { UserModel } from "../../models/User";
+import { TeamModel } from "../../server/models/Team";
+import { UserModel } from "../../server/models/User";
 
 // Mock references for role promotion tests
 // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -644,10 +644,15 @@ describe("Permission Core", () => {
 			});
 
 			it("should return false when user has existing teams", async () => {
-				const mockTeam: Partial<Team> = {
+				const mockTeam: Team = {
 					id: "team-1",
 					created_by: "user-123",
-					name: "Existing Team"
+					name: "Existing Team",
+					velocity_baseline: 10,
+					sprint_length_days: 14,
+					working_days_per_week: 5,
+					created_at: new Date(),
+					updated_at: new Date()
 				};
 				mockTeamFindAll.mockResolvedValue([mockTeam]);
 
@@ -658,10 +663,15 @@ describe("Permission Core", () => {
 			});
 
 			it("should return true when other users have teams but not this user", async () => {
-				const mockTeam: Partial<Team> = {
+				const mockTeam: Team = {
 					id: "team-1",
 					created_by: "other-user",
-					name: "Other Team"
+					name: "Other Team",
+					velocity_baseline: 10,
+					sprint_length_days: 14,
+					working_days_per_week: 5,
+					created_at: new Date(),
+					updated_at: new Date()
 				};
 				mockTeamFindAll.mockResolvedValue([mockTeam]);
 
@@ -681,7 +691,18 @@ describe("Permission Core", () => {
 
 		describe("promoteUserToTeamLead", () => {
 			it("should successfully promote user to team lead", async () => {
-				const updatedUser: Partial<User> = { id: "user-123", role: "team_lead" };
+				const updatedUser: User = {
+					id: "user-123",
+					email: "test@example.com",
+					password_hash: "hashed_password",
+					first_name: "Test",
+					last_name: "User",
+					role: "team_lead",
+					is_active: true,
+					last_login_at: null,
+					created_at: new Date(),
+					updated_at: new Date()
+				};
 				mockUserUpdate.mockResolvedValue(updatedUser);
 
 				const result = await promoteUserToTeamLead("user-123");
@@ -706,7 +727,12 @@ describe("Permission Core", () => {
 
 		describe("addUserAsTeamMember", () => {
 			it("should successfully add user as team member", async () => {
-				const membership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
+				const membership: TeamMembership = {
+					id: "membership-123",
+					team_id: "team-123",
+					user_id: "user-123",
+					joined_at: new Date()
+				};
 				mockTeamAddMember.mockResolvedValue(membership);
 
 				const result = await addUserAsTeamMember("team-123", "user-123");
@@ -724,9 +750,34 @@ describe("Permission Core", () => {
 		});
 
 		describe("handleTeamCreationWithRolePromotion", () => {
-			const mockTeam: Partial<Team> = { id: "team-123", name: "Test Team" };
-			const mockUser: Partial<User> = { id: "user-123", role: "basic_user" };
-			const mockMembership: Partial<TeamMembership> = { team_id: "team-123", user_id: "user-123" };
+			const mockTeam: Team = {
+				id: "team-123",
+				name: "Test Team",
+				velocity_baseline: 10,
+				sprint_length_days: 14,
+				working_days_per_week: 5,
+				created_by: "user-123",
+				created_at: new Date(),
+				updated_at: new Date()
+			};
+			const mockUser: User = {
+				id: "user-123",
+				email: "test@example.com",
+				password_hash: "hashed_password",
+				first_name: "Test",
+				last_name: "User",
+				role: "basic_user",
+				is_active: true,
+				last_login_at: null,
+				created_at: new Date(),
+				updated_at: new Date()
+			};
+			const mockMembership: TeamMembership = {
+				id: "membership-123",
+				team_id: "team-123",
+				user_id: "user-123",
+				joined_at: new Date()
+			};
 
 			beforeEach(() => {
 				mockUserFindById.mockResolvedValue(mockUser);
@@ -770,7 +821,16 @@ describe("Permission Core", () => {
 			});
 
 			it("should handle workflow without promotion for basic user's non-first team", async () => {
-				const existingTeam: Partial<Team> = { id: "existing-team", created_by: "user-123" };
+				const existingTeam: Team = {
+					id: "existing-team",
+					name: "Existing Team",
+					velocity_baseline: 10,
+					sprint_length_days: 14,
+					working_days_per_week: 5,
+					created_by: "user-123",
+					created_at: new Date(),
+					updated_at: new Date()
+				};
 				mockTeamFindAll.mockResolvedValue([existingTeam]);
 				const teamData: CreateTeamData = { name: "Second Team", created_by: "user-123" };
 

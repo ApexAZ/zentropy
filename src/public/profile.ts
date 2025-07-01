@@ -7,23 +7,23 @@ import {
 	handleProfileApiResponse,
 	type UserProfile,
 	type ProfileUpdateData
-} from "../utils/profile-core.js";
+} from "../server/utils/profile-core.js";
 
-import { redirectToLogin, handleAuthError, initializeNavigation, getSessionInfo } from "../utils/auth-core.js";
+import { redirectToLogin, handleAuthError, initializeNavigation, getSessionInfo } from "../server/utils/auth-core.js";
 
 import {
 	getRoleBadgeClass,
 	validateProfileFormData,
 	createProfileDisplayData,
 	type ProfileFormData
-} from "../utils/ui-core.js";
+} from "../server/utils/ui-core.js";
 
 import {
 	validatePasswordChangeForm,
 	createPasswordChangeRequest,
 	handlePasswordChangeResponse,
 	type PasswordChangeFormData
-} from "../utils/auth-core.js";
+} from "../server/utils/auth-core.js";
 
 /**
  * Current profile data cache

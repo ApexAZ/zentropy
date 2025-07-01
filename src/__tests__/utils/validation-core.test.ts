@@ -14,7 +14,7 @@ import {
 	type LoginValidationResult,
 	// ============= PASSWORD POLICY UTILITIES =============
 	PasswordPolicy
-} from "../../utils/validation-core";
+} from "../../server/utils/validation-core";
 
 describe("Validation Core", () => {
 	// ============= VALIDATION UTILITIES TESTS (from validation.test.ts) =============

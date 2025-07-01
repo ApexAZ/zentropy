@@ -4,7 +4,7 @@ import {
 	TeamWorkingDaysConfig,
 	DateRange,
 	CalendarEntry
-} from "../../services/working-days-calculator";
+} from "../../server/services/working-days-calculator";
 import { TestDataFactory as BaseTestDataFactory } from "../helpers/test-data-factory";
 
 /**

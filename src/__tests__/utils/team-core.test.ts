@@ -12,8 +12,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Mock } from "vitest";
 
 // Import types from existing utilities (will be consolidated)
-import type { Team } from "../../models/Team.js";
-import type { User, UserRole } from "../../models/User.js";
+import type { Team } from "../../server/models/Team.js";
+import type { User, UserRole } from "../../server/models/User.js";
 
 // Mock fetch globally for testing
 const mockFetch = vi.fn();
@@ -75,7 +75,7 @@ const mockLocation = {
 global.window = { location: mockLocation } as unknown as Window & typeof globalThis;
 
 // Import the module under test - will fail initially (RED phase)
-import { TeamCore } from "../../utils/team-core.js";
+import { TeamCore } from "../../server/utils/team-core.js";
 
 // Consolidated type definitions for team-core module
 export interface CreateTeamData {

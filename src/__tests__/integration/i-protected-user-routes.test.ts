@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel, type Session } from "../../models/Session";
-import usersRouter from "../../routes/users";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel, type Session } from "../../server/models/Session";
+import usersRouter from "../../server/routes/users";
 import type { Request, Response, NextFunction } from "express";
 
 // Mock rate limiting middleware to avoid conflicts in tests
-vi.mock("../../middleware/rate-limiter", () => ({
+vi.mock("../../server/middleware/rate-limiter", () => ({
 	loginRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	passwordUpdateRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	userCreationRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),

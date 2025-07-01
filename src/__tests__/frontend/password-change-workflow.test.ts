@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock password change utilities (tested separately)
-vi.mock("../../utils/auth-core", () => ({
+vi.mock("../../server/utils/auth-core", () => ({
 	sanitizePasswordChangeInput: vi.fn(),
 	validatePasswordChangeForm: vi.fn(),
 	createPasswordChangeRequest: vi.fn(),
@@ -29,7 +29,7 @@ import {
 	type PasswordChangeValidationResult,
 	type PasswordChangeRequest,
 	type PasswordChangeResponse
-} from "../../utils/auth-core";
+} from "../../server/utils/auth-core";
 
 describe("Password Change Workflow Tests", () => {
 	beforeEach(() => {

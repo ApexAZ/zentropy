@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi, Mock } from "vitest";
 import request from "supertest";
 import express, { Request, Response, NextFunction } from "express";
-import { CalendarEntryModel } from "../../models/CalendarEntry";
-import calendarEntriesRouter from "../../routes/calendar-entries";
+import { CalendarEntryModel } from "../../server/models/CalendarEntry";
+import calendarEntriesRouter from "../../server/routes/calendar-entries";
 
 // Mock the CalendarEntryModel
-vi.mock("../../models/CalendarEntry", () => ({
+vi.mock("../../server/models/CalendarEntry", () => ({
 	CalendarEntryModel: {
 		findById: vi.fn(),
 		findByTeam: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock("../../models/CalendarEntry", () => ({
 }));
 
 // Mock the session authentication middleware
-vi.mock("../../middleware/session-auth", () => ({
+vi.mock("../../server/middleware/session-auth", () => ({
 	default: vi.fn((req: Request, _res: Response, next: NextFunction) => {
 		// Mock authenticated user
 		(req as Request & { user: unknown }).user = {

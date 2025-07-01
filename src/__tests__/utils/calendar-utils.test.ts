@@ -20,7 +20,7 @@ import {
 	type Team,
 	type User,
 	type CreateCalendarEntryData
-} from "../../utils/calendar-utils.js";
+} from "../../server/utils/calendar-utils.js";
 
 describe("Calendar Utilities", () => {
 	let mockUsers: User[];

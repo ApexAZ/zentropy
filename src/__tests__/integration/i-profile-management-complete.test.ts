@@ -17,9 +17,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import express from "express";
-import { UserModel, type User } from "../../models/User";
-import { SessionModel } from "../../models/Session";
-import usersRouter from "../../routes/users";
+import { UserModel, type User } from "../../server/models/User";
+import { SessionModel } from "../../server/models/Session";
+import usersRouter from "../../server/routes/users";
 
 // Import all profile utilities for integration validation
 import {
@@ -34,13 +34,13 @@ import {
 	hasProfileChanged,
 	validateProfileAccess,
 	generateSecurityRecommendations
-} from "../../utils/profile-core";
+} from "../../server/utils/profile-core";
 
 import {
 	sanitizePasswordChangeInput,
 	validatePasswordChangeForm,
 	createPasswordChangeRequest
-} from "../../utils/auth-core.js";
+} from "../../server/utils/auth-core.js";
 
 // Note: Auth utils would be used for frontend session management
 // In this integration test, we use direct API calls

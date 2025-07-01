@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { UserModel, USER_ROLES, type CreateUserData, type UpdatePasswordData } from "../../models/User";
-import { pool } from "../../database/connection";
+import { UserModel, USER_ROLES, type CreateUserData, type UpdatePasswordData } from "../../server/models/User";
+import { pool } from "../../server/database/connection";
 
 describe("UserModel with PasswordService Integration", () => {
 	// Use a specific test domain to avoid conflicts with other tests

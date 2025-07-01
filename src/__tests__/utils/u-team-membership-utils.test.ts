@@ -7,8 +7,8 @@ import {
 	validateMembershipRequest,
 	sanitizeMembershipData,
 	formatMembershipResponse
-} from "../../utils/team-membership-utils";
-import type { User, UserRole } from "../../models/User";
+} from "../../server/utils/team-membership-utils";
+import type { User, UserRole } from "../../server/models/User";
 
 describe("Team Membership Utilities", () => {
 	const mockUser: User = {

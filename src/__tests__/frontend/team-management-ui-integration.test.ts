@@ -2,11 +2,11 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { renderUserSearchResults, showTeamManagementUI } from "../../utils/team-core";
-import type { User } from "../../models/User";
+import { renderUserSearchResults, showTeamManagementUI } from "../../server/utils/team-core";
+import type { User } from "../../server/models/User";
 
 // Mock the utility imports since we're testing integration, not utilities
-vi.mock("../../utils/ui-core", () => ({
+vi.mock("../../server/utils/ui-core", () => ({
 	formatUserForDisplay: vi.fn((user: User) => ({
 		id: user.id,
 		displayName: `${user.first_name} ${user.last_name}`,
@@ -19,7 +19,7 @@ vi.mock("../../utils/ui-core", () => ({
 	isRetryableError: vi.fn(() => true)
 }));
 
-vi.mock("../../utils/api-client-core", () => ({
+vi.mock("../../server/utils/api-client-core", () => ({
 	makeUserSearchRequest: vi.fn()
 }));
 

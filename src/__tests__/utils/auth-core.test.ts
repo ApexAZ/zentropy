@@ -58,7 +58,7 @@ Object.defineProperty(global, "document", {
 });
 
 // Import the actual AuthCore implementation
-import { AuthCore } from "../../utils/auth-core.js";
+import { AuthCore } from "../../server/utils/auth-core.js";
 
 // Type definitions consolidated from all auth utilities
 export interface SessionStatus {

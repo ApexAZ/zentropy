@@ -6,7 +6,7 @@ import {
 	passwordUpdateRateLimit,
 	generalApiRateLimit,
 	userCreationRateLimit
-} from "../../middleware/rate-limiter";
+} from "../../server/middleware/rate-limiter";
 
 describe("Rate Limiter Middleware", () => {
 	let app: express.Application;

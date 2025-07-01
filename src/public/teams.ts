@@ -3,7 +3,7 @@
  * Handles CRUD operations for teams with comprehensive error handling and validation
  */
 
-import { initializeNavigation } from "../utils/auth-core.js";
+import { initializeNavigation } from "../server/utils/auth-core.js";
 
 (function (): void {
 	// Type definitions

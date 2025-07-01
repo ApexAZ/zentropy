@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  */
 
 // Mock profile core utilities
-vi.mock("../../utils/profile-core", () => ({
+vi.mock("../../server/utils/profile-core", () => ({
 	processProfileForDisplay: vi.fn(),
 	validateProfileUpdate: vi.fn(),
 	calculateProfileCompleteness: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock("../../utils/profile-core", () => ({
 }));
 
 // Mock auth utilities
-vi.mock("../../utils/auth-core", () => ({
+vi.mock("../../server/utils/auth-core", () => ({
 	getSessionInfo: vi.fn(),
 	redirectToLogin: vi.fn(),
 	handleAuthError: vi.fn()
@@ -43,9 +43,9 @@ import {
 	fetchUserProfile,
 	createProfileUpdateRequest,
 	handleProfileApiResponse
-} from "../../utils/profile-core";
+} from "../../server/utils/profile-core";
 
-import { getSessionInfo, redirectToLogin } from "../../utils/auth-core";
+import { getSessionInfo, redirectToLogin } from "../../server/utils/auth-core";
 
 describe("Profile Workflow Tests", () => {
 	beforeEach(() => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { PoolClient } from "pg";
-import { pool } from "../../database/connection";
+import { pool } from "../../server/database/connection";
 
 // Type for database query results
 interface UserQueryResult {

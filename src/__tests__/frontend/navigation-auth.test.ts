@@ -17,7 +17,7 @@ import {
 	updateNavigationState,
 	checkAuthenticationOnLoad,
 	type UserDisplayInfo
-} from "../../utils/navigation-auth.js";
+} from "../../server/utils/navigation-auth.js";
 
 // Import extracted utilities (business logic now tested separately)
 import {
@@ -28,9 +28,9 @@ import {
 	buildLogoutApiUrl,
 	getLogoutRedirectMessage,
 	createSafeUserDisplayInfo
-} from "../../utils/ui-core.js";
+} from "../../server/utils/ui-core.js";
 
-import { checkSessionStatus, type SessionInfo } from "../../utils/auth-core.js";
+import { checkSessionStatus, type SessionInfo } from "../../server/utils/auth-core.js";
 
 // Minimal mock interfaces for integration testing
 interface MockResponse {

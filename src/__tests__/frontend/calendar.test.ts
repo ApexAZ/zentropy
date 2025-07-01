@@ -25,7 +25,7 @@ import {
 	type Team,
 	type User,
 	type CreateCalendarEntryData
-} from "../../utils/calendar-utils.js";
+} from "../../server/utils/calendar-utils.js";
 
 describe("Calendar Frontend Integration Tests", () => {
 	let mockUsers: User[];
@@ -532,9 +532,11 @@ describe("Calendar Frontend Integration Tests", () => {
 
 	describe("escapeHtml", () => {
 		it("should escape HTML special characters", () => {
-			expect(escapeHtml("<script>alert('xss')</script>")).toBe("&lt;script&gt;alert('xss')&lt;/script&gt;");
+			expect(escapeHtml("<script>alert('xss')</script>")).toBe(
+				"&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;"
+			);
 			expect(escapeHtml("John & Jane")).toBe("John &amp; Jane");
-			expect(escapeHtml('Say "Hello"')).toBe('Say "Hello"'); // Quotes are not escaped by textContent/innerHTML
+			expect(escapeHtml('Say "Hello"')).toBe("Say &quot;Hello&quot;"); // Quotes are now properly escaped
 		});
 
 		it("should handle empty strings", () => {

@@ -4,11 +4,11 @@ import express, { type Request, type Response, type NextFunction } from "express
 import path from "path";
 
 // Import routes
-import calendarEntriesRouter from "../../routes/calendar-entries";
-import usersRouter from "../../routes/users";
+import calendarEntriesRouter from "../../server/routes/calendar-entries";
+import usersRouter from "../../server/routes/users";
 
 // Mock the session authentication middleware
-vi.mock("../../middleware/session-auth", () => ({
+vi.mock("../../server/middleware/session-auth", () => ({
 	default: vi.fn((req: Request, _res: Response, next: NextFunction) => {
 		// Mock authenticated user for workflow tests
 		req.user = {
@@ -24,7 +24,7 @@ vi.mock("../../middleware/session-auth", () => ({
 }));
 
 // Mock rate limiting middleware
-vi.mock("../../middleware/rate-limiter", () => ({
+vi.mock("../../server/middleware/rate-limiter", () => ({
 	loginRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	passwordUpdateRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
 	userCreationRateLimit: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
@@ -32,7 +32,7 @@ vi.mock("../../middleware/rate-limiter", () => ({
 }));
 
 // Mock the models
-vi.mock("../../models/CalendarEntry", () => ({
+vi.mock("../../server/models/CalendarEntry", () => ({
 	CalendarEntryModel: {
 		findById: vi.fn(),
 		findByTeam: vi.fn(),
@@ -46,7 +46,7 @@ vi.mock("../../models/CalendarEntry", () => ({
 	}
 }));
 
-vi.mock("../../models/User", () => ({
+vi.mock("../../server/models/User", () => ({
 	UserModel: {
 		findAll: vi.fn(),
 		findById: vi.fn(),
@@ -60,8 +60,8 @@ vi.mock("../../models/User", () => ({
 	}
 }));
 
-import { CalendarEntryModel, CalendarEntry } from "../../models/CalendarEntry";
-import { UserModel, UserRole } from "../../models/User";
+import { CalendarEntryModel, CalendarEntry } from "../../server/models/CalendarEntry";
+import { UserModel, UserRole } from "../../server/models/User";
 
 const mockCalendarEntryModel = vi.mocked(CalendarEntryModel);
 const mockUserModel = vi.mocked(UserModel);

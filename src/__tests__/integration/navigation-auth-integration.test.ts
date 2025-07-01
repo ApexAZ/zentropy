@@ -16,7 +16,7 @@ const mockValidateReturnUrl = vi.fn();
 const mockShowSessionWarning = vi.fn();
 const mockHideSessionWarning = vi.fn();
 
-vi.mock("../../utils/auth-utils", () => ({
+vi.mock("../../server/utils/auth-utils", () => ({
 	checkSessionStatus: mockCheckSessionStatus,
 	redirectToLogin: mockRedirectToLogin,
 	getSessionInfo: mockGetSessionInfo,
@@ -172,7 +172,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { initializeNavigation } = await import("../../utils/navigation-auth.js");
+			const { initializeNavigation } = await import("../../server/utils/navigation-auth.js");
 			initializeNavigation("nav-container");
 
 			// Wait for async operations to complete
@@ -191,7 +191,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Assert
@@ -209,7 +209,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Assert
@@ -240,7 +240,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Assert
@@ -258,7 +258,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { initializeNavigation } = await import("../../utils/navigation-auth.js");
+			const { initializeNavigation } = await import("../../server/utils/navigation-auth.js");
 			initializeNavigation("nav-container");
 
 			// Assert
@@ -278,7 +278,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { handleLogout } = await import("../../utils/navigation-auth.js");
+			const { handleLogout } = await import("../../server/utils/navigation-auth.js");
 			await handleLogout();
 
 			// Assert
@@ -300,7 +300,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { handleLogout } = await import("../../utils/navigation-auth.js");
+			const { handleLogout } = await import("../../server/utils/navigation-auth.js");
 			await handleLogout();
 
 			// Assert
@@ -314,7 +314,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { handleLogout } = await import("../../utils/navigation-auth.js");
+			const { handleLogout } = await import("../../server/utils/navigation-auth.js");
 			await handleLogout();
 
 			// Assert
@@ -334,7 +334,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { initializeNavigation } = await import("../../utils/navigation-auth.js");
+			const { initializeNavigation } = await import("../../server/utils/navigation-auth.js");
 			initializeNavigation("nav-container");
 
 			// Assert
@@ -352,7 +352,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { initializeNavigation } = await import("../../utils/navigation-auth.js");
+			const { initializeNavigation } = await import("../../server/utils/navigation-auth.js");
 			initializeNavigation("nav-container");
 
 			// Assert
@@ -370,7 +370,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { initializeNavigation } = await import("../../utils/navigation-auth.js");
+			const { initializeNavigation } = await import("../../server/utils/navigation-auth.js");
 			initializeNavigation("nav-container");
 
 			// Assert
@@ -390,7 +390,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Assert
@@ -408,7 +408,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Assert
@@ -440,7 +440,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { updateNavigationState } = await import("../../utils/navigation-auth.js");
+			const { updateNavigationState } = await import("../../server/utils/navigation-auth.js");
 			updateNavigationState(true, { name: `${mockUser.firstName} ${mockUser.lastName}`, role: mockUser.role });
 
 			// Assert
@@ -454,7 +454,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act
 			// Import the module with mocks applied
-			const { updateNavigationState } = await import("../../utils/navigation-auth.js");
+			const { updateNavigationState } = await import("../../server/utils/navigation-auth.js");
 			updateNavigationState(false);
 
 			// Assert
@@ -481,7 +481,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act - Initialize on teams page
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Change to calendar page
@@ -516,7 +516,7 @@ describe("Navigation Authentication Integration", () => {
 
 			// Act - First page load
 			// Import the module with mocks applied
-			const { checkAuthenticationOnLoad } = await import("../../utils/navigation-auth.js");
+			const { checkAuthenticationOnLoad } = await import("../../server/utils/navigation-auth.js");
 			await checkAuthenticationOnLoad();
 
 			// Act - Second page load with expired session

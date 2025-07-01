@@ -26,10 +26,10 @@ import {
 	type ProfileFormData,
 	type ProfileUpdateData,
 	type SessionInfo
-} from "../../utils/profile-core";
+} from "../../server/utils/profile-core";
 
 // Mock the dependencies
-vi.mock("../../utils/validation-core", () => ({
+vi.mock("../../server/utils/validation-core", () => ({
 	sanitizeInput: vi.fn((input: string) => {
 		if (!input || typeof input !== "string") {
 			return "";
@@ -44,12 +44,12 @@ vi.mock("../../utils/validation-core", () => ({
 	})
 }));
 
-vi.mock("../../utils/ui-core", () => ({
+vi.mock("../../server/utils/ui-core", () => ({
 	validateProfileFormData: vi.fn(),
 	createProfileDisplayData: vi.fn()
 }));
 
-import { validateProfileFormData, createProfileDisplayData } from "../../utils/ui-core";
+import { validateProfileFormData, createProfileDisplayData } from "../../server/utils/ui-core";
 
 // Mock fetch for API utility tests
 global.fetch = vi.fn();

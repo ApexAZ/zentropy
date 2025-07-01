@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
 import type { QueryResult } from "pg";
-import { CalendarEntryModel, type CalendarEntry } from "../../models/CalendarEntry";
+import { CalendarEntryModel, type CalendarEntry } from "../../server/models/CalendarEntry";
 import { TestDataFactory } from "../helpers/test-data-factory";
 import { AssertionHelpers, DomainAssertionHelpers } from "../helpers/assertion-helpers";
-import { pool } from "../../database/connection";
+import { pool } from "../../server/database/connection";
 
 // Mock the database connection
-vi.mock("../../database/connection", () => ({
+vi.mock("../../server/database/connection", () => ({
 	pool: {
 		query: vi.fn().mockResolvedValue({
 			rows: [],
