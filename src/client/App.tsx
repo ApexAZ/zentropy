@@ -37,10 +37,10 @@ function App() {
   }
 
   return (
-    <div className="App">
+    <div className="app-container">
       <Header currentPage={currentPage} onPageChange={setCurrentPage} />
       {renderPage()}
-      <footer>
+      <footer className="main-footer">
         <p>&copy; 2025 Zentropy. All rights reserved.</p>
       </footer>
     </div>

@@ -62,24 +62,36 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange }) => {
         aria-expanded={isOpen}
         aria-haspopup="true"
         onClick={handleToggle}
+        aria-label="Profile menu"
       >
         <svg className="profile-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
         </svg>
-        <span className="profile-name">Profile</span>
-        <svg className="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M7 10l5 5 5-5z"/>
-        </svg>
       </button>
       
       {isOpen && (
-        <div className="profile-menu show" role="menu">
+        <>
+          <button
+            className="profile-close-overlay"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close profile menu"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+          <div className="profile-menu-backdrop" onClick={() => setIsOpen(false)}></div>
+          <div className="profile-menu show" role="menu">
         <div className="profile-menu-header">
-          <div className="profile-avatar">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+          <button
+            className="profile-menu-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close profile menu"
+          >
+            <svg className="profile-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
-          </div>
+          </button>
           <div className="profile-info">
             <div className="profile-user-name">John Doe</div>
             <div className="profile-user-email">john@example.com</div>
@@ -145,6 +157,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange }) => {
           <span>Sign Out</span>
         </button>
         </div>
+        </>
       )}
     </div>
   )

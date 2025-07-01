@@ -147,6 +147,97 @@ pkill -f "node.*dist/server" || echo "No processes killed"
 
 ---
 
-*Generated: 2025-06-30 15:22:00 -07:00*
-*Server Status: ✅ Running (http://localhost:3000)*
-*Database Status: ✅ Running (PostgreSQL container)*
+## Additional Server Startup Issues - 2025-06-30 16:15:00 -07:00
+
+### Issue Context
+During React Testing Library integration commit and subsequent server restart attempts, encountered similar server startup reliability issues.
+
+### Timeline of Additional Issues
+
+#### React Testing Library Commit (16:09:00)
+**User Request**: "start the database and the server and render the index page"
+
+#### Database Startup (16:09:00)
+```bash
+docker-compose up -d
+# ✅ Success: Container zentropy_db Running
+```
+
+#### Server Startup Issues (16:09:00 - 16:13:00)
+**Attempt 1 - Build with Linting:**
+```bash
+npm run dev:simple
+# ❌ Failed: Build stopped at linting step due to 315 existing TypeScript errors
+# Note: These are legacy codebase errors, not related to React changes
+```
+
+**Attempt 2 - Manual Build:**
+```bash
+npm run build:client && npm run build:server
+# ✅ Success: React app built to dist/public, server built to dist/server
+```
+
+**Attempt 3 - Direct Server Start:**
+```bash
+node dist/server/index.js
+# ❌ Issue: Command showed startup messages but timed out after 10s
+# Server appeared to start but command hung
+```
+
+**Attempt 4 - Connection Test:**
+```bash
+curl http://localhost:3000/health
+# ❌ Failed: Connection refused - server not actually listening
+```
+
+**Attempt 5 - Background Process:**
+```bash
+nohup node dist/server/index.js > server.log 2>&1 & 
+# ✅ Success: Server started properly with PID 28930
+# ✅ Verified: React app served correctly at http://localhost:3000/
+# ✅ Health check: {"status":"ok","database":"connected"}
+```
+
+### Pattern Analysis
+
+#### Consistent Issues
+1. **npm script hanging**: Both `npm run dev:simple` and direct `node` commands hang
+2. **Misleading output**: Server shows startup messages but doesn't actually listen
+3. **Background success**: Starting server with `&` or `nohup` works reliably
+4. **Process management**: Foreground processes appear to get stuck after startup messages
+
+#### New Observations
+1. **Build pipeline isolation**: React client builds work fine, issue is server startup
+2. **Linting blocker**: 315 legacy TypeScript errors block `npm run build` command
+3. **Express + React integration**: Static file serving works once server actually starts
+4. **Resource contention**: Foreground processes seem to hang waiting for something
+
+### Confirmed Workaround Pattern
+```bash
+# Reliable startup sequence:
+docker-compose up -d                    # Start database
+npm run build:client && npm run build:server  # Build without linting
+nohup node dist/server/index.js > server.log 2>&1 &  # Background server
+curl http://localhost:3000/health       # Verify startup
+```
+
+### Additional Investigation Areas
+1. **npm script process handling** - Why do foreground processes hang?
+2. **Express startup timing** - What is the server waiting for?
+3. **Signal handling in WSL2** - Are there platform-specific issues?
+4. **Memory/resource monitoring** - Is the process running out of resources?
+5. **Legacy codebase TypeScript errors** - Blocking build pipeline reliability
+
+### Immediate Action Items
+1. Create bypass for linting in development builds (legacy codebase errors)
+2. Add timeout and error handling to npm scripts
+3. Investigate why foreground node processes hang after startup
+4. Document reliable startup sequence for development team
+
+---
+
+*Generated: 2025-06-30 15:22:00 -07:00*  
+*Updated: 2025-06-30 16:15:00 -07:00*  
+*Server Status: ✅ Running (http://localhost:3000) - Background process PID 28930*  
+*Database Status: ✅ Running (PostgreSQL container)*  
+*React App Status: ✅ Serving correctly with modern component architecture*
