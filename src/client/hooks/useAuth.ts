@@ -22,16 +22,44 @@ export const useAuth = () => {
 	useEffect(() => {
 		const token = localStorage.getItem("access_token");
 		if (token) {
-			// TODO: Validate token with API and get user info
-			// For now, just set authenticated with mock user
-			setAuthState({
-				isAuthenticated: true,
-				user: {
-					email: "john@example.com",
-					name: "John Doe"
-				},
-				token
-			});
+			// Validate token with API and get user info
+			fetch("/api/users/me", {
+				headers: {
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json"
+				}
+			})
+				.then(async response => {
+					if (response.ok) {
+						const userData = await response.json();
+						setAuthState({
+							isAuthenticated: true,
+							user: {
+								email: userData.email,
+								name: `${userData.first_name} ${userData.last_name}`
+							},
+							token
+						});
+					} else {
+						// Token is invalid, remove it
+						localStorage.removeItem("access_token");
+						setAuthState({
+							isAuthenticated: false,
+							user: null,
+							token: null
+						});
+					}
+				})
+				.catch(error => {
+					console.warn("Failed to validate token:", error);
+					// Token validation failed, remove it
+					localStorage.removeItem("access_token");
+					setAuthState({
+						isAuthenticated: false,
+						user: null,
+						token: null
+					});
+				});
 		}
 	}, []);
 

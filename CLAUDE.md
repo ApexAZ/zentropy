@@ -193,6 +193,25 @@ npm run quality                # Full quality pipeline: lint + format + type-che
 npm run perf:build-analyze     # Build + analyze bundle size (current: 300KB)
 ```
 
+### **⚠️ IMPORTANT: Claude Code Development Server Limitation**
+**Claude Code cannot run `npm run dev` due to timeout conflicts with long-running processes.**
+
+**Manual Server Startup Required:**
+```bash
+# User must start development servers manually from terminal:
+npm run dev                    # Start all services in separate terminal
+# OR start individual services:
+npm run dev:database          # PostgreSQL container (port 5432)
+npm run dev:api               # Python FastAPI (port 3000)  
+npm run dev:client            # React/Vite (port 5173)
+```
+
+**Claude Code Compatibility:**
+- ✅ **Can run**: `npm run quality`, `npm run test`, `npm run build`, `npm run stop`
+- ✅ **Can run**: Individual commands, linting, formatting, type checking
+- ❌ **Cannot run**: `npm run dev` (times out due to persistent server processes)
+- ❌ **Cannot run**: Long-running development servers (use manual terminal startup)
+
 ### **Setup Commands (run once)**
 ```bash
 npm run install:all            # Install all dependencies (npm + Python)
