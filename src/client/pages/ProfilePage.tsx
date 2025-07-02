@@ -65,7 +65,7 @@ const ProfilePage: React.FC = () => {
     }
   }, [toast])
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = async (): Promise<void> => {
     try {
       setIsLoading(true)
       setError('')
@@ -75,7 +75,7 @@ const ProfilePage: React.FC = () => {
         throw new Error(`Failed to load profile: ${response.status}`)
       }
 
-      const userData = await response.json()
+      const userData = await response.json() as User
       setUser(userData)
       setProfileData({
         first_name: userData.first_name,
@@ -83,19 +83,19 @@ const ProfilePage: React.FC = () => {
         email: userData.email
       })
     } catch (err) {
-      console.error('Error loading profile:', err)
+      // console.error('Error loading profile:', err)
       setError(err instanceof Error ? err.message : 'Failed to load profile')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleEditProfile = () => {
+  const handleEditProfile = (): void => {
     setIsEditingProfile(true)
     setProfileErrors({})
   }
 
-  const handleCancelProfileEdit = () => {
+  const handleCancelProfileEdit = (): void => {
     setIsEditingProfile(false)
     if (user) {
       setProfileData({
@@ -132,7 +132,7 @@ const ProfilePage: React.FC = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
     if (!validateProfileForm()) {
@@ -149,11 +149,11 @@ const ProfilePage: React.FC = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to update profile')
+        const errorData = await response.json() as { message?: string }
+        throw new Error(errorData.message ?? 'Failed to update profile')
       }
 
-      const updatedUser = await response.json()
+      const updatedUser = await response.json() as User
       setUser(updatedUser)
       setIsEditingProfile(false)
       setToast({
@@ -161,7 +161,7 @@ const ProfilePage: React.FC = () => {
         type: 'success'
       })
     } catch (err) {
-      console.error('Error updating profile:', err)
+      // console.error('Error updating profile:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Failed to update profile',
         type: 'error'
@@ -169,7 +169,7 @@ const ProfilePage: React.FC = () => {
     }
   }
 
-  const handleChangePassword = () => {
+  const handleChangePassword = (): void => {
     setIsChangingPassword(true)
     setPasswordData({
       current_password: '',
@@ -179,7 +179,7 @@ const ProfilePage: React.FC = () => {
     setPasswordErrors({})
   }
 
-  const handleCancelPasswordChange = () => {
+  const handleCancelPasswordChange = (): void => {
     setIsChangingPassword(false)
     setPasswordData({
       current_password: '',
@@ -214,7 +214,7 @@ const ProfilePage: React.FC = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
     if (!validatePasswordForm()) {
