@@ -350,12 +350,12 @@ const CalendarPage: React.FC = () => {
     return user ? `${user.first_name} ${user.last_name}` : 'Unknown User'
   }
 
-  const getTeamName = (teamId: string) => {
+  const getTeamName = (teamId: string): string => {
     const team = teams.find(t => t.id === teamId)
     return team ? team.name : 'Unknown Team'
   }
 
-  const generateMonthOptions = () => {
+  const generateMonthOptions = (): { value: string; label: string }[] => {
     const options = []
     const currentDate = new Date()
     
@@ -403,7 +403,7 @@ const CalendarPage: React.FC = () => {
             <h3 className="text-red-600 mb-3 text-xl font-semibold">Unable to Load Calendar</h3>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
-              onClick={loadInitialData}
+              onClick={() => void loadInitialData()}
               className="inline-flex items-center gap-2 py-2 px-4 bg-white text-gray-700 border border-gray-300 rounded-md text-base font-medium text-center no-underline cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:border-gray-400"
             >
               Try Again
@@ -539,11 +539,12 @@ const CalendarPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={(e) => void handleSubmit(e)} className="p-6">
               <div className="space-y-6">
                 <div className="flex flex-col gap-2">
-                  <label className="block font-medium text-gray-700">Team *</label>
+                  <label htmlFor="team-select" className="block font-medium text-gray-700">Team *</label>
                   <select
+                    id="team-select"
                     value={formData.team_id}
                     onChange={(e) => setFormData({ ...formData, team_id: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-md text-base leading-6 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
@@ -560,8 +561,9 @@ const CalendarPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="block font-medium text-gray-700">Team Member *</label>
+                  <label htmlFor="user-select" className="block font-medium text-gray-700">Team Member *</label>
                   <select
+                    id="user-select"
                     value={formData.user_id}
                     onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
                     disabled={!formData.team_id}
@@ -579,8 +581,9 @@ const CalendarPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="block font-medium text-gray-700">Entry Type *</label>
+                  <label htmlFor="entry-type-select" className="block font-medium text-gray-700">Entry Type *</label>
                   <select
+                    id="entry-type-select"
                     value={formData.entry_type}
                     onChange={(e) => setFormData({ ...formData, entry_type: e.target.value })}
                     className="w-full p-3 border border-gray-300 rounded-md text-base leading-6 transition-all duration-200 focus:outline-none focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)]"
@@ -594,8 +597,9 @@ const CalendarPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="block font-medium text-gray-700">Title *</label>
+                  <label htmlFor="title-input" className="block font-medium text-gray-700">Title *</label>
                   <input
+                    id="title-input"
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -610,8 +614,9 @@ const CalendarPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
-                    <label className="block font-medium text-gray-700">Start Date *</label>
+                    <label htmlFor="start-date-input" className="block font-medium text-gray-700">Start Date *</label>
                     <input
+                      id="start-date-input"
                       type="date"
                       value={formData.start_date}
                       onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
@@ -624,8 +629,9 @@ const CalendarPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <label className="block font-medium text-gray-700">End Date *</label>
+                    <label htmlFor="end-date-input" className="block font-medium text-gray-700">End Date *</label>
                     <input
+                      id="end-date-input"
                       type="date"
                       value={formData.end_date}
                       onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
@@ -639,8 +645,9 @@ const CalendarPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="block font-medium text-gray-700">Description</label>
+                  <label htmlFor="description-textarea" className="block font-medium text-gray-700">Description</label>
                   <textarea
+                    id="description-textarea"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
@@ -701,7 +708,7 @@ const CalendarPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                onClick={handleDelete}
+                onClick={() => void handleDelete()}
                 className="inline-flex items-center gap-2 py-3 px-6 bg-red-600 text-white border-none rounded-md text-base font-medium text-center no-underline cursor-pointer transition-all duration-200 hover:bg-red-700"
               >
                 Delete Entry
