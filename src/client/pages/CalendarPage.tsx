@@ -78,11 +78,11 @@ const CalendarPage: React.FC = () => {
   // Load data on component mount
   useEffect(() => {
     void loadInitialData()
-  }, [])
+  }, [loadInitialData])
 
   useEffect(() => {
     void loadEntries()
-  }, [selectedTeam, selectedMonth])
+  }, [loadEntries, selectedTeam, selectedMonth])
 
   // Hide toast after 5 seconds
   useEffect(() => {
@@ -133,7 +133,7 @@ const CalendarPage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [loadEntries])
 
   const loadEntries = useCallback(async (): Promise<void> => {
     try {
@@ -158,19 +158,19 @@ const CalendarPage: React.FC = () => {
     }
   }, [selectedTeam, selectedMonth])
 
-  const loadTeamUsers = async (teamId: string) => {
+  const loadTeamUsers = async (teamId: string): Promise<void> => {
     try {
       const response = await fetch(`/api/teams/${teamId}/users`)
       if (response.ok) {
-        const users = await response.json()
+        const users = await response.json() as User[]
         setTeamUsers(users)
       }
     } catch (err) {
-      console.error('Error loading team users:', err)
+      // console.error('Error loading team users:', err)
     }
   }
 
-  const openCreateModal = () => {
+  const openCreateModal = (): void => {
     setCurrentEntry(null)
     setIsEditing(false)
     setFormData({
@@ -187,7 +187,7 @@ const CalendarPage: React.FC = () => {
     setShowEntryModal(true)
   }
 
-  const openEditModal = (entry: CalendarEntry) => {
+  const openEditModal = (entry: CalendarEntry): void => {
     setCurrentEntry(entry)
     setIsEditing(true)
     setFormData({
@@ -197,19 +197,19 @@ const CalendarPage: React.FC = () => {
       title: entry.title,
       start_date: entry.start_date.split('T')[0], // Extract date part
       end_date: entry.end_date.split('T')[0],
-      description: entry.description || '',
+      description: entry.description ?? '',
       all_day: entry.all_day
     })
     setFormErrors({})
     setShowEntryModal(true)
   }
 
-  const openDeleteModal = (entry: CalendarEntry) => {
+  const openDeleteModal = (entry: CalendarEntry): void => {
     setCurrentEntry(entry)
     setShowDeleteModal(true)
   }
 
-  const closeModals = () => {
+  const closeModals = (): void => {
     setShowEntryModal(false)
     setShowDeleteModal(false)
     setCurrentEntry(null)
@@ -248,7 +248,7 @@ const CalendarPage: React.FC = () => {
     return Object.keys(errors).length === 0
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
     if (!validateForm()) {
@@ -268,8 +268,8 @@ const CalendarPage: React.FC = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to save calendar entry')
+        const errorData = await response.json() as { message?: string }
+        throw new Error(errorData.message ?? 'Failed to save calendar entry')
       }
 
       setToast({
