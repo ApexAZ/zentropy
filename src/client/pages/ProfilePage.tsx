@@ -234,8 +234,8 @@ const ProfilePage: React.FC = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to update password')
+        const errorData = await response.json() as { message?: string }
+        throw new Error(errorData.message ?? 'Failed to update password')
       }
 
       setIsChangingPassword(false)
@@ -249,7 +249,7 @@ const ProfilePage: React.FC = () => {
         type: 'success'
       })
     } catch (err) {
-      console.error('Error updating password:', err)
+      // console.error('Error updating password:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Failed to update password',
         type: 'error'
@@ -257,14 +257,14 @@ const ProfilePage: React.FC = () => {
     }
   }
 
-  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
+  const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm'): void => {
     setShowPasswords(prev => ({
       ...prev,
       [field]: !prev[field]
     }))
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -272,16 +272,16 @@ const ProfilePage: React.FC = () => {
     })
   }
 
-  const getRoleLabel = (role: string) => {
+  const getRoleLabel = (role: string): string => {
     const labels = {
       team_member: 'Team Member',
       team_lead: 'Team Lead',
       admin: 'Administrator'
     }
-    return labels[role as keyof typeof labels] || role
+    return labels[role as keyof typeof labels] ?? role
   }
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeColor = (role: string): string => {
     const colors = {
       team_member: 'bg-blue-100 text-blue-800',
       team_lead: 'bg-green-100 text-green-800',
@@ -321,7 +321,7 @@ const ProfilePage: React.FC = () => {
             <h3 className="text-red-600 mb-3 text-xl font-semibold">Unable to Load Profile</h3>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
-              onClick={loadUserProfile}
+              onClick={() => void loadUserProfile()}
               className="inline-flex items-center gap-2 py-2 px-4 bg-white text-gray-700 border border-gray-300 rounded-md text-base font-medium text-center no-underline cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:border-gray-400"
             >
               Retry
@@ -362,11 +362,12 @@ const ProfilePage: React.FC = () => {
           </div>
 
           {isEditingProfile ? (
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
+            <form onSubmit={(e) => void handleProfileSubmit(e)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block font-medium mb-2 text-gray-700">First Name</label>
+                  <label htmlFor="profile-first-name" className="block font-medium mb-2 text-gray-700">First Name</label>
                   <input
+                    id="profile-first-name"
                     type="text"
                     value={profileData.first_name}
                     onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
@@ -379,8 +380,9 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block font-medium mb-2 text-gray-700">Last Name</label>
+                  <label htmlFor="profile-last-name" className="block font-medium mb-2 text-gray-700">Last Name</label>
                   <input
+                    id="profile-last-name"
                     type="text"
                     value={profileData.last_name}
                     onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
@@ -394,8 +396,9 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-medium mb-2 text-gray-700">Email Address</label>
+                <label htmlFor="profile-email" className="block font-medium mb-2 text-gray-700">Email Address</label>
                 <input
+                  id="profile-email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
@@ -426,17 +429,17 @@ const ProfilePage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Full Name</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Full Name</div>
                 <div className="text-gray-900">{user.first_name} {user.last_name}</div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Email Address</div>
                 <div className="text-gray-900">{user.email}</div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Role</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Role</div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-900">{getRoleLabel(user.role)}</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
@@ -446,7 +449,7 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Member Since</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Member Since</div>
                 <div className="text-gray-900">{formatDate(user.created_at)}</div>
               </div>
             </div>
@@ -469,11 +472,12 @@ const ProfilePage: React.FC = () => {
           </div>
 
           {isChangingPassword ? (
-            <form onSubmit={handlePasswordSubmit} className="space-y-6">
+            <form onSubmit={(e) => void handlePasswordSubmit(e)} className="space-y-6">
               <div>
-                <label className="block font-medium mb-2 text-gray-700">Current Password</label>
+                <label htmlFor="current-password" className="block font-medium mb-2 text-gray-700">Current Password</label>
                 <div className="relative">
                   <input
+                    id="current-password"
                     type={showPasswords.current ? 'text' : 'password'}
                     value={passwordData.current_password}
                     onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
@@ -494,9 +498,10 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-medium mb-2 text-gray-700">New Password</label>
+                <label htmlFor="new-password" className="block font-medium mb-2 text-gray-700">New Password</label>
                 <div className="relative">
                   <input
+                    id="new-password"
                     type={showPasswords.new ? 'text' : 'password'}
                     value={passwordData.new_password}
                     onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
@@ -520,9 +525,10 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-medium mb-2 text-gray-700">Confirm New Password</label>
+                <label htmlFor="confirm-password" className="block font-medium mb-2 text-gray-700">Confirm New Password</label>
                 <div className="relative">
                   <input
+                    id="confirm-password"
                     type={showPasswords.confirm ? 'text' : 'password'}
                     value={passwordData.confirm_new_password}
                     onChange={(e) => setPasswordData({ ...passwordData, confirm_new_password: e.target.value })}
@@ -561,7 +567,7 @@ const ProfilePage: React.FC = () => {
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Password</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Password</div>
                 <div className="flex items-center gap-4">
                   <span className="text-gray-400">••••••••••••</span>
                   <span className="text-sm text-gray-600">Last changed: Recent</span>
@@ -569,7 +575,7 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">Security Status</label>
+                <div className="block text-sm font-medium text-gray-500 mb-1">Security Status</div>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                     <span>🛡️</span>
@@ -588,7 +594,7 @@ const ProfilePage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">Account Status</label>
+              <div className="block text-sm font-medium text-gray-500 mb-1">Account Status</div>
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                   <span>✅</span>
@@ -598,17 +604,17 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">User ID</label>
+              <div className="block text-sm font-medium text-gray-500 mb-1">User ID</div>
               <div className="text-gray-900 font-mono text-sm">{user.id}</div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">Username</label>
+              <div className="block text-sm font-medium text-gray-500 mb-1">Username</div>
               <div className="text-gray-900">{user.username}</div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">Last Updated</label>
+              <div className="block text-sm font-medium text-gray-500 mb-1">Last Updated</div>
               <div className="text-gray-900">{formatDate(user.updated_at)}</div>
             </div>
           </div>

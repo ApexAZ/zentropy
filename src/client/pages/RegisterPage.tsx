@@ -72,16 +72,16 @@ const RegisterPage: React.FC = () => {
       return
     }
 
-    const timeoutId = setTimeout(async () => {
+    const timeoutId = setTimeout(() => void (async (): Promise<void> => {
       try {
         const response = await fetch(`/api/users/check-email?email=${encodeURIComponent(formData.email)}`)
-        const data = await response.json()
+        const data = await response.json() as { available: boolean }
         setEmailAvailable(data.available)
       } catch (err) {
-        console.error('Error checking email availability:', err)
+        // console.error('Error checking email availability:', err)
         setEmailAvailable(null)
       }
-    }, 500)
+    })(), 500)
 
     return () => clearTimeout(timeoutId)
   }, [formData.email])
@@ -173,15 +173,15 @@ const RegisterPage: React.FC = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Registration failed')
+        const errorData = await response.json() as { message?: string }
+        throw new Error(errorData.message ?? 'Registration failed')
       }
 
       // Show success modal
       setShowSuccessModal(true)
 
     } catch (err) {
-      console.error('Registration error:', err)
+      // console.error('Registration error:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Registration failed. Please try again.',
         type: 'error'
