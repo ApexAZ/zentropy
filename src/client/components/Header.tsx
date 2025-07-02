@@ -29,10 +29,11 @@ interface HeaderProps {
 	currentPage: Page;
 	onPageChange: (page: Page) => void;
 	onShowRegistration: () => void;
+	onShowLogin: () => void;
 	auth: Auth;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, auth }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowLogin, auth }) => {
 	return (
 		<header className="border-layout-background bg-content-background flex w-full items-center justify-between border-b px-8 py-4 shadow-sm">
 			<h1 className="m-0 flex-shrink-0 text-3xl">
@@ -71,7 +72,12 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 					</li>
 				</ul>
 				<div className="nav-auth">
-					<ProfileDropdown onPageChange={onPageChange} onShowRegistration={onShowRegistration} auth={auth} />
+					<ProfileDropdown
+						onPageChange={onPageChange}
+						onShowRegistration={onShowRegistration}
+						onShowLogin={onShowLogin}
+						auth={auth}
+					/>
 				</div>
 			</nav>
 		</header>

@@ -145,6 +145,12 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: dict  # Contains user info like first_name, last_name, email
+
+
 class TokenData(BaseModel):
     user_id: Optional[UUID] = None
 

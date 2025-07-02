@@ -71,16 +71,21 @@ describe("RegistrationModal", () => {
 	});
 
 	describe("Registration Form", () => {
-		it("should display all required form fields", () => {
+		it("should display all form fields with correct required/optional status", () => {
 			render(<RegistrationModal {...defaultProps} />);
 
+			// Required fields
 			expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
 			expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
 			expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+			expect(screen.getByPlaceholderText(/create a secure password/i)).toBeInTheDocument();
+			expect(screen.getByPlaceholderText(/confirm your password/i)).toBeInTheDocument();
+
+			// Optional field
 			expect(screen.getByLabelText(/organization/i)).toBeInTheDocument();
-			expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
-			expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-			expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+
+			// Role field should not exist
+			expect(screen.queryByLabelText(/role/i)).not.toBeInTheDocument();
 		});
 
 		it("should display terms agreement checkbox", () => {
@@ -99,6 +104,55 @@ describe("RegistrationModal", () => {
 			expect(screen.getByText(/one lowercase letter/i)).toBeInTheDocument();
 			expect(screen.getByText(/one number/i)).toBeInTheDocument();
 			expect(screen.getByText(/one symbol/i)).toBeInTheDocument();
+		});
+
+		it("should display red borders and asterisks for empty required fields", () => {
+			render(<RegistrationModal {...defaultProps} />);
+
+			// Required fields should have red borders when empty
+			const firstNameInput = screen.getByLabelText(/first name/i);
+			const lastNameInput = screen.getByLabelText(/last name/i);
+			const emailInput = screen.getByLabelText(/email address/i);
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
+			const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
+
+			expect(firstNameInput).toHaveClass("border-red-300");
+			expect(lastNameInput).toHaveClass("border-red-300");
+			expect(emailInput).toHaveClass("border-red-300");
+			expect(passwordInput).toHaveClass("border-red-300");
+			expect(confirmPasswordInput).toHaveClass("border-red-300");
+
+			// Required field labels should have red asterisks
+			const asterisks = screen.getAllByText("*");
+			expect(asterisks.length).toBeGreaterThan(0);
+			expect(asterisks[0]).toHaveClass("text-red-500");
+		});
+
+		it("should remove red borders and asterisks when required fields have text", async () => {
+			const user = userEvent.setup();
+			render(<RegistrationModal {...defaultProps} />);
+
+			const firstNameInput = screen.getByLabelText(/first name/i);
+
+			// Initially should have red border
+			expect(firstNameInput).toHaveClass("border-red-300");
+
+			// Type in the field
+			await user.type(firstNameInput, "John");
+
+			// Should remove red border and use normal border
+			expect(firstNameInput).not.toHaveClass("border-red-300");
+			expect(firstNameInput).toHaveClass("border-layout-background");
+		});
+
+		it("should not show red borders or asterisks for optional organization field", () => {
+			render(<RegistrationModal {...defaultProps} />);
+
+			const organizationInput = screen.getByLabelText(/organization/i);
+
+			// Optional field should not have red border
+			expect(organizationInput).not.toHaveClass("border-red-300");
+			expect(organizationInput).toHaveClass("border-layout-background");
 		});
 	});
 
@@ -173,7 +227,7 @@ describe("RegistrationModal", () => {
 
 			render(<RegistrationModal {...defaultProps} />);
 
-			const passwordInput = screen.getByLabelText(/^password$/i);
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			await user.type(passwordInput, "weak");
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -187,8 +241,8 @@ describe("RegistrationModal", () => {
 
 			render(<RegistrationModal {...defaultProps} />);
 
-			const passwordInput = screen.getByLabelText(/^password$/i);
-			const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
+			const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
 
 			await user.type(passwordInput, "StrongPass123!");
 			await user.type(confirmPasswordInput, "DifferentPass123!");
@@ -209,9 +263,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
 			await user.click(submitButton);
@@ -221,23 +274,30 @@ describe("RegistrationModal", () => {
 	});
 
 	describe("Password Features", () => {
-		it("should toggle password visibility", async () => {
+		it("should toggle password visibility with eye icons", async () => {
 			const user = userEvent.setup();
 
 			render(<RegistrationModal {...defaultProps} />);
 
-			const passwordInput = screen.getByLabelText(/^password$/i);
-			const toggleButton = screen.getAllByText(/show/i)[0];
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
+			const toggleButton = screen.getAllByLabelText(/toggle password visibility/i)[0];
 
-			// Initially should be password type
+			// Initially should be password type with eye icon (no slash)
 			expect(passwordInput).toHaveAttribute("type", "password");
 
-			// Click toggle
+			// Should show eye icon (visible state) when password is hidden
+			const eyeIcon = toggleButton.querySelector("svg");
+			expect(eyeIcon).toBeInTheDocument();
+
+			// Click toggle to show password
 			await user.click(toggleButton);
 
-			// Should now be text type
+			// Should now be text type with eye-slash icon
 			expect(passwordInput).toHaveAttribute("type", "text");
-			expect(screen.getAllByText(/hide/i)[0]).toBeInTheDocument();
+
+			// Should show eye-slash icon when password is visible
+			const eyeSlashIcon = toggleButton.querySelector("svg");
+			expect(eyeSlashIcon).toBeInTheDocument();
 		});
 
 		it("should show password strength indicator", async () => {
@@ -245,7 +305,7 @@ describe("RegistrationModal", () => {
 
 			render(<RegistrationModal {...defaultProps} />);
 
-			const passwordInput = screen.getByLabelText(/^password$/i);
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 
 			// Type weak password
 			await user.type(passwordInput, "weak");
@@ -262,12 +322,52 @@ describe("RegistrationModal", () => {
 
 			render(<RegistrationModal {...defaultProps} />);
 
-			const passwordInput = screen.getByLabelText(/^password$/i);
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			await user.type(passwordInput, "StrongPass123!");
 
 			// All requirements should show checkmarks
 			const checkmarks = screen.getAllByText("✓");
 			expect(checkmarks).toHaveLength(5); // 5 password requirements
+		});
+
+		it("should show password match indicator in requirements checklist", async () => {
+			const user = userEvent.setup();
+
+			render(<RegistrationModal {...defaultProps} />);
+
+			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
+			const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
+
+			// Initially passwords should not match (both empty)
+			expect(screen.getByText(/passwords match/i)).toBeInTheDocument();
+			const initialMatchCheck = screen.getByText(/passwords match/i).closest("li");
+			expect(initialMatchCheck).toHaveClass("text-text-primary");
+			expect(initialMatchCheck?.querySelector("span")).toHaveTextContent("✗");
+
+			// Type password in first field
+			await user.type(passwordInput, "StrongPass123!");
+
+			// Should still not match (confirm field empty)
+			const mismatchCheck = screen.getByText(/passwords match/i).closest("li");
+			expect(mismatchCheck).toHaveClass("text-text-primary");
+			expect(mismatchCheck?.querySelector("span")).toHaveTextContent("✗");
+
+			// Type matching password in confirm field
+			await user.type(confirmPasswordInput, "StrongPass123!");
+
+			// Should now match
+			const matchCheck = screen.getByText(/passwords match/i).closest("li");
+			expect(matchCheck).toHaveClass("text-green-600");
+			expect(matchCheck?.querySelector("span")).toHaveTextContent("✓");
+
+			// Change confirm password to not match
+			await user.clear(confirmPasswordInput);
+			await user.type(confirmPasswordInput, "DifferentPass!");
+
+			// Should not match again
+			const finalMismatchCheck = screen.getByText(/passwords match/i).closest("li");
+			expect(finalMismatchCheck).toHaveClass("text-text-primary");
+			expect(finalMismatchCheck?.querySelector("span")).toHaveTextContent("✗");
 		});
 	});
 
@@ -325,9 +425,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 			await user.click(screen.getByRole("checkbox"));
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -342,7 +441,6 @@ describe("RegistrationModal", () => {
 						last_name: "Doe",
 						email: "john@example.com",
 						organization: "Test Org",
-						role: "team_member",
 						password: "StrongPass123!"
 					})
 				});
@@ -376,9 +474,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 			await user.click(screen.getByRole("checkbox"));
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -403,9 +500,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 			await user.click(screen.getByRole("checkbox"));
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -428,9 +524,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 			await user.click(screen.getByRole("checkbox"));
 
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -452,9 +547,8 @@ describe("RegistrationModal", () => {
 			await user.type(screen.getByLabelText(/last name/i), "Doe");
 			await user.type(screen.getByLabelText(/email address/i), "john@example.com");
 			await user.type(screen.getByLabelText(/organization/i), "Test Org");
-			await user.selectOptions(screen.getByLabelText(/role/i), "team_member");
-			await user.type(screen.getByLabelText(/^password$/i), "StrongPass123!");
-			await user.type(screen.getByLabelText(/confirm password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/create a secure password/i), "StrongPass123!");
+			await user.type(screen.getByPlaceholderText(/confirm your password/i), "StrongPass123!");
 			await user.click(screen.getByRole("checkbox"));
 			await user.click(screen.getByRole("button", { name: /create account/i }));
 

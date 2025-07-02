@@ -75,6 +75,10 @@ class User(Base):  # type: ignore
     role = Column(String, nullable=False, default="basic_user")
     is_active = Column(Boolean, default=True)
     last_login_at = Column(DateTime, nullable=True)
+    terms_accepted_at = Column(DateTime, nullable=True)
+    terms_version = Column(String(20), nullable=True)
+    privacy_accepted_at = Column(DateTime, nullable=True)
+    privacy_version = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 
 from ..database import get_db
-from ..schemas import Token, UserLogin, UserCreate, UserResponse, MessageResponse
+from ..schemas import (
+    Token,
+    LoginResponse,
+    UserLogin,
+    UserCreate,
+    UserResponse,
+    MessageResponse,
+)
 from ..auth import (
     authenticate_user,
     create_access_token,
@@ -41,7 +48,7 @@ def login(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.post("/login-json", response_model=Token)
+@router.post("/login-json", response_model=LoginResponse)
 def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
     """Login user with JSON payload"""
     user = authenticate_user(db, user_login.email, user_login.password)
@@ -59,7 +66,17 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
-    return Token(access_token=access_token, token_type="bearer")
+
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user={
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "organization": user.organization,
+        },
+    )
 
 
 @router.post("/register", response_model=UserResponse)
@@ -86,6 +103,7 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
 
     # Create user
     hashed_password = get_password_hash(user_create.password)
+    now = datetime.utcnow()
     db_user = database.User(
         email=user_create.email.lower(),
         password_hash=hashed_password,
@@ -93,6 +111,10 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
         last_name=user_create.last_name,
         organization=user_create.organization,
         role=user_create.role,
+        terms_accepted_at=now,
+        terms_version="1.0",
+        privacy_accepted_at=now,
+        privacy_version="1.0",
     )
 
     db.add(db_user)

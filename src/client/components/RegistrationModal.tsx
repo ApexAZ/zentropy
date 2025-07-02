@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useFormValidation } from "../hooks/useFormValidation";
+import RequiredAsterisk from "./RequiredAsterisk";
 
 interface RegisterData {
 	first_name: string;
 	last_name: string;
 	email: string;
 	organization: string;
-	role: string;
 	password: string;
 	confirm_password: string;
 	terms_agreement: boolean;
@@ -17,6 +18,7 @@ interface PasswordRequirements {
 	lowercase: boolean;
 	number: boolean;
 	symbol: boolean;
+	passwordsMatch: boolean;
 }
 
 interface RegistrationModalProps {
@@ -31,7 +33,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 		last_name: "",
 		email: "",
 		organization: "",
-		role: "",
 		password: "",
 		confirm_password: "",
 		terms_agreement: false
@@ -48,12 +49,19 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 		uppercase: false,
 		lowercase: false,
 		number: false,
-		symbol: false
+		symbol: false,
+		passwordsMatch: false
 	});
 	const [passwordStrength, setPasswordStrength] = useState(0);
 	const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
 	const [showSuccessModal, setShowSuccessModal] = useState(false);
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+
+	// Define which fields are required for form validation
+	const requiredFields: (keyof RegisterData)[] = ["first_name", "last_name", "email", "password", "confirm_password"];
+
+	// Use reusable form validation hook
+	const { isFieldEmpty, getFieldBorderClass, isFieldRequired } = useFormValidation(formData, requiredFields);
 
 	const modalRef = useRef<HTMLDivElement>(null);
 	const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -92,23 +100,34 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 		};
 	}, [isOpen, onClose]);
 
-	// Check password requirements whenever password changes
+	// Check password requirements whenever password or confirm password changes
 	useEffect(() => {
 		const password = formData.password;
+		const confirmPassword = formData.confirm_password;
+		const passwordsMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
+
 		const requirements = {
 			length: password.length >= 8,
 			uppercase: /[A-Z]/.test(password),
 			lowercase: /[a-z]/.test(password),
 			number: /\d/.test(password),
-			symbol: /[!@#$%^&*]/.test(password)
+			symbol: /[!@#$%^&*]/.test(password),
+			passwordsMatch: passwordsMatch
 		};
 
 		setPasswordRequirements(requirements);
 
-		// Calculate strength
-		const validCount = Object.values(requirements).filter(Boolean).length;
+		// Calculate strength (exclude passwordsMatch from strength calculation)
+		const basicRequirements = {
+			length: requirements.length,
+			uppercase: requirements.uppercase,
+			lowercase: requirements.lowercase,
+			number: requirements.number,
+			symbol: requirements.symbol
+		};
+		const validCount = Object.values(basicRequirements).filter(Boolean).length;
 		setPasswordStrength(validCount);
-	}, [formData.password]);
+	}, [formData.password, formData.confirm_password]);
 
 	// Check email availability with debounce
 	useEffect(() => {
@@ -171,16 +190,9 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 			newErrors.email = "This email address is already registered";
 		}
 
-		// Organization validation
-		if (!formData.organization.trim()) {
-			newErrors.organization = "Organization is required";
-		} else if (formData.organization.length > 100) {
+		// Organization validation (optional)
+		if (formData.organization.length > 100) {
 			newErrors.organization = "Organization name must be less than 100 characters";
-		}
-
-		// Role validation
-		if (!formData.role) {
-			newErrors.role = "Please select your role";
 		}
 
 		// Password validation
@@ -226,7 +238,6 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 					last_name: formData.last_name,
 					email: formData.email,
 					organization: formData.organization,
-					role: formData.role,
 					password: formData.password
 				})
 			});
@@ -308,17 +319,13 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 	return (
 		<>
 			{/* Modal backdrop - dimmed for form emphasis */}
-			<div
-				className="fixed inset-0 z-[998] bg-black/50"
-				data-testid="modal-backdrop"
-				onClick={onClose}
-			/>
+			<div className="fixed inset-0 z-[998] bg-black/50" data-testid="modal-backdrop" onClick={onClose} />
 
 			{/* Modal container */}
-			<div className="fixed inset-0 z-[999] flex items-center justify-center p-4 pointer-events-none">
+			<div className="pointer-events-none fixed inset-0 z-[999] flex items-center justify-center p-4">
 				<div
 					ref={modalRef}
-					className="bg-content-background border-layout-background max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border shadow-lg pointer-events-auto"
+					className="bg-content-background border-layout-background pointer-events-auto max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg border shadow-lg"
 					role="dialog"
 					aria-modal="true"
 					aria-labelledby="registration-modal-title"
@@ -358,6 +365,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 								<div className="flex flex-col gap-2">
 									<label htmlFor="first-name" className="text-text-primary block text-sm font-medium">
 										First Name
+										<RequiredAsterisk
+											isEmpty={isFieldEmpty("first_name")}
+											isRequired={isFieldRequired("first_name")}
+										/>
 									</label>
 									<input
 										type="text"
@@ -365,7 +376,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										name="first_name"
 										value={formData.first_name}
 										onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+										className={`${getFieldBorderClass("first_name")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none`}
 										required
 										autoComplete="given-name"
 										maxLength={50}
@@ -379,6 +390,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 								<div className="flex flex-col gap-2">
 									<label htmlFor="last-name" className="text-text-primary block text-sm font-medium">
 										Last Name
+										<RequiredAsterisk
+											isEmpty={isFieldEmpty("last_name")}
+											isRequired={isFieldRequired("last_name")}
+										/>
 									</label>
 									<input
 										type="text"
@@ -386,7 +401,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										name="last_name"
 										value={formData.last_name}
 										onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+										className={`${getFieldBorderClass("last_name")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none`}
 										required
 										autoComplete="family-name"
 										maxLength={50}
@@ -401,6 +416,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 							<div className="mb-4 flex flex-col gap-2">
 								<label htmlFor="email" className="text-text-primary block text-sm font-medium">
 									Email Address
+									<RequiredAsterisk
+										isEmpty={isFieldEmpty("email")}
+										isRequired={isFieldRequired("email")}
+									/>
 								</label>
 								<input
 									type="email"
@@ -408,7 +427,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 									name="email"
 									value={formData.email}
 									onChange={e => setFormData({ ...formData, email: e.target.value })}
-									className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+									className={`${getFieldBorderClass("email")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none`}
 									required
 									autoComplete="email"
 									placeholder="Enter your email address"
@@ -433,36 +452,13 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 									value={formData.organization}
 									onChange={e => setFormData({ ...formData, organization: e.target.value })}
 									className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
-									required
 									autoComplete="organization"
 									maxLength={100}
-									placeholder="Enter your organization name"
+									placeholder="Enter your organization name (optional)"
 								/>
 								{errors.organization && (
 									<div className="mt-1 text-sm text-red-600">{errors.organization}</div>
 								)}
-							</div>
-
-							<div className="flex flex-col gap-2">
-								<label htmlFor="role" className="text-text-primary block text-sm font-medium">
-									Role
-								</label>
-								<select
-									id="role"
-									name="role"
-									value={formData.role}
-									onChange={e => setFormData({ ...formData, role: e.target.value })}
-									className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
-									required
-								>
-									<option value="">Select your role</option>
-									<option value="team_member">Team Member</option>
-									<option value="team_lead">Team Lead</option>
-								</select>
-								{errors.role && <div className="mt-1 text-sm text-red-600">{errors.role}</div>}
-								<div className="text-text-primary mt-1 text-sm">
-									Team Leads can manage team settings and member access
-								</div>
 							</div>
 						</div>
 
@@ -475,6 +471,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 							<div className="mb-4 flex flex-col gap-2">
 								<label htmlFor="password" className="text-text-primary block text-sm font-medium">
 									Password
+									<RequiredAsterisk
+										isEmpty={isFieldEmpty("password")}
+										isRequired={isFieldRequired("password")}
+									/>
 								</label>
 								<div className="relative flex items-center">
 									<input
@@ -483,7 +483,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										name="password"
 										value={formData.password}
 										onChange={e => setFormData({ ...formData, password: e.target.value })}
-										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none"
+										className={`${getFieldBorderClass("password")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none`}
 										required
 										autoComplete="new-password"
 										placeholder="Create a secure password"
@@ -496,7 +496,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										className="text-text-primary hover:bg-layout-background hover:text-text-primary absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 transition-colors duration-200"
 										aria-label="Toggle password visibility"
 									>
-										<span className="text-sm">{showPasswords.password ? "Hide" : "Show"}</span>
+										{showPasswords.password ? (
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
+											</svg>
+										) : (
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+											</svg>
+										)}
 									</button>
 								</div>
 								{errors.password && <div className="mt-1 text-sm text-red-600">{errors.password}</div>}
@@ -560,12 +568,20 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 											One number (0-9)
 										</li>
 										<li
-											className={`flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.symbol ? "text-green-600" : "text-text-primary"}`}
+											className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.symbol ? "text-green-600" : "text-text-primary"}`}
 										>
 											<span className="min-w-4 text-center text-xs font-bold">
 												{passwordRequirements.symbol ? "✓" : "✗"}
 											</span>
 											One symbol (!@#$%^&*)
+										</li>
+										<li
+											className={`flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.passwordsMatch ? "text-green-600" : "text-text-primary"}`}
+										>
+											<span className="min-w-4 text-center text-xs font-bold">
+												{passwordRequirements.passwordsMatch ? "✓" : "✗"}
+											</span>
+											Passwords match
 										</li>
 									</ul>
 								</div>
@@ -577,6 +593,10 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 									className="text-text-primary block text-sm font-medium"
 								>
 									Confirm Password
+									<RequiredAsterisk
+										isEmpty={isFieldEmpty("confirm_password")}
+										isRequired={isFieldRequired("confirm_password")}
+									/>
 								</label>
 								<div className="relative flex items-center">
 									<input
@@ -585,7 +605,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										name="confirm_password"
 										value={formData.confirm_password}
 										onChange={e => setFormData({ ...formData, confirm_password: e.target.value })}
-										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none"
+										className={`${getFieldBorderClass("confirm_password")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none`}
 										required
 										autoComplete="new-password"
 										placeholder="Confirm your password"
@@ -596,7 +616,15 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 										className="text-text-primary hover:bg-layout-background hover:text-text-primary absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 transition-colors duration-200"
 										aria-label="Toggle password visibility"
 									>
-										<span className="text-sm">{showPasswords.confirm ? "Hide" : "Show"}</span>
+										{showPasswords.confirm ? (
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
+											</svg>
+										) : (
+											<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+												<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+											</svg>
+										)}
 									</button>
 								</div>
 								{errors.confirm_password && (

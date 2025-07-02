@@ -20,7 +20,7 @@ export const useAuth = () => {
 
 	// Check for existing token on mount
 	useEffect(() => {
-		const token = localStorage.getItem("authToken");
+		const token = localStorage.getItem("access_token");
 		if (token) {
 			// TODO: Validate token with API and get user info
 			// For now, just set authenticated with mock user
@@ -36,7 +36,7 @@ export const useAuth = () => {
 	}, []);
 
 	const login = (token: string, user: AuthUser) => {
-		localStorage.setItem("authToken", token);
+		localStorage.setItem("access_token", token);
 		setAuthState({
 			isAuthenticated: true,
 			user,
@@ -47,7 +47,7 @@ export const useAuth = () => {
 	const logout = async (): Promise<void> => {
 		try {
 			// Call logout endpoint
-			const token = localStorage.getItem("authToken");
+			const token = localStorage.getItem("access_token");
 			if (token) {
 				await fetch("/api/auth/logout", {
 					method: "POST",
@@ -62,7 +62,7 @@ export const useAuth = () => {
 			console.warn("Logout API call failed:", error);
 		} finally {
 			// Always clear local state and storage
-			localStorage.removeItem("authToken");
+			localStorage.removeItem("access_token");
 			setAuthState({
 				isAuthenticated: false,
 				user: null,

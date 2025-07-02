@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
 import RegistrationModal from "./components/RegistrationModal";
+import LoginModal from "./components/LoginModal";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
@@ -26,6 +27,7 @@ type Page =
 function App(): React.JSX.Element {
 	const [currentPage, setCurrentPage] = useState<Page>("home");
 	const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+	const [showLoginModal, setShowLoginModal] = useState(false);
 	const auth = useAuth();
 
 	const handleShowRegistration = (): void => {
@@ -40,7 +42,23 @@ function App(): React.JSX.Element {
 		setShowRegistrationModal(false);
 		if (redirectTo === "dashboard") {
 			setCurrentPage("dashboard");
+		} else {
+			// After successful registration, show login modal
+			setShowLoginModal(true);
 		}
+	};
+
+	const handleShowLogin = (): void => {
+		setShowLoginModal(true);
+	};
+
+	const handleCloseLogin = (): void => {
+		setShowLoginModal(false);
+	};
+
+	const handleLoginSuccess = (): void => {
+		setShowLoginModal(false);
+		// Stay on current page after successful login
 	};
 
 	const renderPage = (): React.JSX.Element => {
@@ -74,6 +92,7 @@ function App(): React.JSX.Element {
 				currentPage={currentPage}
 				onPageChange={setCurrentPage}
 				onShowRegistration={handleShowRegistration}
+				onShowLogin={handleShowLogin}
 				auth={auth}
 			/>
 			{renderPage()}
@@ -86,6 +105,8 @@ function App(): React.JSX.Element {
 				onClose={handleCloseRegistration}
 				onSuccess={handleRegistrationSuccess}
 			/>
+
+			<LoginModal isOpen={showLoginModal} onClose={handleCloseLogin} onSuccess={handleLoginSuccess} auth={auth} />
 		</div>
 	);
 }

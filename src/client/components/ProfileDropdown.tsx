@@ -27,10 +27,11 @@ interface Auth {
 interface ProfileDropdownProps {
 	onPageChange: (page: Page) => void;
 	onShowRegistration: () => void;
+	onShowLogin: () => void;
 	auth: Auth;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowRegistration, auth }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowRegistration, onShowLogin, auth }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const toggleRef = useRef<HTMLButtonElement>(null);
@@ -87,7 +88,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 		<div className="relative" ref={dropdownRef}>
 			<button
 				ref={toggleRef}
-				className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:outline-interactive mr-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-2 transition-all duration-200 focus:outline-2 focus:outline-offset-2"
+				className="focus:outline-interactive mr-3 flex h-10 w-10 cursor-pointer items-center justify-center border-none bg-transparent p-2 transition-all duration-200 hover:-translate-y-px focus:outline-2 focus:outline-offset-2"
 				type="button"
 				aria-expanded={isOpen}
 				aria-haspopup="true"
@@ -95,7 +96,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 				aria-label="Profile menu"
 			>
 				<svg
-					className="text-text-primary hover:text-text-primary transition-colors duration-200"
+					className="text-interactive hover:text-interactive-hover transition-colors duration-200"
 					width="24"
 					height="24"
 					viewBox="0 0 24 24"
@@ -133,7 +134,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 						role="menu"
 					>
 						<div className="border-layout-background bg-layout-background flex items-center gap-3 border-b p-8">
-							<div className="bg-layout-background text-text-primary flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
+							<div className="bg-layout-background text-interactive flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
 								<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
 									<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
 								</svg>
@@ -153,10 +154,52 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 						<button
 							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
-							onClick={() => handleMenuItemClick("profile")}
+							onClick={() => {
+								setIsOpen(false);
+								onShowLogin();
+							}}
 						>
 							<svg
 								className="text-text-primary flex-shrink-0"
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
+							</svg>
+							<span>Login</span>
+						</button>
+
+						<button
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+							role="menuitem"
+							onClick={() => {
+								setIsOpen(false);
+								onShowRegistration();
+							}}
+						>
+							<svg
+								className="text-text-primary flex-shrink-0"
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+							>
+								<path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+							</svg>
+							<span>Register</span>
+						</button>
+
+						<div className="bg-layout-background my-2 h-px"></div>
+
+						<button
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+							role="menuitem"
+							onClick={() => handleMenuItemClick("profile")}
+						>
+							<svg
+								className="text-interactive flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -233,45 +276,6 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 								<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
 							</svg>
 							<span>Team Configuration</span>
-						</button>
-
-						<div className="bg-layout-background my-2 h-px"></div>
-
-						<button
-							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-							role="menuitem"
-							onClick={() => handleMenuItemClick("login")}
-						>
-							<svg
-								className="text-text-primary flex-shrink-0"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
-							</svg>
-							<span>Login</span>
-						</button>
-
-						<button
-							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-							role="menuitem"
-							onClick={() => {
-								setIsOpen(false);
-								onShowRegistration();
-							}}
-						>
-							<svg
-								className="text-text-primary flex-shrink-0"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-							>
-								<path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-							</svg>
-							<span>Register</span>
 						</button>
 
 						<div className="bg-layout-background my-2 h-px"></div>
