@@ -121,9 +121,9 @@ const CalendarPage: React.FC = () => {
 
 			const data = (await response.json()) as CalendarEntry[];
 			setEntries(data);
-		} catch (err) {
-			// console.error('Error loading entries:', err)
-			// Don't set loading to false here, just log the error
+		} catch {
+			// Error loading entries - handle silently
+			// Don't set loading to false here, just handle the error
 		}
 	}, [selectedTeam, selectedMonth]);
 
@@ -161,8 +161,8 @@ const CalendarPage: React.FC = () => {
 				const users = (await response.json()) as User[];
 				setTeamUsers(users);
 			}
-		} catch (err) {
-			// console.error('Error loading team users:', err)
+		} catch {
+			// Error loading team users - handle silently
 		}
 	};
 

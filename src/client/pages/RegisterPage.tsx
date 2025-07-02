@@ -81,8 +81,8 @@ const RegisterPage: React.FC = () => {
 						);
 						const data = (await response.json()) as { available: boolean };
 						setEmailAvailable(data.available);
-					} catch (err) {
-						// console.error('Error checking email availability:', err)
+					} catch {
+						// Error checking email availability - handle silently
 						setEmailAvailable(null);
 					}
 				})(),

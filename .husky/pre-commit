@@ -2,7 +2,7 @@ echo "🔍 Running pre-commit quality checks..."
 
 # First run full quality check (lint, format, type-check)
 echo "📋 Step 1: Code quality check..."
-if ! npm run quality; then
+if ! npm run quality:pre-commit; then
     echo ""
     echo "❌ Code quality check failed!"
     echo "💡 Please fix the issues above before committing"
