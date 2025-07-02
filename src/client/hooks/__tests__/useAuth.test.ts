@@ -411,7 +411,7 @@ describe("useAuth", () => {
 		it("should automatically logout after timeout period of inactivity", async () => {
 			const mockToken = "valid-token";
 			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			
+
 			// Mock successful user data fetch on mount
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
@@ -437,9 +437,12 @@ describe("useAuth", () => {
 			});
 
 			// Wait for the timeout to fire (200ms in test environment)
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
-			}, { timeout: 300 });
+			await waitFor(
+				() => {
+					expect(result.current.isAuthenticated).toBe(false);
+				},
+				{ timeout: 300 }
+			);
 
 			// Verify logout API was called
 			expect(mockFetch).toHaveBeenCalledWith("/api/auth/logout", {
@@ -457,7 +460,7 @@ describe("useAuth", () => {
 		it("should reset timeout on user activity", async () => {
 			const mockToken = "valid-token";
 			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			
+
 			// Mock successful user data fetch on mount
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
@@ -477,7 +480,7 @@ describe("useAuth", () => {
 
 			// Simulate user activity before timeout fires (after 100ms)
 			setTimeout(() => {
-				document.dispatchEvent(new Event('click'));
+				document.dispatchEvent(new Event("click"));
 			}, 100);
 
 			// Wait 150ms total - should still be authenticated due to activity reset
@@ -492,9 +495,12 @@ describe("useAuth", () => {
 			});
 
 			// Now wait for the full timeout period without activity
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
-			}, { timeout: 300 });
+			await waitFor(
+				() => {
+					expect(result.current.isAuthenticated).toBe(false);
+				},
+				{ timeout: 300 }
+			);
 		});
 
 		it("should not start timeout for unauthenticated users", async () => {

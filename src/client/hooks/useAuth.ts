@@ -19,7 +19,7 @@ export const useAuth = () => {
 	});
 
 	// Session timeout configuration
-	const TIMEOUT_DURATION = process.env.NODE_ENV === 'test' ? 200 : 15 * 60 * 1000; // 200ms for tests, 15 minutes for production
+	const TIMEOUT_DURATION = process.env.NODE_ENV === "test" ? 200 : 15 * 60 * 1000; // 200ms for tests, 15 minutes for production
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const lastActivityRef = useRef<number>(Date.now());
 
@@ -150,7 +150,7 @@ export const useAuth = () => {
 	// Reset the timeout whenever there's user activity
 	const resetTimeout = useCallback(() => {
 		lastActivityRef.current = Date.now();
-		
+
 		if (timeoutRef.current) {
 			clearTimeout(timeoutRef.current);
 		}
@@ -174,19 +174,12 @@ export const useAuth = () => {
 		}
 
 		// Activity events to monitor
-		const activityEvents = [
-			'mousedown',
-			'mousemove', 
-			'keypress',
-			'scroll',
-			'touchstart',
-			'click'
-		];
+		const activityEvents = ["mousedown", "mousemove", "keypress", "scroll", "touchstart", "click"];
 
 		// Reset timeout function - defined inside useEffect to avoid circular dependency
 		const resetActivityTimeout = () => {
 			lastActivityRef.current = Date.now();
-			
+
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
 			}

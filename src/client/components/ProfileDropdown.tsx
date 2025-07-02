@@ -151,9 +151,9 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 										</div>
 									</>
 								) : (
-									<div className="flex items-center gap-1 -ml-3">
+									<div className="-ml-3 flex items-center gap-1">
 										<button
-											className="text-interactive hover:text-interactive-hover focus:outline-interactive border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2 flex items-center gap-1.5"
+											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
 											onClick={onShowLogin}
 											aria-label="Login"
 										>
@@ -163,7 +163,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 											Login
 										</button>
 										<button
-											className="text-interactive hover:text-interactive-hover focus:outline-interactive border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2 flex items-center gap-1.5"
+											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
 											onClick={onShowRegistration}
 											aria-label="Register"
 										>
