@@ -75,6 +75,58 @@ const CalendarPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [teamUsers, setTeamUsers] = useState<User[]>([]);
 
+	const loadInitialData = useCallback(async (): Promise<void> => {
+		try {
+			setIsLoading(true);
+			setError("");
+
+			// Load teams and users in parallel
+			const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/teams"), fetch("/api/users")]);
+
+			if (!teamsResponse.ok || !usersResponse.ok) {
+				throw new Error("Failed to load initial data");
+			}
+
+			const [teamsData, usersData] = await Promise.all([
+				teamsResponse.json() as Promise<Team[]>,
+				usersResponse.json() as Promise<User[]>
+			]);
+
+			setTeams(teamsData);
+			setUsers(usersData);
+		} catch (err) {
+			// console.error('Error loading initial data:', err)
+			setError(err instanceof Error ? err.message : "Failed to load calendar data");
+		} finally {
+			setIsLoading(false);
+		}
+	}, []);
+
+	const loadEntries = useCallback(async (): Promise<void> => {
+		try {
+			const params = new URLSearchParams();
+			if (selectedTeam) {
+				params.append("team_id", selectedTeam);
+			}
+			if (selectedMonth) {
+				const [year, month] = selectedMonth.split("-");
+				params.append("month", month);
+				params.append("year", year);
+			}
+
+			const response = await fetch(`/api/calendar-entries?${params.toString()}`);
+			if (!response.ok) {
+				throw new Error(`Failed to load entries: ${response.status}`);
+			}
+
+			const data = (await response.json()) as CalendarEntry[];
+			setEntries(data);
+		} catch (err) {
+			// console.error('Error loading entries:', err)
+			// Don't set loading to false here, just log the error
+		}
+	}, [selectedTeam, selectedMonth]);
+
 	// Load data on component mount
 	useEffect(() => {
 		void loadInitialData();
@@ -101,61 +153,6 @@ const CalendarPage: React.FC = () => {
 			setFormData(prev => ({ ...prev, user_id: "" }));
 		}
 	}, [formData.team_id]);
-
-	const loadInitialData = useCallback(async (): Promise<void> => {
-		try {
-			setIsLoading(true);
-			setError("");
-
-			// Load teams and users in parallel
-			const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/teams"), fetch("/api/users")]);
-
-			if (!teamsResponse.ok || !usersResponse.ok) {
-				throw new Error("Failed to load initial data");
-			}
-
-			const [teamsData, usersData] = await Promise.all([
-				teamsResponse.json() as Promise<Team[]>,
-				usersResponse.json() as Promise<User[]>
-			]);
-
-			setTeams(teamsData);
-			setUsers(usersData);
-
-			// Load entries after teams are loaded
-			await loadEntries();
-		} catch (err) {
-			// console.error('Error loading initial data:', err)
-			setError(err instanceof Error ? err.message : "Failed to load calendar data");
-		} finally {
-			setIsLoading(false);
-		}
-	}, [loadEntries]);
-
-	const loadEntries = useCallback(async (): Promise<void> => {
-		try {
-			const params = new URLSearchParams();
-			if (selectedTeam) {
-				params.append("team_id", selectedTeam);
-			}
-			if (selectedMonth) {
-				const [year, month] = selectedMonth.split("-");
-				params.append("month", month);
-				params.append("year", year);
-			}
-
-			const response = await fetch(`/api/calendar-entries?${params.toString()}`);
-			if (!response.ok) {
-				throw new Error(`Failed to load entries: ${response.status}`);
-			}
-
-			const data = (await response.json()) as CalendarEntry[];
-			setEntries(data);
-		} catch (err) {
-			// console.error('Error loading entries:', err)
-			// Don't set loading to false here, just log the error
-		}
-	}, [selectedTeam, selectedMonth]);
 
 	const loadTeamUsers = async (teamId: string): Promise<void> => {
 		try {

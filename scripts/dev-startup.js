@@ -23,6 +23,16 @@ function checkPort(port) {
   }
 }
 
+// More robust API health check
+async function checkApiReady() {
+  try {
+    execSync('curl -sSf http://127.0.0.1:3000/health', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function checkDockerContainer(containerName) {
   try {
     const result = execSync(`docker ps --filter "name=${containerName}" --format "{{.Names}}"`, { encoding: 'utf8' });
@@ -108,9 +118,9 @@ async function startServices() {
     }
   }
 
-  // Wait 15 seconds before starting API
-  console.log(`${colors.db}[DATABASE]${colors.reset} ⏳ Waiting 15 seconds before starting API...`);
-  await new Promise(resolve => setTimeout(resolve, 15000));
+  // Small delay to ensure database is fully ready
+  console.log(`${colors.db}[DATABASE]${colors.reset} ⏳ Waiting 2 seconds before starting API...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   // 2. Check and start API
   console.log(`\n${colors.api}[API]${colors.reset} Checking API server...`);
@@ -121,7 +131,8 @@ async function startServices() {
     console.log(`${colors.api}[API]${colors.reset} 🚀 Starting API server...`);
     
     apiProc = spawn('python3', ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', '3000', '--reload'], {
-      env: { ...process.env, PYTHONUNBUFFERED: '1' }
+      env: { ...process.env, PYTHONUNBUFFERED: '1' },
+      stdio: ['ignore', 'pipe', 'pipe']  // Don't inherit stdin
     });
 
     // Handle API output
@@ -143,23 +154,23 @@ async function startServices() {
     // Wait for API to be ready
     console.log(`${colors.api}[API]${colors.reset} ⏳ Waiting for API startup...`);
     let apiAttempts = 0;
-    while (!checkPort(3000) && apiAttempts < 15) {
+    while (!(await checkApiReady()) && apiAttempts < 30) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       apiAttempts++;
     }
     
-    if (checkPort(3000)) {
-      console.log(`${colors.api}[API]${colors.reset} ✅ API server ready on port 3000`);
+    if (await checkApiReady()) {
+      console.log(`${colors.api}[API]${colors.reset} ✅ API server ready and responding on port 3000`);
     } else {
-      console.log(`${colors.api}[API]${colors.reset} ❌ API server failed to start`);
+      console.log(`${colors.api}[API]${colors.reset} ❌ API server failed to start or respond to health check`);
       cleanup();
       return;
     }
   }
 
-  // Wait 15 seconds before starting client
-  console.log(`${colors.api}[API]${colors.reset} ⏳ Waiting 15 seconds before starting client...`);
-  await new Promise(resolve => setTimeout(resolve, 15000));
+  // Small delay before starting client
+  console.log(`${colors.api}[API]${colors.reset} ⏳ Waiting 2 seconds before starting client...`);
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   // 3. Check and start client
   console.log(`\n${colors.client}[CLIENT]${colors.reset} Checking client server...`);
@@ -170,7 +181,7 @@ async function startServices() {
     console.log(`${colors.client}[CLIENT]${colors.reset} 🚀 Starting client server...`);
     
     clientProc = spawn('npm', ['run', 'dev:client'], {
-      shell: true
+      stdio: ['ignore', 'pipe', 'pipe']  // Don't inherit stdin
     });
 
     // Handle client output
@@ -221,4 +232,18 @@ startServices().catch(error => {
 });
 
 // Keep the process alive
+process.stdin.resume();
+
+// Also handle process termination more gracefully
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  cleanup();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  cleanup();
+});
+
+// Keep the script alive until manually terminated
 process.stdin.resume();

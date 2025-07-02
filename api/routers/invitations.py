@@ -11,168 +11,200 @@ from .. import database
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[TeamInvitationResponse])
 def get_invitations(
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user)
+    current_user: database.User = Depends(get_current_active_user),
 ):
     """Get invitations for current user"""
-    invitations = db.query(database.TeamInvitation).filter(
-        database.TeamInvitation.email == current_user.email,
-        database.TeamInvitation.status == "pending",
-        database.TeamInvitation.expires_at > datetime.utcnow()
-    ).all()
-    
+    invitations = (
+        db.query(database.TeamInvitation)
+        .filter(
+            database.TeamInvitation.email == current_user.email,
+            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.expires_at > datetime.utcnow(),
+        )
+        .all()
+    )
+
     return invitations
+
 
 @router.post("/", response_model=TeamInvitationResponse)
 def create_invitation(
     invitation_create: TeamInvitationCreate,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user)
+    current_user: database.User = Depends(get_current_active_user),
 ):
     """Create a team invitation"""
     # Check if team exists
-    team = db.query(database.Team).filter(
-        database.Team.id == invitation_create.team_id
-    ).first()
-    
+    team = (
+        db.query(database.Team)
+        .filter(database.Team.id == invitation_create.team_id)
+        .first()
+    )
+
     if not team:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Team not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
         )
-    
+
     # Check if user has permission to invite (team admin/lead)
-    membership = db.query(database.TeamMembership).filter(
-        database.TeamMembership.team_id == invitation_create.team_id,
-        database.TeamMembership.user_id == current_user.id,
-        database.TeamMembership.role.in_(["admin", "lead"])
-    ).first()
-    
+    membership = (
+        db.query(database.TeamMembership)
+        .filter(
+            database.TeamMembership.team_id == invitation_create.team_id,
+            database.TeamMembership.user_id == current_user.id,
+            database.TeamMembership.role.in_(["admin", "lead"]),
+        )
+        .first()
+    )
+
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to invite users to this team"
+            detail="Not authorized to invite users to this team",
         )
-    
+
     # Check if user is already a team member
-    invited_user = db.query(database.User).filter(
-        database.User.email == invitation_create.email.lower()
-    ).first()
-    
+    invited_user = (
+        db.query(database.User)
+        .filter(database.User.email == invitation_create.email.lower())
+        .first()
+    )
+
     if invited_user:
-        existing_membership = db.query(database.TeamMembership).filter(
-            database.TeamMembership.team_id == invitation_create.team_id,
-            database.TeamMembership.user_id == invited_user.id
-        ).first()
-        
+        existing_membership = (
+            db.query(database.TeamMembership)
+            .filter(
+                database.TeamMembership.team_id == invitation_create.team_id,
+                database.TeamMembership.user_id == invited_user.id,
+            )
+            .first()
+        )
+
         if existing_membership:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User is already a team member"
+                detail="User is already a team member",
             )
-    
+
     # Check for existing pending invitation
-    existing_invitation = db.query(database.TeamInvitation).filter(
-        database.TeamInvitation.team_id == invitation_create.team_id,
-        database.TeamInvitation.email == invitation_create.email.lower(),
-        database.TeamInvitation.status == "pending",
-        database.TeamInvitation.expires_at > datetime.utcnow()
-    ).first()
-    
+    existing_invitation = (
+        db.query(database.TeamInvitation)
+        .filter(
+            database.TeamInvitation.team_id == invitation_create.team_id,
+            database.TeamInvitation.email == invitation_create.email.lower(),
+            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.expires_at > datetime.utcnow(),
+        )
+        .first()
+    )
+
     if existing_invitation:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pending invitation already exists for this user"
+            detail="Pending invitation already exists for this user",
         )
-    
+
     # Create invitation
     db_invitation = database.TeamInvitation(
         team_id=invitation_create.team_id,
         email=invitation_create.email.lower(),
         role=invitation_create.role,
         invited_by=current_user.id,
-        expires_at=datetime.utcnow() + timedelta(days=7)  # 7 days to accept
+        expires_at=datetime.utcnow() + timedelta(days=7),  # 7 days to accept
     )
-    
+
     db.add(db_invitation)
     db.commit()
     db.refresh(db_invitation)
-    
+
     return db_invitation
+
 
 @router.post("/{invitation_id}/accept", response_model=MessageResponse)
 def accept_invitation(
     invitation_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user)
+    current_user: database.User = Depends(get_current_active_user),
 ):
     """Accept a team invitation"""
-    invitation = db.query(database.TeamInvitation).filter(
-        database.TeamInvitation.id == invitation_id,
-        database.TeamInvitation.email == current_user.email,
-        database.TeamInvitation.status == "pending",
-        database.TeamInvitation.expires_at > datetime.utcnow()
-    ).first()
-    
+    invitation = (
+        db.query(database.TeamInvitation)
+        .filter(
+            database.TeamInvitation.id == invitation_id,
+            database.TeamInvitation.email == current_user.email,
+            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.expires_at > datetime.utcnow(),
+        )
+        .first()
+    )
+
     if not invitation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invitation not found or expired"
+            detail="Invitation not found or expired",
         )
-    
+
     # Check if user is already a team member
-    existing_membership = db.query(database.TeamMembership).filter(
-        database.TeamMembership.team_id == invitation.team_id,
-        database.TeamMembership.user_id == current_user.id
-    ).first()
-    
+    existing_membership = (
+        db.query(database.TeamMembership)
+        .filter(
+            database.TeamMembership.team_id == invitation.team_id,
+            database.TeamMembership.user_id == current_user.id,
+        )
+        .first()
+    )
+
     if existing_membership:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are already a member of this team"
+            detail="You are already a member of this team",
         )
-    
+
     # Create team membership
     membership = database.TeamMembership(
-        team_id=invitation.team_id,
-        user_id=current_user.id,
-        role=invitation.role
+        team_id=invitation.team_id, user_id=current_user.id, role=invitation.role
     )
     db.add(membership)
-    
+
     # Update invitation status
-    invitation.status = "accepted"
-    invitation.updated_at = datetime.utcnow()
-    
+    invitation.status = "accepted"  # type: ignore
+    invitation.updated_at = datetime.utcnow()  # type: ignore
+
     db.commit()
-    
+
     return MessageResponse(message="Invitation accepted successfully")
+
 
 @router.post("/{invitation_id}/decline", response_model=MessageResponse)
 def decline_invitation(
     invitation_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user)
+    current_user: database.User = Depends(get_current_active_user),
 ):
     """Decline a team invitation"""
-    invitation = db.query(database.TeamInvitation).filter(
-        database.TeamInvitation.id == invitation_id,
-        database.TeamInvitation.email == current_user.email,
-        database.TeamInvitation.status == "pending"
-    ).first()
-    
+    invitation = (
+        db.query(database.TeamInvitation)
+        .filter(
+            database.TeamInvitation.id == invitation_id,
+            database.TeamInvitation.email == current_user.email,
+            database.TeamInvitation.status == "pending",
+        )
+        .first()
+    )
+
     if not invitation:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invitation not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found"
         )
-    
+
     # Update invitation status
-    invitation.status = "declined"
-    invitation.updated_at = datetime.utcnow()
-    
+    invitation.status = "declined"  # type: ignore
+    invitation.updated_at = datetime.utcnow()  # type: ignore
+
     db.commit()
-    
+
     return MessageResponse(message="Invitation declined successfully")
