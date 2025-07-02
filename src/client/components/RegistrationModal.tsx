@@ -10,6 +10,7 @@ interface RegisterData {
 	password: string;
 	confirm_password: string;
 	terms_agreement: boolean;
+	has_projects_access: boolean;
 }
 
 interface PasswordRequirements {
@@ -35,7 +36,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 		organization: "",
 		password: "",
 		confirm_password: "",
-		terms_agreement: false
+		terms_agreement: false,
+		has_projects_access: true
 	});
 
 	const [errors, setErrors] = useState<Record<string, string>>({});
@@ -238,7 +240,8 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 					last_name: formData.last_name,
 					email: formData.email,
 					organization: formData.organization,
-					password: formData.password
+					password: formData.password,
+					has_projects_access: formData.has_projects_access
 				})
 			});
 

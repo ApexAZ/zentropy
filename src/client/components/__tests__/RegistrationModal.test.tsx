@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import RegistrationModal from "../RegistrationModal";
@@ -441,7 +441,8 @@ describe("RegistrationModal", () => {
 						last_name: "Doe",
 						email: "john@example.com",
 						organization: "Test Org",
-						password: "StrongPass123!"
+						password: "StrongPass123!",
+						has_projects_access: true
 					})
 				});
 			});

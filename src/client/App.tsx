@@ -62,6 +62,20 @@ function App(): React.JSX.Element {
 	};
 
 	const renderPage = (): React.JSX.Element => {
+		// Projects module pages that require special access
+		const projectsPages = ["teams", "calendar", "dashboard", "team-configuration"];
+
+		// Redirect to home if user tries to access Projects pages without permission
+		if (
+			projectsPages.includes(currentPage) &&
+			auth.isAuthenticated &&
+			auth.user &&
+			!auth.user.has_projects_access
+		) {
+			setCurrentPage("home");
+			return <HomePage />;
+		}
+
 		switch (currentPage) {
 			case "home":
 				return <HomePage />;

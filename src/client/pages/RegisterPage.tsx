@@ -257,22 +257,6 @@ const RegisterPage: React.FC = () => {
 		return `${(strength / 5) * 100}%`;
 	};
 
-	const isFormValid = (): boolean => {
-		return (
-			formData.first_name &&
-			formData.last_name &&
-			formData.email &&
-			formData.organization &&
-			formData.role &&
-			formData.password &&
-			formData.confirm_password &&
-			formData.terms_agreement &&
-			Object.values(passwordRequirements).every(Boolean) &&
-			formData.password === formData.confirm_password &&
-			emailAvailable !== false
-		);
-	};
-
 	return (
 		<div className="from-layout-background to-content-background min-h-screen bg-gradient-to-br">
 			<div className="flex items-center justify-center p-8">

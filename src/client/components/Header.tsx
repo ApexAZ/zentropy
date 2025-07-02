@@ -1,5 +1,5 @@
 import React from "react";
-import ProfileDropdown from "./ProfileDropdown";
+import NavigationPanel from "./NavigationPanel";
 
 type Page =
 	| "home"
@@ -15,6 +15,7 @@ type Page =
 interface AuthUser {
 	email: string;
 	name: string;
+	has_projects_access: boolean;
 }
 
 interface Auth {
@@ -86,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 					</li>
 				</ul>
 				<div className="nav-auth">
-					<ProfileDropdown
+					<NavigationPanel
 						onPageChange={onPageChange}
 						onShowRegistration={onShowRegistration}
 						onShowLogin={onShowLogin}

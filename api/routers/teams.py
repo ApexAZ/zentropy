@@ -12,7 +12,7 @@ from ..schemas import (
     TeamWithMembers,
     MessageResponse,
 )
-from ..auth import get_current_active_user
+from ..auth import require_projects_access
 from .. import database
 
 router = APIRouter()
@@ -21,7 +21,7 @@ router = APIRouter()
 @router.get("/", response_model=List[TeamResponse])
 def get_teams(
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> List[database.Team]:
     """Get all teams"""
     teams = db.query(database.Team).all()
@@ -32,7 +32,7 @@ def get_teams(
 def create_team(
     team_create: TeamCreate,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> database.Team:
     """Create a new team"""
     db_team = database.Team(
@@ -62,7 +62,7 @@ def create_team(
 def get_team(
     team_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> TeamWithMembers:
     """Get team by ID with members"""
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
@@ -100,7 +100,7 @@ def update_team(
     team_id: UUID,
     team_update: TeamUpdate,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> database.Team:
     """Update team"""
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
@@ -141,7 +141,7 @@ def add_team_member(
     team_id: UUID,
     user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> MessageResponse:
     """Add user to team"""
     # Check if team exists
@@ -189,7 +189,7 @@ def remove_team_member(
     team_id: UUID,
     user_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> MessageResponse:
     """Remove user from team"""
     membership = (

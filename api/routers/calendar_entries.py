@@ -11,7 +11,7 @@ from ..schemas import (
     CalendarEntryUpdate,
     MessageResponse,
 )
-from ..auth import get_current_active_user
+from ..auth import require_projects_access
 from .. import database
 
 router = APIRouter()
@@ -23,7 +23,7 @@ def get_calendar_entries(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> List[database.CalendarEntry]:
     """Get calendar entries with optional filters"""
     query = db.query(database.CalendarEntry)
@@ -49,7 +49,7 @@ def get_calendar_entries(
 def create_calendar_entry(
     entry_create: CalendarEntryCreate,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> database.CalendarEntry:
     """Create a new calendar entry"""
     # Validate that end_date is after start_date
@@ -97,7 +97,7 @@ def create_calendar_entry(
 def get_calendar_entry(
     entry_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> database.CalendarEntry:
     """Get calendar entry by ID"""
     entry = (
@@ -143,7 +143,7 @@ def update_calendar_entry(
     entry_id: UUID,
     entry_update: CalendarEntryUpdate,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> database.CalendarEntry:
     """Update calendar entry"""
     entry = (
@@ -191,7 +191,7 @@ def update_calendar_entry(
 def delete_calendar_entry(
     entry_id: UUID,
     db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
+    current_user: database.User = Depends(require_projects_access),
 ) -> MessageResponse:
     """Delete calendar entry"""
     entry = (

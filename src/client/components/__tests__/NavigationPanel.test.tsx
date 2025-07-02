@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
-import ProfileDropdown from "../ProfileDropdown";
+import NavigationPanel from "../NavigationPanel";
 
 const mockOnPageChange = vi.fn();
 const mockOnShowRegistration = vi.fn();
@@ -13,7 +13,8 @@ const mockAuthenticatedUser = {
 	isAuthenticated: true,
 	user: {
 		name: "Integration Test", // Real API formatted name (first_name + last_name)
-		email: "integration.test@example.com"
+		email: "integration.test@example.com",
+		has_projects_access: true
 	},
 	token: "mock-token",
 	login: vi.fn(),
@@ -28,7 +29,7 @@ const mockUnauthenticatedUser = {
 	logout: mockLogout
 };
 
-describe("ProfileDropdown", () => {
+describe("NavigationPanel", () => {
 	beforeEach(() => {
 		mockOnPageChange.mockClear();
 		mockOnShowRegistration.mockClear();
@@ -38,7 +39,7 @@ describe("ProfileDropdown", () => {
 
 	it("renders profile icon", () => {
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -50,10 +51,10 @@ describe("ProfileDropdown", () => {
 		expect(profileButton).toBeInTheDocument();
 	});
 
-	it("opens dropdown when profile icon is clicked", async () => {
+	it("opens navigation panel when profile icon is clicked", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -68,11 +69,11 @@ describe("ProfileDropdown", () => {
 		expect(screen.getByText("integration.test@example.com")).toBeInTheDocument();
 	});
 
-	it("closes dropdown when clicking outside", async () => {
+	it("closes navigation panel when clicking outside", async () => {
 		const user = userEvent.setup();
 		render(
 			<div>
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -82,7 +83,7 @@ describe("ProfileDropdown", () => {
 			</div>
 		);
 
-		// Open dropdown
+		// Open navigation panel
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 		expect(screen.getByText("Integration Test")).toBeInTheDocument();
@@ -99,7 +100,7 @@ describe("ProfileDropdown", () => {
 	it("navigates to profile page when profile link is clicked", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -107,7 +108,7 @@ describe("ProfileDropdown", () => {
 			/>
 		);
 
-		// Open dropdown
+		// Open navigation panel
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 
@@ -118,10 +119,10 @@ describe("ProfileDropdown", () => {
 		expect(mockOnPageChange).toHaveBeenCalledWith("profile");
 	});
 
-	it("closes dropdown after navigation", async () => {
+	it("closes navigation panel after navigation", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -129,7 +130,7 @@ describe("ProfileDropdown", () => {
 			/>
 		);
 
-		// Open dropdown
+		// Open navigation panel
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 
@@ -145,7 +146,7 @@ describe("ProfileDropdown", () => {
 	it("supports keyboard navigation", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -169,7 +170,7 @@ describe("ProfileDropdown", () => {
 
 	it("has proper accessibility attributes", () => {
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -182,10 +183,10 @@ describe("ProfileDropdown", () => {
 		expect(profileButton).toHaveAttribute("aria-expanded", "false");
 	});
 
-	it("updates aria-expanded when dropdown opens", async () => {
+	it("updates aria-expanded when navigation panel opens", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -202,7 +203,7 @@ describe("ProfileDropdown", () => {
 	it("calls logout and navigates to home when sign out is clicked", async () => {
 		const user = userEvent.setup();
 		render(
-			<ProfileDropdown
+			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
 				onShowLogin={mockOnShowLogin}
@@ -210,7 +211,7 @@ describe("ProfileDropdown", () => {
 			/>
 		);
 
-		// Open dropdown
+		// Open navigation panel
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 
@@ -227,7 +228,7 @@ describe("ProfileDropdown", () => {
 		it("should hide Login and Register buttons for authenticated users", async () => {
 			const user = userEvent.setup();
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -235,7 +236,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
@@ -250,7 +251,7 @@ describe("ProfileDropdown", () => {
 		it("should show Login and Register buttons for unauthenticated users", async () => {
 			const user = userEvent.setup();
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -258,7 +259,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
@@ -273,7 +274,7 @@ describe("ProfileDropdown", () => {
 		it("should call onShowLogin when Login button is clicked", async () => {
 			const user = userEvent.setup();
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -281,7 +282,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
@@ -296,7 +297,7 @@ describe("ProfileDropdown", () => {
 		it("should call onShowRegistration when Register button is clicked", async () => {
 			const user = userEvent.setup();
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -304,7 +305,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
@@ -319,7 +320,7 @@ describe("ProfileDropdown", () => {
 		it("should show Login and Register buttons next to person icon for unauthenticated users", async () => {
 			const user = userEvent.setup();
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -355,7 +356,8 @@ describe("ProfileDropdown", () => {
 				isAuthenticated: true,
 				user: {
 					name: "Jane Smith", // Real API response: first_name + " " + last_name
-					email: "jane.smith@company.com"
+					email: "jane.smith@company.com",
+					has_projects_access: true
 				},
 				token: "real-api-token",
 				login: vi.fn(),
@@ -363,7 +365,7 @@ describe("ProfileDropdown", () => {
 			};
 
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -371,7 +373,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
@@ -390,15 +392,18 @@ describe("ProfileDropdown", () => {
 			const testUsers = [
 				{
 					name: "Maria José García-López", // Multi-part names
-					email: "maria.garcia@international.com"
+					email: "maria.garcia@international.com",
+					has_projects_access: true
 				},
 				{
 					name: "李 明", // Non-ASCII characters
-					email: "li.ming@example.cn"
+					email: "li.ming@example.cn",
+					has_projects_access: true
 				},
 				{
 					name: "Jean-Luc Picard", // Hyphenated names
-					email: "jean.luc@starfleet.com"
+					email: "jean.luc@starfleet.com",
+					has_projects_access: true
 				}
 			];
 
@@ -412,7 +417,7 @@ describe("ProfileDropdown", () => {
 				};
 
 				const { unmount } = render(
-					<ProfileDropdown
+					<NavigationPanel
 						onPageChange={mockOnPageChange}
 						onShowRegistration={mockOnShowRegistration}
 						onShowLogin={mockOnShowLogin}
@@ -420,7 +425,7 @@ describe("ProfileDropdown", () => {
 					/>
 				);
 
-				// Open dropdown
+				// Open navigation panel
 				const profileButton = screen.getByRole("button", { name: /profile/i });
 				await user.click(profileButton);
 
@@ -436,7 +441,7 @@ describe("ProfileDropdown", () => {
 		it("should prevent 'John Doe' bug regression by validating real user data format", async () => {
 			const user = userEvent.setup();
 
-			// This test ensures the ProfileDropdown correctly displays user data
+			// This test ensures the NavigationPanel correctly displays user data
 			// in the format returned by the useAuth hook after API integration
 			const authenticatedUserFromAPI = {
 				isAuthenticated: true,
@@ -444,7 +449,8 @@ describe("ProfileDropdown", () => {
 					// This name format should come from: first_name + " " + last_name
 					// as implemented in the useAuth hook's /api/users/me integration
 					name: "Real User Name",
-					email: "real.user@api.example.com"
+					email: "real.user@api.example.com",
+					has_projects_access: true
 				},
 				token: "api-validated-token",
 				login: vi.fn(),
@@ -452,7 +458,7 @@ describe("ProfileDropdown", () => {
 			};
 
 			render(
-				<ProfileDropdown
+				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
@@ -460,7 +466,7 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
+			// Open navigation panel
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 

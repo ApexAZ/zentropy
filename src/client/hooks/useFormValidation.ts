@@ -54,7 +54,7 @@ export function useFormValidation<T extends Record<string, any>>(formData: T, re
 
 			return isFieldEmpty(fieldName) ? "border-red-300" : "border-layout-background";
 		};
-	}, [formData, isFieldEmpty, isFieldRequired]);
+	}, [isFieldEmpty, isFieldRequired]);
 
 	return {
 		isFieldEmpty,

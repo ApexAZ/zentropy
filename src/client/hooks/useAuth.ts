@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 interface AuthUser {
 	email: string;
 	name: string;
+	has_projects_access: boolean;
 }
 
 interface AuthState {
@@ -41,7 +42,8 @@ export const useAuth = () => {
 							isAuthenticated: true,
 							user: {
 								email: userData.email,
-								name: `${userData.first_name} ${userData.last_name}`
+								name: `${userData.first_name} ${userData.last_name}`,
+								has_projects_access: userData.has_projects_access
 							},
 							token
 						});
@@ -146,21 +148,6 @@ export const useAuth = () => {
 			}
 		}
 	}, []);
-
-	// Reset the timeout whenever there's user activity
-	const resetTimeout = useCallback(() => {
-		lastActivityRef.current = Date.now();
-
-		if (timeoutRef.current) {
-			clearTimeout(timeoutRef.current);
-		}
-
-		if (authState.isAuthenticated) {
-			timeoutRef.current = setTimeout(() => {
-				void logoutDueToInactivity();
-			}, TIMEOUT_DURATION);
-		}
-	}, [authState.isAuthenticated, TIMEOUT_DURATION]);
 
 	// Track user activity
 	useEffect(() => {

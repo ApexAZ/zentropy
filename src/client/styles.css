@@ -67,8 +67,8 @@
 	animation: slideDown 0.3s ease-out;
 }
 
-/* Profile dropdown component styles */
-.profile-menu-backdrop {
+/* Navigation panel component styles */
+.navigation-panel-backdrop {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -78,7 +78,7 @@
 	z-index: 999;
 }
 
-.profile-menu {
+.navigation-panel {
 	position: fixed;
 	top: 0;
 	right: 0;
@@ -95,7 +95,7 @@
 	overflow-y: auto;
 }
 
-.profile-menu.show {
+.navigation-panel.show {
 	opacity: 1;
 	visibility: visible;
 	transform: translateX(0);

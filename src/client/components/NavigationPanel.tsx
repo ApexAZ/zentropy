@@ -14,6 +14,7 @@ type Page =
 interface AuthUser {
 	email: string;
 	name: string;
+	has_projects_access: boolean;
 }
 
 interface Auth {
@@ -24,22 +25,22 @@ interface Auth {
 	logout: () => Promise<void>;
 }
 
-interface ProfileDropdownProps {
+interface NavigationPanelProps {
 	onPageChange: (page: Page) => void;
 	onShowRegistration: () => void;
 	onShowLogin: () => void;
 	auth: Auth;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowRegistration, onShowLogin, auth }) => {
+const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowRegistration, onShowLogin, auth }) => {
 	const [isOpen, setIsOpen] = useState(false);
-	const dropdownRef = useRef<HTMLDivElement>(null);
+	const panelRef = useRef<HTMLDivElement>(null);
 	const toggleRef = useRef<HTMLButtonElement>(null);
 
-	// Close dropdown when clicking outside
+	// Close navigation panel when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent): void => {
-			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+			if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
 				setIsOpen(false);
 			}
 		};
@@ -85,7 +86,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 	};
 
 	return (
-		<div className="relative" ref={dropdownRef}>
+		<div className="relative" ref={panelRef}>
 			{/* Person icon - clickable for all users */}
 			<button
 				ref={toggleRef}
@@ -198,73 +199,77 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 									<span>My Profile</span>
 								</button>
 
-								<button
-									className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-									role="menuitem"
-									onClick={() => handleMenuItemClick("teams")}
-								>
-									<svg
-										className="text-text-primary flex-shrink-0"
-										width="18"
-										height="18"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-									>
-										<path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4h2v-7H7v2H4V8h3V7H2v11h2zm11-1c-1.11 0-2-.89-2-2s.89-2 2-2 2 .89 2 2-.89 2-2 2zm-1-9v3h2v-3h-2z" />
-									</svg>
-									<span>My Teams</span>
-								</button>
+								{auth.user?.has_projects_access && (
+									<>
+										<button
+											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+											role="menuitem"
+											onClick={() => handleMenuItemClick("teams")}
+										>
+											<svg
+												className="text-text-primary flex-shrink-0"
+												width="18"
+												height="18"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4h2v-7H7v2H4V8h3V7H2v11h2zm11-1c-1.11 0-2-.89-2-2s.89-2 2-2 2 .89 2 2-.89 2-2 2zm-1-9v3h2v-3h-2z" />
+											</svg>
+											<span>My Teams</span>
+										</button>
 
-								<button
-									className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-									role="menuitem"
-									onClick={() => handleMenuItemClick("calendar")}
-								>
-									<svg
-										className="text-text-primary flex-shrink-0"
-										width="18"
-										height="18"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-									>
-										<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-									</svg>
-									<span>Calendar</span>
-								</button>
+										<button
+											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+											role="menuitem"
+											onClick={() => handleMenuItemClick("calendar")}
+										>
+											<svg
+												className="text-text-primary flex-shrink-0"
+												width="18"
+												height="18"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+											</svg>
+											<span>Calendar</span>
+										</button>
 
-								<button
-									className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-									role="menuitem"
-									onClick={() => handleMenuItemClick("dashboard")}
-								>
-									<svg
-										className="text-text-primary flex-shrink-0"
-										width="18"
-										height="18"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-									>
-										<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-									</svg>
-									<span>Dashboard</span>
-								</button>
+										<button
+											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+											role="menuitem"
+											onClick={() => handleMenuItemClick("dashboard")}
+										>
+											<svg
+												className="text-text-primary flex-shrink-0"
+												width="18"
+												height="18"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+											</svg>
+											<span>Dashboard</span>
+										</button>
 
-								<button
-									className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-									role="menuitem"
-									onClick={() => handleMenuItemClick("team-configuration")}
-								>
-									<svg
-										className="text-text-primary flex-shrink-0"
-										width="18"
-										height="18"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-									>
-										<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-									</svg>
-									<span>Team Configuration</span>
-								</button>
+										<button
+											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+											role="menuitem"
+											onClick={() => handleMenuItemClick("team-configuration")}
+										>
+											<svg
+												className="text-text-primary flex-shrink-0"
+												width="18"
+												height="18"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+											</svg>
+											<span>Team Configuration</span>
+										</button>
+									</>
+								)}
 
 								<div className="bg-layout-background my-2 h-px"></div>
 							</>
@@ -295,4 +300,4 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 	);
 };
 
-export default ProfileDropdown;
+export default NavigationPanel;

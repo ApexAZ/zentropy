@@ -73,7 +73,7 @@ describe("Header", () => {
 		expect(mockOnPageChange).toHaveBeenCalledWith("about");
 	});
 
-	it("renders profile dropdown", () => {
+	it("renders navigation panel", () => {
 		render(
 			<Header
 				currentPage="home"

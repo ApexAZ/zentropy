@@ -4,6 +4,27 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 export default [
   {
+    // Global ignores
+    ignores: [
+      // Build output
+      'dist/',
+      'node_modules/',
+      // IDE files
+      '.vscode/',
+      '.idea/',
+      // OS files
+      '.DS_Store',
+      'Thumbs.db',
+      // Logs
+      '*.log',
+      'npm-debug.log*',
+      // Environment files
+      '.env',
+      '.env.local',
+      '.env.production'
+    ]
+  },
+  {
     files: ['src/client/**/*.{ts,tsx}'],
     languageOptions: {
       parser: typescriptParser,

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -64,7 +64,7 @@ describe("Registration to Login Flow Integration", () => {
 		// Render the App component
 		render(<App />);
 
-		// Step 1: Open registration modal via profile dropdown
+		// Step 1: Open registration modal via navigation panel
 		const profileButton = screen.getByLabelText(/profile menu/i);
 		await user.click(profileButton);
 
@@ -278,12 +278,12 @@ describe("Registration to Login Flow Integration", () => {
 		expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
 	});
 
-	it("should allow user to access login modal directly from profile dropdown", async () => {
+	it("should allow user to access login modal directly from navigation panel", async () => {
 		const user = userEvent.setup();
 
 		render(<App />);
 
-		// Open profile dropdown
+		// Open navigation panel
 		const profileButton = screen.getByLabelText(/profile menu/i);
 		await user.click(profileButton);
 
