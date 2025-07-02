@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     last_name: str
     organization: str
     role: UserRole = UserRole.BASIC_USER
+    has_projects_access: bool = True
 
 
 class UserCreate(UserBase):
@@ -25,6 +26,7 @@ class UserUpdate(BaseModel):
     organization: Optional[str] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
+    has_projects_access: Optional[bool] = None
 
 
 class UserResponse(UserBase):
@@ -46,6 +48,12 @@ class UserLogin(BaseModel):
 class PasswordUpdate(BaseModel):
     current_password: str
     new_password: str
+
+
+# Google OAuth schemas
+class GoogleLoginRequest(BaseModel):
+    google_token: str
+    organization: Optional[str] = None
 
 
 # Team schemas

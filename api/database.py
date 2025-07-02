@@ -12,7 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy.orm import sessionmaker, relationship
-from typing import Generator
+from typing import Generator, Optional, List, Any
 from sqlalchemy.sql.schema import Column as SqlColumn
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
@@ -52,6 +52,51 @@ class InvitationStatus(PyEnum):
     ACCEPTED = "accepted"
     DECLINED = "declined"
     EXPIRED = "expired"
+
+
+class AuthProvider(PyEnum):
+    """Authentication provider types"""
+
+    LOCAL = "local"
+    GOOGLE = "google"
+
+
+class IndustryType(PyEnum):
+    """Industry/sector classification for organizations"""
+
+    SOFTWARE = "software"
+    MANUFACTURING = "manufacturing"
+    HEALTHCARE = "healthcare"
+    FINANCE = "finance"
+    EDUCATION = "education"
+    RETAIL = "retail"
+    CONSULTING = "consulting"
+    GOVERNMENT = "government"
+    NON_PROFIT = "non_profit"
+    TECHNOLOGY = "technology"
+    MEDIA = "media"
+    REAL_ESTATE = "real_estate"
+    CONSTRUCTION = "construction"
+    ENERGY = "energy"
+    TELECOMMUNICATIONS = "telecommunications"
+    AGRICULTURE = "agriculture"
+    TRANSPORTATION = "transportation"
+    HOSPITALITY = "hospitality"
+    LEGAL = "legal"
+    OTHER = "other"
+
+
+class OrganizationType(PyEnum):
+    """Legal organization structure types"""
+
+    CORPORATION = "corporation"
+    LLC = "llc"
+    PARTNERSHIP = "partnership"
+    SOLE_PROPRIETORSHIP = "sole_proprietorship"
+    NON_PROFIT = "non_profit"
+    GOVERNMENT = "government"
+    COOPERATIVE = "cooperative"
+    OTHER = "other"
 
 
 # Database URL from environment
@@ -97,20 +142,106 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+# Organization model
+class Organization(Base):  # type: ignore
+    __tablename__ = "organizations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Required fields
+    name = Column(String, nullable=False)  # Full legal name
+
+    # Optional core fields
+    short_name = Column(String, nullable=True)  # Display name/abbreviation
+    domain = Column(
+        String, nullable=True, unique=True
+    )  # For Google Workspace integration
+    website = Column(String, nullable=True)
+    industry: SqlColumn[IndustryType] = Column(Enum(IndustryType), nullable=True)
+    organization_type: SqlColumn[OrganizationType] = Column(
+        Enum(OrganizationType), nullable=True
+    )
+
+    # Address information
+    headquarters_address = Column(String, nullable=True)
+    headquarters_city = Column(String, nullable=True)
+    headquarters_state = Column(String, nullable=True)
+    headquarters_country = Column(String, nullable=True)
+    headquarters_postal_code = Column(String, nullable=True)
+
+    # Contact information
+    main_phone = Column(String, nullable=True)
+    primary_contact_name = Column(String, nullable=True)
+    primary_contact_title = Column(String, nullable=True)
+    primary_contact_email = Column(String, nullable=True)
+    primary_contact_phone = Column(String, nullable=True)
+
+    # Business information
+    employee_count_range = Column(String, nullable=True)  # "1-10", "11-50", etc.
+    time_zone = Column(String, nullable=True)
+    founded_year = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
+
+    # Digital presence
+    logo_url = Column(String, nullable=True)
+    linkedin_url = Column(String, nullable=True)
+    twitter_url = Column(String, nullable=True)
+
+    # System fields
+    is_active = Column(Boolean, default=True)
+    settings = Column(Text, nullable=True)  # JSON for org-level settings
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    users = relationship("User", back_populates="organization_rel")
+
+    @classmethod
+    def create_from_google_domain(cls, domain: str, name: str) -> "Organization":
+        """Create organization from Google Workspace domain."""
+        return cls(
+            name=name,
+            domain=domain,
+            website=f"https://{domain}",
+            short_name=domain.split(".")[0].title(),
+        )
+
+    @classmethod
+    def find_potential_duplicates(
+        cls, name: str, domain: Optional[str] = None
+    ) -> List[Any]:
+        """Find potential duplicate organizations."""
+        # This would be implemented with database queries
+        # For now, return empty list as placeholder
+        return []
+
+
 # User model
 class User(Base):  # type: ignore
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True)  # Nullable for OAuth users
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
-    organization = Column(String, nullable=False)
+
+    # Organization relationship
+    organization_id = Column(
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
+    )
+    # DEPRECATED: Keep for backward compatibility during migration
+    organization = Column(String, nullable=True)
     role: SqlColumn[UserRole] = Column(
         Enum(UserRole), nullable=False, default=UserRole.BASIC_USER
     )
     is_active = Column(Boolean, default=True)
+    has_projects_access = Column(Boolean, default=True, nullable=False)
+    # OAuth fields
+    auth_provider: SqlColumn[AuthProvider] = Column(
+        Enum(AuthProvider), nullable=False, default=AuthProvider.LOCAL
+    )
+    google_id = Column(String, nullable=True, unique=True)
     last_login_at = Column(DateTime, nullable=True)
     terms_accepted_at = Column(DateTime, nullable=True)
     terms_version = Column(String(20), nullable=True)
@@ -120,6 +251,7 @@ class User(Base):  # type: ignore
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
+    organization_rel = relationship("Organization", back_populates="users")
     teams = relationship("Team", secondary="team_memberships", back_populates="members")
     created_teams = relationship("Team", back_populates="creator")
     calendar_entries = relationship("CalendarEntry", back_populates="user")
