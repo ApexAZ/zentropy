@@ -99,10 +99,10 @@ const LoginPage: React.FC = () => {
 	};
 
 	return (
-		<div className="flex min-h-screen flex-col bg-gradient-to-br from-gray-50 to-gray-100">
-			<header className="border-b border-gray-200 bg-white p-4 px-8 text-center shadow-sm">
+		<div className="flex min-h-screen flex-col bg-gradient-to-br from-layout-background to-content-background">
+			<header className="border-b border-layout-background bg-content-background p-4 px-8 text-center shadow-sm">
 				<h1 className="m-0 mb-4 text-3xl">
-					<a href="/" className="font-bold text-blue-500 no-underline">
+					<a href="/" className="font-bold text-interactive no-underline">
 						Zentropy
 					</a>
 				</h1>
@@ -110,16 +110,16 @@ const LoginPage: React.FC = () => {
 
 			<main className="flex flex-1 items-center justify-center p-8">
 				<div className="w-full max-w-sm">
-					<div className="rounded-lg border border-gray-200 bg-white p-8 shadow-lg">
+					<div className="rounded-lg border border-layout-background bg-content-background p-8 shadow-lg">
 						<div className="mb-8 text-center">
-							<h2 className="mb-2 text-2xl font-semibold text-gray-900">Welcome Back</h2>
-							<p className="text-sm text-gray-600">Sign in to your account to continue</p>
+							<h2 className="mb-2 text-2xl font-semibold text-text-contrast">Welcome Back</h2>
+							<p className="text-sm text-text-primary">Sign in to your account to continue</p>
 						</div>
 
 						<form onSubmit={e => void handleSubmit(e)} className="flex flex-col gap-6">
 							{/* Email Field */}
 							<div className="flex flex-col gap-2">
-								<label htmlFor="email" className="text-sm font-medium text-gray-700">
+								<label htmlFor="email" className="text-sm font-medium text-text-primary">
 									Email Address
 								</label>
 								<input
@@ -131,14 +131,14 @@ const LoginPage: React.FC = () => {
 									required
 									autoComplete="email"
 									placeholder="your.email@company.com"
-									className="rounded-md border border-gray-300 bg-white p-3 text-base transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="rounded-md border border-layout-background bg-content-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 								/>
 								{errors.email && <span className="mt-1 text-sm text-red-600">{errors.email}</span>}
 							</div>
 
 							{/* Password Field */}
 							<div className="flex flex-col gap-2">
-								<label htmlFor="password" className="text-sm font-medium text-gray-700">
+								<label htmlFor="password" className="text-sm font-medium text-text-primary">
 									Password
 								</label>
 								<div className="relative flex items-center">
@@ -151,12 +151,12 @@ const LoginPage: React.FC = () => {
 										required
 										autoComplete="current-password"
 										placeholder="Enter your password"
-										className="flex-1 rounded-md border border-gray-300 bg-white p-3 pr-12 text-base transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="flex-1 rounded-md border border-layout-background bg-content-background p-3 pr-12 text-base transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPassword(!showPassword)}
-										className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700 focus:outline-2 focus:outline-offset-2 focus:outline-blue-500"
+										className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-text-primary transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:outline-2 focus:outline-offset-2 focus:outline-interactive"
 										aria-label={showPassword ? "Hide password" : "Show password"}
 										tabIndex={-1}
 									>
@@ -170,12 +170,12 @@ const LoginPage: React.FC = () => {
 
 							{/* Remember Me */}
 							<div className="flex items-center gap-3">
-								<label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700 select-none">
+								<label className="flex cursor-pointer items-center gap-2 text-sm text-text-primary select-none">
 									<input
 										type="checkbox"
 										checked={formData.remember}
 										onChange={e => setFormData({ ...formData, remember: e.target.checked })}
-										className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500"
+										className="h-4 w-4 rounded border-layout-background text-interactive focus:ring-2 focus:ring-interactive"
 									/>
 									Keep me signed in
 								</label>
@@ -185,7 +185,7 @@ const LoginPage: React.FC = () => {
 							<button
 								type="submit"
 								disabled={isLoading}
-								className="relative inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border-none bg-blue-500 p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:bg-blue-600 hover:shadow-md active:translate-y-0 disabled:transform-none disabled:cursor-not-allowed disabled:bg-gray-400 disabled:shadow-none"
+								className="relative inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border-none bg-interactive p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:bg-interactive-hover hover:shadow-md active:translate-y-0 disabled:transform-none disabled:cursor-not-allowed disabled:bg-layout-background disabled:shadow-none"
 							>
 								{isLoading ? (
 									<>
@@ -202,7 +202,7 @@ const LoginPage: React.FC = () => {
 								<button
 									type="button"
 									onClick={handleForgotPassword}
-									className="cursor-pointer border-none bg-transparent text-sm text-gray-600 no-underline transition-colors duration-200 hover:text-blue-500 hover:underline"
+									className="cursor-pointer border-none bg-transparent text-sm text-text-primary no-underline transition-colors duration-200 hover:text-interactive hover:underline"
 								>
 									Forgot your password?
 								</button>
@@ -220,12 +220,12 @@ const LoginPage: React.FC = () => {
 						)}
 
 						{/* Registration Link */}
-						<div className="mt-8 border-t border-gray-200 pt-6 text-center">
-							<p className="text-sm text-gray-600">
+						<div className="mt-8 border-t border-layout-background pt-6 text-center">
+							<p className="text-sm text-text-primary">
 								Don&apos;t have an account?{" "}
 								<a
 									href="/register"
-									className="font-medium text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
+									className="font-medium text-interactive no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
 								>
 									Create one now
 								</a>
@@ -250,9 +250,9 @@ const LoginPage: React.FC = () => {
 			{/* Loading Overlay */}
 			{isLoading && (
 				<div className="bg-opacity-50 fixed top-0 left-0 z-[9999] flex h-full w-full items-center justify-center bg-black">
-					<div className="min-w-[200px] rounded-lg bg-white p-8 text-center shadow-lg">
-						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500"></div>
-						<p className="m-0 text-sm text-gray-700">Signing you in...</p>
+					<div className="min-w-[200px] rounded-lg bg-content-background p-8 text-center shadow-lg">
+						<div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-layout-background border-t-interactive"></div>
+						<p className="m-0 text-sm text-text-primary">Signing you in...</p>
 					</div>
 				</div>
 			)}

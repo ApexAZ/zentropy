@@ -4,6 +4,7 @@ interface RegisterData {
 	first_name: string;
 	last_name: string;
 	email: string;
+	organization: string;
 	role: string;
 	password: string;
 	confirm_password: string;
@@ -23,6 +24,7 @@ const RegisterPage: React.FC = () => {
 		first_name: "",
 		last_name: "",
 		email: "",
+		organization: "",
 		role: "",
 		password: "",
 		confirm_password: "",
@@ -126,6 +128,13 @@ const RegisterPage: React.FC = () => {
 			newErrors.email = "This email address is already registered";
 		}
 
+		// Organization validation
+		if (!formData.organization.trim()) {
+			newErrors.organization = "Organization is required";
+		} else if (formData.organization.length > 100) {
+			newErrors.organization = "Organization name must be less than 100 characters";
+		}
+
 		// Role validation
 		if (!formData.role) {
 			newErrors.role = "Please select your role";
@@ -173,6 +182,7 @@ const RegisterPage: React.FC = () => {
 					first_name: formData.first_name,
 					last_name: formData.last_name,
 					email: formData.email,
+					organization: formData.organization,
 					role: formData.role,
 					password: formData.password
 				})
@@ -239,7 +249,7 @@ const RegisterPage: React.FC = () => {
 			case 5:
 				return "bg-green-600";
 			default:
-				return "bg-gray-200";
+				return "bg-[#C5E0D8]";
 		}
 	};
 
@@ -252,6 +262,7 @@ const RegisterPage: React.FC = () => {
 			formData.first_name &&
 			formData.last_name &&
 			formData.email &&
+			formData.organization &&
 			formData.role &&
 			formData.password &&
 			formData.confirm_password &&
@@ -263,31 +274,31 @@ const RegisterPage: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+		<div className="min-h-screen bg-gradient-to-br from-layout-background to-content-background">
 			<div className="flex items-center justify-center p-8">
 				<div className="w-full max-w-2xl">
-					<div className="rounded-lg border border-gray-200 bg-white shadow-lg">
-						<div className="border-b border-gray-200 bg-gray-50 p-8 text-center">
-							<h1 className="mb-4 text-2xl font-bold text-blue-500">
-								<a href="/" className="text-blue-500 no-underline">
+					<div className="rounded-lg border border-layout-background bg-content-background shadow-lg">
+						<div className="border-b border-layout-background bg-layout-background p-8 text-center">
+							<h1 className="mb-4 text-2xl font-bold text-interactive">
+								<a href="/" className="text-interactive no-underline">
 									Zentropy
 								</a>
 							</h1>
-							<h2 className="mb-2 text-2xl font-semibold text-gray-900">Create Your Account</h2>
-							<p className="text-sm text-gray-600">Join your team&apos;s capacity planning workspace</p>
+							<h2 className="mb-2 text-2xl font-semibold text-text-primary">Create Your Account</h2>
+							<p className="text-sm text-text-primary">Join your team&apos;s capacity planning workspace</p>
 						</div>
 
 						{/* Registration Form */}
 						<form onSubmit={e => void handleSubmit(e)} className="p-8" noValidate>
 							{/* Personal Information */}
-							<div className="mb-8 border-b border-gray-200 pb-6">
-								<h3 className="mb-6 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-800">
+							<div className="mb-8 border-b border-layout-background pb-6">
+								<h3 className="mb-6 border-b border-layout-background pb-2 text-lg font-semibold text-text-primary">
 									Personal Information
 								</h3>
 
 								<div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 									<div className="flex flex-col gap-2">
-										<label htmlFor="first-name" className="block text-sm font-medium text-gray-700">
+										<label htmlFor="first-name" className="block text-sm font-medium text-text-primary">
 											First Name
 										</label>
 										<input
@@ -296,7 +307,7 @@ const RegisterPage: React.FC = () => {
 											name="first_name"
 											value={formData.first_name}
 											onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-											className="w-full rounded-md border border-gray-300 bg-white p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 											required
 											autoComplete="given-name"
 											maxLength={50}
@@ -308,7 +319,7 @@ const RegisterPage: React.FC = () => {
 									</div>
 
 									<div className="flex flex-col gap-2">
-										<label htmlFor="last-name" className="block text-sm font-medium text-gray-700">
+										<label htmlFor="last-name" className="block text-sm font-medium text-text-primary">
 											Last Name
 										</label>
 										<input
@@ -317,7 +328,7 @@ const RegisterPage: React.FC = () => {
 											name="last_name"
 											value={formData.last_name}
 											onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-											className="w-full rounded-md border border-gray-300 bg-white p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 											required
 											autoComplete="family-name"
 											maxLength={50}
@@ -330,7 +341,7 @@ const RegisterPage: React.FC = () => {
 								</div>
 
 								<div className="mb-6 flex flex-col gap-2">
-									<label htmlFor="email" className="block text-sm font-medium text-gray-700">
+									<label htmlFor="email" className="block text-sm font-medium text-text-primary">
 										Email Address
 									</label>
 									<input
@@ -339,7 +350,7 @@ const RegisterPage: React.FC = () => {
 										name="email"
 										value={formData.email}
 										onChange={e => setFormData({ ...formData, email: e.target.value })}
-										className="w-full rounded-md border border-gray-300 bg-white p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 										required
 										autoComplete="email"
 										placeholder="Enter your email address"
@@ -353,8 +364,29 @@ const RegisterPage: React.FC = () => {
 									)}
 								</div>
 
+								<div className="mb-6 flex flex-col gap-2">
+									<label htmlFor="organization" className="block text-sm font-medium text-text-primary">
+										Organization
+									</label>
+									<input
+										type="text"
+										id="organization"
+										name="organization"
+										value={formData.organization}
+										onChange={e => setFormData({ ...formData, organization: e.target.value })}
+										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+										required
+										autoComplete="organization"
+										maxLength={100}
+										placeholder="Enter your organization name"
+									/>
+									{errors.organization && (
+										<div className="mt-1 text-sm text-red-600">{errors.organization}</div>
+									)}
+								</div>
+
 								<div className="flex flex-col gap-2">
-									<label htmlFor="role" className="block text-sm font-medium text-gray-700">
+									<label htmlFor="role" className="block text-sm font-medium text-text-primary">
 										Role
 									</label>
 									<select
@@ -362,7 +394,7 @@ const RegisterPage: React.FC = () => {
 										name="role"
 										value={formData.role}
 										onChange={e => setFormData({ ...formData, role: e.target.value })}
-										className="w-full rounded-md border border-gray-300 bg-white p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 										required
 									>
 										<option value="">Select your role</option>
@@ -370,20 +402,20 @@ const RegisterPage: React.FC = () => {
 										<option value="team_lead">Team Lead</option>
 									</select>
 									{errors.role && <div className="mt-1 text-sm text-red-600">{errors.role}</div>}
-									<div className="mt-1 text-sm text-gray-500">
+									<div className="mt-1 text-sm text-text-primary">
 										Team Leads can manage team settings and member access
 									</div>
 								</div>
 							</div>
 
 							{/* Password Security */}
-							<div className="mb-8 border-b border-gray-200 pb-6">
-								<h3 className="mb-6 border-b border-gray-200 pb-2 text-lg font-semibold text-gray-800">
+							<div className="mb-8 border-b border-layout-background pb-6">
+								<h3 className="mb-6 border-b border-layout-background pb-2 text-lg font-semibold text-text-primary">
 									Password Security
 								</h3>
 
 								<div className="mb-6 flex flex-col gap-2">
-									<label htmlFor="password" className="block text-sm font-medium text-gray-700">
+									<label htmlFor="password" className="block text-sm font-medium text-text-primary">
 										Password
 									</label>
 									<div className="relative flex items-center">
@@ -393,7 +425,7 @@ const RegisterPage: React.FC = () => {
 											name="password"
 											value={formData.password}
 											onChange={e => setFormData({ ...formData, password: e.target.value })}
-											className="w-full rounded-md border border-gray-300 bg-white p-3 pr-20 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background bg-content-background p-3 pr-20 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 											required
 											autoComplete="new-password"
 											placeholder="Create a secure password"
@@ -403,7 +435,7 @@ const RegisterPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => togglePasswordVisibility("password")}
-											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700"
+											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-text-primary transition-colors duration-200 hover:bg-layout-background hover:text-text-primary"
 										>
 											<span className="text-sm">{showPasswords.password ? "Hide" : "Show"}</span>
 										</button>
@@ -414,11 +446,11 @@ const RegisterPage: React.FC = () => {
 
 									{/* Password Strength Indicator */}
 									{formData.password && (
-										<div className="mt-2 rounded-sm bg-gray-50 p-2">
-											<div className="mb-1 text-sm font-medium text-gray-700">
+										<div className="mt-2 rounded-sm bg-layout-background p-2">
+											<div className="mb-1 text-sm font-medium text-text-primary">
 												Password Strength:
 											</div>
-											<div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+											<div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-[#C5E0D8]">
 												<div
 													className={`h-full rounded-full transition-all duration-300 ${getPasswordStrengthBarColor(passwordStrength)}`}
 													style={{ width: getPasswordStrengthWidth(passwordStrength) }}
@@ -433,13 +465,13 @@ const RegisterPage: React.FC = () => {
 									)}
 
 									{/* Password Requirements */}
-									<div className="mt-2 rounded-sm bg-gray-50 p-2">
-										<div className="mb-2 text-sm font-medium text-gray-700">
+									<div className="mt-2 rounded-sm bg-layout-background p-2">
+										<div className="mb-2 text-sm font-medium text-text-primary">
 											Password must contain:
 										</div>
 										<ul className="m-0 list-none p-0">
 											<li
-												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.length ? "text-green-600" : "text-gray-600"}`}
+												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.length ? "text-green-600" : "text-text-primary"}`}
 											>
 												<span className="min-w-4 text-center text-xs font-bold">
 													{passwordRequirements.length ? "✓" : "✗"}
@@ -447,7 +479,7 @@ const RegisterPage: React.FC = () => {
 												At least 8 characters
 											</li>
 											<li
-												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.uppercase ? "text-green-600" : "text-gray-600"}`}
+												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.uppercase ? "text-green-600" : "text-text-primary"}`}
 											>
 												<span className="min-w-4 text-center text-xs font-bold">
 													{passwordRequirements.uppercase ? "✓" : "✗"}
@@ -455,7 +487,7 @@ const RegisterPage: React.FC = () => {
 												One uppercase letter (A-Z)
 											</li>
 											<li
-												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.lowercase ? "text-green-600" : "text-gray-600"}`}
+												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.lowercase ? "text-green-600" : "text-text-primary"}`}
 											>
 												<span className="min-w-4 text-center text-xs font-bold">
 													{passwordRequirements.lowercase ? "✓" : "✗"}
@@ -463,7 +495,7 @@ const RegisterPage: React.FC = () => {
 												One lowercase letter (a-z)
 											</li>
 											<li
-												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.number ? "text-green-600" : "text-gray-600"}`}
+												className={`mb-1 flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.number ? "text-green-600" : "text-text-primary"}`}
 											>
 												<span className="min-w-4 text-center text-xs font-bold">
 													{passwordRequirements.number ? "✓" : "✗"}
@@ -471,7 +503,7 @@ const RegisterPage: React.FC = () => {
 												One number (0-9)
 											</li>
 											<li
-												className={`flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.symbol ? "text-green-600" : "text-gray-600"}`}
+												className={`flex items-center gap-2 text-sm transition-colors duration-200 ${passwordRequirements.symbol ? "text-green-600" : "text-text-primary"}`}
 											>
 												<span className="min-w-4 text-center text-xs font-bold">
 													{passwordRequirements.symbol ? "✓" : "✗"}
@@ -485,7 +517,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex flex-col gap-2">
 									<label
 										htmlFor="confirm-password"
-										className="block text-sm font-medium text-gray-700"
+										className="block text-sm font-medium text-text-primary"
 									>
 										Confirm Password
 									</label>
@@ -498,7 +530,7 @@ const RegisterPage: React.FC = () => {
 											onChange={e =>
 												setFormData({ ...formData, confirm_password: e.target.value })
 											}
-											className="w-full rounded-md border border-gray-300 bg-white p-3 pr-20 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background bg-content-background p-3 pr-20 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
 											required
 											autoComplete="new-password"
 											placeholder="Confirm your password"
@@ -506,7 +538,7 @@ const RegisterPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => togglePasswordVisibility("confirm")}
-											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-gray-500 transition-colors duration-200 hover:bg-gray-100 hover:text-gray-700"
+											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-text-primary transition-colors duration-200 hover:bg-layout-background hover:text-text-primary"
 										>
 											<span className="text-sm">{showPasswords.confirm ? "Hide" : "Show"}</span>
 										</button>
@@ -532,18 +564,18 @@ const RegisterPage: React.FC = () => {
 											required
 											className="mt-1"
 										/>
-										<span className="text-gray-700">
+										<span className="text-text-primary">
 											I agree to the{" "}
 											<button
 												type="button"
-												className="cursor-pointer border-none bg-transparent p-0 font-medium text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
+												className="cursor-pointer border-none bg-transparent p-0 font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
 											>
 												Terms of Service
 											</button>{" "}
-											and
+											and{" "}
 											<button
 												type="button"
-												className="cursor-pointer border-none bg-transparent p-0 font-medium text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
+												className="cursor-pointer border-none bg-transparent p-0 font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
 											>
 												{" "}
 												Privacy Policy
@@ -557,12 +589,8 @@ const RegisterPage: React.FC = () => {
 							{/* Submit Button */}
 							<button
 								type="submit"
-								disabled={!isFormValid() || isLoading}
-								className={`relative inline-flex w-full items-center justify-center gap-2 rounded-md border-none p-3 px-6 text-base font-medium transition-all duration-200 ${
-									isFormValid() && !isLoading
-										? "cursor-pointer bg-blue-500 text-white hover:-translate-y-px hover:bg-blue-600 hover:shadow-md"
-										: "cursor-not-allowed bg-gray-400 text-white"
-								}`}
+								disabled={false}
+								className="relative inline-flex w-full items-center justify-center gap-2 rounded-md border-none p-3 px-6 text-base font-medium transition-all duration-200 cursor-pointer bg-interactive text-white hover:-translate-y-px hover:bg-interactive-hover hover:text-text-primary hover:shadow-md"
 							>
 								{isLoading ? (
 									<>
@@ -590,20 +618,20 @@ const RegisterPage: React.FC = () => {
 						</form>
 
 						{/* Rate Limiting Info */}
-						<div className="m-4 flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-3">
+						<div className="m-4 flex items-center gap-2 rounded-md border border-layout-background bg-layout-background p-3">
 							<div className="flex-shrink-0 text-xl">ℹ️</div>
-							<div className="text-sm leading-5 text-gray-600">
+							<div className="text-sm leading-5 text-text-primary">
 								For security, only 2 account registrations are allowed per hour from each location.
 							</div>
 						</div>
 
 						{/* Alternative Actions */}
 						<div className="p-8 pt-0 text-center">
-							<p className="text-sm text-gray-600">
+							<p className="text-sm text-text-primary">
 								Already have an account?
 								<a
 									href="/login"
-									className="font-medium text-blue-500 no-underline transition-colors duration-200 hover:text-blue-600 hover:underline"
+									className="font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
 								>
 									{" "}
 									Sign in here
@@ -620,19 +648,19 @@ const RegisterPage: React.FC = () => {
 					<div
 						className={`flex items-center justify-between gap-2 p-4 ${
 							toast.type === "success"
-								? "border border-green-200 bg-green-50"
+								? "border border-layout-background bg-layout-background"
 								: toast.type === "error"
 									? "border border-red-200 bg-red-50"
-									: "border border-blue-200 bg-blue-50"
+									: "border border-layout-background bg-layout-background"
 						}`}
 					>
 						<div
 							className={`flex-1 text-sm leading-5 ${
 								toast.type === "success"
-									? "text-green-700"
+									? "text-text-primary"
 									: toast.type === "error"
 										? "text-red-700"
-										: "text-blue-700"
+										: "text-text-primary"
 							}`}
 						>
 							{toast.message}
@@ -650,16 +678,16 @@ const RegisterPage: React.FC = () => {
 			{/* Registration Success Modal */}
 			{showSuccessModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-[1000] flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white p-8 text-center shadow-lg">
+					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-content-background border border-interactive p-8 text-center shadow-lg">
 						<div className="mb-4 text-5xl">✅</div>
-						<h3 className="mb-4 text-xl font-semibold text-gray-900">Account Created Successfully!</h3>
-						<p className="mb-8 leading-6 text-gray-600">
+						<h3 className="mb-4 text-xl font-semibold text-text-primary">Account Created Successfully!</h3>
+						<p className="mb-8 leading-6 text-text-primary">
 							Welcome to Zentropy! Your account has been created and you&apos;re now logged in.
 						</p>
 						<div className="flex justify-end gap-4">
 							<button
 								onClick={handleRedirectToDashboard}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-blue-500 p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-blue-600"
+								className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover hover:text-text-primary"
 							>
 								Go to Dashboard
 							</button>

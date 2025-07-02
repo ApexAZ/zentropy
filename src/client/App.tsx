@@ -10,6 +10,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
+import { useAuth } from "./hooks/useAuth";
 
 type Page =
 	| "home"
@@ -25,6 +26,7 @@ type Page =
 
 function App(): React.JSX.Element {
 	const [currentPage, setCurrentPage] = useState<Page>("home");
+	const auth = useAuth();
 
 	const renderPage = (): React.JSX.Element => {
 		switch (currentPage) {
@@ -55,9 +57,9 @@ function App(): React.JSX.Element {
 
 	return (
 		<div className="flex min-h-screen flex-col">
-			<Header currentPage={currentPage} onPageChange={setCurrentPage} />
+			<Header currentPage={currentPage} onPageChange={setCurrentPage} auth={auth} />
 			{renderPage()}
-			<footer className="mt-auto border-t border-gray-200 bg-gray-50 px-8 py-6 text-center text-sm text-gray-600">
+			<footer className="mt-auto border-t border-layout-background bg-layout-background px-8 py-6 text-center text-sm text-text-primary">
 				<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
 			</footer>
 		</div>

@@ -1,48 +1,42 @@
 @import "tailwindcss";
 
-/* Custom CSS Variables for consistent theming */
+@theme {
+	/* Semantic color variables - change colors here to update entire site */
+	--color-layout-background: #F0F0F0;     /* Cool light gray - page backgrounds, borders, sections */
+	--color-content-background: #FFFFFF;    /* White - form containers, input fields */
+	--color-interactive: #6A8BA7;           /* Steel blue - buttons, links, focus states */
+	--color-interactive-hover: #B8D4F0;     /* Pastel blue - hover feedback */
+	--color-text-primary: #4A4A4A;          /* Dark gray - headings, body text, labels */
+	--color-text-contrast: #000000;         /* Black - high contrast when needed */
+}
+
+/* Custom focus shadow using semantic colors */
 :root {
-	/* Colors - complementing Tailwind */
+	--focus-shadow: 0 0 0 3px rgba(106, 139, 167, 0.2); /* Interactive color with transparency */
+}
+
+/* Focus utility class */
+.focus-ring {
+	@apply focus:border-interactive focus:outline-none;
+	box-shadow: var(--focus-shadow);
+}
+
+/* Legacy component-specific variables */
+:root {
 	--primary-blue: #3b82f6;
 	--primary-blue-dark: #2563eb;
 	--primary-blue-light: #60a5fa;
-	--success-green: #059669;
-	--success-green-dark: #047857;
 	--danger-red: #dc2626;
-	--danger-red-dark: #b91c1c;
-
-	/* Custom spacing for legacy compatibility */
-	--spacing-xs: 0.25rem;
-	--spacing-sm: 0.5rem;
-	--spacing-md: 0.75rem;
 	--spacing-lg: 1rem;
+	--spacing-md: 0.75rem;
 	--spacing-xl: 1.5rem;
 	--spacing-2xl: 2rem;
-
-	/* Border radius */
-	--radius-sm: 4px;
 	--radius-md: 6px;
-	--radius-lg: 8px;
-
-	/* Shadows */
-	--shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
-	--shadow-md: 0 4px 6px rgb(0 0 0 / 10%);
 	--shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
-
-	/* Fonts */
 	--font-sans: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
 }
 
-/* Essential animations for React components */
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
+/* Component-specific animations */
 @keyframes slideIn {
 	from {
 		opacity: 0;
@@ -65,7 +59,6 @@
 	}
 }
 
-/* Custom utility classes for React components */
 .animate-slideIn {
 	animation: slideIn 0.3s ease;
 }
@@ -74,7 +67,7 @@
 	animation: slideDown 0.3s ease-out;
 }
 
-/* Profile dropdown full-screen overlay styles */
+/* Profile dropdown component styles */
 .profile-menu-backdrop {
 	position: fixed;
 	top: 0;
@@ -136,31 +129,7 @@
 	outline-offset: 2px;
 }
 
-/* Legacy form compatibility styles */
-.working-days-group {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--spacing-lg);
-}
-
-.checkbox-item {
-	display: inline-flex;
-	align-items: center;
-	margin-right: var(--spacing-xl);
-	margin-bottom: var(--spacing-md);
-}
-
-.checkbox-item input[type="checkbox"] {
-	width: auto;
-	margin-right: var(--spacing-sm);
-}
-
-.checkbox-item label {
-	margin-bottom: 0;
-	font-weight: 400;
-}
-
-/* Calendar day state styles for complex calendar interactions */
+/* Calendar component styles */
 .calendar-day {
 	min-height: 120px;
 	position: relative;
@@ -220,9 +189,4 @@
 
 .entry-dot.personal {
 	background-color: #8b5cf6;
-}
-
-/* Ensure proper font family inheritance */
-body {
-	font-family: var(--font-sans);
 }

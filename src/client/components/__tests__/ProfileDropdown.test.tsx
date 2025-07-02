@@ -4,14 +4,27 @@ import userEvent from "@testing-library/user-event";
 import ProfileDropdown from "../ProfileDropdown";
 
 const mockOnPageChange = vi.fn();
+const mockLogout = vi.fn();
+
+const mockAuth = {
+	isAuthenticated: true,
+	user: {
+		name: "John Doe",
+		email: "john@example.com"
+	},
+	token: "mock-token",
+	login: vi.fn(),
+	logout: mockLogout
+};
 
 describe("ProfileDropdown", () => {
 	beforeEach(() => {
 		mockOnPageChange.mockClear();
+		mockLogout.mockClear();
 	});
 
 	it("renders profile icon", () => {
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		expect(profileButton).toBeInTheDocument();
@@ -19,7 +32,7 @@ describe("ProfileDropdown", () => {
 
 	it("opens dropdown when profile icon is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
@@ -32,7 +45,7 @@ describe("ProfileDropdown", () => {
 		const user = userEvent.setup();
 		render(
 			<div>
-				<ProfileDropdown onPageChange={mockOnPageChange} />
+				<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />
 				<div data-testid="outside">Outside element</div>
 			</div>
 		);
@@ -53,7 +66,7 @@ describe("ProfileDropdown", () => {
 
 	it("navigates to profile page when profile link is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		// Open dropdown
 		const profileButton = screen.getByRole("button", { name: /profile/i });
@@ -68,7 +81,7 @@ describe("ProfileDropdown", () => {
 
 	it("closes dropdown after navigation", async () => {
 		const user = userEvent.setup();
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		// Open dropdown
 		const profileButton = screen.getByRole("button", { name: /profile/i });
@@ -85,7 +98,7 @@ describe("ProfileDropdown", () => {
 
 	it("supports keyboard navigation", async () => {
 		const user = userEvent.setup();
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 
@@ -102,7 +115,7 @@ describe("ProfileDropdown", () => {
 	});
 
 	it("has proper accessibility attributes", () => {
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		expect(profileButton).toHaveAttribute("aria-haspopup", "true");
@@ -111,11 +124,28 @@ describe("ProfileDropdown", () => {
 
 	it("updates aria-expanded when dropdown opens", async () => {
 		const user = userEvent.setup();
-		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 
 		expect(profileButton).toHaveAttribute("aria-expanded", "true");
+	});
+
+	it("calls logout and navigates to home when sign out is clicked", async () => {
+		const user = userEvent.setup();
+		render(<ProfileDropdown onPageChange={mockOnPageChange} auth={mockAuth} />);
+
+		// Open dropdown
+		const profileButton = screen.getByRole("button", { name: /profile/i });
+		await user.click(profileButton);
+
+		// Click sign out
+		const signOutButton = screen.getByText("Sign Out");
+		await user.click(signOutButton);
+
+		// Verify logout was called and page changed to home
+		expect(mockLogout).toHaveBeenCalledOnce();
+		expect(mockOnPageChange).toHaveBeenCalledWith("home");
 	});
 });

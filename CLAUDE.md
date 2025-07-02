@@ -38,6 +38,56 @@ Zentropy - A comprehensive Product Management platform with project workflows, t
   - *Why*: Rapid styling, consistent design system, small bundle size
   - *Usage*: Component styling and responsive design
 
+### **Design System & Semantic Color Variables**
+- **Semantic Color System** - Purpose-based color variables defined in `styles.css` using Tailwind v4 `@theme` directive
+  - *Why*: Easy theme changes, maintainable design system, semantic naming that describes purpose not appearance
+  - *Usage*: Use semantic classes like `bg-interactive`, `text-primary` for consistent styling
+  - *Benefits*: Change entire site colors by updating 6 values in `styles.css`
+
+#### **Semantic Color Variables (2025-07-02):**
+```css
+/* Change these values in styles.css to update entire site theme */
+--color-layout-background: #F0F0F0;     /* Cool light gray - page backgrounds, borders, sections */
+--color-content-background: #FFFFFF;    /* White - form containers, input fields */
+--color-interactive: #6A8BA7;           /* Steel blue - buttons, links, focus states */
+--color-interactive-hover: #B8D4F0;     /* Pastel blue - hover effects and feedback */
+--color-text-primary: #4A4A4A;          /* Dark gray - headings, body text, labels */
+--color-text-contrast: #000000;         /* Black - high contrast when needed */
+```
+
+#### **Tailwind Semantic Classes:**
+```
+Layout: layout-background, content-background
+Interactive: interactive, interactive-hover  
+Text: text-primary, text-contrast
+Focus: focus:border-interactive, focus:shadow-interactive
+```
+
+#### **Design Principles:**
+- **Semantic Naming**: Classes describe purpose (interactive) not appearance (blue)
+- **Single Source of Truth**: Change colors in one place (styles.css) to update entire site
+- **Maintainable**: No find/replace across files when changing themes
+- **Consistent**: Prevents color drift and ensures brand cohesion
+- **Accessible**: Proper contrast ratios maintained through semantic usage
+
+#### **Usage Examples:**
+```tsx
+// Primary interactive button
+<button className="bg-interactive hover:bg-interactive-hover hover:text-text-primary text-white">
+
+// Form containers  
+<div className="bg-content-background border border-layout-background">
+
+// Layout sections
+<div className="bg-layout-background text-text-primary">
+
+// Interactive links
+<a className="text-interactive hover:text-interactive-hover">
+
+// Form inputs with focus
+<input className="bg-content-background border border-layout-background focus:border-interactive focus:shadow-interactive">
+```
+
 ### **Development & Quality Tools**
 - **Docker** - Containerization platform
   - *Why*: Consistent development environment, easy database setup

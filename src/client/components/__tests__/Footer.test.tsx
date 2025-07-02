@@ -17,17 +17,14 @@ describe("Footer", () => {
 		render(<App />);
 
 		const footer = screen.getByRole("contentinfo");
-		expect(footer).toHaveClass("main-footer");
+		expect(footer).toHaveClass("mt-auto", "border-t", "border-layout-background", "bg-layout-background");
 	});
 
-	it("is wrapped in app-container layout", () => {
+	it("is positioned at bottom of layout", () => {
 		render(<App />);
 
-		const appContainer = document.querySelector(".app-container");
-		expect(appContainer).toBeInTheDocument();
-		expect(appContainer).toHaveClass("app-container");
-
 		const footer = screen.getByRole("contentinfo");
-		expect(appContainer).toContainElement(footer);
+		expect(footer).toHaveClass("mt-auto");
+		expect(footer).toHaveClass("text-center");
 	});
 });

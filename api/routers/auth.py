@@ -91,6 +91,7 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
         password_hash=hashed_password,
         first_name=user_create.first_name,
         last_name=user_create.last_name,
+        organization=user_create.organization,
         role=user_create.role,
     )
 

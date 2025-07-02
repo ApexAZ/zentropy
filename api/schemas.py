@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
+    organization: str
     role: str = "basic_user"
 
 
@@ -20,6 +21,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    organization: Optional[str] = None
     role: Optional[str] = None
     is_active: Optional[bool] = None
 

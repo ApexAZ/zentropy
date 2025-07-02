@@ -25,6 +25,7 @@ describe("RegisterPage", () => {
 		expect(screen.getByLabelText("First Name")).toBeInTheDocument();
 		expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email Address")).toBeInTheDocument();
+		expect(screen.getByLabelText("Organization")).toBeInTheDocument();
 		expect(screen.getByLabelText("Role")).toBeInTheDocument();
 		expect(screen.getByLabelText("Password")).toBeInTheDocument();
 		expect(screen.getByLabelText("Confirm Password")).toBeInTheDocument();
@@ -42,6 +43,7 @@ describe("RegisterPage", () => {
 			expect(screen.getByText("First name is required")).toBeInTheDocument();
 			expect(screen.getByText("Last name is required")).toBeInTheDocument();
 			expect(screen.getByText("Email is required")).toBeInTheDocument();
+			expect(screen.getByText("Organization is required")).toBeInTheDocument();
 			expect(screen.getByText("Please select your role")).toBeInTheDocument();
 			expect(screen.getByText("Password is required")).toBeInTheDocument();
 			expect(screen.getByText("Please confirm your password")).toBeInTheDocument();
@@ -91,6 +93,56 @@ describe("RegisterPage", () => {
 		await waitFor(() => {
 			expect(screen.getByText("Last name must be less than 50 characters")).toBeInTheDocument();
 		});
+	});
+
+	it("validates organization field requirements", async () => {
+		const user = userEvent.setup();
+		render(<RegisterPage />);
+
+		const organizationInput = screen.getByLabelText("Organization");
+		const submitButton = screen.getByText("Create Account");
+
+		// Test organization too long
+		await user.type(organizationInput, "a".repeat(101)); // Too long (100 char limit)
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(screen.getByText("Organization name must be less than 100 characters")).toBeInTheDocument();
+		});
+
+		// Test valid organization
+		await user.clear(organizationInput);
+		await user.type(organizationInput, "Acme Corporation");
+
+		// Should not show length error anymore
+		await user.click(submitButton);
+
+		await waitFor(() => {
+			expect(screen.queryByText("Organization name must be less than 100 characters")).not.toBeInTheDocument();
+		});
+	});
+
+	it("accepts valid organization names", async () => {
+		const user = userEvent.setup();
+		render(<RegisterPage />);
+
+		const organizationInput = screen.getByLabelText("Organization");
+
+		// Test various valid organization formats
+		const validOrgs = [
+			"Acme Corp",
+			"TechStart Inc.",
+			"Global Solutions LLC",
+			"Non-Profit Foundation",
+			"University of Technology",
+			"123 Industries"
+		];
+
+		for (const org of validOrgs) {
+			await user.clear(organizationInput);
+			await user.type(organizationInput, org);
+			expect(organizationInput).toHaveValue(org);
+		}
 	});
 
 	it("shows password strength indicator", async () => {
@@ -221,6 +273,7 @@ describe("RegisterPage", () => {
 		// Try to submit with taken email
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -242,6 +295,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -280,6 +334,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corporation");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -320,6 +375,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corporation");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -356,6 +412,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corporation");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -395,6 +452,7 @@ describe("RegisterPage", () => {
 		// Still disabled with weak password
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "weak");
 		await user.type(screen.getByLabelText("Confirm Password"), "weak");
@@ -418,6 +476,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -494,6 +553,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -535,6 +595,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");
@@ -579,6 +640,7 @@ describe("RegisterPage", () => {
 		await user.type(screen.getByLabelText("First Name"), "Test");
 		await user.type(screen.getByLabelText("Last Name"), "User");
 		await user.type(screen.getByLabelText("Email Address"), "test@example.com");
+		await user.type(screen.getByLabelText("Organization"), "Test Corp");
 		await user.selectOptions(screen.getByLabelText("Role"), "team_member");
 		await user.type(screen.getByLabelText("Password"), "StrongPass123!");
 		await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!");

@@ -27,7 +27,7 @@
 		"quality": "npm run lint && npm run format && npm run type-check && npm run test",
 		"test": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py && npm run test:react",
 		"test:python": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py",
-		"test:react": "vitest run src/client/components/__tests__/ProfileDropdown.test.tsx",
+		"test:react": "vitest run src/client/components/__tests__/",
 		"test:pre-commit": "python3 -m pytest tests/test_startup.py -v && npm run test:react -- src/client/components/__tests__/ProfileDropdown.test.tsx",
 		"test:full": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py && npm run test:react",
 		"quality:pre-commit": "npm run lint && npm run format && npm run type-check && npm run test:pre-commit",

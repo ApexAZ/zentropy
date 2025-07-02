@@ -391,7 +391,7 @@ const CalendarPage: React.FC = () => {
 			sick: "bg-red-100 text-red-800",
 			personal: "bg-purple-100 text-purple-800"
 		};
-		return colors[type as keyof typeof colors] ?? "bg-gray-100 text-gray-800";
+		return colors[type as keyof typeof colors] ?? "bg-gray-100 text-text-contrast";
 	};
 
 	const getUserDisplayName = (userId: string): string => {
@@ -423,15 +423,15 @@ const CalendarPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-gray-800">Team Calendar</h2>
-						<p className="mt-2 text-gray-600">
+						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Calendar</h2>
+						<p className="mt-2 text-text-primary">
 							Manage team calendar entries and PTO for accurate sprint capacity planning
 						</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500"></div>
-					<p className="mb-4 text-gray-600">Loading calendar entries...</p>
+					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-layout-background border-t-interactive"></div>
+					<p className="mb-4 text-text-primary">Loading calendar entries...</p>
 				</div>
 			</main>
 		);
@@ -442,8 +442,8 @@ const CalendarPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-gray-800">Team Calendar</h2>
-						<p className="mt-2 text-gray-600">
+						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Calendar</h2>
+						<p className="mt-2 text-text-primary">
 							Manage team calendar entries and PTO for accurate sprint capacity planning
 						</p>
 					</div>
@@ -454,10 +454,10 @@ const CalendarPage: React.FC = () => {
 							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
 						</svg>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Calendar</h3>
-						<p className="mb-6 text-gray-600">{error}</p>
+						<p className="mb-6 text-text-primary">{error}</p>
 						<button
 							onClick={() => void retryInitialization()}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-interactive-hover"
 						>
 							Try Again
 						</button>
@@ -471,20 +471,20 @@ const CalendarPage: React.FC = () => {
 		<main className="w-full py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h2 className="m-0 text-3xl font-semibold text-gray-800">Team Calendar</h2>
-					<p className="mt-2 text-gray-600">
+					<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Calendar</h2>
+					<p className="mt-2 text-text-primary">
 						Manage team calendar entries and PTO for accurate sprint capacity planning
 					</p>
 				</div>
 			</div>
 
 			{/* Action Bar */}
-			<div className="mb-6 flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+			<div className="mb-6 flex items-center justify-between rounded-lg border border-layout-background bg-content-background p-4 shadow-sm">
 				<div className="flex gap-4">
 					<select
 						value={selectedTeam}
 						onChange={e => setSelectedTeam(e.target.value)}
-						className="rounded-md border border-gray-300 p-2 text-base transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+						className="rounded-md border border-layout-background p-2 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 					>
 						<option value="">All Teams</option>
 						{teams.map(team => (
@@ -496,7 +496,7 @@ const CalendarPage: React.FC = () => {
 					<select
 						value={selectedMonth}
 						onChange={e => setSelectedMonth(e.target.value)}
-						className="rounded-md border border-gray-300 p-2 text-base transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+						className="rounded-md border border-layout-background p-2 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 					>
 						{generateMonthOptions().map(option => (
 							<option key={option.value} value={option.value}>
@@ -507,7 +507,7 @@ const CalendarPage: React.FC = () => {
 				</div>
 				<button
 					onClick={openCreateModal}
-					className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-blue-500 px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:bg-blue-600 hover:shadow-md active:translate-y-0"
+					className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:bg-interactive-hover hover:shadow-md active:translate-y-0"
 				>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
 						<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -517,18 +517,18 @@ const CalendarPage: React.FC = () => {
 			</div>
 
 			{/* Calendar Grid Placeholder */}
-			<div className="mb-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+			<div className="mb-6 rounded-lg border border-layout-background bg-content-background shadow-sm">
 				<div className="p-4">
-					<p className="py-8 text-center text-gray-500">Calendar grid view coming soon...</p>
+					<p className="py-8 text-center text-text-primary">Calendar grid view coming soon...</p>
 				</div>
 			</div>
 
 			{/* Entries List */}
-			<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-				<h3 className="mb-4 text-xl font-semibold text-gray-800">Upcoming Entries</h3>
+			<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<h3 className="mb-4 text-xl font-semibold text-text-contrast">Upcoming Entries</h3>
 
 				{entries.length === 0 ? (
-					<div className="p-8 text-center text-gray-500 italic">
+					<div className="p-8 text-center text-text-primary italic">
 						<p>No calendar entries for the selected period.</p>
 					</div>
 				) : (
@@ -536,19 +536,19 @@ const CalendarPage: React.FC = () => {
 						{entries.map(entry => (
 							<div
 								key={entry.id}
-								className="rounded-lg border border-gray-200 p-4 transition-shadow hover:shadow-sm"
+								className="rounded-lg border border-layout-background p-4 transition-shadow hover:shadow-sm"
 							>
 								<div className="mb-2 flex items-start justify-between">
 									<div>
-										<h4 className="font-semibold text-gray-900">{entry.title}</h4>
-										<p className="text-sm text-gray-600">
+										<h4 className="font-semibold text-text-contrast">{entry.title}</h4>
+										<p className="text-sm text-text-primary">
 											{getUserDisplayName(entry.user_id)} • {getTeamName(entry.team_id)}
 										</p>
 									</div>
 									<div className="flex gap-2">
 										<button
 											onClick={() => openEditModal(entry)}
-											className="p-2 text-gray-400 transition-colors hover:text-gray-600"
+											className="p-2 text-gray-400 transition-colors hover:text-text-primary"
 											title="Edit entry"
 										>
 											<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -573,12 +573,12 @@ const CalendarPage: React.FC = () => {
 									>
 										{getEntryTypeLabel(entry.entry_type)}
 									</span>
-									<span className="text-gray-600">
+									<span className="text-text-primary">
 										{formatDate(entry.start_date)} - {formatDate(entry.end_date)}
 									</span>
 								</div>
 
-								{entry.description && <p className="mt-2 text-sm text-gray-600">{entry.description}</p>}
+								{entry.description && <p className="mt-2 text-sm text-text-primary">{entry.description}</p>}
 							</div>
 						))}
 					</div>
@@ -588,14 +588,14 @@ const CalendarPage: React.FC = () => {
 			{/* Entry Modal */}
 			{showEntryModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
-						<div className="flex items-center justify-between border-b border-gray-200 p-6">
-							<h3 className="m-0 text-xl font-semibold text-gray-900">
+					<div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-content-background shadow-lg">
+						<div className="flex items-center justify-between border-b border-layout-background p-6">
+							<h3 className="m-0 text-xl font-semibold text-text-contrast">
 								{isEditing ? "Edit Calendar Entry" : "Add Calendar Entry"}
 							</h3>
 							<button
 								onClick={closeModals}
-								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-gray-400 transition-colors duration-200 hover:text-gray-600"
+								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-gray-400 transition-colors duration-200 hover:text-text-primary"
 							>
 								&times;
 							</button>
@@ -604,14 +604,14 @@ const CalendarPage: React.FC = () => {
 						<form onSubmit={e => void handleSubmit(e)} className="p-6">
 							<div className="space-y-6">
 								<div className="flex flex-col gap-2">
-									<label htmlFor="team-select" className="block font-medium text-gray-700">
+									<label htmlFor="team-select" className="block font-medium text-text-primary">
 										Team *
 									</label>
 									<select
 										id="team-select"
 										value={formData.team_id}
 										onChange={e => setFormData({ ...formData, team_id: e.target.value })}
-										className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									>
 										<option value="">Select a team</option>
@@ -627,7 +627,7 @@ const CalendarPage: React.FC = () => {
 								</div>
 
 								<div className="flex flex-col gap-2">
-									<label htmlFor="user-select" className="block font-medium text-gray-700">
+									<label htmlFor="user-select" className="block font-medium text-text-primary">
 										Team Member *
 									</label>
 									<select
@@ -635,7 +635,7 @@ const CalendarPage: React.FC = () => {
 										value={formData.user_id}
 										onChange={e => setFormData({ ...formData, user_id: e.target.value })}
 										disabled={!formData.team_id}
-										className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
+										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
 										required
 									>
 										<option value="">
@@ -653,14 +653,14 @@ const CalendarPage: React.FC = () => {
 								</div>
 
 								<div className="flex flex-col gap-2">
-									<label htmlFor="entry-type-select" className="block font-medium text-gray-700">
+									<label htmlFor="entry-type-select" className="block font-medium text-text-primary">
 										Entry Type *
 									</label>
 									<select
 										id="entry-type-select"
 										value={formData.entry_type}
 										onChange={e => setFormData({ ...formData, entry_type: e.target.value })}
-										className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									>
 										<option value="pto">PTO / Vacation</option>
@@ -671,7 +671,7 @@ const CalendarPage: React.FC = () => {
 								</div>
 
 								<div className="flex flex-col gap-2">
-									<label htmlFor="title-input" className="block font-medium text-gray-700">
+									<label htmlFor="title-input" className="block font-medium text-text-primary">
 										Title *
 									</label>
 									<input
@@ -680,7 +680,7 @@ const CalendarPage: React.FC = () => {
 										value={formData.title}
 										onChange={e => setFormData({ ...formData, title: e.target.value })}
 										placeholder="e.g., Summer Vacation"
-										className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									{formErrors.title && (
@@ -690,7 +690,7 @@ const CalendarPage: React.FC = () => {
 
 								<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 									<div className="flex flex-col gap-2">
-										<label htmlFor="start-date-input" className="block font-medium text-gray-700">
+										<label htmlFor="start-date-input" className="block font-medium text-text-primary">
 											Start Date *
 										</label>
 										<input
@@ -698,7 +698,7 @@ const CalendarPage: React.FC = () => {
 											type="date"
 											value={formData.start_date}
 											onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-											className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 											required
 										/>
 										{formErrors.start_date && (
@@ -707,7 +707,7 @@ const CalendarPage: React.FC = () => {
 									</div>
 
 									<div className="flex flex-col gap-2">
-										<label htmlFor="end-date-input" className="block font-medium text-gray-700">
+										<label htmlFor="end-date-input" className="block font-medium text-text-primary">
 											End Date *
 										</label>
 										<input
@@ -715,7 +715,7 @@ const CalendarPage: React.FC = () => {
 											type="date"
 											value={formData.end_date}
 											onChange={e => setFormData({ ...formData, end_date: e.target.value })}
-											className="w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 											required
 										/>
 										{formErrors.end_date && (
@@ -725,7 +725,7 @@ const CalendarPage: React.FC = () => {
 								</div>
 
 								<div className="flex flex-col gap-2">
-									<label htmlFor="description-textarea" className="block font-medium text-gray-700">
+									<label htmlFor="description-textarea" className="block font-medium text-text-primary">
 										Description
 									</label>
 									<textarea
@@ -734,22 +734,22 @@ const CalendarPage: React.FC = () => {
 										onChange={e => setFormData({ ...formData, description: e.target.value })}
 										rows={3}
 										placeholder="Optional notes about this calendar entry"
-										className="resize-vertical min-h-[80px] w-full rounded-md border border-gray-300 p-3 text-base leading-6 transition-all duration-200 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="resize-vertical min-h-[80px] w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 									/>
 								</div>
 							</div>
 
-							<div className="mt-6 flex justify-end gap-4 border-t border-gray-200 p-6">
+							<div className="mt-6 flex justify-end gap-4 border-t border-layout-background p-6">
 								<button
 									type="button"
 									onClick={closeModals}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-interactive-hover"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-blue-500 px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-blue-600"
+									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
 								>
 									{isEditing ? "Update Entry" : "Add Entry"}
 								</button>
@@ -762,29 +762,29 @@ const CalendarPage: React.FC = () => {
 			{/* Delete Modal */}
 			{showDeleteModal && currentEntry && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-white shadow-lg">
-						<div className="flex items-center justify-between border-b border-gray-200 p-6">
-							<h3 className="m-0 text-xl font-semibold text-gray-900">Delete Calendar Entry</h3>
+					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-content-background shadow-lg">
+						<div className="flex items-center justify-between border-b border-layout-background p-6">
+							<h3 className="m-0 text-xl font-semibold text-text-contrast">Delete Calendar Entry</h3>
 							<button
 								onClick={closeModals}
-								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-gray-400 transition-colors duration-200 hover:text-gray-600"
+								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-gray-400 transition-colors duration-200 hover:text-text-primary"
 							>
 								&times;
 							</button>
 						</div>
 
 						<div className="p-6">
-							<p className="mb-4 text-gray-600">Are you sure you want to delete this calendar entry?</p>
-							<p className="font-medium text-gray-700">
+							<p className="mb-4 text-text-primary">Are you sure you want to delete this calendar entry?</p>
+							<p className="font-medium text-text-primary">
 								{currentEntry.title} ({formatDate(currentEntry.start_date)} -{" "}
 								{formatDate(currentEntry.end_date)})
 							</p>
 						</div>
 
-						<div className="flex justify-end gap-4 border-t border-gray-200 p-6">
+						<div className="flex justify-end gap-4 border-t border-layout-background p-6">
 							<button
 								onClick={closeModals}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-interactive-hover"
 							>
 								Cancel
 							</button>

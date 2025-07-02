@@ -71,6 +71,7 @@ class User(Base):  # type: ignore
     password_hash = Column(String, nullable=False)
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
+    organization = Column(String, nullable=False)
     role = Column(String, nullable=False, default="basic_user")
     is_active = Column(Boolean, default=True)
     last_login_at = Column(DateTime, nullable=True)
