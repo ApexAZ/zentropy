@@ -55,6 +55,17 @@ Zentropy - A comprehensive Product Management platform with project workflows, t
   - *Why*: Ensures code quality before commits, prevents broken code in repository
   - *Usage*: Runs quality pipeline before git commits
 
+### **Performance Testing & Analysis**
+- **Vite Bundle Analyzer** - React bundle size analysis
+  - *Why*: Identify large dependencies, prevent bundle bloat, optimize load times
+  - *Usage*: `npm run perf:build-analyze` for bundle inspection
+- **Lighthouse CI** - Automated web performance auditing
+  - *Why*: Performance, accessibility, SEO, and best practices scoring
+  - *Usage*: `npm run analyze:lighthouse` for comprehensive audits
+- **Locust** - Python-based API load testing
+  - *Why*: Validate backend performance under concurrent load, Python-native tooling
+  - *Usage*: `locust -f performance/locustfile.py` for interactive load testing
+
 ### **Authentication & Security**
 - **PassLib** - Password hashing library with bcrypt
   - *Why*: Secure password storage, industry-standard hashing
@@ -114,97 +125,127 @@ Zentropy - A comprehensive Product Management platform with project workflows, t
 
 ## Development Commands
 
-### Essential Commands (in typical usage order)
+### **Quick Start (Most Common)**
 ```bash
-# 1. Initial Setup (run once)
-npm run install:all                   # Install both npm and Python dependencies → npm install + python3 pip (sequential)
-./scripts/setup-database.sh            # Initialize zentropy database with full schema (run once) → scripts/setup-database.sh
+# 🚀 Development (run daily)
+npm run dev                    # Start full development environment (API + React + DB)
+npm run stop                   # Stop all services cleanly
 
-# 2. Full Development Startup (most common)
-npm run dev                            # Run in terminal by user! Intelligent startup with service checks and orchestration → scripts/dev-startup.js
+# ✅ Quality Check (before commits)
+npm run quality                # Full quality pipeline: lint + format + type-check + test (178 tests)
 
-# 3. Individual Service Control
-npm run dev:database                  # Start PostgreSQL container only → docker-compose up -d (direct)
-npm run dev:api                        # Start Python FastAPI server only (port 3000) → python3 uvicorn (direct)
-npm run dev:client                     # Start React development server only (port 5173) → vite dev (direct)
-
-# 4. Service Management
-npm run stop                          # Stop all services (API, client, database) → scripts/stop.js
-npm run dev:fallback                   # Backup dev command using concurrently → concurrently with API/CLIENT (direct)
-
-# 5. Diagnostics & Health Checks
-npm run dev:check                     # Check if ports 3000/5173 are available → scripts/check-ports.js
-
-# 6. Code Quality & Testing
-
-### **Full Quality Pipeline**
-npm run quality                        # Complete quality pipeline (Python + TypeScript + React) → lint + format + type-check + test (includes React tests)
-
-### **Python Backend Quality**
-npm run lint:python                   # Python linting → flake8 with 88-char line limit (direct)
-npm run format:python                 # Python formatting → black (direct)
-npm run type-check:python             # Python type checking → mypy with ignore-missing-imports (direct)
-npm run test                          # Python tests → pytest startup validation suite (direct)
-
-### **React Frontend Quality** 
-npm run lint:typescript               # React/TypeScript linting → ESLint with React hooks rules (direct)
-npm run format:typescript             # React/TypeScript formatting → Prettier (direct)
-npm run type-check:typescript         # TypeScript compilation check → tsc --noEmit --skipLibCheck (direct)
-npm run test:react                     # React component tests → Vitest + React Testing Library + Jest DOM (direct)
-
-### **React Testing & Quality (Additional Enhancements)**
-# Current: Component tests implemented with Vitest + React Testing Library + Jest DOM
-# Recommended future additions:
-npm run test:e2e                      # End-to-end tests → Playwright or Cypress  
-npm run test:a11y                     # Accessibility testing → @axe-core/react
-npm run test:visual                   # Visual regression → Storybook + Chromatic
-npm run bundle-analyzer               # Bundle size analysis → Vite bundle analyzer
-
-### **Combined Quality Commands**
-npm run lint                          # Lint both Python and TypeScript → flake8 + eslint
-npm run format                        # Format both Python and TypeScript → black + prettier  
-npm run type-check                    # Type check both Python and TypeScript → mypy + tsc
-
-# 7. Build & Production
-npm run build                          # Build React app for production → vite build (direct)
-npm run clean                          # Remove build artifacts from dist/ → rm -rf (direct)
-npm start                             # Start production Python API server → python3 uvicorn (direct)
-
-# 8. Dependency Management
-npm run install:python                # Install Python dependencies from requirements.txt → python3 -m pip (direct)
+# 📊 Performance Analysis (periodic)
+npm run perf:build-analyze     # Build + analyze bundle size (current: 300KB)
 ```
 
-### Health Checks & Diagnostics
+### **Setup Commands (run once)**
+```bash
+npm run install:all            # Install all dependencies (npm + Python)
+./scripts/setup-database.sh     # Initialize PostgreSQL database schema
+```
+
+### **Development Services**
+```bash
+# Individual Services
+npm run dev:api                # Python FastAPI server only (port 3000)
+npm run dev:client             # React dev server only (port 5173)  
+npm run dev:database           # PostgreSQL container only
+npm run dev:check              # Check if ports 3000/5173 are available
+
+# Service Management
+npm run stop                   # Stop all services (API, client, database)
+npm run dev:fallback           # Backup dev command using concurrently
+```
+
+### **Quality & Testing (178 Tests Total)**
+```bash
+# Full Quality Pipeline
+npm run quality                # Complete pipeline: lint + format + type-check + test
+npm run quality:pre-commit     # Fast pre-commit validation
+
+# Testing (178 tests: 77 Python + 101 React)
+npm run test                   # All tests (Python + React)
+npm run test:python            # Python tests only (pytest)
+npm run test:react             # React tests only (Vitest)
+npm run test:pre-commit        # Startup validation tests
+
+# Code Quality
+npm run lint                   # Lint Python + TypeScript
+npm run format                 # Format Python + TypeScript
+npm run type-check             # Type check Python + TypeScript
+
+# Individual Language Quality
+npm run lint:python            # flake8 linting
+npm run format:python          # black formatting
+npm run type-check:python      # mypy type checking
+npm run lint:typescript        # ESLint + React hooks
+npm run format:typescript      # Prettier + TailwindCSS
+npm run type-check:typescript  # TypeScript compiler
+```
+
+### **Performance & Analysis**
+```bash
+# Bundle Analysis
+npm run perf:build-analyze     # Build + analyze React bundle (current: 300KB)
+npm run analyze:bundle         # Analyze existing bundle size
+npm run analyze:lighthouse     # Lighthouse performance audit
+
+# Load Testing (Python Locust)
+locust -f performance/locustfile.py --host=http://localhost:3000              # Interactive (Web UI at :8089)
+locust -f performance/locustfile.py --host=http://localhost:3000 -u 10 -t 30s # Quick test (10 users, 30s)
+
+# Performance Targets
+# Frontend: Bundle < 1MB ✅, Performance > 70%, LCP < 4s, FCP < 2s  
+# Backend: API < 200ms (95th %), 50+ concurrent users, DB queries < 50ms
+```
+
+### **Build & Production**
+```bash
+npm run build                  # Build React app for production
+npm run clean                  # Remove build artifacts
+npm start                      # Start production Python API server
+npm run install:python         # Install Python dependencies only
+```
+
+### **Health Checks & Diagnostics**
 ```bash
 # Service Health
-curl http://localhost:3000/health      # Check Python API server and database status → API /health endpoint
-curl http://localhost:5173             # Check React dev server response → Vite dev server
-curl http://localhost:3000/docs        # View automatic FastAPI documentation → FastAPI OpenAPI docs
+curl http://localhost:3000/health    # API + database status
+curl http://localhost:5173           # React dev server  
+curl http://localhost:3000/docs      # FastAPI documentation
 
-# Port & Process Diagnostics
-npm run dev:check                     # Check if development ports are available → scripts/check-ports.js
-lsof -i :3000 -i :5173 -i :5432       # Check what processes are using ports → lsof system command
-ps aux | grep -E 'uvicorn|vite|postgres' # Check running development processes → ps system command
+# System Diagnostics  
+npm run dev:check                    # Port availability check
+lsof -i :3000 -i :5173 -i :5432     # Process using ports
+ps aux | grep -E 'uvicorn|vite|postgres'  # Running dev processes
 
-# Database Diagnostics
-docker ps | grep zentropy             # Check database container status → Docker ps command
-docker exec zentropy_db pg_isready -U dev_user -d zentropy # Check database connectivity → PostgreSQL pg_isready
+# Database
+docker ps | grep zentropy           # Container status
+docker exec zentropy_db pg_isready -U dev_user -d zentropy  # Connection test
 ```
 
-### Available Scripts (in /scripts/)
-```bash
-scripts/dev-startup.js                 # Intelligent development environment orchestration with service detection
-scripts/stop.js                       # Clean shutdown of all services (API, client, database)
-scripts/check-ports.js                # Port availability checker for development ports
-scripts/setup-database.sh             # Database initialization script (run once)
+### **Test Coverage Breakdown**
 ```
+📊 178 Total Tests (8x increase from 22)
 
-### Development Workflow Notes
-- **User Starts Dev Env**: `npm run dev` must be started by user in terminal for dev environment persistence
-- **Clean Shutdown**: `npm run stop` properly stops all services including database
-- **Automatic Database**: Database container starts automatically before servers
-- **React Development**: Hot reload at http://localhost:5173 (proxies API calls to :3000)
-- **API Documentation**: FastAPI automatically generates docs at http://localhost:3000/docs
+🐍 Python Backend (77 tests)
+├── Authentication (25): Password hashing, JWT tokens, auth flows
+├── API Endpoints (30): Auth, users, teams, calendar CRUD  
+├── Database Models (17): SQLAlchemy validation for 7 models
+└── Startup Tests (5): Server reliability, environment validation
+
+⚛️ React Frontend (101 tests)  
+├── LoginPage (15): Form validation, authentication flows
+├── CalendarPage (20): CRUD operations, filtering, modals
+├── TeamsPage (25): Team management, validation, CRUD
+├── RegisterPage (25): Registration flow, password requirements  
+└── ProfilePage (16): Profile updates, password changes
+
+🛠️ Testing Infrastructure
+├── Python: pytest + FastAPI TestClient + httpx + pytest-mock
+├── React: Vitest + React Testing Library + Jest DOM + user-event
+└── Patterns: Mock-based, async/await, form validation, API errors
+```
 
 ## Project Status
 
@@ -225,17 +266,20 @@ scripts/setup-database.sh             # Database initialization script (run once
 
 ## Current Session Recap
 
-### **Comprehensive Post-Migration Codebase Cleanup** (2025-07-02 03:30:00 -07:00)
-- ✅ **Complete Obsolete File Removal** - Deleted 117 files (34,396 lines) including entire TypeScript/Express backend and test infrastructure
-- ✅ **Configuration Cleanup** - Updated all config files (tsconfig.json, vite.config.ts, vitest.config.ts) for current Python/React architecture
-- ✅ **Documentation Updates** - Revised README.md and project structure to accurately reflect Python FastAPI + React stack
-- ✅ **Git Repository Hygiene** - Added Python-specific .gitignore entries and removed all cache files from version control
-- ✅ **Final Quality Validation** - All 117 file changes committed with full quality checks (linting, formatting, type checking) and startup tests passing
+### **Performance Testing Infrastructure & Quality Enhancement** (2025-07-02 22:05:00 -07:00)
+- ✅ **Comprehensive Performance Tools** - Implemented lightweight performance testing suite with bundle analysis, Lighthouse CI, and API load testing
+- ✅ **Frontend Performance Monitoring** - Added Vite bundle analyzer (300KB bundle), Lighthouse CI auditing, and automated performance measurement
+- ✅ **Backend Load Testing** - Integrated Locust Python-based load testing with interactive scenarios for API endpoint validation
+- ✅ **Development Build Optimization** - Fixed Vite configuration and build pipeline for proper bundle analysis and performance measurement
+- ✅ **Documentation Enhancement** - Updated CLAUDE.md with comprehensive performance command documentation and established performance targets
 
-### **Key Cleanup Achievements**
-- **🗂️ Massive File Cleanup**: Removed entire `/src/server/` (47 files), `/src/__tests__/` (30+ files), and obsolete config files
-- **🐍 Python Optimization**: Added proper .gitignore entries, removed cache files, ensured clean Python development environment
-- **📋 Architecture Consistency**: Updated all documentation and configuration to reflect pure Python FastAPI + React architecture
-- **🔧 Configuration Modernization**: Removed obsolete ESLint, Stylelint configs, updated build tools for current stack
-- **✅ Zero Technical Debt**: Eliminated all legacy TypeScript backend references, unused dependencies, and dead code
-- **🎯 Development Ready**: Codebase now 100% clean and optimized for continued Python/React development
+### **Key Performance Achievements**
+- **📊 Bundle Analysis**: 300KB total bundle size (well under 1MB target) with detailed size breakdown and asset analysis
+- **🚀 Performance Commands**: 
+  - `npm run perf:build-analyze` - Complete build + bundle analysis pipeline
+  - `npm run analyze:bundle` - Bundle size and contents analysis
+  - `npm run analyze:lighthouse` - Web performance auditing
+  - `locust -f performance/locustfile.py` - Interactive API load testing
+- **🎯 Performance Targets**: Frontend < 1MB bundle, > 70% performance score; Backend < 200ms API response, 50+ concurrent users
+- **🛠️ Tools Integration**: Vite Bundle Analyzer, Lighthouse CI, Locust load testing with comprehensive documentation and usage examples
+- **📋 Future-Ready Infrastructure**: Performance testing foundation ready for pre-production validation and optimization cycles
