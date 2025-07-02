@@ -18,9 +18,12 @@
 		"start": "python3 -m uvicorn api.main:app --host 0.0.0.0 --port 3000",
 		
 		"// === QUALITY ===": "",
-		"lint": "eslint src/client --ext .ts,.tsx --fix",
-		"format": "prettier --write \"src/client/**/*.{ts,tsx,css}\"",
-		"test": "vitest",
+		"lint": "python3 -m flake8 api/ --max-line-length=88 --extend-ignore=E203,W503",
+		"format": "python3 -m black api/",
+		"type-check": "python3 -m mypy api/ --ignore-missing-imports",
+		"quality": "npm run lint && npm run format && npm run type-check",
+		"test": "python3 -m pytest",
+		"test:pre-commit": "python3 -m pytest tests/test_startup.py -v",
 		
 		"// === SETUP ===": "",
 		"install:python": "python3 -m pip install -r requirements.txt",
