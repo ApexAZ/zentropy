@@ -45,30 +45,44 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 				</button>
 			</h1>
 			<nav id="nav-container" className="flex flex-grow items-center justify-end">
-				<ul className="m-0 flex list-none gap-8 p-0">
+				<ul className="m-0 mr-4 flex list-none gap-6 p-0">
 					<li>
-						<button
-							className={`cursor-pointer rounded-md border-none px-4 py-2 font-medium no-underline transition-all duration-200 ${
+						<a
+							className={`cursor-pointer text-base font-medium no-underline transition-all duration-200 ${
 								currentPage === "about"
-									? "bg-layout-background text-interactive"
-									: "text-text-primary hover:bg-layout-background hover:text-interactive"
+									? "text-interactive border-interactive border-b"
+									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
 							}`}
 							onClick={() => onPageChange("about")}
+							role="button"
+							tabIndex={0}
+							onKeyDown={e => {
+								if (e.key === "Enter" || e.key === " ") {
+									onPageChange("about");
+								}
+							}}
 						>
 							About
-						</button>
+						</a>
 					</li>
 					<li>
-						<button
-							className={`cursor-pointer rounded-md border-none px-4 py-2 font-medium no-underline transition-all duration-200 ${
+						<a
+							className={`cursor-pointer text-base font-medium no-underline transition-all duration-200 ${
 								currentPage === "contact"
-									? "bg-layout-background text-interactive"
-									: "text-text-primary hover:bg-layout-background hover:text-interactive"
+									? "text-interactive border-interactive border-b"
+									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
 							}`}
 							onClick={() => onPageChange("contact")}
+							role="button"
+							tabIndex={0}
+							onKeyDown={e => {
+								if (e.key === "Enter" || e.key === " ") {
+									onPageChange("contact");
+								}
+							}}
 						>
 							Contact
-						</button>
+						</a>
 					</li>
 				</ul>
 				<div className="nav-auth">

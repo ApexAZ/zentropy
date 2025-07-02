@@ -22,41 +22,82 @@ describe("Header", () => {
 	});
 
 	it("renders Zentropy logo", () => {
-		render(<Header currentPage="home" onPageChange={mockOnPageChange} auth={mockAuth} />);
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
 		const logo = screen.getByRole("heading", { level: 1 });
 		expect(logo).toHaveTextContent("Zentropy");
 	});
 
 	it("highlights current page in navigation", () => {
-		render(<Header currentPage="about" onPageChange={mockOnPageChange} auth={mockAuth} />);
+		render(
+			<Header
+				currentPage="about"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
-		const aboutButton = screen.getByRole("button", { name: "About" });
-		expect(aboutButton).toHaveClass("bg-layout-background", "text-interactive");
+		const aboutLink = screen.getByRole("button", { name: "About" });
+		expect(aboutLink).toHaveClass("text-interactive", "border-interactive", "border-b");
 
-		const contactButton = screen.getByRole("button", { name: "Contact" });
-		expect(contactButton).toHaveClass("text-text-primary");
+		const contactLink = screen.getByRole("button", { name: "Contact" });
+		expect(contactLink).toHaveClass("text-interactive");
+		expect(contactLink).not.toHaveClass("border-b");
 	});
 
-	it("calls onPageChange when navigation button is clicked", async () => {
+	it("calls onPageChange when navigation link is clicked", async () => {
 		const user = userEvent.setup();
-		render(<Header currentPage="home" onPageChange={mockOnPageChange} auth={mockAuth} />);
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
-		const aboutButton = screen.getByRole("button", { name: "About" });
-		await user.click(aboutButton);
+		const aboutLink = screen.getByRole("button", { name: "About" });
+		await user.click(aboutLink);
 
 		expect(mockOnPageChange).toHaveBeenCalledWith("about");
 	});
 
 	it("renders profile dropdown", () => {
-		render(<Header currentPage="home" onPageChange={mockOnPageChange} auth={mockAuth} />);
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		expect(profileButton).toBeInTheDocument();
 	});
 
 	it("has proper semantic structure", () => {
-		render(<Header currentPage="home" onPageChange={mockOnPageChange} auth={mockAuth} />);
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
 		const header = screen.getByRole("banner");
 		expect(header).toBeInTheDocument();
@@ -65,8 +106,16 @@ describe("Header", () => {
 		expect(navigation).toBeInTheDocument();
 	});
 
-	it("renders all navigation buttons", () => {
-		render(<Header currentPage="home" onPageChange={mockOnPageChange} auth={mockAuth} />);
+	it("renders all navigation links", () => {
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowLogin={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
 
 		expect(screen.getByRole("button", { name: "About" })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Contact" })).toBeInTheDocument();
