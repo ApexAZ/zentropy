@@ -214,7 +214,7 @@ const RegisterPage: React.FC = () => {
     }
   }
 
-  const getPasswordStrengthBarColor = (strength: number) => {
+  const getPasswordStrengthBarColor = (strength: number): string => {
     switch (strength) {
       case 0:
       case 1: return 'bg-red-600'
@@ -226,11 +226,11 @@ const RegisterPage: React.FC = () => {
     }
   }
 
-  const getPasswordStrengthWidth = (strength: number) => {
+  const getPasswordStrengthWidth = (strength: number): string => {
     return `${(strength / 5) * 100}%`
   }
 
-  const isFormValid = () => {
+  const isFormValid = (): boolean => {
     return formData.first_name &&
            formData.last_name &&
            formData.email &&
@@ -253,7 +253,7 @@ const RegisterPage: React.FC = () => {
                 <a href="/" className="no-underline text-blue-500">Zentropy</a>
               </h1>
               <h2 className="text-gray-900 text-2xl font-semibold mb-2">Create Your Account</h2>
-              <p className="text-gray-600 text-sm">Join your team's capacity planning workspace</p>
+              <p className="text-gray-600 text-sm">Join your team&apos;s capacity planning workspace</p>
             </div>
 
             {/* Registration Form */}
@@ -465,8 +465,8 @@ const RegisterPage: React.FC = () => {
                       className="mt-1"
                     />
                     <span className="text-gray-700">
-                      I agree to the <a href="#" className="text-blue-500 no-underline font-medium transition-colors duration-200 hover:text-blue-600 hover:underline">Terms of Service</a> and 
-                      <a href="#" className="text-blue-500 no-underline font-medium transition-colors duration-200 hover:text-blue-600 hover:underline"> Privacy Policy</a>
+                      I agree to the <button type="button" className="text-blue-500 no-underline font-medium transition-colors duration-200 hover:text-blue-600 hover:underline bg-transparent border-none cursor-pointer p-0">Terms of Service</button> and 
+                      <button type="button" className="text-blue-500 no-underline font-medium transition-colors duration-200 hover:text-blue-600 hover:underline bg-transparent border-none cursor-pointer p-0"> Privacy Policy</button>
                     </span>
                   </label>
                   {errors.terms && (
@@ -549,7 +549,7 @@ const RegisterPage: React.FC = () => {
             <div className="text-5xl mb-4">✅</div>
             <h3 className="text-gray-900 mb-4 text-xl font-semibold">Account Created Successfully!</h3>
             <p className="text-gray-600 mb-8 leading-6">
-              Welcome to Zentropy! Your account has been created and you're now logged in.
+              Welcome to Zentropy! Your account has been created and you&apos;re now logged in.
             </p>
             <div className="flex justify-end gap-4">
               <button 
@@ -563,7 +563,7 @@ const RegisterPage: React.FC = () => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes slideIn {
           from { opacity: 0; transform: translateX(100%); }
           to { opacity: 1; transform: translateX(0); }

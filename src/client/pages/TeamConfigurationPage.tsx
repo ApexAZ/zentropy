@@ -80,7 +80,7 @@ const TeamConfigurationPage: React.FC = () => {
   // Modal states
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showCreateSprintModal, setShowCreateSprintModal] = useState(false)
-  const [showGenerateSprintsModal, setShowGenerateSprintsModal] = useState(false)
+  // const [showGenerateSprintsModal, setShowGenerateSprintsModal] = useState(false)
   
   const [addMemberData, setAddMemberData] = useState<AddMemberData>({
     email: '',
@@ -91,17 +91,17 @@ const TeamConfigurationPage: React.FC = () => {
     start_date: '',
     end_date: ''
   })
-  const [generateSprintsData, setGenerateSprintsData] = useState<GenerateSprintsData>({
-    starting_sprint_number: 3,
-    number_of_sprints: 6,
-    first_sprint_start_date: ''
-  })
+  // const [generateSprintsData, setGenerateSprintsData] = useState<GenerateSprintsData>({
+  //   starting_sprint_number: 3,
+  //   number_of_sprints: 6,
+  //   first_sprint_start_date: ''
+  // })
 
   const [memberErrors, setMemberErrors] = useState<Record<string, string>>({})
   const [sprintErrors, setSprintErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    loadTeamConfiguration()
+    void loadTeamConfiguration()
   }, [])
 
   // Hide toast after 5 seconds
@@ -130,9 +130,9 @@ const TeamConfigurationPage: React.FC = () => {
         throw new Error('Failed to load team configuration')
       }
 
-      const teamData = await teamResponse.json()
-      const membersData = membersResponse.ok ? await membersResponse.json() : []
-      const sprintsData = sprintsResponse.ok ? await sprintsResponse.json() : []
+      const teamData = await teamResponse.json() as Team
+      const membersData = membersResponse.ok ? await membersResponse.json() as TeamMember[] : []
+      const sprintsData = sprintsResponse.ok ? await sprintsResponse.json() as Sprint[] : []
 
       setTeam(teamData)
       setTeamMembers(membersData)
@@ -141,8 +141,8 @@ const TeamConfigurationPage: React.FC = () => {
       // Initialize form data
       setTeamBasicData({
         name: teamData.name,
-        description: teamData.description || '',
-        working_days: teamData.working_days || [1, 2, 3, 4, 5]
+        description: teamData.description ?? '',
+        working_days: teamData.working_days ?? [1, 2, 3, 4, 5]
       })
       setVelocityData({
         baseline_velocity: teamData.velocity_baseline,
@@ -150,7 +150,7 @@ const TeamConfigurationPage: React.FC = () => {
       })
 
     } catch (err) {
-      console.error('Error loading team configuration:', err)
+      // console.error('Error loading team configuration:', err)
       setError(err instanceof Error ? err.message : 'Failed to load team configuration')
     } finally {
       setIsLoading(false)

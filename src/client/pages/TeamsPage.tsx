@@ -79,7 +79,7 @@ const TeamsPage: React.FC = () => {
     }
   }
 
-  const openCreateModal = () => {
+  const openCreateModal = (): void => {
     setCurrentTeam(null)
     setIsEditing(false)
     setFormData({
@@ -93,7 +93,7 @@ const TeamsPage: React.FC = () => {
     setShowTeamModal(true)
   }
 
-  const openEditModal = (team: Team) => {
+  const openEditModal = (team: Team): void => {
     setCurrentTeam(team)
     setIsEditing(true)
     setFormData({
@@ -107,12 +107,12 @@ const TeamsPage: React.FC = () => {
     setShowTeamModal(true)
   }
 
-  const openDeleteModal = (team: Team) => {
+  const openDeleteModal = (team: Team): void => {
     setCurrentTeam(team)
     setShowDeleteModal(true)
   }
 
-  const closeModals = () => {
+  const closeModals = (): void => {
     setShowTeamModal(false)
     setShowDeleteModal(false)
     setCurrentTeam(null)
