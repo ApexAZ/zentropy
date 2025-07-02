@@ -1,7 +1,7 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, Any, Union
 from uuid import UUID
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -27,15 +27,17 @@ security = HTTPBearer()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    return str(pwd_context.hash(password))
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+) -> str:
     """Create a JWT access token"""
     to_encode = data.copy()
     if expires_delta:
@@ -45,10 +47,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return str(encoded_jwt)
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> TokenData:
     """Verify JWT token and return token data"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -72,7 +76,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 def get_current_user(
     token_data: TokenData = Depends(verify_token), db: Session = Depends(get_db)
-):
+) -> database.User:
     """Get current user from token"""
     user = (
         db.query(database.User).filter(database.User.id == token_data.user_id).first()
@@ -84,7 +88,9 @@ def get_current_user(
     return user
 
 
-def get_current_active_user(current_user: database.User = Depends(get_current_user)):
+def get_current_active_user(
+    current_user: database.User = Depends(get_current_user),
+) -> database.User:
     """Get current active user"""
     if not current_user.is_active:
         raise HTTPException(
@@ -93,7 +99,9 @@ def get_current_active_user(current_user: database.User = Depends(get_current_us
     return current_user
 
 
-def authenticate_user(db: Session, email: str, password: str):
+def authenticate_user(
+    db: Session, email: str, password: str
+) -> Union[database.User, bool]:
     """Authenticate user credentials"""
     user = db.query(database.User).filter(database.User.email == email.lower()).first()
     if not user:
@@ -103,7 +111,9 @@ def authenticate_user(db: Session, email: str, password: str):
     return user
 
 
-def validate_password_strength(password: str, user_info: Optional[dict] = None) -> bool:
+def validate_password_strength(
+    password: str, user_info: Optional[Dict[str, Any]] = None
+) -> bool:
     """Basic password validation"""
     if len(password) < 8:
         raise HTTPException(

@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime
 
-from ..database import get_db
+from ..database import get_db, UserRole, TeamRole
 from ..schemas import (
     TeamResponse,
     TeamCreate,
@@ -22,7 +22,7 @@ router = APIRouter()
 def get_teams(
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> List[database.Team]:
     """Get all teams"""
     teams = db.query(database.Team).all()
     return teams
@@ -33,7 +33,7 @@ def create_team(
     team_create: TeamCreate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.Team:
     """Create a new team"""
     db_team = database.Team(
         name=team_create.name,
@@ -50,7 +50,7 @@ def create_team(
 
     # Add creator as team member
     membership = database.TeamMembership(
-        team_id=db_team.id, user_id=current_user.id, role="admin"
+        team_id=db_team.id, user_id=current_user.id, role=TeamRole.ADMIN
     )
     db.add(membership)
     db.commit()
@@ -63,7 +63,7 @@ def get_team(
     team_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> TeamWithMembers:
     """Get team by ID with members"""
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
     if not team:
@@ -101,7 +101,7 @@ def update_team(
     team_update: TeamUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.Team:
     """Update team"""
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
     if not team:
@@ -115,12 +115,12 @@ def update_team(
         .filter(
             database.TeamMembership.team_id == team_id,
             database.TeamMembership.user_id == current_user.id,
-            database.TeamMembership.role.in_(["admin", "lead"]),
+            database.TeamMembership.role.in_([TeamRole.ADMIN, TeamRole.LEAD]),
         )
         .first()
     )
 
-    if not membership and current_user.role != "admin":
+    if not membership and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
@@ -142,7 +142,7 @@ def add_team_member(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Add user to team"""
     # Check if team exists
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
@@ -176,7 +176,7 @@ def add_team_member(
 
     # Add membership
     membership = database.TeamMembership(
-        team_id=team_id, user_id=user_id, role="member"
+        team_id=team_id, user_id=user_id, role=TeamRole.MEMBER
     )
     db.add(membership)
     db.commit()
@@ -190,7 +190,7 @@ def remove_team_member(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Remove user from team"""
     membership = (
         db.query(database.TeamMembership)

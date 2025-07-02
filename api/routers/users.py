@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime
 
-from ..database import get_db
+from ..database import get_db, UserRole
 from ..schemas import UserResponse, UserUpdate, PasswordUpdate, MessageResponse
 from ..auth import (
     get_current_active_user,
@@ -21,7 +21,7 @@ router = APIRouter()
 def get_users(
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> List[database.User]:
     """Get all users"""
     users = db.query(database.User).all()
     return users
@@ -30,7 +30,7 @@ def get_users(
 @router.get("/me", response_model=UserResponse)
 def get_current_user_profile(
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.User:
     """Get current user profile"""
     return current_user
 
@@ -40,7 +40,7 @@ def get_user(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.User:
     """Get user by ID"""
     user = db.query(database.User).filter(database.User.id == user_id).first()
     if not user:
@@ -55,7 +55,7 @@ def update_current_user(
     user_update: UserUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.User:
     """Update current user profile"""
     update_data = user_update.dict(exclude_unset=True)
 
@@ -93,10 +93,10 @@ def update_user(
     user_update: UserUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.User:
     """Update user by ID (admin only)"""
     # Basic role check - you might want to implement proper admin roles
-    if current_user.role not in ["admin", "team_lead"]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.TEAM_LEAD]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
@@ -142,7 +142,7 @@ def change_password(
     password_update: PasswordUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Change current user's password"""
     # Verify current password
     if not verify_password(
@@ -212,10 +212,10 @@ def delete_user(
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Delete user by ID (admin only)"""
     # Basic role check
-    if current_user.role not in ["admin"]:
+    if current_user.role not in [UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )

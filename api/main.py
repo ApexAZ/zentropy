@@ -76,12 +76,12 @@ if os.path.exists("dist/public"):
 
 
 @app.get("/", response_model=MessageResponse)
-def root():
+def root() -> MessageResponse:
     return MessageResponse(message="Zentropy API v1.0.0 - Capacity Planner")
 
 
 @app.get("/health", response_model=HealthResponse)
-def health_check():
+def health_check() -> HealthResponse:
     try:
         # Test database connection without dependency injection
         db_status = "connected" if test_database_connection() else "disconnected"
@@ -93,7 +93,7 @@ def health_check():
 
 # Serve React app for any non-API routes
 @app.get("/{path:path}")
-def serve_react_app(path: str):
+def serve_react_app(path: str) -> FileResponse:
     # If the path is an API route, let it 404 naturally
     if path.startswith("api/"):
         raise HTTPException(status_code=404, detail="Not found")

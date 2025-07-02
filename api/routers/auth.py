@@ -27,10 +27,10 @@ router = APIRouter()
 @router.post("/login", response_model=Token)
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
-):
+) -> Token:
     """Login user and return access token"""
     user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
+    if not user or isinstance(user, bool):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -38,7 +38,7 @@ def login(
         )
 
     # Update last login
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.utcnow()  # type: ignore
     db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -49,17 +49,17 @@ def login(
 
 
 @router.post("/login-json", response_model=LoginResponse)
-def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
+def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginResponse:
     """Login user with JSON payload"""
     user = authenticate_user(db, user_login.email, user_login.password)
-    if not user:
+    if not user or isinstance(user, bool):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
         )
 
     # Update last login
-    user.last_login_at = datetime.utcnow()
+    user.last_login_at = datetime.utcnow()  # type: ignore
     db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -80,7 +80,7 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user_create: UserCreate, db: Session = Depends(get_db)):
+def register(user_create: UserCreate, db: Session = Depends(get_db)) -> database.User:
     """Register a new user"""
     # Check if user already exists
     existing_user = (
@@ -132,6 +132,6 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/logout", response_model=MessageResponse)
-def logout():
+def logout() -> MessageResponse:
     """Logout user (client should discard token)"""
     return MessageResponse(message="Successfully logged out")

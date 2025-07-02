@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
+from .database import UserRole, TeamRole, InvitationStatus
 
 
 # User schemas
@@ -10,7 +11,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     organization: str
-    role: str = "basic_user"
+    role: UserRole = UserRole.BASIC_USER
 
 
 class UserCreate(UserBase):
@@ -22,7 +23,7 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     organization: Optional[str] = None
-    role: Optional[str] = None
+    role: Optional[UserRole] = None
     is_active: Optional[bool] = None
 
 
@@ -118,7 +119,7 @@ class CalendarEntryResponse(CalendarEntryBase):
 # Team invitation schemas
 class TeamInvitationBase(BaseModel):
     email: EmailStr
-    role: str = "member"
+    role: TeamRole = TeamRole.MEMBER
 
 
 class TeamInvitationCreate(TeamInvitationBase):
@@ -130,7 +131,7 @@ class TeamInvitationResponse(TeamInvitationBase):
     id: UUID
     team_id: UUID
     invited_by: UUID
-    status: str
+    status: InvitationStatus
     expires_at: datetime
     created_at: datetime
     updated_at: datetime
@@ -148,7 +149,7 @@ class Token(BaseModel):
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: dict  # Contains user info like first_name, last_name, email
+    user: Dict[str, Any]  # Contains user info like first_name, last_name, email
 
 
 class TokenData(BaseModel):

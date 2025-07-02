@@ -8,16 +8,51 @@ from sqlalchemy import (
     Text,
     ForeignKey,
     text,
+    Enum,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy.orm import sessionmaker, relationship
+from typing import Generator
+from sqlalchemy.sql.schema import Column as SqlColumn
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from enum import Enum as PyEnum
 
 load_dotenv()
+
+
+# Role Enums for database validation
+class UserRole(PyEnum):
+    """Global user roles for system-wide permissions"""
+
+    BASIC_USER = "basic_user"
+    ADMIN = "admin"
+    TEAM_LEAD = "team_lead"
+    PROJECT_ADMINISTRATOR = "project_administrator"
+    PROJECT_LEAD = "project_lead"
+    STAKEHOLDER = "stakeholder"
+
+
+class TeamRole(PyEnum):
+    """Team-specific roles for team-level permissions"""
+
+    MEMBER = "member"
+    LEAD = "lead"
+    ADMIN = "admin"
+    TEAM_ADMINISTRATOR = "team_administrator"
+
+
+class InvitationStatus(PyEnum):
+    """Team invitation status values"""
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    EXPIRED = "expired"
+
 
 # Database URL from environment
 # Build DATABASE_URL from environment variables
@@ -42,7 +77,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-def test_database_connection():
+def test_database_connection() -> bool:
     """Test database connection without raising exceptions"""
     try:
         with engine.connect() as conn:
@@ -54,7 +89,7 @@ def test_database_connection():
         return False
 
 
-def get_db():
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
     try:
         yield db
@@ -72,7 +107,9 @@ class User(Base):  # type: ignore
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     organization = Column(String, nullable=False)
-    role = Column(String, nullable=False, default="basic_user")
+    role: SqlColumn[UserRole] = Column(
+        Enum(UserRole), nullable=False, default=UserRole.BASIC_USER
+    )
     is_active = Column(Boolean, default=True)
     last_login_at = Column(DateTime, nullable=True)
     terms_accepted_at = Column(DateTime, nullable=True)
@@ -117,7 +154,7 @@ class TeamMembership(Base):  # type: ignore
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    role = Column(String, default="member")  # member, lead, admin
+    role: SqlColumn[TeamRole] = Column(Enum(TeamRole), default=TeamRole.MEMBER)
     joined_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -148,9 +185,11 @@ class TeamInvitation(Base):  # type: ignore
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     email = Column(String, nullable=False)
-    role = Column(String, default="member")
+    role: SqlColumn[TeamRole] = Column(Enum(TeamRole), default=TeamRole.MEMBER)
     invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    status = Column(String, default="pending")  # pending, accepted, declined, expired
+    status: SqlColumn[InvitationStatus] = Column(
+        Enum(InvitationStatus), default=InvitationStatus.PENDING
+    )
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

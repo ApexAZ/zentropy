@@ -4,7 +4,7 @@ from typing import List
 from uuid import UUID
 from datetime import datetime, timedelta
 
-from ..database import get_db
+from ..database import get_db, TeamRole, InvitationStatus
 from ..schemas import TeamInvitationResponse, TeamInvitationCreate, MessageResponse
 from ..auth import get_current_active_user
 from .. import database
@@ -16,13 +16,13 @@ router = APIRouter()
 def get_invitations(
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> List[database.TeamInvitation]:
     """Get invitations for current user"""
     invitations = (
         db.query(database.TeamInvitation)
         .filter(
             database.TeamInvitation.email == current_user.email,
-            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.status == InvitationStatus.PENDING,
             database.TeamInvitation.expires_at > datetime.utcnow(),
         )
         .all()
@@ -36,7 +36,7 @@ def create_invitation(
     invitation_create: TeamInvitationCreate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.TeamInvitation:
     """Create a team invitation"""
     # Check if team exists
     team = (
@@ -56,7 +56,7 @@ def create_invitation(
         .filter(
             database.TeamMembership.team_id == invitation_create.team_id,
             database.TeamMembership.user_id == current_user.id,
-            database.TeamMembership.role.in_(["admin", "lead"]),
+            database.TeamMembership.role.in_([TeamRole.ADMIN, TeamRole.LEAD]),
         )
         .first()
     )
@@ -96,7 +96,7 @@ def create_invitation(
         .filter(
             database.TeamInvitation.team_id == invitation_create.team_id,
             database.TeamInvitation.email == invitation_create.email.lower(),
-            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.status == InvitationStatus.PENDING,
             database.TeamInvitation.expires_at > datetime.utcnow(),
         )
         .first()
@@ -129,14 +129,14 @@ def accept_invitation(
     invitation_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Accept a team invitation"""
     invitation = (
         db.query(database.TeamInvitation)
         .filter(
             database.TeamInvitation.id == invitation_id,
             database.TeamInvitation.email == current_user.email,
-            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.status == InvitationStatus.PENDING,
             database.TeamInvitation.expires_at > datetime.utcnow(),
         )
         .first()
@@ -171,7 +171,7 @@ def accept_invitation(
     db.add(membership)
 
     # Update invitation status
-    invitation.status = "accepted"  # type: ignore
+    invitation.status = InvitationStatus.ACCEPTED  # type: ignore
     invitation.updated_at = datetime.utcnow()  # type: ignore
 
     db.commit()
@@ -184,14 +184,14 @@ def decline_invitation(
     invitation_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Decline a team invitation"""
     invitation = (
         db.query(database.TeamInvitation)
         .filter(
             database.TeamInvitation.id == invitation_id,
             database.TeamInvitation.email == current_user.email,
-            database.TeamInvitation.status == "pending",
+            database.TeamInvitation.status == InvitationStatus.PENDING,
         )
         .first()
     )
@@ -202,7 +202,7 @@ def decline_invitation(
         )
 
     # Update invitation status
-    invitation.status = "declined"  # type: ignore
+    invitation.status = InvitationStatus.DECLINED  # type: ignore
     invitation.updated_at = datetime.utcnow()  # type: ignore
 
     db.commit()

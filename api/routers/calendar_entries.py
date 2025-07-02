@@ -24,7 +24,7 @@ def get_calendar_entries(
     end_date: Optional[datetime] = None,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> List[database.CalendarEntry]:
     """Get calendar entries with optional filters"""
     query = db.query(database.CalendarEntry)
 
@@ -50,7 +50,7 @@ def create_calendar_entry(
     entry_create: CalendarEntryCreate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.CalendarEntry:
     """Create a new calendar entry"""
     # Validate that end_date is after start_date
     if entry_create.end_date <= entry_create.start_date:
@@ -98,7 +98,7 @@ def get_calendar_entry(
     entry_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.CalendarEntry:
     """Get calendar entry by ID"""
     entry = (
         db.query(database.CalendarEntry)
@@ -144,7 +144,7 @@ def update_calendar_entry(
     entry_update: CalendarEntryUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> database.CalendarEntry:
     """Update calendar entry"""
     entry = (
         db.query(database.CalendarEntry)
@@ -192,7 +192,7 @@ def delete_calendar_entry(
     entry_id: UUID,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
-):
+) -> MessageResponse:
     """Delete calendar entry"""
     entry = (
         db.query(database.CalendarEntry)

@@ -1,0 +1,18 @@
+{
+	"recommendations": [
+		"ms-python.python",
+		"ms-python.pylance",
+		"ms-python.flake8",
+		"ms-python.black-formatter",
+		"ms-python.mypy-type-checker",
+		"esbenp.prettier-vscode",
+		"bradlc.vscode-tailwindcss",
+		"ms-vscode.vscode-typescript-next",
+		"ms-vscode.test-adapter-converter",
+		"ms-vscode.live-server",
+		"ms-vscode.vscode-json"
+	],
+	"unwantedRecommendations": [
+		"ms-python.python-extension-pack"
+	]
+}
