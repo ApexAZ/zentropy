@@ -54,7 +54,31 @@ const ProfilePage: React.FC = () => {
 
 	// Load user data on component mount
 	useEffect(() => {
-		void loadUserProfile();
+		const loadUserData = async () => {
+			try {
+				setIsLoading(true);
+				setError("");
+
+				const response = await fetch("/api/users/me");
+				if (!response.ok) {
+					throw new Error(`Failed to load profile: ${response.status}`);
+				}
+
+				const userData = (await response.json()) as User;
+				setUser(userData);
+				setProfileData({
+					first_name: userData.first_name,
+					last_name: userData.last_name,
+					email: userData.email
+				});
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Failed to load profile");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		void loadUserData();
 	}, []);
 
 	// Hide toast after 5 seconds
@@ -65,7 +89,8 @@ const ProfilePage: React.FC = () => {
 		}
 	}, [toast]);
 
-	const loadUserProfile = async (): Promise<void> => {
+	// Retry function for error recovery
+	const retryLoadProfile = async (): Promise<void> => {
 		try {
 			setIsLoading(true);
 			setError("");
@@ -83,7 +108,6 @@ const ProfilePage: React.FC = () => {
 				email: userData.email
 			});
 		} catch (err) {
-			// console.error('Error loading profile:', err)
 			setError(err instanceof Error ? err.message : "Failed to load profile");
 		} finally {
 			setIsLoading(false);
@@ -321,7 +345,7 @@ const ProfilePage: React.FC = () => {
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Profile</h3>
 						<p className="mb-6 text-gray-600">{error}</p>
 						<button
-							onClick={() => void loadUserProfile()}
+							onClick={() => void retryLoadProfile()}
 							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 						>
 							Retry

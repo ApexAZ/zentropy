@@ -100,6 +100,11 @@ Zentropy - A comprehensive Product Management platform with project workflows, t
 - **Format Consistency**: Use "✅ **Session Name** (Date) - Brief achievement summary" pattern for archived sessions
 
 ### Quality Process
+- **Quality Obsessed MANDATORY TDD Practices - TESTS FIRST**: Write tests before code, every time, no exceptions
+  - **Python Backend**: Write pytest tests before implementing API endpoints, database models, or business logic
+  - **React Frontend**: Write React Testing Library tests before creating components or features
+  - **Test Coverage**: All new code must have corresponding tests that fail first, then pass after implementation
+  - **Red-Green-Refactor**: Follow strict TDD cycle - failing test → minimal code → refactor → repeat
 - **Development**: `npm run dev` (starts both React and Python API)
 - **Comprehensive Quality Pipeline**: `npm run quality` (runs all quality checks for both Python backend and TypeScript frontend)
   - **Python Backend**: flake8 linting + black formatting + mypy type checking
@@ -175,12 +180,12 @@ npm run format                 # Format Python + TypeScript
 npm run type-check             # Type check Python + TypeScript
 
 # Individual Language Quality
-npm run lint:python            # flake8 linting
-npm run format:python          # black formatting
-npm run type-check:python      # mypy type checking
-npm run lint:typescript        # ESLint + React hooks
-npm run format:typescript      # Prettier + TailwindCSS
-npm run type-check:typescript  # TypeScript compiler
+npm run lint:python            # Python: flake8 linting
+npm run format:python          # Python: black formatting
+npm run type-check:python      # Python: mypy type checking
+npm run lint:typescript        # React/TypeScript: ESLint + React hooks validation
+npm run format:typescript      # React/TypeScript: Prettier + TailwindCSS formatting
+npm run type-check:typescript  # React/TypeScript: TypeScript compiler + React component types
 ```
 
 ### **Performance & Analysis**

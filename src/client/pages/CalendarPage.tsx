@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 
 interface CalendarEntry {
 	id: string;
@@ -75,7 +75,93 @@ const CalendarPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [teamUsers, setTeamUsers] = useState<User[]>([]);
 
-	const loadInitialData = useCallback(async (): Promise<void> => {
+	// Load initial data on component mount
+	useEffect(() => {
+		const initializeData = async () => {
+			try {
+				setIsLoading(true);
+				setError("");
+
+				// Load teams and users in parallel
+				const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/teams"), fetch("/api/users")]);
+
+				if (!teamsResponse.ok || !usersResponse.ok) {
+					throw new Error("Failed to load initial data");
+				}
+
+				const [teamsData, usersData] = await Promise.all([
+					teamsResponse.json() as Promise<Team[]>,
+					usersResponse.json() as Promise<User[]>
+				]);
+
+				setTeams(teamsData);
+				setUsers(usersData);
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Failed to load calendar data");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		void initializeData();
+	}, []);
+
+	// Load entries when filters change
+	useEffect(() => {
+		const loadCalendarEntries = async () => {
+			try {
+				const params = new URLSearchParams();
+				if (selectedTeam) {
+					params.append("team_id", selectedTeam);
+				}
+				if (selectedMonth) {
+					const [year, month] = selectedMonth.split("-");
+					params.append("month", month);
+					params.append("year", year);
+				}
+
+				const response = await fetch(`/api/calendar-entries?${params.toString()}`);
+				if (!response.ok) {
+					throw new Error(`Failed to load entries: ${response.status}`);
+				}
+
+				const data = (await response.json()) as CalendarEntry[];
+				setEntries(data);
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
+			}
+		};
+
+		void loadCalendarEntries();
+	}, [selectedTeam, selectedMonth]);
+
+	// Refresh entries function for post-operation updates
+	const refreshEntries = async (): Promise<void> => {
+		try {
+			const params = new URLSearchParams();
+			if (selectedTeam) {
+				params.append("team_id", selectedTeam);
+			}
+			if (selectedMonth) {
+				const [year, month] = selectedMonth.split("-");
+				params.append("month", month);
+				params.append("year", year);
+			}
+
+			const response = await fetch(`/api/calendar-entries?${params.toString()}`);
+			if (!response.ok) {
+				throw new Error(`Failed to load entries: ${response.status}`);
+			}
+
+			const data = (await response.json()) as CalendarEntry[];
+			setEntries(data);
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
+		}
+	};
+
+	// Retry function for error recovery
+	const retryInitialization = async (): Promise<void> => {
 		try {
 			setIsLoading(true);
 			setError("");
@@ -95,46 +181,11 @@ const CalendarPage: React.FC = () => {
 			setTeams(teamsData);
 			setUsers(usersData);
 		} catch (err) {
-			// console.error('Error loading initial data:', err)
 			setError(err instanceof Error ? err.message : "Failed to load calendar data");
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
-
-	const loadEntries = useCallback(async (): Promise<void> => {
-		try {
-			const params = new URLSearchParams();
-			if (selectedTeam) {
-				params.append("team_id", selectedTeam);
-			}
-			if (selectedMonth) {
-				const [year, month] = selectedMonth.split("-");
-				params.append("month", month);
-				params.append("year", year);
-			}
-
-			const response = await fetch(`/api/calendar-entries?${params.toString()}`);
-			if (!response.ok) {
-				throw new Error(`Failed to load entries: ${response.status}`);
-			}
-
-			const data = (await response.json()) as CalendarEntry[];
-			setEntries(data);
-		} catch {
-			// Error loading entries - handle silently
-			// Don't set loading to false here, just handle the error
-		}
-	}, [selectedTeam, selectedMonth]);
-
-	// Load data on component mount
-	useEffect(() => {
-		void loadInitialData();
-	}, [loadInitialData]);
-
-	useEffect(() => {
-		void loadEntries();
-	}, [loadEntries, selectedTeam, selectedMonth]);
+	};
 
 	// Hide toast after 5 seconds
 	useEffect(() => {
@@ -274,7 +325,7 @@ const CalendarPage: React.FC = () => {
 			});
 
 			closeModals();
-			await loadEntries();
+			await refreshEntries();
 		} catch (err) {
 			// console.error('Error saving calendar entry:', err)
 			setToast({
@@ -305,7 +356,7 @@ const CalendarPage: React.FC = () => {
 			});
 
 			closeModals();
-			await loadEntries();
+			await refreshEntries();
 		} catch (err) {
 			// console.error('Error deleting calendar entry:', err)
 			setToast({
@@ -405,7 +456,7 @@ const CalendarPage: React.FC = () => {
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Calendar</h3>
 						<p className="mb-6 text-gray-600">{error}</p>
 						<button
-							onClick={() => void loadInitialData()}
+							onClick={() => void retryInitialization()}
 							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 						>
 							Try Again

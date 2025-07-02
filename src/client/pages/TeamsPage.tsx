@@ -48,6 +48,26 @@ const TeamsPage: React.FC = () => {
 
 	// Load teams on component mount
 	useEffect(() => {
+		const loadTeams = async (): Promise<void> => {
+			try {
+				setIsLoading(true);
+				setError("");
+
+				const response = await fetch("/api/teams");
+				if (!response.ok) {
+					throw new Error(`Failed to load teams: ${response.status}`);
+				}
+
+				const data = (await response.json()) as Team[];
+				setTeams(data);
+			} catch (err) {
+				// console.error('Error loading teams:', err)
+				setError(err instanceof Error ? err.message : "Failed to load teams");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
 		void loadTeams();
 	}, []);
 
@@ -59,7 +79,7 @@ const TeamsPage: React.FC = () => {
 		}
 	}, [toast]);
 
-	const loadTeams = async (): Promise<void> => {
+	const refreshTeams = async (): Promise<void> => {
 		try {
 			setIsLoading(true);
 			setError("");
@@ -170,7 +190,7 @@ const TeamsPage: React.FC = () => {
 			});
 
 			closeModals();
-			void loadTeams();
+			void refreshTeams();
 		} catch (err) {
 			// console.error('Error saving team:', err)
 			setToast({
@@ -201,7 +221,7 @@ const TeamsPage: React.FC = () => {
 			});
 
 			closeModals();
-			void loadTeams();
+			void refreshTeams();
 		} catch (err) {
 			// console.error('Error deleting team:', err)
 			setToast({
@@ -299,7 +319,7 @@ const TeamsPage: React.FC = () => {
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Teams</h3>
 						<p className="mb-6 text-gray-600">{error}</p>
 						<button
-							onClick={() => void loadTeams()}
+							onClick={() => void refreshTeams()}
 							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-center text-base font-medium text-gray-700 no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 						>
 							Retry

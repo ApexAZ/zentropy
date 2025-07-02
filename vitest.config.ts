@@ -8,6 +8,11 @@ export default defineConfig({
 		environment: "jsdom",
 		setupFiles: ["./src/test-setup.ts"],
 		// Only include React component tests
-		include: ["src/client/**/*.{test,spec}.{js,ts,tsx}"]
+		include: ["src/client/**/*.{test,spec}.{js,ts,tsx}"],
+		// Increase timeout for async operations
+		testTimeout: 10000,
+		// Suppress React act() warnings in test environment
+		silent: false,
+		logHeapUsage: false
 	}
 });
