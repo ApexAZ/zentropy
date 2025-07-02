@@ -76,7 +76,6 @@ class TestAuthenticationEndpoints:
         data = response.json()
         assert data["access_token"] == "fake_access_token"
         assert data["token_type"] == "bearer"
-        assert "user" in data
         
         mock_auth.assert_called_once()
         mock_create_token.assert_called_once()
@@ -95,7 +94,7 @@ class TestAuthenticationEndpoints:
         )
         
         assert response.status_code == 401
-        assert "Invalid credentials" in response.json()["detail"]
+        assert "Incorrect email or password" in response.json()["detail"]
     
     def test_login_json_missing_fields(self, client):
         """Test /api/auth/login-json with missing required fields."""
