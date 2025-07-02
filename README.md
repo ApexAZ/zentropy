@@ -1,6 +1,6 @@
 # Zentropy - Product Management Platform
 
-A comprehensive Product Management platform with project workflows, team collaboration, and capacity planning built with Node.js, Express, PostgreSQL, and TypeScript. Streamlines product development from planning to delivery.
+A comprehensive Product Management platform with project workflows, team collaboration, and capacity planning built with Python FastAPI, React, PostgreSQL, and TypeScript. Streamlines product development from planning to delivery.
 
 ## Features
 
@@ -14,25 +14,40 @@ A comprehensive Product Management platform with project workflows, team collabo
 ## Project Structure
 
 ```
-src/
-├── server/          # Express server, middleware, app configuration
-├── routes/          # API route handlers and endpoint definitions
-├── models/          # Database models, schemas, and data access layer
-├── client/          # Frontend TypeScript code, components, utilities
-├── public/          # Static assets (HTML, CSS, images, client-side JS)
-├── shared/          # Shared utilities, types, and constants used by both client and server
-└── __tests__/       # Test files for all components
+api/                 # Python FastAPI backend
+├── main.py          # FastAPI application and configuration
+├── auth.py          # Authentication and JWT handling
+├── database.py      # Database connection and models (SQLAlchemy)
+├── schemas.py       # Pydantic request/response schemas
+└── routers/         # API route handlers organized by feature
+    ├── auth.py
+    ├── users.py
+    ├── teams.py
+    ├── calendar_entries.py
+    └── invitations.py
+
+src/client/          # React TypeScript frontend
+├── App.tsx          # Main React application
+├── main.tsx         # React 18 root setup
+├── components/      # Reusable UI components
+├── pages/           # Page-level components
+├── styles.css       # Global styles and CSS custom properties
+└── types/           # TypeScript type definitions
+
+scripts/             # Development and utility scripts
+├── dev-startup.js   # Intelligent development server orchestration
+├── stop.js          # Clean shutdown of all services
+├── check-ports.js   # Port availability checker
+└── setup-database.sh # Database initialization
 ```
 
-## Folder Purposes
+## Architecture Overview
 
-- **server/**: Contains the Express application setup, middleware configuration, and server initialization
-- **routes/**: API endpoints organized by feature (users, teams, calendar, projects, workflows)
-- **models/**: Database entities, query builders, and data validation logic
-- **client/**: Frontend application logic, user interface components, and client-side utilities
-- **public/**: Static files served directly by the web server (HTML templates, CSS, bundled JavaScript)
-- **shared/**: Code shared between frontend and backend (TypeScript interfaces, constants, utility functions)
-- **__tests__/**: Test files following the same structure as the source code
+- **Backend**: Python FastAPI with SQLAlchemy ORM and PostgreSQL database
+- **Frontend**: React 18 with TypeScript, Vite build tool, and TailwindCSS
+- **Authentication**: JWT tokens with bcrypt password hashing
+- **Development**: Docker PostgreSQL + Python uvicorn + React Vite dev server
+- **Quality**: Comprehensive linting, formatting, and type checking for both Python and TypeScript
 
 ## Development Approach
 

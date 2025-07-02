@@ -6,8 +6,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		environment: "jsdom",
-		setupFiles: ["./src/test-setup.ts"],
-		// Support TypeScript files in both src and tests directories
-		include: ["src/**/*.{test,spec}.{js,ts,tsx}", "tests/**/*.{test,spec}.{js,ts,tsx}"]
+		// Only include React component tests
+		include: ["src/client/**/*.{test,spec}.{js,ts,tsx}"]
 	}
 });
