@@ -242,17 +242,17 @@ const TeamsPage: React.FC = () => {
 	const renderTeamCard = (team: Team): React.JSX.Element => (
 		<div
 			key={team.id}
-			className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm transition-shadow hover:shadow-md"
+			className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md"
 		>
 			<div className="mb-4 flex items-start justify-between">
 				<div>
-					<h3 className="mb-2 text-lg font-semibold text-text-contrast">{team.name}</h3>
-					{team.description && <p className="mb-3 text-sm text-text-primary">{team.description}</p>}
+					<h3 className="text-text-contrast mb-2 text-lg font-semibold">{team.name}</h3>
+					{team.description && <p className="text-text-primary mb-3 text-sm">{team.description}</p>}
 				</div>
 				<div className="flex gap-2">
 					<button
 						onClick={() => openEditModal(team)}
-						className="p-2 text-text-primary transition-colors hover:text-text-contrast"
+						className="text-text-primary hover:text-text-contrast p-2 transition-colors"
 						title="Edit team"
 					>
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -261,7 +261,7 @@ const TeamsPage: React.FC = () => {
 					</button>
 					<button
 						onClick={() => openDeleteModal(team)}
-						className="p-2 text-text-primary transition-colors hover:text-red-600"
+						className="text-text-primary p-2 transition-colors hover:text-red-600"
 						title="Delete team"
 					>
 						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -298,11 +298,11 @@ const TeamsPage: React.FC = () => {
 		return (
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
-					<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Management</h2>
+					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-layout-background border-t-interactive"></div>
-					<p className="mb-4 text-text-primary">Loading teams...</p>
+					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
+					<p className="text-text-primary mb-4">Loading teams...</p>
 				</div>
 			</main>
 		);
@@ -312,15 +312,15 @@ const TeamsPage: React.FC = () => {
 		return (
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
-					<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Management</h2>
+					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Teams</h3>
-						<p className="mb-6 text-text-primary">{error}</p>
+						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void refreshTeams()}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+							className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 						>
 							Retry
 						</button>
@@ -333,23 +333,25 @@ const TeamsPage: React.FC = () => {
 	return (
 		<main className="w-full py-8">
 			<div className="mb-8 flex items-center justify-between">
-				<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Management</h2>
+				<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
 				<button
 					onClick={openCreateModal}
-					className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:bg-interactive-hover hover:shadow-md active:translate-y-0"
+					className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:-translate-y-px hover:shadow-md active:translate-y-0"
 				>
 					Create New Team
 				</button>
 			</div>
 
 			{teams.length === 0 ? (
-				<div className="rounded-md border border-dashed border-layout-background bg-gray-50 p-8 text-center text-text-primary italic">
+				<div className="border-layout-background text-text-primary rounded-md border border-dashed bg-gray-50 p-8 text-center italic">
 					<div className="mx-auto max-w-sm">
-						<h3 className="mb-3 text-xl font-semibold text-text-primary">No Teams Yet</h3>
-						<p className="mb-6 text-text-primary">Create your first team to start planning sprint capacity.</p>
+						<h3 className="text-text-primary mb-3 text-xl font-semibold">No Teams Yet</h3>
+						<p className="text-text-primary mb-6">
+							Create your first team to start planning sprint capacity.
+						</p>
 						<button
 							onClick={openCreateModal}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+							className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 						>
 							Create Team
 						</button>
@@ -364,25 +366,25 @@ const TeamsPage: React.FC = () => {
 			{/* Team Modal */}
 			{showTeamModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-content-background shadow-lg">
-						<div className="flex items-center justify-between border-b border-layout-background p-6">
-							<h3 className="m-0 text-xl font-semibold text-text-contrast">
+					<div className="bg-content-background max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg shadow-lg">
+						<div className="border-layout-background flex items-center justify-between border-b p-6">
+							<h3 className="text-text-contrast m-0 text-xl font-semibold">
 								{isEditing ? "Edit Team" : "Create New Team"}
 							</h3>
 							<button
 								onClick={closeModals}
-								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-text-primary transition-colors duration-200 hover:text-text-contrast"
+								className="text-text-primary hover:text-text-contrast cursor-pointer rounded-md border-none bg-none p-2 text-2xl transition-colors duration-200"
 							>
 								&times;
 							</button>
 						</div>
 
 						<form onSubmit={e => void handleSubmit(e)} className="p-6">
-							<div className="mb-8 border-b border-layout-background pb-6">
-								<h4 className="mb-6 text-base font-semibold text-text-contrast">Basic Information</h4>
+							<div className="border-layout-background mb-8 border-b pb-6">
+								<h4 className="text-text-contrast mb-6 text-base font-semibold">Basic Information</h4>
 
 								<div className="mb-6">
-									<label htmlFor="teamNameInput" className="mb-2 block font-medium text-text-primary">
+									<label htmlFor="teamNameInput" className="text-text-primary mb-2 block font-medium">
 										Team Name *
 									</label>
 									<input
@@ -391,7 +393,7 @@ const TeamsPage: React.FC = () => {
 										value={formData.name}
 										onChange={e => setFormData({ ...formData, name: e.target.value })}
 										placeholder="e.g., Frontend Development Team"
-										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									{formErrors.name && (
@@ -400,7 +402,7 @@ const TeamsPage: React.FC = () => {
 								</div>
 
 								<div className="mb-6">
-									<label htmlFor="teamDescInput" className="mb-2 block font-medium text-text-primary">
+									<label htmlFor="teamDescInput" className="text-text-primary mb-2 block font-medium">
 										Description
 									</label>
 									<textarea
@@ -409,7 +411,7 @@ const TeamsPage: React.FC = () => {
 										onChange={e => setFormData({ ...formData, description: e.target.value })}
 										rows={3}
 										placeholder="Brief description of the team's focus and responsibilities"
-										className="resize-vertical min-h-[80px] w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="resize-vertical border-layout-background focus:border-interactive min-h-[80px] w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 									/>
 									{formErrors.description && (
 										<span className="mt-1 block text-sm text-red-600">
@@ -419,12 +421,17 @@ const TeamsPage: React.FC = () => {
 								</div>
 							</div>
 
-							<div className="mb-8 border-b border-layout-background pb-6">
-								<h4 className="mb-6 text-base font-semibold text-text-contrast">Sprint Configuration</h4>
+							<div className="border-layout-background mb-8 border-b pb-6">
+								<h4 className="text-text-contrast mb-6 text-base font-semibold">
+									Sprint Configuration
+								</h4>
 
 								<div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 									<div>
-										<label htmlFor="velocityInput" className="mb-2 block font-medium text-text-primary">
+										<label
+											htmlFor="velocityInput"
+											className="text-text-primary mb-2 block font-medium"
+										>
 											Velocity
 										</label>
 										<input
@@ -440,9 +447,9 @@ const TeamsPage: React.FC = () => {
 											min="0"
 											step="1"
 											placeholder="Story points per sprint"
-											className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										/>
-										<small className="mt-1 block text-sm text-text-primary">
+										<small className="text-text-primary mt-1 block text-sm">
 											Average story points completed per sprint (leave 0 if unknown)
 										</small>
 										{formErrors.velocity_baseline && (
@@ -455,7 +462,7 @@ const TeamsPage: React.FC = () => {
 									<div>
 										<label
 											htmlFor="sprintLengthSelect"
-											className="mb-2 block font-medium text-text-primary"
+											className="text-text-primary mb-2 block font-medium"
 										>
 											Sprint Length *
 										</label>
@@ -468,7 +475,7 @@ const TeamsPage: React.FC = () => {
 													sprint_length_days: parseInt(e.target.value)
 												})
 											}
-											className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 											required
 										>
 											<option value={7}>1 Week</option>
@@ -480,7 +487,10 @@ const TeamsPage: React.FC = () => {
 								</div>
 
 								<div>
-									<label htmlFor="workingDaysSelect" className="mb-2 block font-medium text-text-primary">
+									<label
+										htmlFor="workingDaysSelect"
+										className="text-text-primary mb-2 block font-medium"
+									>
 										Working Days per Week *
 									</label>
 									<select
@@ -492,7 +502,7 @@ const TeamsPage: React.FC = () => {
 												working_days_per_week: parseInt(e.target.value)
 											})
 										}
-										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									>
 										<option value={3}>3 Days</option>
@@ -503,17 +513,17 @@ const TeamsPage: React.FC = () => {
 								</div>
 							</div>
 
-							<div className="flex justify-end gap-4 border-t border-layout-background p-6">
+							<div className="border-layout-background flex justify-end gap-4 border-t p-6">
 								<button
 									type="button"
 									onClick={closeModals}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+									className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 								>
 									{isEditing ? "Update Team" : "Create Team"}
 								</button>
@@ -526,19 +536,19 @@ const TeamsPage: React.FC = () => {
 			{/* Delete Modal */}
 			{showDeleteModal && currentTeam && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-content-background shadow-lg">
-						<div className="flex items-center justify-between border-b border-layout-background p-6">
-							<h3 className="m-0 text-xl font-semibold text-text-contrast">Delete Team</h3>
+					<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-lg">
+						<div className="border-layout-background flex items-center justify-between border-b p-6">
+							<h3 className="text-text-contrast m-0 text-xl font-semibold">Delete Team</h3>
 							<button
 								onClick={closeModals}
-								className="cursor-pointer rounded-md border-none bg-none p-2 text-2xl text-text-primary transition-colors duration-200 hover:text-text-contrast"
+								className="text-text-primary hover:text-text-contrast cursor-pointer rounded-md border-none bg-none p-2 text-2xl transition-colors duration-200"
 							>
 								&times;
 							</button>
 						</div>
 
 						<div className="p-6">
-							<p className="mb-4 text-text-primary">
+							<p className="text-text-primary mb-4">
 								Are you sure you want to delete <strong>{currentTeam.name}</strong>?
 							</p>
 							<p className="text-sm text-red-600">
@@ -547,10 +557,10 @@ const TeamsPage: React.FC = () => {
 							</p>
 						</div>
 
-						<div className="flex justify-end gap-4 border-t border-layout-background p-6">
+						<div className="border-layout-background flex justify-end gap-4 border-t p-6">
 							<button
 								onClick={closeModals}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+								className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 							>
 								Cancel
 							</button>

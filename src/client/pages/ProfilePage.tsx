@@ -319,13 +319,13 @@ const ProfilePage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">My Profile</h2>
-						<p className="mt-2 text-text-primary">Manage your account information and security settings</p>
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
+						<p className="text-text-primary mt-2">Manage your account information and security settings</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-layout-background border-t-interactive"></div>
-					<p className="mb-4 text-text-primary">Loading profile...</p>
+					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
+					<p className="text-text-primary mb-4">Loading profile...</p>
 				</div>
 			</main>
 		);
@@ -336,17 +336,17 @@ const ProfilePage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">My Profile</h2>
-						<p className="mt-2 text-text-primary">Manage your account information and security settings</p>
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
+						<p className="text-text-primary mt-2">Manage your account information and security settings</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Profile</h3>
-						<p className="mb-6 text-text-primary">{error}</p>
+						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void retryLoadProfile()}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+							className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 						>
 							Retry
 						</button>
@@ -364,20 +364,20 @@ const ProfilePage: React.FC = () => {
 		<main className="w-full py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h2 className="m-0 text-3xl font-semibold text-text-contrast">My Profile</h2>
-					<p className="mt-2 text-text-primary">Manage your account information and security settings</p>
+					<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
+					<p className="text-text-primary mt-2">Manage your account information and security settings</p>
 				</div>
 			</div>
 
 			<div className="space-y-8">
 				{/* Profile Information Section */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="mb-6 flex items-center justify-between">
-						<h3 className="text-xl font-semibold text-text-contrast">Profile Information</h3>
+						<h3 className="text-text-contrast text-xl font-semibold">Profile Information</h3>
 						{!isEditingProfile && (
 							<button
 								onClick={handleEditProfile}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-sm font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+								className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
 							>
 								<span>✏️</span>
 								Edit Profile
@@ -391,7 +391,7 @@ const ProfilePage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="profile-first-name"
-										className="mb-2 block font-medium text-text-primary"
+										className="text-text-primary mb-2 block font-medium"
 									>
 										First Name
 									</label>
@@ -400,7 +400,7 @@ const ProfilePage: React.FC = () => {
 										type="text"
 										value={profileData.first_name}
 										onChange={e => setProfileData({ ...profileData, first_name: e.target.value })}
-										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									{profileErrors.first_name && (
@@ -411,7 +411,10 @@ const ProfilePage: React.FC = () => {
 								</div>
 
 								<div>
-									<label htmlFor="profile-last-name" className="mb-2 block font-medium text-text-primary">
+									<label
+										htmlFor="profile-last-name"
+										className="text-text-primary mb-2 block font-medium"
+									>
 										Last Name
 									</label>
 									<input
@@ -419,7 +422,7 @@ const ProfilePage: React.FC = () => {
 										type="text"
 										value={profileData.last_name}
 										onChange={e => setProfileData({ ...profileData, last_name: e.target.value })}
-										className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									{profileErrors.last_name && (
@@ -431,7 +434,7 @@ const ProfilePage: React.FC = () => {
 							</div>
 
 							<div>
-								<label htmlFor="profile-email" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="profile-email" className="text-text-primary mb-2 block font-medium">
 									Email Address
 								</label>
 								<input
@@ -439,7 +442,7 @@ const ProfilePage: React.FC = () => {
 									type="email"
 									value={profileData.email}
 									onChange={e => setProfileData({ ...profileData, email: e.target.value })}
-									className="w-full rounded-md border border-layout-background p-3 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 									required
 								/>
 								{profileErrors.email && (
@@ -447,17 +450,17 @@ const ProfilePage: React.FC = () => {
 								)}
 							</div>
 
-							<div className="flex justify-end gap-4 border-t border-layout-background pt-4">
+							<div className="border-layout-background flex justify-end gap-4 border-t pt-4">
 								<button
 									type="button"
 									onClick={handleCancelProfileEdit}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 								>
 									Save Changes
 								</button>
@@ -498,13 +501,13 @@ const ProfilePage: React.FC = () => {
 				</div>
 
 				{/* Password Security Section */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="mb-6 flex items-center justify-between">
-						<h3 className="text-xl font-semibold text-text-contrast">Password & Security</h3>
+						<h3 className="text-text-contrast text-xl font-semibold">Password & Security</h3>
 						{!isChangingPassword && (
 							<button
 								onClick={handleChangePassword}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-sm font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+								className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
 							>
 								<span>🔒</span>
 								Change Password
@@ -515,7 +518,7 @@ const ProfilePage: React.FC = () => {
 					{isChangingPassword ? (
 						<form onSubmit={e => void handlePasswordSubmit(e)} className="space-y-6">
 							<div>
-								<label htmlFor="current-password" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="current-password" className="text-text-primary mb-2 block font-medium">
 									Current Password
 								</label>
 								<div className="relative">
@@ -526,13 +529,13 @@ const ProfilePage: React.FC = () => {
 										onChange={e =>
 											setPasswordData({ ...passwordData, current_password: e.target.value })
 										}
-										className="w-full rounded-md border border-layout-background p-3 pr-12 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									<button
 										type="button"
 										onClick={() => togglePasswordVisibility("current")}
-										className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500 hover:text-text-primary"
+										className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
 									>
 										{showPasswords.current ? "🙈" : "👁️"}
 									</button>
@@ -545,7 +548,7 @@ const ProfilePage: React.FC = () => {
 							</div>
 
 							<div>
-								<label htmlFor="new-password" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="new-password" className="text-text-primary mb-2 block font-medium">
 									New Password
 								</label>
 								<div className="relative">
@@ -556,13 +559,13 @@ const ProfilePage: React.FC = () => {
 										onChange={e =>
 											setPasswordData({ ...passwordData, new_password: e.target.value })
 										}
-										className="w-full rounded-md border border-layout-background p-3 pr-12 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									<button
 										type="button"
 										onClick={() => togglePasswordVisibility("new")}
-										className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500 hover:text-text-primary"
+										className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
 									>
 										{showPasswords.new ? "🙈" : "👁️"}
 									</button>
@@ -572,14 +575,14 @@ const ProfilePage: React.FC = () => {
 										{passwordErrors.new_password}
 									</span>
 								)}
-								<div className="mt-2 text-sm text-text-primary">
+								<div className="text-text-primary mt-2 text-sm">
 									Password must contain at least 8 characters with uppercase, lowercase, number, and
 									symbol.
 								</div>
 							</div>
 
 							<div>
-								<label htmlFor="confirm-password" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="confirm-password" className="text-text-primary mb-2 block font-medium">
 									Confirm New Password
 								</label>
 								<div className="relative">
@@ -590,13 +593,13 @@ const ProfilePage: React.FC = () => {
 										onChange={e =>
 											setPasswordData({ ...passwordData, confirm_new_password: e.target.value })
 										}
-										className="w-full rounded-md border border-layout-background p-3 pr-12 text-base leading-6 transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 										required
 									/>
 									<button
 										type="button"
 										onClick={() => togglePasswordVisibility("confirm")}
-										className="absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500 hover:text-text-primary"
+										className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
 									>
 										{showPasswords.confirm ? "🙈" : "👁️"}
 									</button>
@@ -608,17 +611,17 @@ const ProfilePage: React.FC = () => {
 								)}
 							</div>
 
-							<div className="flex justify-end gap-4 border-t border-layout-background pt-4">
+							<div className="border-layout-background flex justify-end gap-4 border-t pt-4">
 								<button
 									type="button"
 									onClick={handleCancelPasswordChange}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 								>
 									Update Password
 								</button>
@@ -630,7 +633,7 @@ const ProfilePage: React.FC = () => {
 								<div className="mb-1 block text-sm font-medium text-gray-500">Password</div>
 								<div className="flex items-center gap-4">
 									<span className="text-gray-400">••••••••••••</span>
-									<span className="text-sm text-text-primary">Last changed: Recent</span>
+									<span className="text-text-primary text-sm">Last changed: Recent</span>
 								</div>
 							</div>
 
@@ -641,7 +644,7 @@ const ProfilePage: React.FC = () => {
 										<span>🛡️</span>
 										Secure
 									</span>
-									<span className="text-sm text-text-primary">
+									<span className="text-text-primary text-sm">
 										Your account meets all security requirements
 									</span>
 								</div>
@@ -651,8 +654,8 @@ const ProfilePage: React.FC = () => {
 				</div>
 
 				{/* Account Information Section */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h3 className="mb-6 text-xl font-semibold text-text-contrast">Account Information</h3>
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h3 className="text-text-contrast mb-6 text-xl font-semibold">Account Information</h3>
 
 					<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 						<div>

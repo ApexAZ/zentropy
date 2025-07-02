@@ -404,15 +404,15 @@ const TeamConfigurationPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Configuration</h2>
-						<p className="mt-2 text-text-primary">
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Configuration</h2>
+						<p className="text-text-primary mt-2">
 							Configure your team settings, members, velocity, and sprints
 						</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-layout-background border-t-blue-500"></div>
-					<p className="mb-4 text-text-primary">Loading team configuration...</p>
+					<div className="border-layout-background mb-4 h-10 w-10 animate-spin rounded-full border-4 border-t-blue-500"></div>
+					<p className="text-text-primary mb-4">Loading team configuration...</p>
 				</div>
 			</main>
 		);
@@ -423,8 +423,8 @@ const TeamConfigurationPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Configuration</h2>
-						<p className="mt-2 text-text-primary">
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Configuration</h2>
+						<p className="text-text-primary mt-2">
 							Configure your team settings, members, velocity, and sprints
 						</p>
 					</div>
@@ -432,10 +432,10 @@ const TeamConfigurationPage: React.FC = () => {
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Configuration</h3>
-						<p className="mb-6 text-text-primary">{error}</p>
+						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void loadTeamConfiguration()}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+							className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
 						>
 							Retry
 						</button>
@@ -449,8 +449,8 @@ const TeamConfigurationPage: React.FC = () => {
 		<main className="w-full py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h2 className="m-0 text-3xl font-semibold text-text-contrast">Team Configuration</h2>
-					<p className="mt-2 text-text-primary">
+					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Configuration</h2>
+					<p className="text-text-primary mt-2">
 						Configure your team settings, members, velocity, and sprints. All changes will automatically
 						reflect in the calendar and capacity planning.
 					</p>
@@ -459,11 +459,11 @@ const TeamConfigurationPage: React.FC = () => {
 
 			<div className="space-y-8">
 				{/* Team Basic Settings */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h3 className="mb-6 text-xl font-semibold text-text-contrast">Team Information</h3>
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h3 className="text-text-contrast mb-6 text-xl font-semibold">Team Information</h3>
 					<form onSubmit={e => void handleSaveTeamInfo(e)} className="space-y-6">
 						<div>
-							<label htmlFor="teamName" className="mb-2 block font-medium text-text-primary">
+							<label htmlFor="teamName" className="text-text-primary mb-2 block font-medium">
 								Team Name:
 							</label>
 							<input
@@ -473,12 +473,12 @@ const TeamConfigurationPage: React.FC = () => {
 								onChange={e => setTeamBasicData({ ...teamBasicData, name: e.target.value })}
 								required
 								placeholder="e.g., Frontend Development Team"
-								className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 							/>
 						</div>
 
 						<div>
-							<label htmlFor="teamDescription" className="mb-2 block font-medium text-text-primary">
+							<label htmlFor="teamDescription" className="text-text-primary mb-2 block font-medium">
 								Description (Optional):
 							</label>
 							<textarea
@@ -487,13 +487,13 @@ const TeamConfigurationPage: React.FC = () => {
 								onChange={e => setTeamBasicData({ ...teamBasicData, description: e.target.value })}
 								rows={2}
 								placeholder="Brief description of team responsibilities"
-								className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 							/>
 						</div>
 
 						<div>
-							<div className="mb-2 block font-medium text-text-primary">Working Days Configuration:</div>
-							<div className="mb-4 text-sm text-text-primary">
+							<div className="text-text-primary mb-2 block font-medium">Working Days Configuration:</div>
+							<div className="text-text-primary mb-4 text-sm">
 								Select which days of the week your team works
 							</div>
 							<div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
@@ -503,7 +503,7 @@ const TeamConfigurationPage: React.FC = () => {
 											type="checkbox"
 											checked={teamBasicData.working_days.includes(day)}
 											onChange={() => toggleWorkingDay(day)}
-											className="h-4 w-4 rounded border-layout-background text-blue-500 focus:ring-2 focus:ring-blue-500"
+											className="border-layout-background h-4 w-4 rounded text-blue-500 focus:ring-2 focus:ring-blue-500"
 										/>
 										<span className="text-text-primary">{getDayName(day)}</span>
 									</label>
@@ -513,7 +513,7 @@ const TeamConfigurationPage: React.FC = () => {
 
 						<button
 							type="submit"
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+							className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 						>
 							Save Team Information
 						</button>
@@ -521,11 +521,11 @@ const TeamConfigurationPage: React.FC = () => {
 				</div>
 
 				{/* Baseline Velocity Setting */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h3 className="mb-6 text-xl font-semibold text-text-contrast">Baseline Velocity</h3>
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h3 className="text-text-contrast mb-6 text-xl font-semibold">Baseline Velocity</h3>
 					<form onSubmit={e => void handleSaveVelocity(e)} className="space-y-6">
 						<div>
-							<label htmlFor="baselineVelocity" className="mb-2 block font-medium text-text-primary">
+							<label htmlFor="baselineVelocity" className="text-text-primary mb-2 block font-medium">
 								Story Points per Sprint:
 							</label>
 							<input
@@ -542,16 +542,16 @@ const TeamConfigurationPage: React.FC = () => {
 								step="1"
 								required
 								placeholder="50"
-								className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 							/>
-							<div className="mt-2 text-sm text-text-primary">
+							<div className="text-text-primary mt-2 text-sm">
 								Average story points your team completes in a full sprint (all team members, no time
 								off)
 							</div>
 						</div>
 
 						<div>
-							<label htmlFor="sprintLength" className="mb-2 block font-medium text-text-primary">
+							<label htmlFor="sprintLength" className="text-text-primary mb-2 block font-medium">
 								Sprint Length (weeks):
 							</label>
 							<select
@@ -561,7 +561,7 @@ const TeamConfigurationPage: React.FC = () => {
 									setVelocityData({ ...velocityData, sprint_length: parseInt(e.target.value) })
 								}
 								required
-								className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 							>
 								<option value="1">1 week</option>
 								<option value="2">2 weeks</option>
@@ -572,7 +572,7 @@ const TeamConfigurationPage: React.FC = () => {
 
 						<button
 							type="submit"
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+							className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
 						>
 							Save Velocity Settings
 						</button>
@@ -580,19 +580,19 @@ const TeamConfigurationPage: React.FC = () => {
 				</div>
 
 				{/* Team Member Management */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="mb-6 flex items-center justify-between">
-						<h3 className="text-xl font-semibold text-text-contrast">Team Members</h3>
+						<h3 className="text-text-contrast text-xl font-semibold">Team Members</h3>
 						<button
 							onClick={() => setShowAddMemberModal(true)}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-4 py-2 text-center text-sm font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+							className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-4 py-2 text-center text-sm font-medium text-white no-underline transition-all duration-200"
 						>
 							Add Team Member
 						</button>
 					</div>
 
 					{teamMembers.length === 0 ? (
-						<div className="py-8 text-center text-text-primary">
+						<div className="text-text-primary py-8 text-center">
 							<p className="mb-4">No team members found. Add your first team member to get started.</p>
 						</div>
 					) : (
@@ -600,13 +600,13 @@ const TeamConfigurationPage: React.FC = () => {
 							{teamMembers.map(member => (
 								<div
 									key={member.id}
-									className="flex items-center justify-between rounded-md border border-layout-background p-4"
+									className="border-layout-background flex items-center justify-between rounded-md border p-4"
 								>
 									<div>
-										<div className="font-medium text-text-contrast">
+										<div className="text-text-contrast font-medium">
 											{member.first_name} {member.last_name}
 										</div>
-										<div className="text-sm text-text-primary">{member.email}</div>
+										<div className="text-text-primary text-sm">{member.email}</div>
 										<div className="text-sm text-blue-600">
 											{member.team_role === "lead" ? "Team Lead" : "Team Member"}
 										</div>
@@ -624,19 +624,19 @@ const TeamConfigurationPage: React.FC = () => {
 				</div>
 
 				{/* Sprint Management */}
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="mb-6 flex items-center justify-between">
-						<h3 className="text-xl font-semibold text-text-contrast">Sprint Management</h3>
+						<h3 className="text-text-contrast text-xl font-semibold">Sprint Management</h3>
 						<div className="flex gap-2">
 							<button
 								onClick={() => setShowCreateSprintModal(true)}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-4 py-2 text-center text-sm font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+								className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-4 py-2 text-center text-sm font-medium text-white no-underline transition-all duration-200"
 							>
 								Create New Sprint
 							</button>
 							<button
 								onClick={() => alert("Generate Multiple Sprints feature coming soon!")}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-sm font-medium text-text-primary no-underline transition-all duration-200 hover:bg-gray-50"
+								className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200 hover:bg-gray-50"
 							>
 								Generate Multiple Sprints
 							</button>
@@ -644,7 +644,7 @@ const TeamConfigurationPage: React.FC = () => {
 					</div>
 
 					{sprints.length === 0 ? (
-						<div className="py-8 text-center text-text-primary">
+						<div className="text-text-primary py-8 text-center">
 							<p className="mb-4">No sprints found. Create your first sprint to get started.</p>
 						</div>
 					) : (
@@ -652,11 +652,11 @@ const TeamConfigurationPage: React.FC = () => {
 							{sprints.map(sprint => (
 								<div
 									key={sprint.id}
-									className="flex items-center justify-between rounded-md border border-layout-background p-4"
+									className="border-layout-background flex items-center justify-between rounded-md border p-4"
 								>
 									<div>
-										<div className="font-medium text-text-contrast">{sprint.name}</div>
-										<div className="text-sm text-text-primary">
+										<div className="text-text-contrast font-medium">{sprint.name}</div>
+										<div className="text-text-primary text-sm">
 											{formatDate(sprint.start_date)} - {formatDate(sprint.end_date)}
 										</div>
 										<div
@@ -681,11 +681,11 @@ const TeamConfigurationPage: React.FC = () => {
 			{/* Add Member Modal */}
 			{showAddMemberModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="w-full max-w-md rounded-lg bg-content-background p-6 shadow-lg">
-						<h3 className="mb-4 text-lg font-semibold text-text-contrast">Add Team Member</h3>
+					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
+						<h3 className="text-text-contrast mb-4 text-lg font-semibold">Add Team Member</h3>
 						<form onSubmit={e => void handleAddMember(e)} className="space-y-4">
 							<div>
-								<label htmlFor="memberEmail" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="memberEmail" className="text-text-primary mb-2 block font-medium">
 									Email Address:
 								</label>
 								<input
@@ -695,18 +695,18 @@ const TeamConfigurationPage: React.FC = () => {
 									onChange={e => setAddMemberData({ ...addMemberData, email: e.target.value })}
 									required
 									placeholder="user@company.com"
-									className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 								/>
 								{memberErrors.email && (
 									<div className="mt-1 text-sm text-red-600">{memberErrors.email}</div>
 								)}
-								<div className="mt-1 text-sm text-text-primary">
+								<div className="text-text-primary mt-1 text-sm">
 									Must be a registered user in the system
 								</div>
 							</div>
 
 							<div>
-								<label htmlFor="memberRole" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="memberRole" className="text-text-primary mb-2 block font-medium">
 									Role:
 								</label>
 								<select
@@ -719,7 +719,7 @@ const TeamConfigurationPage: React.FC = () => {
 										})
 									}
 									required
-									className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 								>
 									<option value="member">Team Member</option>
 									<option value="lead">Team Lead</option>
@@ -734,13 +734,13 @@ const TeamConfigurationPage: React.FC = () => {
 										setAddMemberData({ email: "", role: "member" });
 										setMemberErrors({});
 									}}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:bg-gray-50"
+									className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:bg-gray-50"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-4 py-2 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-4 py-2 text-center text-base font-medium text-white no-underline transition-all duration-200"
 								>
 									Add Member
 								</button>
@@ -753,11 +753,11 @@ const TeamConfigurationPage: React.FC = () => {
 			{/* Create Sprint Modal */}
 			{showCreateSprintModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
-					<div className="w-full max-w-md rounded-lg bg-content-background p-6 shadow-lg">
-						<h3 className="mb-4 text-lg font-semibold text-text-contrast">Create New Sprint</h3>
+					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
+						<h3 className="text-text-contrast mb-4 text-lg font-semibold">Create New Sprint</h3>
 						<form onSubmit={e => void handleCreateSprint(e)} className="space-y-4">
 							<div>
-								<label htmlFor="sprintName" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="sprintName" className="text-text-primary mb-2 block font-medium">
 									Sprint Name:
 								</label>
 								<input
@@ -767,7 +767,7 @@ const TeamConfigurationPage: React.FC = () => {
 									onChange={e => setCreateSprintData({ ...createSprintData, name: e.target.value })}
 									required
 									placeholder="Sprint 3"
-									className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 								/>
 								{sprintErrors.name && (
 									<div className="mt-1 text-sm text-red-600">{sprintErrors.name}</div>
@@ -775,7 +775,7 @@ const TeamConfigurationPage: React.FC = () => {
 							</div>
 
 							<div>
-								<label htmlFor="sprintStartDate" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="sprintStartDate" className="text-text-primary mb-2 block font-medium">
 									Start Date:
 								</label>
 								<input
@@ -786,7 +786,7 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ ...createSprintData, start_date: e.target.value })
 									}
 									required
-									className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 								/>
 								{sprintErrors.start_date && (
 									<div className="mt-1 text-sm text-red-600">{sprintErrors.start_date}</div>
@@ -794,7 +794,7 @@ const TeamConfigurationPage: React.FC = () => {
 							</div>
 
 							<div>
-								<label htmlFor="sprintEndDate" className="mb-2 block font-medium text-text-primary">
+								<label htmlFor="sprintEndDate" className="text-text-primary mb-2 block font-medium">
 									End Date:
 								</label>
 								<input
@@ -805,7 +805,7 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ ...createSprintData, end_date: e.target.value })
 									}
 									required
-									className="w-full rounded-md border border-layout-background p-3 text-base transition-all duration-200 focus:border-interactive focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
 								/>
 								{sprintErrors.end_date && (
 									<div className="mt-1 text-sm text-red-600">{sprintErrors.end_date}</div>
@@ -820,13 +820,13 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ name: "", start_date: "", end_date: "" });
 										setSprintErrors({});
 									}}
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:bg-gray-50"
+									className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:bg-gray-50"
 								>
 									Cancel
 								</button>
 								<button
 									type="submit"
-									className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive px-4 py-2 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover"
+									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-4 py-2 text-center text-base font-medium text-white no-underline transition-all duration-200"
 								>
 									Create Sprint
 								</button>

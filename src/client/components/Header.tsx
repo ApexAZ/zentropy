@@ -10,7 +10,6 @@ type Page =
 	| "calendar"
 	| "dashboard"
 	| "login"
-	| "register"
 	| "team-configuration";
 
 interface AuthUser {
@@ -29,16 +28,17 @@ interface Auth {
 interface HeaderProps {
 	currentPage: Page;
 	onPageChange: (page: Page) => void;
+	onShowRegistration: () => void;
 	auth: Auth;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, auth }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, auth }) => {
 	return (
-		<header className="flex w-full items-center justify-between border-b border-layout-background bg-content-background px-8 py-4 shadow-sm">
+		<header className="border-layout-background bg-content-background flex w-full items-center justify-between border-b px-8 py-4 shadow-sm">
 			<h1 className="m-0 flex-shrink-0 text-3xl">
 				<button
 					onClick={() => onPageChange("home")}
-					className="cursor-pointer border-none bg-transparent p-0 text-3xl font-bold text-interactive no-underline"
+					className="text-interactive cursor-pointer border-none bg-transparent p-0 text-3xl font-bold no-underline"
 				>
 					Zentropy
 				</button>
@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, auth }) => {
 					</li>
 				</ul>
 				<div className="nav-auth">
-					<ProfileDropdown onPageChange={onPageChange} auth={auth} />
+					<ProfileDropdown onPageChange={onPageChange} onShowRegistration={onShowRegistration} auth={auth} />
 				</div>
 			</nav>
 		</header>

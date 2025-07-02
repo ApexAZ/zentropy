@@ -88,13 +88,13 @@ const DashboardPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Dashboard</h2>
-						<p className="mt-2 text-text-primary">Overview of your teams and capacity planning</p>
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
+						<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
-					<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-layout-background border-t-interactive"></div>
-					<p className="mb-4 text-text-primary">Loading dashboard...</p>
+					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
+					<p className="text-text-primary mb-4">Loading dashboard...</p>
 				</div>
 			</main>
 		);
@@ -105,17 +105,17 @@ const DashboardPage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="m-0 text-3xl font-semibold text-text-contrast">Dashboard</h2>
-						<p className="mt-2 text-text-primary">Overview of your teams and capacity planning</p>
+						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
+						<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Dashboard</h3>
-						<p className="mb-6 text-text-primary">{error}</p>
+						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void loadDashboardData()}
-							className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-layout-background bg-content-background px-4 py-2 text-center text-base font-medium text-text-primary no-underline transition-all duration-200 hover:border-interactive hover:bg-interactive-hover"
+							className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 						>
 							Retry
 						</button>
@@ -129,22 +129,22 @@ const DashboardPage: React.FC = () => {
 		<main className="w-full py-8">
 			<div className="mb-8 flex items-center justify-between">
 				<div>
-					<h2 className="m-0 text-3xl font-semibold text-text-contrast">Dashboard</h2>
-					<p className="mt-2 text-text-primary">Overview of your teams and capacity planning</p>
+					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
+					<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
 				</div>
 			</div>
 
 			{/* Stats Cards */}
 			<div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm font-medium text-text-primary">Total Teams</p>
-							<p className="text-2xl font-bold text-text-contrast">{stats.total_teams}</p>
+							<p className="text-text-primary text-sm font-medium">Total Teams</p>
+							<p className="text-text-contrast text-2xl font-bold">{stats.total_teams}</p>
 						</div>
-						<div className="rounded-full bg-interactive-hover p-3">
+						<div className="bg-interactive-hover rounded-full p-3">
 							<svg
-								className="h-6 w-6 text-interactive"
+								className="text-interactive h-6 w-6"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -160,11 +160,11 @@ const DashboardPage: React.FC = () => {
 					</div>
 				</div>
 
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm font-medium text-text-primary">Team Members</p>
-							<p className="text-2xl font-bold text-text-contrast">{stats.total_members}</p>
+							<p className="text-text-primary text-sm font-medium">Team Members</p>
+							<p className="text-text-contrast text-2xl font-bold">{stats.total_members}</p>
 						</div>
 						<div className="rounded-full bg-green-100 p-3">
 							<svg
@@ -184,11 +184,11 @@ const DashboardPage: React.FC = () => {
 					</div>
 				</div>
 
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm font-medium text-text-primary">Active Sprints</p>
-							<p className="text-2xl font-bold text-text-contrast">{stats.active_sprints}</p>
+							<p className="text-text-primary text-sm font-medium">Active Sprints</p>
+							<p className="text-text-contrast text-2xl font-bold">{stats.active_sprints}</p>
 						</div>
 						<div className="rounded-full bg-purple-100 p-3">
 							<svg
@@ -208,11 +208,11 @@ const DashboardPage: React.FC = () => {
 					</div>
 				</div>
 
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<div className="flex items-center justify-between">
 						<div>
-							<p className="text-sm font-medium text-text-primary">Upcoming PTO</p>
-							<p className="text-2xl font-bold text-text-contrast">{stats.upcoming_pto}</p>
+							<p className="text-text-primary text-sm font-medium">Upcoming PTO</p>
+							<p className="text-text-contrast text-2xl font-bold">{stats.upcoming_pto}</p>
 						</div>
 						<div className="rounded-full bg-orange-100 p-3">
 							<svg
@@ -234,11 +234,11 @@ const DashboardPage: React.FC = () => {
 			</div>
 
 			{/* Teams Overview */}
-			<div className="mb-8 rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-				<h3 className="mb-6 text-xl font-semibold text-text-contrast">Teams Overview</h3>
+			<div className="border-layout-background bg-content-background mb-8 rounded-lg border p-6 shadow-sm">
+				<h3 className="text-text-contrast mb-6 text-xl font-semibold">Teams Overview</h3>
 
 				{teams.length === 0 ? (
-					<div className="p-8 text-center text-text-primary">
+					<div className="text-text-primary p-8 text-center">
 						<p className="mb-4">No teams found. Create your first team to get started.</p>
 						<button className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-blue-500 px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-blue-600">
 							Create Team
@@ -249,42 +249,46 @@ const DashboardPage: React.FC = () => {
 						<table className="min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Team Name
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Velocity
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Sprint Length
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Working Days
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Created
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-text-primary uppercase">
+									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Actions
 									</th>
 								</tr>
 							</thead>
-							<tbody className="divide-y divide-gray-200 bg-content-background">
+							<tbody className="bg-content-background divide-y divide-gray-200">
 								{teams.map(team => {
 									const velocityStatus = getVelocityStatus(team.velocity_baseline);
 									return (
 										<tr key={team.id} className="hover:bg-gray-50">
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div>
-													<div className="text-sm font-medium text-text-contrast">{team.name}</div>
+													<div className="text-text-contrast text-sm font-medium">
+														{team.name}
+													</div>
 													{team.description && (
-														<div className="text-sm text-text-primary">{team.description}</div>
+														<div className="text-text-primary text-sm">
+															{team.description}
+														</div>
 													)}
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="flex items-center">
-													<span className="text-sm text-text-contrast">
+													<span className="text-text-contrast text-sm">
 														{team.velocity_baseline > 0
 															? team.velocity_baseline
 															: "Not set"}
@@ -294,20 +298,22 @@ const DashboardPage: React.FC = () => {
 													</span>
 												</div>
 											</td>
-											<td className="px-6 py-4 text-sm whitespace-nowrap text-text-contrast">
+											<td className="text-text-contrast px-6 py-4 text-sm whitespace-nowrap">
 												{team.sprint_length_days} days
 											</td>
-											<td className="px-6 py-4 text-sm whitespace-nowrap text-text-contrast">
+											<td className="text-text-contrast px-6 py-4 text-sm whitespace-nowrap">
 												{team.working_days_per_week} days/week
 											</td>
-											<td className="px-6 py-4 text-sm whitespace-nowrap text-text-primary">
+											<td className="text-text-primary px-6 py-4 text-sm whitespace-nowrap">
 												{formatDate(team.created_at)}
 											</td>
 											<td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-												<button className="mr-4 text-interactive hover:text-blue-900">
+												<button className="text-interactive mr-4 hover:text-blue-900">
 													View Details
 												</button>
-												<button className="text-text-primary hover:text-text-contrast">Configure</button>
+												<button className="text-text-primary hover:text-text-contrast">
+													Configure
+												</button>
 											</td>
 										</tr>
 									);
@@ -320,8 +326,8 @@ const DashboardPage: React.FC = () => {
 
 			{/* Quick Actions */}
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h4 className="mb-4 text-lg font-semibold text-text-contrast">Quick Actions</h4>
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h4 className="text-text-contrast mb-4 text-lg font-semibold">Quick Actions</h4>
 					<div className="space-y-3">
 						<button className="w-full rounded-md px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50">
 							+ Create New Team
@@ -335,25 +341,25 @@ const DashboardPage: React.FC = () => {
 					</div>
 				</div>
 
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h4 className="mb-4 text-lg font-semibold text-text-contrast">Recent Activity</h4>
-					<div className="space-y-3 text-sm text-text-primary">
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h4 className="text-text-contrast mb-4 text-lg font-semibold">Recent Activity</h4>
+					<div className="text-text-primary space-y-3 text-sm">
 						<p>No recent activity to display.</p>
 					</div>
 				</div>
 
-				<div className="rounded-lg border border-layout-background bg-content-background p-6 shadow-sm">
-					<h4 className="mb-4 text-lg font-semibold text-text-contrast">System Status</h4>
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<h4 className="text-text-contrast mb-4 text-lg font-semibold">System Status</h4>
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-text-primary">Database</span>
+							<span className="text-text-primary text-sm">Database</span>
 							<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
 								<span className="h-2 w-2 rounded-full bg-green-500"></span>
 								Connected
 							</span>
 						</div>
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-text-primary">API</span>
+							<span className="text-text-primary text-sm">API</span>
 							<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
 								<span className="h-2 w-2 rounded-full bg-green-500"></span>
 								Operational

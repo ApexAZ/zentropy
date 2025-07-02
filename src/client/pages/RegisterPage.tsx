@@ -274,31 +274,36 @@ const RegisterPage: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-layout-background to-content-background">
+		<div className="from-layout-background to-content-background min-h-screen bg-gradient-to-br">
 			<div className="flex items-center justify-center p-8">
 				<div className="w-full max-w-2xl">
-					<div className="rounded-lg border border-layout-background bg-content-background shadow-lg">
-						<div className="border-b border-layout-background bg-layout-background p-8 text-center">
-							<h1 className="mb-4 text-2xl font-bold text-interactive">
+					<div className="border-layout-background bg-content-background rounded-lg border shadow-lg">
+						<div className="border-layout-background bg-layout-background border-b p-8 text-center">
+							<h1 className="text-interactive mb-4 text-2xl font-bold">
 								<a href="/" className="text-interactive no-underline">
 									Zentropy
 								</a>
 							</h1>
-							<h2 className="mb-2 text-2xl font-semibold text-text-primary">Create Your Account</h2>
-							<p className="text-sm text-text-primary">Join your team&apos;s capacity planning workspace</p>
+							<h2 className="text-text-primary mb-2 text-2xl font-semibold">Create Your Account</h2>
+							<p className="text-text-primary text-sm">
+								Join your team&apos;s capacity planning workspace
+							</p>
 						</div>
 
 						{/* Registration Form */}
 						<form onSubmit={e => void handleSubmit(e)} className="p-8" noValidate>
 							{/* Personal Information */}
-							<div className="mb-8 border-b border-layout-background pb-6">
-								<h3 className="mb-6 border-b border-layout-background pb-2 text-lg font-semibold text-text-primary">
+							<div className="border-layout-background mb-8 border-b pb-6">
+								<h3 className="border-layout-background text-text-primary mb-6 border-b pb-2 text-lg font-semibold">
 									Personal Information
 								</h3>
 
 								<div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 									<div className="flex flex-col gap-2">
-										<label htmlFor="first-name" className="block text-sm font-medium text-text-primary">
+										<label
+											htmlFor="first-name"
+											className="text-text-primary block text-sm font-medium"
+										>
 											First Name
 										</label>
 										<input
@@ -307,7 +312,7 @@ const RegisterPage: React.FC = () => {
 											name="first_name"
 											value={formData.first_name}
 											onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-											className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+											className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 											required
 											autoComplete="given-name"
 											maxLength={50}
@@ -319,7 +324,10 @@ const RegisterPage: React.FC = () => {
 									</div>
 
 									<div className="flex flex-col gap-2">
-										<label htmlFor="last-name" className="block text-sm font-medium text-text-primary">
+										<label
+											htmlFor="last-name"
+											className="text-text-primary block text-sm font-medium"
+										>
 											Last Name
 										</label>
 										<input
@@ -328,7 +336,7 @@ const RegisterPage: React.FC = () => {
 											name="last_name"
 											value={formData.last_name}
 											onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-											className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+											className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 											required
 											autoComplete="family-name"
 											maxLength={50}
@@ -341,7 +349,7 @@ const RegisterPage: React.FC = () => {
 								</div>
 
 								<div className="mb-6 flex flex-col gap-2">
-									<label htmlFor="email" className="block text-sm font-medium text-text-primary">
+									<label htmlFor="email" className="text-text-primary block text-sm font-medium">
 										Email Address
 									</label>
 									<input
@@ -350,7 +358,7 @@ const RegisterPage: React.FC = () => {
 										name="email"
 										value={formData.email}
 										onChange={e => setFormData({ ...formData, email: e.target.value })}
-										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 										required
 										autoComplete="email"
 										placeholder="Enter your email address"
@@ -365,7 +373,10 @@ const RegisterPage: React.FC = () => {
 								</div>
 
 								<div className="mb-6 flex flex-col gap-2">
-									<label htmlFor="organization" className="block text-sm font-medium text-text-primary">
+									<label
+										htmlFor="organization"
+										className="text-text-primary block text-sm font-medium"
+									>
 										Organization
 									</label>
 									<input
@@ -374,7 +385,7 @@ const RegisterPage: React.FC = () => {
 										name="organization"
 										value={formData.organization}
 										onChange={e => setFormData({ ...formData, organization: e.target.value })}
-										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 										required
 										autoComplete="organization"
 										maxLength={100}
@@ -386,7 +397,7 @@ const RegisterPage: React.FC = () => {
 								</div>
 
 								<div className="flex flex-col gap-2">
-									<label htmlFor="role" className="block text-sm font-medium text-text-primary">
+									<label htmlFor="role" className="text-text-primary block text-sm font-medium">
 										Role
 									</label>
 									<select
@@ -394,7 +405,7 @@ const RegisterPage: React.FC = () => {
 										name="role"
 										value={formData.role}
 										onChange={e => setFormData({ ...formData, role: e.target.value })}
-										className="w-full rounded-md border border-layout-background bg-content-background p-3 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+										className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 										required
 									>
 										<option value="">Select your role</option>
@@ -402,20 +413,20 @@ const RegisterPage: React.FC = () => {
 										<option value="team_lead">Team Lead</option>
 									</select>
 									{errors.role && <div className="mt-1 text-sm text-red-600">{errors.role}</div>}
-									<div className="mt-1 text-sm text-text-primary">
+									<div className="text-text-primary mt-1 text-sm">
 										Team Leads can manage team settings and member access
 									</div>
 								</div>
 							</div>
 
 							{/* Password Security */}
-							<div className="mb-8 border-b border-layout-background pb-6">
-								<h3 className="mb-6 border-b border-layout-background pb-2 text-lg font-semibold text-text-primary">
+							<div className="border-layout-background mb-8 border-b pb-6">
+								<h3 className="border-layout-background text-text-primary mb-6 border-b pb-2 text-lg font-semibold">
 									Password Security
 								</h3>
 
 								<div className="mb-6 flex flex-col gap-2">
-									<label htmlFor="password" className="block text-sm font-medium text-text-primary">
+									<label htmlFor="password" className="text-text-primary block text-sm font-medium">
 										Password
 									</label>
 									<div className="relative flex items-center">
@@ -425,7 +436,7 @@ const RegisterPage: React.FC = () => {
 											name="password"
 											value={formData.password}
 											onChange={e => setFormData({ ...formData, password: e.target.value })}
-											className="w-full rounded-md border border-layout-background bg-content-background p-3 pr-20 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+											className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none"
 											required
 											autoComplete="new-password"
 											placeholder="Create a secure password"
@@ -435,7 +446,7 @@ const RegisterPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => togglePasswordVisibility("password")}
-											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-text-primary transition-colors duration-200 hover:bg-layout-background hover:text-text-primary"
+											className="text-text-primary hover:bg-layout-background hover:text-text-primary absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 transition-colors duration-200"
 										>
 											<span className="text-sm">{showPasswords.password ? "Hide" : "Show"}</span>
 										</button>
@@ -446,8 +457,8 @@ const RegisterPage: React.FC = () => {
 
 									{/* Password Strength Indicator */}
 									{formData.password && (
-										<div className="mt-2 rounded-sm bg-layout-background p-2">
-											<div className="mb-1 text-sm font-medium text-text-primary">
+										<div className="bg-layout-background mt-2 rounded-sm p-2">
+											<div className="text-text-primary mb-1 text-sm font-medium">
 												Password Strength:
 											</div>
 											<div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-[#C5E0D8]">
@@ -465,8 +476,8 @@ const RegisterPage: React.FC = () => {
 									)}
 
 									{/* Password Requirements */}
-									<div className="mt-2 rounded-sm bg-layout-background p-2">
-										<div className="mb-2 text-sm font-medium text-text-primary">
+									<div className="bg-layout-background mt-2 rounded-sm p-2">
+										<div className="text-text-primary mb-2 text-sm font-medium">
 											Password must contain:
 										</div>
 										<ul className="m-0 list-none p-0">
@@ -517,7 +528,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex flex-col gap-2">
 									<label
 										htmlFor="confirm-password"
-										className="block text-sm font-medium text-text-primary"
+										className="text-text-primary block text-sm font-medium"
 									>
 										Confirm Password
 									</label>
@@ -530,7 +541,7 @@ const RegisterPage: React.FC = () => {
 											onChange={e =>
 												setFormData({ ...formData, confirm_password: e.target.value })
 											}
-											className="w-full rounded-md border border-layout-background bg-content-background p-3 pr-20 text-base leading-6 text-text-primary transition-all duration-200 focus:border-interactive focus:shadow-interactive focus:outline-none"
+											className="border-layout-background bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none"
 											required
 											autoComplete="new-password"
 											placeholder="Confirm your password"
@@ -538,7 +549,7 @@ const RegisterPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={() => togglePasswordVisibility("confirm")}
-											className="absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 text-text-primary transition-colors duration-200 hover:bg-layout-background hover:text-text-primary"
+											className="text-text-primary hover:bg-layout-background hover:text-text-primary absolute right-3 cursor-pointer rounded-sm border-none bg-none p-1 transition-colors duration-200"
 										>
 											<span className="text-sm">{showPasswords.confirm ? "Hide" : "Show"}</span>
 										</button>
@@ -568,14 +579,14 @@ const RegisterPage: React.FC = () => {
 											I agree to the{" "}
 											<button
 												type="button"
-												className="cursor-pointer border-none bg-transparent p-0 font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
+												className="text-interactive hover:text-interactive-hover cursor-pointer border-none bg-transparent p-0 font-medium no-underline transition-colors duration-200 hover:underline"
 											>
 												Terms of Service
 											</button>{" "}
 											and{" "}
 											<button
 												type="button"
-												className="cursor-pointer border-none bg-transparent p-0 font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
+												className="text-interactive hover:text-interactive-hover cursor-pointer border-none bg-transparent p-0 font-medium no-underline transition-colors duration-200 hover:underline"
 											>
 												{" "}
 												Privacy Policy
@@ -590,7 +601,7 @@ const RegisterPage: React.FC = () => {
 							<button
 								type="submit"
 								disabled={false}
-								className="relative inline-flex w-full items-center justify-center gap-2 rounded-md border-none p-3 px-6 text-base font-medium transition-all duration-200 cursor-pointer bg-interactive text-white hover:-translate-y-px hover:bg-interactive-hover hover:text-text-primary hover:shadow-md"
+								className="bg-interactive hover:bg-interactive-hover hover:text-text-primary relative inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border-none p-3 px-6 text-base font-medium text-white transition-all duration-200 hover:-translate-y-px hover:shadow-md"
 							>
 								{isLoading ? (
 									<>
@@ -618,20 +629,20 @@ const RegisterPage: React.FC = () => {
 						</form>
 
 						{/* Rate Limiting Info */}
-						<div className="m-4 flex items-center gap-2 rounded-md border border-layout-background bg-layout-background p-3">
+						<div className="border-layout-background bg-layout-background m-4 flex items-center gap-2 rounded-md border p-3">
 							<div className="flex-shrink-0 text-xl">ℹ️</div>
-							<div className="text-sm leading-5 text-text-primary">
+							<div className="text-text-primary text-sm leading-5">
 								For security, only 2 account registrations are allowed per hour from each location.
 							</div>
 						</div>
 
 						{/* Alternative Actions */}
 						<div className="p-8 pt-0 text-center">
-							<p className="text-sm text-text-primary">
+							<p className="text-text-primary text-sm">
 								Already have an account?
 								<a
 									href="/login"
-									className="font-medium text-interactive no-underline transition-colors duration-200 hover:text-interactive-hover hover:underline"
+									className="text-interactive hover:text-interactive-hover font-medium no-underline transition-colors duration-200 hover:underline"
 								>
 									{" "}
 									Sign in here
@@ -648,10 +659,10 @@ const RegisterPage: React.FC = () => {
 					<div
 						className={`flex items-center justify-between gap-2 p-4 ${
 							toast.type === "success"
-								? "border border-layout-background bg-layout-background"
+								? "border-layout-background bg-layout-background border"
 								: toast.type === "error"
 									? "border border-red-200 bg-red-50"
-									: "border border-layout-background bg-layout-background"
+									: "border-layout-background bg-layout-background border"
 						}`}
 					>
 						<div
@@ -678,16 +689,16 @@ const RegisterPage: React.FC = () => {
 			{/* Registration Success Modal */}
 			{showSuccessModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-[1000] flex items-center justify-center bg-black p-6">
-					<div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-content-background border border-interactive p-8 text-center shadow-lg">
+					<div className="bg-content-background border-interactive max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border p-8 text-center shadow-lg">
 						<div className="mb-4 text-5xl">✅</div>
-						<h3 className="mb-4 text-xl font-semibold text-text-primary">Account Created Successfully!</h3>
-						<p className="mb-8 leading-6 text-text-primary">
+						<h3 className="text-text-primary mb-4 text-xl font-semibold">Account Created Successfully!</h3>
+						<p className="text-text-primary mb-8 leading-6">
 							Welcome to Zentropy! Your account has been created and you&apos;re now logged in.
 						</p>
 						<div className="flex justify-end gap-4">
 							<button
 								onClick={handleRedirectToDashboard}
-								className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-interactive p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-interactive-hover hover:text-text-primary"
+								className="bg-interactive hover:bg-interactive-hover hover:text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border-none p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200"
 							>
 								Go to Dashboard
 							</button>

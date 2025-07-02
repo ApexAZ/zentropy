@@ -9,7 +9,6 @@ type Page =
 	| "calendar"
 	| "dashboard"
 	| "login"
-	| "register"
 	| "team-configuration";
 
 interface AuthUser {
@@ -27,10 +26,11 @@ interface Auth {
 
 interface ProfileDropdownProps {
 	onPageChange: (page: Page) => void;
+	onShowRegistration: () => void;
 	auth: Auth;
 }
 
-const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth }) => {
+const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowRegistration, auth }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 	const toggleRef = useRef<HTMLButtonElement>(null);
@@ -87,7 +87,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 		<div className="relative" ref={dropdownRef}>
 			<button
 				ref={toggleRef}
-				className="mr-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-2 text-text-primary transition-all duration-200 hover:bg-interactive-hover hover:text-text-primary focus:outline-2 focus:outline-offset-2 focus:outline-interactive"
+				className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:outline-interactive mr-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-2 transition-all duration-200 focus:outline-2 focus:outline-offset-2"
 				type="button"
 				aria-expanded={isOpen}
 				aria-haspopup="true"
@@ -95,7 +95,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 				aria-label="Profile menu"
 			>
 				<svg
-					className="text-text-primary transition-colors duration-200 hover:text-text-primary"
+					className="text-text-primary hover:text-text-primary transition-colors duration-200"
 					width="24"
 					height="24"
 					viewBox="0 0 24 24"
@@ -108,7 +108,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 			{isOpen && (
 				<>
 					<button
-						className="fixed top-4 right-12 z-[1001] flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-text-primary transition-all duration-200 hover:bg-interactive-hover hover:text-text-primary focus:outline-2 focus:outline-offset-2 focus:outline-interactive"
+						className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:outline-interactive fixed top-4 right-12 z-[1001] flex h-10 w-10 cursor-pointer items-center justify-center rounded-md border-none bg-transparent transition-all duration-200 focus:outline-2 focus:outline-offset-2"
 						onClick={() => setIsOpen(false)}
 						aria-label="Close profile menu"
 					>
@@ -129,34 +129,34 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						aria-label="Close menu overlay"
 					></div>
 					<div
-						className="visible fixed top-0 right-0 z-[1000] h-screen w-80 translate-x-0 overflow-y-auto border-l border-layout-background bg-content-background opacity-100 shadow-lg transition-all duration-[600ms] ease-out"
+						className="border-layout-background bg-content-background visible fixed top-0 right-0 z-[1000] h-screen w-80 translate-x-0 overflow-y-auto border-l opacity-100 shadow-lg transition-all duration-[600ms] ease-out"
 						role="menu"
 					>
-						<div className="flex items-center gap-3 border-b border-layout-background bg-layout-background p-8">
-							<div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-layout-background text-text-primary">
+						<div className="border-layout-background bg-layout-background flex items-center gap-3 border-b p-8">
+							<div className="bg-layout-background text-text-primary flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
 								<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
 									<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
 								</svg>
 							</div>
 							<div className="min-w-0 flex-grow">
-								<div className="text-sm font-semibold text-text-contrast">
+								<div className="text-text-contrast text-sm font-semibold">
 									{auth.user?.name || "Guest User"}
 								</div>
-								<div className="mt-0.5 overflow-hidden text-xs text-ellipsis whitespace-nowrap text-text-primary">
+								<div className="text-text-primary mt-0.5 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
 									{auth.user?.email || "Not signed in"}
 								</div>
 							</div>
 						</div>
 
-						<div className="my-2 h-px bg-layout-background"></div>
+						<div className="bg-layout-background my-2 h-px"></div>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("profile")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -168,12 +168,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						</button>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("teams")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -185,12 +185,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						</button>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("calendar")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -202,12 +202,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						</button>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("dashboard")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -219,12 +219,12 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						</button>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("team-configuration")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -235,15 +235,15 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 							<span>Team Configuration</span>
 						</button>
 
-						<div className="my-2 h-px bg-layout-background"></div>
+						<div className="bg-layout-background my-2 h-px"></div>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
 							onClick={() => handleMenuItemClick("login")}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -255,12 +255,15 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 						</button>
 
 						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-text-primary no-underline transition-colors duration-200 hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover focus:outline-none"
+							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 							role="menuitem"
-							onClick={() => handleMenuItemClick("register")}
+							onClick={() => {
+								setIsOpen(false);
+								onShowRegistration();
+							}}
 						>
 							<svg
-								className="flex-shrink-0 text-text-primary"
+								className="text-text-primary flex-shrink-0"
 								width="18"
 								height="18"
 								viewBox="0 0 24 24"
@@ -271,7 +274,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, auth })
 							<span>Register</span>
 						</button>
 
-						<div className="my-2 h-px bg-layout-background"></div>
+						<div className="bg-layout-background my-2 h-px"></div>
 
 						<button
 							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-red-600 no-underline transition-colors duration-200 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:outline-none"
