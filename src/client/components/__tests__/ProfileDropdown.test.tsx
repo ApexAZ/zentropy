@@ -262,9 +262,9 @@ describe("ProfileDropdown", () => {
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
-			// Login and Register buttons should be visible for unauthenticated users
-			expect(screen.getByText("Login")).toBeInTheDocument();
-			expect(screen.getByText("Register")).toBeInTheDocument();
+			// Login and Register buttons should be visible in slideout
+			expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Register" })).toBeInTheDocument();
 
 			// Sign Out button should not be visible
 			expect(screen.queryByText("Sign Out")).not.toBeInTheDocument();
@@ -285,8 +285,8 @@ describe("ProfileDropdown", () => {
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
-			// Click Login button
-			const loginButton = screen.getByText("Login");
+			// Click Login button in slideout
+			const loginButton = screen.getByRole("button", { name: "Login" });
 			await user.click(loginButton);
 
 			// Verify onShowLogin was called
@@ -308,15 +308,15 @@ describe("ProfileDropdown", () => {
 			const profileButton = screen.getByRole("button", { name: /profile/i });
 			await user.click(profileButton);
 
-			// Click Register button
-			const registerButton = screen.getByText("Register");
+			// Click Register button in slideout
+			const registerButton = screen.getByRole("button", { name: "Register" });
 			await user.click(registerButton);
 
 			// Verify onShowRegistration was called
 			expect(mockOnShowRegistration).toHaveBeenCalledOnce();
 		});
 
-		it("should display guest user information for unauthenticated users", async () => {
+		it("should show Login and Register buttons next to person icon for unauthenticated users", async () => {
 			const user = userEvent.setup();
 			render(
 				<ProfileDropdown
@@ -327,20 +327,29 @@ describe("ProfileDropdown", () => {
 				/>
 			);
 
-			// Open dropdown
-			const profileButton = screen.getByRole("button", { name: /profile/i });
-			await user.click(profileButton);
+			// Person icon should be clickable for unauthenticated users
+			const personIcon = screen.getByRole("button", { name: /profile menu/i });
+			expect(personIcon).not.toBeDisabled();
+			expect(personIcon).toHaveAttribute("aria-expanded", "false");
+			expect(personIcon).toHaveAttribute("aria-haspopup", "true");
 
-			// Should show guest user info
-			expect(screen.getByText("Guest User")).toBeInTheDocument();
-			expect(screen.getByText("Not signed in")).toBeInTheDocument();
+			// Open slideout
+			await user.click(personIcon);
+
+			// Should show Login and Register buttons in slideout next to person icon
+			expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Register" })).toBeInTheDocument();
+
+			// No "Guest User" text should be shown
+			expect(screen.queryByText("Guest User")).not.toBeInTheDocument();
+			expect(screen.queryByText("Not signed in")).not.toBeInTheDocument();
 		});
 	});
 
 	describe("Real User Data Integration", () => {
 		it("should display real user data from API response (not hardcoded 'John Doe')", async () => {
 			const user = userEvent.setup();
-			
+
 			// Mock real API user data format (first_name + last_name)
 			const realApiUserData = {
 				isAuthenticated: true,
@@ -354,11 +363,11 @@ describe("ProfileDropdown", () => {
 			};
 
 			render(
-				<ProfileDropdown 
-					onPageChange={mockOnPageChange} 
+				<ProfileDropdown
+					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
-					auth={realApiUserData} 
+					auth={realApiUserData}
 				/>
 			);
 
@@ -369,7 +378,7 @@ describe("ProfileDropdown", () => {
 			// Verify real user data is displayed, NOT hardcoded "John Doe"
 			expect(screen.getByText("Jane Smith")).toBeInTheDocument();
 			expect(screen.getByText("jane.smith@company.com")).toBeInTheDocument();
-			
+
 			// Ensure no hardcoded fallback values
 			expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
 			expect(screen.queryByText("john@example.com")).not.toBeInTheDocument();
@@ -377,7 +386,7 @@ describe("ProfileDropdown", () => {
 
 		it("should handle user data with different name formats", async () => {
 			const user = userEvent.setup();
-			
+
 			const testUsers = [
 				{
 					name: "Maria José García-López", // Multi-part names
@@ -403,11 +412,11 @@ describe("ProfileDropdown", () => {
 				};
 
 				const { unmount } = render(
-					<ProfileDropdown 
-						onPageChange={mockOnPageChange} 
+					<ProfileDropdown
+						onPageChange={mockOnPageChange}
 						onShowRegistration={mockOnShowRegistration}
 						onShowLogin={mockOnShowLogin}
-						auth={userAuth} 
+						auth={userAuth}
 					/>
 				);
 
@@ -443,11 +452,11 @@ describe("ProfileDropdown", () => {
 			};
 
 			render(
-				<ProfileDropdown 
-					onPageChange={mockOnPageChange} 
+				<ProfileDropdown
+					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
 					onShowLogin={mockOnShowLogin}
-					auth={authenticatedUserFromAPI} 
+					auth={authenticatedUserFromAPI}
 				/>
 			);
 

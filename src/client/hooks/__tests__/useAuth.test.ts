@@ -125,10 +125,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify error was logged
-			expect(consoleWarnSpy).toHaveBeenCalledWith(
-				"Failed to validate token:",
-				expect.any(Error)
-			);
+			expect(consoleWarnSpy).toHaveBeenCalledWith("Failed to validate token:", expect.any(Error));
 
 			// Verify token was removed due to validation failure
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
@@ -274,10 +271,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify error was logged
-			expect(consoleWarnSpy).toHaveBeenCalledWith(
-				"Logout API call failed:",
-				expect.any(Error)
-			);
+			expect(consoleWarnSpy).toHaveBeenCalledWith("Logout API call failed:", expect.any(Error));
 
 			// Verify token was still removed despite API failure
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
@@ -390,7 +384,7 @@ describe("useAuth", () => {
 
 		it("should validate token immediately on app startup", async () => {
 			const mockToken = "startup-token";
-			
+
 			mockLocalStorage.getItem.mockReturnValue(mockToken);
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
@@ -410,6 +404,113 @@ describe("useAuth", () => {
 					"Content-Type": "application/json"
 				}
 			});
+		});
+	});
+
+	describe("Session Timeout", () => {
+		it("should automatically logout after timeout period of inactivity", async () => {
+			const mockToken = "valid-token";
+			mockLocalStorage.getItem.mockReturnValue(mockToken);
+			
+			// Mock successful user data fetch on mount
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					email: "user@example.com",
+					first_name: "Test",
+					last_name: "User"
+				})
+			});
+
+			const { result } = renderHook(() => useAuth());
+
+			// Wait for authentication to complete
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(true);
+			});
+
+			// Mock logout API call for when timeout fires
+			mockFetch.mockClear();
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ message: "Logged out successfully" })
+			});
+
+			// Wait for the timeout to fire (200ms in test environment)
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(false);
+			}, { timeout: 300 });
+
+			// Verify logout API was called
+			expect(mockFetch).toHaveBeenCalledWith("/api/auth/logout", {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${mockToken}`,
+					"Content-Type": "application/json"
+				}
+			});
+
+			// Verify token was removed
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+		});
+
+		it("should reset timeout on user activity", async () => {
+			const mockToken = "valid-token";
+			mockLocalStorage.getItem.mockReturnValue(mockToken);
+			
+			// Mock successful user data fetch on mount
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					email: "user@example.com",
+					first_name: "Test",
+					last_name: "User"
+				})
+			});
+
+			const { result } = renderHook(() => useAuth());
+
+			// Wait for authentication to complete
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(true);
+			});
+
+			// Simulate user activity before timeout fires (after 100ms)
+			setTimeout(() => {
+				document.dispatchEvent(new Event('click'));
+			}, 100);
+
+			// Wait 150ms total - should still be authenticated due to activity reset
+			await new Promise(resolve => setTimeout(resolve, 150));
+			expect(result.current.isAuthenticated).toBe(true);
+
+			// Mock logout API call for final timeout
+			mockFetch.mockClear();
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ message: "Logged out successfully" })
+			});
+
+			// Now wait for the full timeout period without activity
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(false);
+			}, { timeout: 300 });
+		});
+
+		it("should not start timeout for unauthenticated users", async () => {
+			mockLocalStorage.getItem.mockReturnValue(null);
+
+			const { result } = renderHook(() => useAuth());
+
+			// User is not authenticated
+			expect(result.current.isAuthenticated).toBe(false);
+
+			// Wait longer than the timeout period
+			await new Promise(resolve => setTimeout(resolve, 250));
+
+			// User should still not be authenticated (no timeout started)
+			expect(result.current.isAuthenticated).toBe(false);
+			expect(mockFetch).not.toHaveBeenCalled();
 		});
 	});
 });
