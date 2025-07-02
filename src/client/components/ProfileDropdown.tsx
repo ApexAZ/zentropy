@@ -151,45 +151,49 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 
 						<div className="bg-layout-background my-2 h-px"></div>
 
-						<button
-							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-							role="menuitem"
-							onClick={() => {
-								setIsOpen(false);
-								onShowLogin();
-							}}
-						>
-							<svg
-								className="text-text-primary flex-shrink-0"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
+						{!auth.isAuthenticated && (
+							<button
+								className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+								role="menuitem"
+								onClick={() => {
+									setIsOpen(false);
+									onShowLogin();
+								}}
 							>
-								<path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
-							</svg>
-							<span>Login</span>
-						</button>
+								<svg
+									className="text-text-primary flex-shrink-0"
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+								>
+									<path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z" />
+								</svg>
+								<span>Login</span>
+							</button>
+						)}
 
-						<button
-							className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-							role="menuitem"
-							onClick={() => {
-								setIsOpen(false);
-								onShowRegistration();
-							}}
-						>
-							<svg
-								className="text-text-primary flex-shrink-0"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
+						{!auth.isAuthenticated && (
+							<button
+								className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+								role="menuitem"
+								onClick={() => {
+									setIsOpen(false);
+									onShowRegistration();
+								}}
 							>
-								<path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-							</svg>
-							<span>Register</span>
-						</button>
+								<svg
+									className="text-text-primary flex-shrink-0"
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+								>
+									<path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+								</svg>
+								<span>Register</span>
+							</button>
+						)}
 
 						<div className="bg-layout-background my-2 h-px"></div>
 
@@ -280,22 +284,24 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onPageChange, onShowR
 
 						<div className="bg-layout-background my-2 h-px"></div>
 
-						<button
-							className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-red-600 no-underline transition-colors duration-200 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:outline-none"
-							role="menuitem"
-							onClick={() => void handleLogout()}
-						>
-							<svg
-								className="flex-shrink-0 text-red-600"
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="currentColor"
+						{auth.isAuthenticated && (
+							<button
+								className="flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm text-red-600 no-underline transition-colors duration-200 hover:bg-red-50 hover:text-red-700 focus:bg-red-50 focus:outline-none"
+								role="menuitem"
+								onClick={() => void handleLogout()}
 							>
-								<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-							</svg>
-							<span>Sign Out</span>
-						</button>
+								<svg
+									className="flex-shrink-0 text-red-600"
+									width="18"
+									height="18"
+									viewBox="0 0 24 24"
+									fill="currentColor"
+								>
+									<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+								</svg>
+								<span>Sign Out</span>
+							</button>
+						)}
 					</div>
 				</>
 			)}
