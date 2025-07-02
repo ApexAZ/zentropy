@@ -280,7 +280,7 @@ const CalendarPage: React.FC = () => {
       closeModals()
       await loadEntries()
     } catch (err) {
-      console.error('Error saving calendar entry:', err)
+      // console.error('Error saving calendar entry:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Failed to save calendar entry',
         type: 'error'
@@ -288,7 +288,7 @@ const CalendarPage: React.FC = () => {
     }
   }
 
-  const handleDelete = async () => {
+  const handleDelete = async (): Promise<void> => {
     if (!currentEntry) {return}
 
     try {
@@ -297,8 +297,8 @@ const CalendarPage: React.FC = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to delete calendar entry')
+        const errorData = await response.json() as { message?: string }
+        throw new Error(errorData.message ?? 'Failed to delete calendar entry')
       }
 
       setToast({
@@ -309,7 +309,7 @@ const CalendarPage: React.FC = () => {
       closeModals()
       await loadEntries()
     } catch (err) {
-      console.error('Error deleting calendar entry:', err)
+      // console.error('Error deleting calendar entry:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Failed to delete calendar entry',
         type: 'error'
@@ -317,7 +317,7 @@ const CalendarPage: React.FC = () => {
     }
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -325,27 +325,27 @@ const CalendarPage: React.FC = () => {
     })
   }
 
-  const getEntryTypeLabel = (type: string) => {
+  const getEntryTypeLabel = (type: string): string => {
     const labels = {
       pto: 'PTO / Vacation',
       holiday: 'Holiday',
       sick: 'Sick Leave',
       personal: 'Personal Time'
     }
-    return labels[type as keyof typeof labels] || type
+    return labels[type as keyof typeof labels] ?? type
   }
 
-  const getEntryTypeColor = (type: string) => {
+  const getEntryTypeColor = (type: string): string => {
     const colors = {
       pto: 'bg-blue-100 text-blue-800',
       holiday: 'bg-green-100 text-green-800',
       sick: 'bg-red-100 text-red-800',
       personal: 'bg-purple-100 text-purple-800'
     }
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return colors[type as keyof typeof colors] ?? 'bg-gray-100 text-gray-800'
   }
 
-  const getUserDisplayName = (userId: string) => {
+  const getUserDisplayName = (userId: string): string => {
     const user = users.find(u => u.id === userId)
     return user ? `${user.first_name} ${user.last_name}` : 'Unknown User'
   }
