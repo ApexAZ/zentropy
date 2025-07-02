@@ -10,7 +10,7 @@
 	--success-green-dark: #047857;
 	--danger-red: #dc2626;
 	--danger-red-dark: #b91c1c;
-	
+
 	/* Custom spacing for legacy compatibility */
 	--spacing-xs: 0.25rem;
 	--spacing-sm: 0.5rem;
@@ -18,25 +18,29 @@
 	--spacing-lg: 1rem;
 	--spacing-xl: 1.5rem;
 	--spacing-2xl: 2rem;
-	
+
 	/* Border radius */
 	--radius-sm: 4px;
 	--radius-md: 6px;
 	--radius-lg: 8px;
-	
+
 	/* Shadows */
 	--shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
 	--shadow-md: 0 4px 6px rgb(0 0 0 / 10%);
 	--shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
-	
+
 	/* Fonts */
-	--font-sans: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, 'Helvetica Neue', arial, sans-serif;
+	--font-sans: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
 }
 
 /* Essential animations for React components */
 @keyframes spin {
-	0% { transform: rotate(0deg); }
-	100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
 @keyframes slideIn {

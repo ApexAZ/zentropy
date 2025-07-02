@@ -12,7 +12,7 @@ describe("ProfileDropdown", () => {
 
 	it("renders profile icon", () => {
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		expect(profileButton).toBeInTheDocument();
 	});
@@ -20,10 +20,10 @@ describe("ProfileDropdown", () => {
 	it("opens dropdown when profile icon is clicked", async () => {
 		const user = userEvent.setup();
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
-		
+
 		expect(screen.getByText("John Doe")).toBeInTheDocument();
 		expect(screen.getByText("john@example.com")).toBeInTheDocument();
 	});
@@ -36,16 +36,16 @@ describe("ProfileDropdown", () => {
 				<div data-testid="outside">Outside element</div>
 			</div>
 		);
-		
+
 		// Open dropdown
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
 		expect(screen.getByText("John Doe")).toBeInTheDocument();
-		
+
 		// Click outside
 		const outsideElement = screen.getByTestId("outside");
 		await user.click(outsideElement);
-		
+
 		await waitFor(() => {
 			expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
 		});
@@ -54,30 +54,30 @@ describe("ProfileDropdown", () => {
 	it("navigates to profile page when profile link is clicked", async () => {
 		const user = userEvent.setup();
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		// Open dropdown
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
-		
+
 		// Click profile link
 		const profileLink = screen.getByText("My Profile");
 		await user.click(profileLink);
-		
+
 		expect(mockOnPageChange).toHaveBeenCalledWith("profile");
 	});
 
 	it("closes dropdown after navigation", async () => {
 		const user = userEvent.setup();
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		// Open dropdown
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
-		
+
 		// Click profile link
 		const profileLink = screen.getByText("My Profile");
 		await user.click(profileLink);
-		
+
 		await waitFor(() => {
 			expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
 		});
@@ -86,14 +86,14 @@ describe("ProfileDropdown", () => {
 	it("supports keyboard navigation", async () => {
 		const user = userEvent.setup();
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		const profileButton = screen.getByRole("button", { name: /profile/i });
-		
+
 		// Open with Enter key
 		profileButton.focus();
 		await user.keyboard("{Enter}");
 		expect(screen.getByText("John Doe")).toBeInTheDocument();
-		
+
 		// Close with Escape key
 		await user.keyboard("{Escape}");
 		await waitFor(() => {
@@ -103,7 +103,7 @@ describe("ProfileDropdown", () => {
 
 	it("has proper accessibility attributes", () => {
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		expect(profileButton).toHaveAttribute("aria-haspopup", "true");
 		expect(profileButton).toHaveAttribute("aria-expanded", "false");
@@ -112,10 +112,10 @@ describe("ProfileDropdown", () => {
 	it("updates aria-expanded when dropdown opens", async () => {
 		const user = userEvent.setup();
 		render(<ProfileDropdown onPageChange={mockOnPageChange} />);
-		
+
 		const profileButton = screen.getByRole("button", { name: /profile/i });
 		await user.click(profileButton);
-		
+
 		expect(profileButton).toHaveAttribute("aria-expanded", "true");
 	});
 });
