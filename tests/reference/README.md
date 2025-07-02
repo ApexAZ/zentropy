@@ -20,7 +20,7 @@ These tests were created as comprehensive examples but don't match the current A
 ## Current Working Tests:
 
 - `tests/test_startup.py` - Core functionality validation (used in pre-commit)
-- `src/client/**/__tests__/` - React component tests (ProfileDropdown used in pre-commit)
+- `src/client/**/__tests__/` - React component tests (NavigationPanel used in pre-commit)
 
 ## Integration:
 
