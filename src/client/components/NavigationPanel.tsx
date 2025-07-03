@@ -9,7 +9,9 @@ type Page =
 	| "calendar"
 	| "dashboard"
 	| "login"
-	| "team-configuration";
+	| "team-configuration"
+	| "create-project"
+	| "join-project";
 
 interface AuthUser {
 	email: string;
@@ -34,6 +36,7 @@ interface NavigationPanelProps {
 
 const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowRegistration, onShowLogin, auth }) => {
 	const [isOpen, setIsOpen] = useState(false);
+	const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -70,6 +73,20 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 	const handleMenuItemClick = (page: Page): void => {
 		setIsOpen(false);
 		onPageChange(page);
+	};
+
+	const handleProjectsToggle = (): void => {
+		setIsProjectsExpanded(!isProjectsExpanded);
+	};
+
+	const handleShowLogin = (): void => {
+		setIsOpen(false);
+		onShowLogin();
+	};
+
+	const handleShowRegistration = (): void => {
+		setIsOpen(false);
+		onShowRegistration();
 	};
 
 	const handleLogout = async (): Promise<void> => {
@@ -155,7 +172,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 									<div className="-ml-3 flex items-center gap-1">
 										<button
 											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-											onClick={onShowLogin}
+											onClick={handleShowLogin}
 											aria-label="Login"
 										>
 											<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -165,7 +182,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 										</button>
 										<button
 											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-											onClick={onShowRegistration}
+											onClick={handleShowRegistration}
 											aria-label="Register"
 										>
 											<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -201,6 +218,77 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 
 								{auth.user?.has_projects_access && (
 									<>
+										{/* Projects Section - Expandable */}
+										<button
+											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center justify-between border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
+											role="menuitem"
+											onClick={handleProjectsToggle}
+											aria-expanded={isProjectsExpanded}
+										>
+											<div className="flex items-center gap-3">
+												<svg
+													className="text-interactive flex-shrink-0"
+													width="18"
+													height="18"
+													viewBox="0 0 24 24"
+													fill="currentColor"
+												>
+													<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+												</svg>
+												<span>Projects</span>
+											</div>
+											<svg
+												className={`text-text-primary transition-transform duration-200 ${
+													isProjectsExpanded ? "rotate-90" : ""
+												}`}
+												width="16"
+												height="16"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M9 5l7 7-7 7V5z" />
+											</svg>
+										</button>
+
+										{/* Projects Sub-menu */}
+										{isProjectsExpanded && (
+											<div className="bg-layout-background">
+												<button
+													className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent py-3 pr-8 pl-12 text-sm no-underline transition-colors duration-200 focus:outline-none"
+													role="menuitem"
+													onClick={() => handleMenuItemClick("create-project")}
+												>
+													<svg
+														className="text-interactive flex-shrink-0"
+														width="16"
+														height="16"
+														viewBox="0 0 24 24"
+														fill="currentColor"
+													>
+														<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+													</svg>
+													<span>Create Project</span>
+												</button>
+
+												<button
+													className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent py-3 pr-8 pl-12 text-sm no-underline transition-colors duration-200 focus:outline-none"
+													role="menuitem"
+													onClick={() => handleMenuItemClick("join-project")}
+												>
+													<svg
+														className="text-interactive flex-shrink-0"
+														width="16"
+														height="16"
+														viewBox="0 0 24 24"
+														fill="currentColor"
+													>
+														<path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+													</svg>
+													<span>Join Project</span>
+												</button>
+											</div>
+										)}
+
 										<button
 											className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
 											role="menuitem"

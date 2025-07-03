@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { spawn, execSync } = require('child_process');
-const readline = require('readline');
+import { spawn, execSync } from 'child_process';
+import readline from 'readline';
 
 console.log('🚀 Starting Zentropy development environment...\n');
 

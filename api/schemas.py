@@ -56,6 +56,10 @@ class GoogleLoginRequest(BaseModel):
     organization: Optional[str] = None
 
 
+class GoogleOAuthRequest(BaseModel):
+    credential: str
+
+
 # Team schemas
 class TeamBase(BaseModel):
     name: str

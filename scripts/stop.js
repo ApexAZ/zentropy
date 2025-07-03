@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 console.log('🛑 Stopping Zentropy development environment...\n');
 

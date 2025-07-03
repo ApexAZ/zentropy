@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Header from "./components/Header";
-import RegistrationModal from "./components/RegistrationModal";
+import RegistrationMethodModal from "./components/RegistrationMethodModal";
+import EmailRegistrationModal from "./components/EmailRegistrationModal";
 import LoginModal from "./components/LoginModal";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -26,20 +27,35 @@ type Page =
 
 function App(): React.JSX.Element {
 	const [currentPage, setCurrentPage] = useState<Page>("home");
-	const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+	const [showRegistrationMethodModal, setShowRegistrationMethodModal] = useState(false);
+	const [showEmailRegistrationModal, setShowEmailRegistrationModal] = useState(false);
 	const [showLoginModal, setShowLoginModal] = useState(false);
 	const auth = useAuth();
 
 	const handleShowRegistration = (): void => {
-		setShowRegistrationModal(true);
+		setShowRegistrationMethodModal(true);
 	};
 
-	const handleCloseRegistration = (): void => {
-		setShowRegistrationModal(false);
+	const handleCloseRegistrationMethod = (): void => {
+		setShowRegistrationMethodModal(false);
 	};
 
-	const handleRegistrationSuccess = (redirectTo?: string): void => {
-		setShowRegistrationModal(false);
+	const handleSelectEmailRegistration = (): void => {
+		// Method modal closes itself, now show email registration modal
+		setShowEmailRegistrationModal(true);
+	};
+
+	// Google OAuth handler temporarily disabled for debugging
+	// const handleSelectGoogleRegistration = async (credential?: string): Promise<void> => {
+	//   // Implementation temporarily disabled
+	// };
+
+	const handleCloseEmailRegistration = (): void => {
+		setShowEmailRegistrationModal(false);
+	};
+
+	const handleEmailRegistrationSuccess = (redirectTo?: string): void => {
+		setShowEmailRegistrationModal(false);
 		if (redirectTo === "dashboard") {
 			setCurrentPage("dashboard");
 		} else {
@@ -114,10 +130,16 @@ function App(): React.JSX.Element {
 				<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
 			</footer>
 
-			<RegistrationModal
-				isOpen={showRegistrationModal}
-				onClose={handleCloseRegistration}
-				onSuccess={handleRegistrationSuccess}
+			<RegistrationMethodModal
+				isOpen={showRegistrationMethodModal}
+				onClose={handleCloseRegistrationMethod}
+				onSelectEmail={handleSelectEmailRegistration}
+			/>
+
+			<EmailRegistrationModal
+				isOpen={showEmailRegistrationModal}
+				onClose={handleCloseEmailRegistration}
+				onSuccess={handleEmailRegistrationSuccess}
 			/>
 
 			<LoginModal isOpen={showLoginModal} onClose={handleCloseLogin} onSuccess={handleLoginSuccess} auth={auth} />

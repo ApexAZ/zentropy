@@ -22,13 +22,13 @@ interface PasswordRequirements {
 	passwordsMatch: boolean;
 }
 
-interface RegistrationModalProps {
+interface EmailRegistrationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSuccess: (redirectTo?: string) => void;
 }
 
-const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen, onClose, onSuccess }) => {
 	const [formData, setFormData] = useState<RegisterData>({
 		first_name: "",
 		last_name: "",
@@ -356,7 +356,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 						</div>
 					</div>
 
-					{/* Registration Form */}
+					{/* Email Registration Form */}
 					<form onSubmit={e => void handleSubmit(e)} className="p-6" noValidate>
 						{/* Personal Information */}
 						<div className="border-layout-background mb-6 border-b pb-6">
@@ -737,6 +737,7 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 						<button
 							onClick={() => setToast(null)}
 							className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+							aria-label="Close notification"
 						>
 							&times;
 						</button>
@@ -775,4 +776,4 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
 	);
 };
 
-export default RegistrationModal;
+export default EmailRegistrationModal;

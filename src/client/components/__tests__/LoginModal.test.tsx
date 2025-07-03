@@ -328,6 +328,58 @@ describe("LoginModal", () => {
 		});
 	});
 
+	describe("Google OAuth Integration", () => {
+		it("should display Google OAuth button", () => {
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			expect(googleButton).toBeInTheDocument();
+		});
+
+		it("should show Google icon in OAuth button", () => {
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			const googleIcon = googleButton.querySelector("svg");
+			expect(googleIcon).toBeInTheDocument();
+		});
+
+		it("should have proper styling for Google OAuth button", () => {
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			expect(googleButton).toHaveClass("border-layout-background", "bg-content-background");
+		});
+
+		it("should trigger Google OAuth flow when clicked", async () => {
+			const user = userEvent.setup();
+			// Mock Google OAuth API
+			const mockGoogleAuth = vi.fn();
+			global.google = {
+				accounts: {
+					id: {
+						initialize: vi.fn(),
+						prompt: mockGoogleAuth
+					}
+				}
+			};
+
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			await user.click(googleButton);
+
+			// Should initiate Google OAuth flow
+			expect(mockGoogleAuth).toHaveBeenCalled();
+		});
+
+		it("should show divider between regular login and Google OAuth", () => {
+			render(<LoginModal {...defaultProps} />);
+
+			expect(screen.getByText("or continue with email")).toBeInTheDocument();
+		});
+	});
+
 	describe("Accessibility", () => {
 		it("should have proper ARIA attributes", () => {
 			render(<LoginModal {...defaultProps} />);

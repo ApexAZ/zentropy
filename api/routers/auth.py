@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
@@ -12,6 +12,7 @@ from ..schemas import (
     UserResponse,
     MessageResponse,
     GoogleLoginRequest,
+    GoogleOAuthRequest,
 )
 from ..auth import (
     authenticate_user,
@@ -20,6 +21,14 @@ from ..auth import (
     validate_password_strength,
     verify_google_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+)
+from ..google_oauth import (
+    process_google_oauth,
+    GoogleOAuthError,
+    GoogleTokenInvalidError,
+    GoogleEmailUnverifiedError,
+    GoogleConfigurationError,
+    GoogleRateLimitError,
 )
 from .. import database
 from ..database import AuthProvider, Organization
@@ -272,3 +281,60 @@ def google_login(
             "has_projects_access": user.has_projects_access,
         },
     )
+
+
+@router.post("/google-oauth", response_model=LoginResponse)
+def google_oauth_register(
+    request: GoogleOAuthRequest, http_request: Request, db: Session = Depends(get_db)
+) -> LoginResponse:
+    """
+    Register or login user using Google OAuth JWT credential.
+
+    This endpoint:
+    1. Verifies the Google JWT credential
+    2. Creates a new user if they don't exist, or logs in existing user
+    3. Returns an access token and user information
+    """
+    try:
+        # Get client IP for rate limiting
+        client_ip = http_request.client.host if http_request.client else "unknown"
+
+        # Process Google OAuth authentication
+        auth_response = process_google_oauth(db, request.credential, client_ip)
+
+        return LoginResponse(
+            access_token=auth_response["access_token"],
+            token_type=auth_response["token_type"],
+            user=auth_response["user"],
+        )
+
+    except GoogleTokenInvalidError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Google OAuth failed: {str(e)}",
+        )
+    except GoogleEmailUnverifiedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth failed: {str(e)}",
+        )
+    except GoogleConfigurationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google OAuth failed: {str(e)}",
+        )
+    except GoogleRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Google OAuth failed: {str(e)}",
+        )
+    except GoogleOAuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Google OAuth failed: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google OAuth registration failed: {str(e)}",
+        )

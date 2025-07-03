@@ -71,11 +71,22 @@ describe("Registration to Login Flow Integration", () => {
 		const registerButton = screen.getByText("Register");
 		await user.click(registerButton);
 
-		// Verify registration modal is open
+		// Verify registration method modal is open
 		expect(screen.getByRole("dialog")).toBeInTheDocument();
 		expect(screen.getByText("Create Your Account")).toBeInTheDocument();
+		expect(screen.getByText("Choose your preferred registration method")).toBeInTheDocument();
 
-		// Step 2: Fill out registration form
+		// Step 2: Select email registration method
+		const emailMethodButton = screen.getByRole("button", { name: /continue with email/i });
+		await user.click(emailMethodButton);
+
+		// Wait for email registration modal to appear
+		await waitFor(() => {
+			expect(screen.getByText("Create Your Account")).toBeInTheDocument();
+			expect(screen.getByText("Join your team's capacity planning workspace")).toBeInTheDocument();
+		});
+
+		// Step 3: Fill out registration form
 		const firstNameInput = screen.getByLabelText(/first name/i);
 		const lastNameInput = screen.getByLabelText(/last name/i);
 		const emailInput = screen.getByLabelText(/email address/i);
@@ -93,7 +104,7 @@ describe("Registration to Login Flow Integration", () => {
 		await user.type(confirmPasswordInput, "SecurePass123!");
 		await user.click(termsCheckbox);
 
-		// Step 3: Submit registration form
+		// Step 4: Submit registration form
 		const submitButton = screen.getByRole("button", { name: /create account/i });
 		await user.click(submitButton);
 
@@ -109,7 +120,7 @@ describe("Registration to Login Flow Integration", () => {
 			);
 		});
 
-		// Step 4: Verify registration modal closes and login modal opens
+		// Step 5: Verify registration modal closes and login modal opens
 		await waitFor(() => {
 			expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
 		});
@@ -119,7 +130,7 @@ describe("Registration to Login Flow Integration", () => {
 			expect(screen.getByText("Sign in to your Zentropy account")).toBeInTheDocument();
 		});
 
-		// Step 5: Fill out login form
+		// Step 6: Fill out login form
 		const loginEmailInput = screen.getByLabelText(/email address/i);
 		const loginPasswordInput = screen.getByPlaceholderText(/enter your password/i);
 
@@ -127,7 +138,7 @@ describe("Registration to Login Flow Integration", () => {
 		await user.type(loginEmailInput, "integration.test@example.com");
 		await user.type(loginPasswordInput, "SecurePass123!");
 
-		// Step 6: Submit login form
+		// Step 7: Submit login form
 		const signInButton = screen.getByRole("button", { name: /sign in/i });
 		await user.click(signInButton);
 
@@ -143,7 +154,7 @@ describe("Registration to Login Flow Integration", () => {
 			);
 		});
 
-		// Step 7: Verify login modal closes and user stays on current page
+		// Step 8: Verify login modal closes and user stays on current page
 		await waitFor(() => {
 			expect(screen.queryByText("Welcome Back")).not.toBeInTheDocument();
 		});
@@ -177,7 +188,15 @@ describe("Registration to Login Flow Integration", () => {
 		const registerButton = screen.getByText("Register");
 		await user.click(registerButton);
 
-		// Fill out form with existing email
+		// Select email registration method first
+		const emailMethodButton = screen.getByRole("button", { name: /continue with email/i });
+		await user.click(emailMethodButton);
+
+		// Wait for email registration modal and fill out form with existing email
+		await waitFor(() => {
+			expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
+		});
+
 		await user.type(screen.getByLabelText(/first name/i), "Test");
 		await user.type(screen.getByLabelText(/last name/i), "User");
 		await user.type(screen.getByLabelText(/email address/i), "existing@example.com");
@@ -238,6 +257,15 @@ describe("Registration to Login Flow Integration", () => {
 		const registerButton = screen.getByText("Register");
 		await user.click(registerButton);
 
+		// Select email registration method first
+		const emailMethodButton = screen.getByRole("button", { name: /continue with email/i });
+		await user.click(emailMethodButton);
+
+		// Wait for email registration modal and fill out form
+		await waitFor(() => {
+			expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
+		});
+
 		// Quick registration form fill
 		await user.type(screen.getByLabelText(/first name/i), "Test");
 		await user.type(screen.getByLabelText(/last name/i), "User");
@@ -295,8 +323,9 @@ describe("Registration to Login Flow Integration", () => {
 		expect(screen.getByText("Welcome Back")).toBeInTheDocument();
 		expect(screen.getByText("Sign in to your Zentropy account")).toBeInTheDocument();
 
-		// Verify registration modal is NOT open
+		// Verify registration modals are NOT open
 		expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
+		expect(screen.queryByText("Choose your preferred registration method")).not.toBeInTheDocument();
 	});
 
 	it("should close modals when clicking backdrop", async () => {
@@ -311,8 +340,9 @@ describe("Registration to Login Flow Integration", () => {
 		const registerButton = screen.getByText("Register");
 		await user.click(registerButton);
 
-		// Verify modal is open
+		// Verify registration method modal is open
 		expect(screen.getByText("Create Your Account")).toBeInTheDocument();
+		expect(screen.getByText("Choose your preferred registration method")).toBeInTheDocument();
 
 		// Click backdrop to close
 		const backdrop = screen.getByTestId("modal-backdrop");
@@ -320,6 +350,7 @@ describe("Registration to Login Flow Integration", () => {
 
 		// Verify modal closes
 		expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
+		expect(screen.queryByText("Choose your preferred registration method")).not.toBeInTheDocument();
 	});
 
 	it("should close modals when pressing Escape key", async () => {
@@ -334,13 +365,15 @@ describe("Registration to Login Flow Integration", () => {
 		const registerButton = screen.getByText("Register");
 		await user.click(registerButton);
 
-		// Verify modal is open
+		// Verify registration method modal is open
 		expect(screen.getByText("Create Your Account")).toBeInTheDocument();
+		expect(screen.getByText("Choose your preferred registration method")).toBeInTheDocument();
 
 		// Press Escape to close
 		await user.keyboard("{Escape}");
 
 		// Verify modal closes
 		expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
+		expect(screen.queryByText("Choose your preferred registration method")).not.toBeInTheDocument();
 	});
 });

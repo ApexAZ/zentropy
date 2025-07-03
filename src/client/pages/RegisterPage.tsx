@@ -663,6 +663,7 @@ const RegisterPage: React.FC = () => {
 						<button
 							onClick={() => setToast(null)}
 							className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+							aria-label="Close notification"
 						>
 							&times;
 						</button>

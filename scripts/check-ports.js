@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const net = require('net');
+import net from 'net';
 
 function checkPort(port) {
   return new Promise((resolve) => {

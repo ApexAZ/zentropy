@@ -1,0 +1,173 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+
+interface GoogleCredentialResponse {
+	credential: string;
+	clientId?: string;
+}
+
+interface GoogleOAuthConfig {
+	client_id: string;
+	callback: (response: GoogleCredentialResponse) => void;
+	auto_select?: boolean;
+	cancel_on_tap_outside?: boolean;
+}
+
+interface GoogleAccounts {
+	id: {
+		initialize: (config: GoogleOAuthConfig) => void;
+		prompt: () => void;
+		renderButton: (element: HTMLElement, options: GoogleButtonConfig) => void;
+		disableAutoSelect: () => void;
+	};
+}
+
+interface GoogleButtonConfig {
+	theme?: "outline" | "filled_blue" | "filled_black";
+	size?: "large" | "medium" | "small";
+	width?: number;
+	text?: string;
+	shape?: "rectangular" | "pill" | "circle" | "square";
+}
+
+declare global {
+	interface Window {
+		google?: {
+			accounts: GoogleAccounts;
+		};
+	}
+}
+
+interface UseGoogleOAuthProps {
+	onSuccess: (credential: string) => void;
+	onError?: (error: string) => void;
+}
+
+interface UseGoogleOAuthReturn {
+	isReady: boolean;
+	isLoading: boolean;
+	error: string | null;
+	initializeButton: (element: HTMLElement | null) => void;
+}
+
+export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): UseGoogleOAuthReturn => {
+	const [isReady, setIsReady] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const initializedRef = useRef(false);
+
+	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+	const handleCredentialResponse = useCallback(
+		async (response: GoogleCredentialResponse) => {
+			setIsLoading(true);
+			setError(null);
+
+			try {
+				if (!response.credential) {
+					throw new Error("No credential received from Google");
+				}
+
+				await onSuccess(response.credential);
+			} catch (err) {
+				const errorMessage = err instanceof Error ? err.message : "Google OAuth failed";
+				setError(errorMessage);
+				onError?.(errorMessage);
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[onSuccess, onError]
+	);
+
+	// Initialize Google OAuth when component mounts
+
+	useEffect(() => {
+		if (initializedRef.current) return;
+
+		const initializeGoogleOAuth = () => {
+			if (!window.google?.accounts?.id) {
+				setError("Google Identity Services not available");
+				return;
+			}
+
+			if (!clientId) {
+				setError("Google Sign-In not configured");
+				return;
+			}
+
+			try {
+				console.log("Initializing Google OAuth with Client ID:", clientId);
+				console.log("Current origin:", window.location.origin);
+
+				window.google.accounts.id.initialize({
+					client_id: clientId,
+					callback: handleCredentialResponse,
+					auto_select: false,
+					cancel_on_tap_outside: true
+				});
+
+				setIsReady(true);
+				setError(null);
+				initializedRef.current = true;
+				console.log("Google OAuth initialized successfully");
+			} catch (err) {
+				console.error("Google OAuth initialization failed:", err);
+				setError("Failed to initialize Google OAuth");
+				onError?.("Failed to initialize Google OAuth");
+			}
+		};
+
+		// Check if Google Identity Services is already loaded
+		if (window.google?.accounts?.id) {
+			console.log("Google Identity Services already loaded");
+			initializeGoogleOAuth();
+		} else {
+			console.log("Waiting for Google Identity Services to load...");
+			// Wait for Google Identity Services to load
+			const checkGoogleLoaded = setInterval(() => {
+				if (window.google?.accounts?.id) {
+					console.log("Google Identity Services loaded successfully");
+					clearInterval(checkGoogleLoaded);
+					initializeGoogleOAuth();
+				}
+			}, 100);
+
+			// Extended timeout to 30 seconds for slower connections
+			setTimeout(() => {
+				clearInterval(checkGoogleLoaded);
+				if (!isReady) {
+					console.error("Google Identity Services failed to load after 30 seconds");
+					setError("Google Identity Services failed to load");
+				}
+			}, 30000);
+
+			return () => clearInterval(checkGoogleLoaded);
+		}
+	}, [clientId, onError, isReady, handleCredentialResponse]);
+
+	const initializeButton = (element: HTMLElement | null) => {
+		if (!element || !isReady || !window.google?.accounts?.id) {
+			return;
+		}
+
+		try {
+			window.google.accounts.id.renderButton(element, {
+				theme: "outline",
+				size: "large",
+				width: element.offsetWidth || 200,
+				text: "signin_with",
+				shape: "rectangular"
+			});
+		} catch {
+			setError("Failed to render Google Sign-In button");
+			onError?.("Failed to render Google Sign-In button");
+		}
+	};
+
+	return {
+		isReady: isReady && !error,
+		isLoading,
+		error,
+		initializeButton
+	};
+};

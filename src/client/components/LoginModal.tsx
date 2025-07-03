@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
+import OAuthProviders from "./OAuthProviders";
 
 interface LoginData {
 	email: string;
@@ -174,6 +175,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 		setShowPassword(prev => !prev);
 	};
 
+	const handleGoogleSignIn = (credentialResponse: any): void => {
+		console.log("Google OAuth credential:", credentialResponse);
+		// TODO: Process the Google credential and call your backend API
+		// The credential contains a JWT token with user info
+	};
+
 	if (!isOpen) {
 		return null;
 	}
@@ -213,8 +220,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 						</div>
 					</div>
 
+					{/* OAuth Providers Section */}
+					<div className="p-6 pb-0">
+						<OAuthProviders onGoogleSignIn={handleGoogleSignIn} disabled={isLoading} />
+					</div>
+
 					{/* Login Form */}
-					<form onSubmit={e => void handleSubmit(e)} className="p-6" noValidate>
+					<form onSubmit={e => void handleSubmit(e)} className="p-6 pt-0" noValidate>
 						<div className="mb-4 flex flex-col gap-2">
 							<label htmlFor="email" className="text-text-primary block text-sm font-medium">
 								Email Address
@@ -350,6 +362,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 						<button
 							onClick={() => setToast(null)}
 							className="opacity-80 transition-opacity duration-200 hover:opacity-100"
+							aria-label="Close notification"
 						>
 							&times;
 						</button>

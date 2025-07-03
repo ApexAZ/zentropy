@@ -2,13 +2,13 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import RegistrationModal from "../RegistrationModal";
+import EmailRegistrationModal from "../EmailRegistrationModal";
 
 // Mock fetch for API calls
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe("RegistrationModal", () => {
+describe("EmailRegistrationModal", () => {
 	const defaultProps = {
 		isOpen: true,
 		onClose: vi.fn(),
@@ -30,14 +30,14 @@ describe("RegistrationModal", () => {
 
 	describe("Modal Rendering", () => {
 		it("should render modal when isOpen is true", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			expect(screen.getByRole("dialog")).toBeInTheDocument();
 			expect(screen.getByText("Create Your Account")).toBeInTheDocument();
 		});
 
 		it("should not render modal when isOpen is false", () => {
-			render(<RegistrationModal {...defaultProps} isOpen={false} />);
+			render(<EmailRegistrationModal {...defaultProps} isOpen={false} />);
 
 			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		});
@@ -46,7 +46,7 @@ describe("RegistrationModal", () => {
 			render(
 				<div>
 					<div data-testid="page-content">Page Content Behind Modal</div>
-					<RegistrationModal {...defaultProps} />
+					<EmailRegistrationModal {...defaultProps} />
 				</div>
 			);
 
@@ -72,7 +72,7 @@ describe("RegistrationModal", () => {
 
 	describe("Registration Form", () => {
 		it("should display all form fields with correct required/optional status", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Required fields
 			expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe("RegistrationModal", () => {
 		});
 
 		it("should display terms agreement checkbox", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			expect(screen.getByRole("checkbox")).toBeInTheDocument();
 			expect(screen.getByText("Terms of Service")).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("RegistrationModal", () => {
 		});
 
 		it("should show password requirements", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
 			expect(screen.getByText(/one uppercase letter/i)).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("RegistrationModal", () => {
 		});
 
 		it("should display red borders and asterisks for empty required fields", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Required fields should have red borders when empty
 			const firstNameInput = screen.getByLabelText(/first name/i);
@@ -130,7 +130,7 @@ describe("RegistrationModal", () => {
 
 		it("should remove red borders and asterisks when required fields have text", async () => {
 			const user = userEvent.setup();
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const firstNameInput = screen.getByLabelText(/first name/i);
 
@@ -146,7 +146,7 @@ describe("RegistrationModal", () => {
 		});
 
 		it("should not show red borders or asterisks for optional organization field", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const organizationInput = screen.getByLabelText(/organization/i);
 
@@ -161,7 +161,7 @@ describe("RegistrationModal", () => {
 			const user = userEvent.setup();
 			const onClose = vi.fn();
 
-			render(<RegistrationModal {...defaultProps} onClose={onClose} />);
+			render(<EmailRegistrationModal {...defaultProps} onClose={onClose} />);
 
 			const closeButton = screen.getByRole("button", { name: /close/i });
 			await user.click(closeButton);
@@ -173,7 +173,7 @@ describe("RegistrationModal", () => {
 			const user = userEvent.setup();
 			const onClose = vi.fn();
 
-			render(<RegistrationModal {...defaultProps} onClose={onClose} />);
+			render(<EmailRegistrationModal {...defaultProps} onClose={onClose} />);
 
 			const backdrop = screen.getByTestId("modal-backdrop");
 			await user.click(backdrop);
@@ -185,7 +185,7 @@ describe("RegistrationModal", () => {
 			const user = userEvent.setup();
 			const onClose = vi.fn();
 
-			render(<RegistrationModal {...defaultProps} onClose={onClose} />);
+			render(<EmailRegistrationModal {...defaultProps} onClose={onClose} />);
 
 			await user.keyboard("{Escape}");
 
@@ -197,7 +197,7 @@ describe("RegistrationModal", () => {
 		it("should validate required fields", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Try to submit empty form
 			const submitButton = screen.getByRole("button", { name: /create account/i });
@@ -211,7 +211,7 @@ describe("RegistrationModal", () => {
 		it("should validate email format", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const emailInput = screen.getByLabelText(/email address/i);
 			await user.type(emailInput, "invalid-email");
@@ -225,7 +225,7 @@ describe("RegistrationModal", () => {
 		it("should validate password requirements", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			await user.type(passwordInput, "weak");
@@ -239,7 +239,7 @@ describe("RegistrationModal", () => {
 		it("should validate password confirmation", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
@@ -256,7 +256,7 @@ describe("RegistrationModal", () => {
 		it("should validate terms agreement", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Fill in valid form data but don't check terms
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -277,7 +277,7 @@ describe("RegistrationModal", () => {
 		it("should toggle password visibility with eye icons", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			const toggleButton = screen.getAllByLabelText(/toggle password visibility/i)[0];
@@ -303,7 +303,7 @@ describe("RegistrationModal", () => {
 		it("should show password strength indicator", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 
@@ -320,7 +320,7 @@ describe("RegistrationModal", () => {
 		it("should update password requirement checklist dynamically", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			await user.type(passwordInput, "StrongPass123!");
@@ -333,7 +333,7 @@ describe("RegistrationModal", () => {
 		it("should show password match indicator in requirements checklist", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const passwordInput = screen.getByPlaceholderText(/create a secure password/i);
 			const confirmPasswordInput = screen.getByPlaceholderText(/confirm your password/i);
@@ -381,7 +381,7 @@ describe("RegistrationModal", () => {
 				json: async () => ({ available: true })
 			});
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const emailInput = screen.getByLabelText(/email address/i);
 			await user.type(emailInput, "test@example.com");
@@ -402,7 +402,7 @@ describe("RegistrationModal", () => {
 				json: async () => ({ available: false })
 			});
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const emailInput = screen.getByLabelText(/email address/i);
 			await user.type(emailInput, "taken@example.com");
@@ -418,7 +418,7 @@ describe("RegistrationModal", () => {
 			const user = userEvent.setup();
 			const onSuccess = vi.fn();
 
-			render(<RegistrationModal {...defaultProps} onSuccess={onSuccess} />);
+			render(<EmailRegistrationModal {...defaultProps} onSuccess={onSuccess} />);
 
 			// Fill in valid form
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -468,7 +468,7 @@ describe("RegistrationModal", () => {
 					)
 			);
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Fill form and submit
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -494,7 +494,7 @@ describe("RegistrationModal", () => {
 				json: async () => ({ message: "Email already exists" })
 			});
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Fill form and submit
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -518,7 +518,7 @@ describe("RegistrationModal", () => {
 		it("should show success modal after registration", async () => {
 			const user = userEvent.setup();
 
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			// Fill form and submit
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -541,7 +541,7 @@ describe("RegistrationModal", () => {
 			const user = userEvent.setup();
 			const onSuccess = vi.fn();
 
-			render(<RegistrationModal {...defaultProps} onSuccess={onSuccess} />);
+			render(<EmailRegistrationModal {...defaultProps} onSuccess={onSuccess} />);
 
 			// Complete registration flow
 			await user.type(screen.getByLabelText(/first name/i), "John");
@@ -567,7 +567,7 @@ describe("RegistrationModal", () => {
 
 	describe("Accessibility", () => {
 		it("should have proper ARIA attributes", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const modal = screen.getByRole("dialog");
 			expect(modal).toHaveAttribute("aria-labelledby");
@@ -575,7 +575,7 @@ describe("RegistrationModal", () => {
 		});
 
 		it("should trap focus within modal", () => {
-			render(<RegistrationModal {...defaultProps} />);
+			render(<EmailRegistrationModal {...defaultProps} />);
 
 			const closeButton = screen.getByRole("button", { name: /close/i });
 
