@@ -43,12 +43,12 @@ describe("LoginModal", () => {
 		mockAuth.login.mockClear();
 		mockAuth.logout.mockClear();
 		mockTriggerOAuth.mockClear();
-		
+
 		// Reset Google OAuth mock state
 		mockGoogleOAuth.isReady = true;
 		mockGoogleOAuth.isLoading = false;
 		mockGoogleOAuth.error = null;
-		
+
 		// Mock successful API responses by default
 		mockFetch.mockResolvedValue({
 			ok: true,
@@ -434,7 +434,7 @@ describe("LoginModal", () => {
 
 			const googleButton = screen.getByRole("button", { name: /loading/i });
 			expect(googleButton).toBeDisabled();
-			
+
 			// Should show loading spinner
 			const spinner = googleButton.querySelector('[role="progressbar"]');
 			expect(spinner).toBeInTheDocument();

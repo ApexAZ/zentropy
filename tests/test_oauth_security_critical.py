@@ -36,7 +36,7 @@ class TestCriticalOAuthSecurity:
     """CRITICAL security tests for OAuth implementation."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_email_hijacking_prevention_real_database(self, mock_verify_google_token, db_session):
+    def test_email_hijacking_prevention_real_database(self, mock_verify_google_token, db_session, client):
         """🚨 CRITICAL: Test that Google OAuth cannot hijack existing local accounts (real DB test)."""
         
         # Step 1: Create existing local user
@@ -108,7 +108,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Original user account remains secure and unchanged")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_user_can_login_with_different_email(self, mock_verify_google_token, db_session):
+    def test_google_user_can_login_with_different_email(self, mock_verify_google_token, db_session, client):
         """✅ POSITIVE TEST: Google users can create accounts with different emails."""
         
         # Step 1: Create existing local user
@@ -162,7 +162,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Both users coexist safely with different emails")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_existing_google_user_can_login_again(self, mock_verify_google_token, db_session):
+    def test_existing_google_user_can_login_again(self, mock_verify_google_token, db_session, client):
         """✅ POSITIVE TEST: Existing Google users can login again."""
         
         # Step 1: Create existing Google user
@@ -204,7 +204,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Existing Google user successfully re-authenticated")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_workspace_organization_extraction(self, mock_verify_google_token, db_session):
+    def test_google_workspace_organization_extraction(self, mock_verify_google_token, db_session, client):
         """✅ TEST: Google Workspace users get organization from hosted domain."""
         
         # Mock Google Workspace user (has 'hd' field)
@@ -232,7 +232,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Google Workspace organization extracted: {user.organization}")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_gmail_user_organization_fallback(self, mock_verify_google_token, db_session):
+    def test_gmail_user_organization_fallback(self, mock_verify_google_token, db_session, client):
         """✅ TEST: Regular Gmail users get organization from email domain."""
         
         # Mock regular Gmail user (no 'hd' field)

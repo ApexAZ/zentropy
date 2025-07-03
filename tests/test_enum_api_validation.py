@@ -11,13 +11,10 @@ from unittest.mock import patch
 
 from api.main import app
 
-client = TestClient(app)
-
-
 class TestAPIEnumValidation:
     """Test that API endpoints properly validate enum inputs."""
 
-    def test_registration_with_invalid_role_returns_422(self):
+    def test_registration_with_invalid_role_returns_422(self, client):
         """Test user registration with invalid role returns validation error."""
         invalid_user_data = {
             "email": "invalid-role@example.com",
@@ -39,7 +36,7 @@ class TestAPIEnumValidation:
         error_str = str(error_detail["detail"])
         assert "role" in error_str.lower()
 
-    def test_registration_with_invalid_has_projects_access_type(self):
+    def test_registration_with_invalid_has_projects_access_type(self, client):
         """Test registration with invalid has_projects_access type."""
         invalid_user_data = {
             "email": "invalid-projects@example.com",
@@ -54,7 +51,7 @@ class TestAPIEnumValidation:
         response = client.post("/api/auth/register", json=invalid_user_data)
         assert response.status_code == 422
 
-    def test_team_creation_with_valid_data_works(self):
+    def test_team_creation_with_valid_data_works(self, client):
         """Test team creation with valid data works (control test)."""
         # This test verifies that valid enum values work correctly
         # Note: This would need authentication setup to work fully
@@ -71,7 +68,7 @@ class TestAPIEnumValidation:
         # Should NOT be 422 (validation error) - auth error is expected
         assert response.status_code != 422
 
-    def test_organization_creation_with_invalid_industry_returns_422(self):
+    def test_organization_creation_with_invalid_industry_returns_422(self, client):
         """Test organization creation with invalid industry type."""
         # Note: If organization creation endpoint exists and accepts industry
         invalid_org_data = {
@@ -87,7 +84,7 @@ class TestAPIEnumValidation:
         # We're checking it's NOT 500 (server error from enum issues)
         assert response.status_code != 500
 
-    def test_organization_creation_with_invalid_org_type_returns_422(self):
+    def test_organization_creation_with_invalid_org_type_returns_422(self, client):
         """Test organization creation with invalid organization type."""
         invalid_org_data = {
             "name": "Test Organization", 
@@ -104,7 +101,7 @@ class TestAPIEnumValidation:
 class TestEnumAPIResponseConsistency:
     """Test that API responses include enum values correctly."""
 
-    def test_user_response_contains_proper_enum_values(self):
+    def test_user_response_contains_proper_enum_values(self, client):
         """Test that user API responses contain enum values, not names."""
         user_data = {
             "email": "enum-response@example.com",
@@ -129,7 +126,7 @@ class TestEnumAPIResponseConsistency:
         assert isinstance(user_response["email_verified"], bool)
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_response_contains_proper_enum_values(self, mock_verify_token):
+    def test_google_oauth_response_contains_proper_enum_values(self, mock_verify_token, client):
         """Test Google OAuth responses contain proper enum values."""
         mock_verify_token.return_value = {
             "email": "oauth-enum@example.com",
@@ -155,7 +152,7 @@ class TestEnumAPIResponseConsistency:
 class TestEnumCaseHandling:
     """Test enum case sensitivity and validation."""
 
-    def test_enum_values_are_case_sensitive(self):
+    def test_enum_values_are_case_sensitive(self, client):
         """Test that enum values are case sensitive."""
         # Test with wrong case
         user_data = {
@@ -173,7 +170,7 @@ class TestEnumCaseHandling:
         # Should return validation error for invalid case
         assert response.status_code == 422
 
-    def test_enum_extra_spaces_rejected(self):
+    def test_enum_extra_spaces_rejected(self, client):
         """Test that enum values with extra spaces are rejected."""
         user_data = {
             "email": "space-test@example.com",
@@ -194,7 +191,7 @@ class TestEnumCaseHandling:
 class TestEnumBoundaryValues:
     """Test enum boundary conditions and edge cases."""
 
-    def test_null_enum_values_handled_correctly(self):
+    def test_null_enum_values_handled_correctly(self, client):
         """Test that optional enum fields handle null values correctly."""
         # Organization industry and organization_type are optional (nullable=True)
         org_data = {
@@ -209,7 +206,7 @@ class TestEnumBoundaryValues:
         # Should not fail with validation error (422) or server error (500)
         assert response.status_code not in [422, 500]
 
-    def test_empty_string_enum_values_rejected(self):
+    def test_empty_string_enum_values_rejected(self, client):
         """Test that empty string enum values are rejected."""
         user_data = {
             "email": "empty-enum@example.com",

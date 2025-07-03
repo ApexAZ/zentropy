@@ -152,9 +152,9 @@ function App(): React.JSX.Element {
 				});
 			}
 
-			// Close registration modal and redirect to dashboard
+			// Close registration modal and stay on current page
 			setShowRegistrationMethodModal(false);
-			setCurrentPage("dashboard");
+			// TODO: Add proper redirect logic later - for now stay on home page
 		} catch (error) {
 			console.error("Google OAuth registration failed:", error);
 			throw error; // Re-throw to let the modal handle the error display

@@ -10,17 +10,17 @@ from sqlalchemy.exc import DataError, IntegrityError
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.database import get_db, User, Organization, TeamMembership, TeamInvitation
+from api.database import User
+
+# Note: Using isolated test database fixtures from conftest.py
+# This ensures tests don't pollute the main database, Organization, TeamMembership, TeamInvitation
 from api.database import UserRole, AuthProvider, RegistrationType, TeamRole, InvitationStatus
 from api.database import IndustryType, OrganizationType
-
-client = TestClient(app)
-
 
 class TestDatabaseEnumConstraints:
     """Test that database properly validates enum constraints."""
 
-    def test_user_role_invalid_value_rejected(self):
+    def test_user_role_invalid_value_rejected(self, client):
         """Test that invalid UserRole values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -34,7 +34,7 @@ class TestDatabaseEnumConstraints:
                 db.add(user)
                 db.commit()
 
-    def test_auth_provider_invalid_value_rejected(self):
+    def test_auth_provider_invalid_value_rejected(self, client):
         """Test that invalid AuthProvider values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -48,7 +48,7 @@ class TestDatabaseEnumConstraints:
                 db.add(user)
                 db.commit()
 
-    def test_registration_type_invalid_value_rejected(self):
+    def test_registration_type_invalid_value_rejected(self, client):
         """Test that invalid RegistrationType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -62,7 +62,7 @@ class TestDatabaseEnumConstraints:
                 db.add(user)
                 db.commit()
 
-    def test_team_role_invalid_value_rejected(self):
+    def test_team_role_invalid_value_rejected(self, client):
         """Test that invalid TeamRole values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -74,7 +74,7 @@ class TestDatabaseEnumConstraints:
                 db.add(membership)
                 db.commit()
 
-    def test_invitation_status_invalid_value_rejected(self):
+    def test_invitation_status_invalid_value_rejected(self, client):
         """Test that invalid InvitationStatus values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             from datetime import datetime, timedelta
@@ -90,7 +90,7 @@ class TestDatabaseEnumConstraints:
                 db.add(invitation)
                 db.commit()
 
-    def test_industry_type_invalid_value_rejected(self):
+    def test_industry_type_invalid_value_rejected(self, client):
         """Test that invalid IndustryType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -101,7 +101,7 @@ class TestDatabaseEnumConstraints:
                 db.add(org)
                 db.commit()
 
-    def test_organization_type_invalid_value_rejected(self):
+    def test_organization_type_invalid_value_rejected(self, client):
         """Test that invalid OrganizationType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             with next(get_db()) as db:
@@ -116,7 +116,7 @@ class TestDatabaseEnumConstraints:
 class TestEnumValuesCallableIntegration:
     """Test that values_callable pattern works correctly for all enum columns."""
 
-    def test_user_role_values_callable_works(self):
+    def test_user_role_values_callable_works(self, client):
         """Test UserRole enum uses values, not names in database."""
         with next(get_db()) as db:
             user = User(
@@ -135,7 +135,7 @@ class TestEnumValuesCallableIntegration:
             # Verify database stores the value, not the name
             assert user.role.value == "basic_user"
 
-    def test_registration_type_values_callable_works(self):
+    def test_registration_type_values_callable_works(self, client):
         """Test RegistrationType enum uses values, not names in database."""
         with next(get_db()) as db:
             user = User(
@@ -154,7 +154,7 @@ class TestEnumValuesCallableIntegration:
             # Verify database stores the value, not the name
             assert user.registration_type.value == "email"
 
-    def test_auth_provider_values_callable_works(self):
+    def test_auth_provider_values_callable_works(self, client):
         """Test AuthProvider enum uses values, not names in database."""
         with next(get_db()) as db:
             user = User(
@@ -177,7 +177,7 @@ class TestEnumValuesCallableIntegration:
 class TestCrossEnumInteractions:
     """Test scenarios involving multiple enums working together."""
 
-    def test_google_oauth_sets_both_auth_and_registration_enums(self):
+    def test_google_oauth_sets_both_auth_and_registration_enums(self, client):
         """Test Google OAuth users get both AuthProvider.GOOGLE and RegistrationType.GOOGLE_OAUTH."""
         with next(get_db()) as db:
             user = User(
@@ -198,7 +198,7 @@ class TestCrossEnumInteractions:
             assert user.registration_type == RegistrationType.GOOGLE_OAUTH
             assert user.email_verified is True
 
-    def test_email_registration_sets_correct_enum_combination(self):
+    def test_email_registration_sets_correct_enum_combination(self, client):
         """Test email registration users get AuthProvider.LOCAL and RegistrationType.EMAIL."""
         with next(get_db()) as db:
             user = User(
@@ -219,7 +219,7 @@ class TestCrossEnumInteractions:
             assert user.registration_type == RegistrationType.EMAIL
             assert user.email_verified is False
 
-    def test_team_role_admin_with_user_role_admin_consistency(self):
+    def test_team_role_admin_with_user_role_admin_consistency(self, client):
         """Test that system admin users can have team admin roles consistently."""
         # This tests that enum combinations make sense semantically
         user_role = UserRole.ADMIN

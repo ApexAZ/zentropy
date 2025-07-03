@@ -3,7 +3,8 @@ from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 from api.main import app
 
-client = TestClient(app)
+# Note: Using isolated test database fixtures from conftest.py
+# This ensures tests don't pollute the main database
 
 
 class TestGoogleOAuthEndpoint:
@@ -29,7 +30,7 @@ class TestGoogleOAuthEndpoint:
             "exp": 1234567890 + 3600
         }
 
-    def test_google_oauth_endpoint_exists(self):
+    def test_google_oauth_endpoint_exists(self, client):
         """Test that Google OAuth endpoint exists and accepts POST requests"""
         # This test will FAIL initially - endpoint not implemented yet
         response = client.post("/api/auth/google-oauth", json={
@@ -40,7 +41,7 @@ class TestGoogleOAuthEndpoint:
         assert response.status_code != 404
         assert response.status_code in [200, 400, 401, 422, 500]  # Valid responses
 
-    def test_google_oauth_requires_credential(self):
+    def test_google_oauth_requires_credential(self, client):
         """Test that Google OAuth endpoint requires credential parameter"""
         # This test will FAIL initially - validation not implemented
         response = client.post("/api/auth/google-oauth", json={})
@@ -50,7 +51,7 @@ class TestGoogleOAuthEndpoint:
         assert "credential" in str(error_data)
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_successful_registration(self, mock_verify, mock_google_token):
+    def test_google_oauth_successful_registration(self, mock_verify, mock_google_token, client):
         """Test successful Google OAuth registration flow"""
         # This test will FAIL initially - Google OAuth flow not implemented
         mock_verify.return_value = mock_google_token
@@ -72,7 +73,7 @@ class TestGoogleOAuthEndpoint:
         assert data["user"]["last_name"] == "User"
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_invalid_token(self, mock_verify):
+    def test_google_oauth_invalid_token(self, mock_verify, client):
         """Test Google OAuth with invalid token"""
         # This test will FAIL initially - token validation not implemented
         from api.google_oauth import GoogleTokenInvalidError
@@ -87,7 +88,7 @@ class TestGoogleOAuthEndpoint:
         assert "Invalid token" in error_data["detail"]
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_existing_user_login(self, mock_verify, mock_google_token):
+    def test_google_oauth_existing_user_login(self, mock_verify, mock_google_token, client):
         """Test Google OAuth with existing user (login instead of registration)"""
         # This test will FAIL initially - existing user handling not implemented
         mock_verify.return_value = mock_google_token
@@ -108,7 +109,7 @@ class TestGoogleOAuthEndpoint:
         assert data["user"]["email"] == "test.user@gmail.com"
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_unverified_email(self, mock_verify):
+    def test_google_oauth_unverified_email(self, mock_verify, client):
         """Test Google OAuth with unverified email"""
         # This test will FAIL initially - email verification check not implemented
         from api.google_oauth import GoogleEmailUnverifiedError
@@ -122,7 +123,7 @@ class TestGoogleOAuthEndpoint:
         error_data = response.json()
         assert "email must be verified" in error_data["detail"].lower()
 
-    def test_google_oauth_missing_environment_config(self):
+    def test_google_oauth_missing_environment_config(self, client):
         """Test Google OAuth when environment configuration is missing"""
         # This test will FAIL initially - environment validation not implemented
         with patch.dict('os.environ', {}, clear=True):
@@ -135,7 +136,7 @@ class TestGoogleOAuthEndpoint:
             assert "Google OAuth not configured" in error_data["detail"]
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_database_error_handling(self, mock_verify, mock_google_token):
+    def test_google_oauth_database_error_handling(self, mock_verify, mock_google_token, client):
         """Test Google OAuth when database operations fail"""
         # This test will FAIL initially - database error handling not implemented
         mock_verify.return_value = mock_google_token
@@ -152,7 +153,7 @@ class TestGoogleOAuthEndpoint:
             assert "registration failed" in error_data["detail"].lower()
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_sets_projects_access_default(self, mock_verify, mock_google_token):
+    def test_google_oauth_sets_projects_access_default(self, mock_verify, mock_google_token, client):
         """Test that Google OAuth users get default projects access"""
         # This test will FAIL initially - projects access logic not implemented
         mock_verify.return_value = mock_google_token
@@ -167,7 +168,7 @@ class TestGoogleOAuthEndpoint:
 
     @patch('api.google_oauth.verify_google_token')
     @patch('api.google_oauth.check_rate_limit')
-    def test_google_oauth_rate_limiting(self, mock_rate_limit, mock_verify, mock_google_token):
+    def test_google_oauth_rate_limiting(self, mock_rate_limit, mock_verify, mock_google_token, client):
         """Test that Google OAuth respects rate limiting"""
         # This test will FAIL initially - rate limiting not implemented
         mock_verify.return_value = mock_google_token

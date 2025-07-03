@@ -12,22 +12,22 @@ from sqlalchemy.orm import Session
 from unittest.mock import patch
 
 from api.main import app
-from api.database import get_db, User, RegistrationType
+from api.database import User
+
+# Note: Using isolated test database fixtures from conftest.py
+# This ensures tests don't pollute the main database, RegistrationType
 from api.schemas import UserCreate, GoogleOAuthRequest
-
-client = TestClient(app)
-
 
 class TestRegistrationTypeEnum:
     """Test RegistrationType enum values and database constraints."""
 
-    def test_registration_type_enum_values(self):
+    def test_registration_type_enum_values(self, client):
         """Test that RegistrationType enum has correct values."""
         # This should FAIL initially since RegistrationType doesn't exist yet
         assert RegistrationType.EMAIL.value == "email"
         assert RegistrationType.GOOGLE_OAUTH.value == "google_oauth"
 
-    def test_registration_type_enum_count(self):
+    def test_registration_type_enum_count(self, client):
         """Test that RegistrationType enum has exactly 2 values."""
         expected_values = ["email", "google_oauth"]
         actual_values = [rt.value for rt in RegistrationType]
@@ -38,7 +38,7 @@ class TestRegistrationTypeEnum:
 class TestUserModelRegistrationType:
     """Test User model registration_type field."""
 
-    def test_user_model_has_registration_type_field(self):
+    def test_user_model_has_registration_type_field(self, client):
         """Test that User model includes registration_type field."""
         # This should FAIL initially since registration_type field doesn't exist
         user = User(
@@ -50,7 +50,7 @@ class TestUserModelRegistrationType:
         )
         assert user.registration_type == RegistrationType.EMAIL
 
-    def test_user_registration_type_defaults_to_email(self):
+    def test_user_registration_type_defaults_to_email(self, client):
         """Test that registration_type defaults to EMAIL when saved to database."""
         user = User(
             email="test@example.com", 
@@ -68,7 +68,7 @@ class TestUserModelRegistrationType:
             # Should default to EMAIL registration type
             assert user.registration_type == RegistrationType.EMAIL
 
-    def test_user_can_be_created_with_google_oauth_registration_type(self):
+    def test_user_can_be_created_with_google_oauth_registration_type(self, client):
         """Test that users can be created with GOOGLE_OAUTH registration type."""
         user = User(
             email="oauth@example.com",
@@ -83,7 +83,7 @@ class TestUserModelRegistrationType:
 class TestEmailRegistrationWithType:
     """Test email registration sets registration_type=EMAIL."""
 
-    def test_email_registration_sets_email_type(self):
+    def test_email_registration_sets_email_type(self, client):
         """Test that email registration sets registration_type to EMAIL."""
         # This should FAIL initially since endpoint doesn't set registration_type
         user_data = {
@@ -104,7 +104,7 @@ class TestEmailRegistrationWithType:
             assert user is not None
             assert user.registration_type == RegistrationType.EMAIL
 
-    def test_multiple_email_registrations_all_have_email_type(self):
+    def test_multiple_email_registrations_all_have_email_type(self, client):
         """Test that multiple email registrations all get EMAIL type."""
         users_data = [
             {
@@ -141,7 +141,7 @@ class TestGoogleOAuthRegistrationWithType:
     """Test Google OAuth registration sets registration_type=GOOGLE_OAUTH."""
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_registration_sets_google_type(self, mock_verify_token):
+    def test_google_oauth_registration_sets_google_type(self, mock_verify_token, client):
         """Test that Google OAuth registration sets registration_type to GOOGLE_OAUTH."""
         # Mock Google token verification to return valid user info
         mock_verify_token.return_value = {
@@ -166,7 +166,7 @@ class TestGoogleOAuthRegistrationWithType:
             assert user.registration_type == RegistrationType.GOOGLE_OAUTH
 
     @patch('api.google_oauth.verify_google_token')
-    def test_multiple_google_oauth_registrations_all_have_google_type(self, mock_verify_token):
+    def test_multiple_google_oauth_registrations_all_have_google_type(self, mock_verify_token, client):
         """Test that multiple Google OAuth registrations all get GOOGLE_OAUTH type."""
         # Mock different Google OAuth users
         oauth_users = [
@@ -218,7 +218,7 @@ class TestGoogleOAuthRegistrationWithType:
 class TestRegistrationTypeInResponses:
     """Test that registration_type is included in API responses."""
 
-    def test_user_response_includes_registration_type(self):
+    def test_user_response_includes_registration_type(self, client):
         """Test that user API responses include registration_type field."""
         # Create a user first
         user_data = {
@@ -239,7 +239,7 @@ class TestRegistrationTypeInResponses:
         assert user_response["registration_type"] == "email"
 
     @patch('api.routers.auth.process_google_oauth')
-    def test_google_oauth_response_includes_registration_type(self, mock_process_oauth):
+    def test_google_oauth_response_includes_registration_type(self, mock_process_oauth, client):
         """Test that Google OAuth responses include registration_type field."""
         mock_process_oauth.return_value = {
             "access_token": "test-token",
@@ -268,7 +268,7 @@ class TestRegistrationTypeInResponses:
 class TestRegistrationTypeImmutable:
     """Test that registration_type cannot be changed after user creation."""
 
-    def test_registration_type_is_immutable_via_api(self):
+    def test_registration_type_is_immutable_via_api(self, client):
         """Test that registration_type cannot be updated via user update API."""
         # Create user with email registration
         user_data = {

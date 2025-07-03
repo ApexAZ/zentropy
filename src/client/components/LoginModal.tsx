@@ -258,9 +258,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 						has_projects_access: data.user.has_projects_access || false,
 						email_verified: data.user.email_verified || false
 					};
-					
+
 					auth.login(data.access_token, user, formData.remember_me);
-					
+
 					// Clear form and close modal
 					clearForm();
 					onSuccess();
@@ -292,7 +292,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 			});
 			return;
 		}
-		
+
 		triggerOAuth();
 	};
 
@@ -339,7 +339,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 					<div className="p-6 pb-0">
 						<div className="w-full">
 							<div className="mb-6">
-								<p className="text-text-primary mb-4 text-center text-sm">Continue with your preferred account</p>
+								<p className="text-text-primary mb-4 text-center text-sm">
+									Continue with your preferred account
+								</p>
 
 								{/* Error Display */}
 								{googleError && (
@@ -451,7 +453,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 							{/* Divider */}
 							<div className="my-6 flex items-center">
 								<div className="border-layout-background flex-1 border-t"></div>
-								<span className="text-text-primary bg-content-background px-4 text-sm">or continue with email</span>
+								<span className="text-text-primary bg-content-background px-4 text-sm">
+									or continue with email
+								</span>
 								<div className="border-layout-background flex-1 border-t"></div>
 							</div>
 						</div>

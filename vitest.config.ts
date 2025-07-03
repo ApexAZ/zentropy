@@ -13,6 +13,10 @@ export default defineConfig({
 		testTimeout: 10000,
 		// Suppress React act() warnings in test environment
 		silent: false,
-		logHeapUsage: false
+		logHeapUsage: false,
+		// Environment variables for tests
+		env: {
+			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"
+		}
 	}
 });

@@ -51,6 +51,14 @@ describe("Registration to Login Flow Integration", () => {
 				});
 			}
 
+			// Mock the useAuth hook initialization call
+			if (url.includes("/api/users/me")) {
+				return Promise.resolve({
+					ok: false,
+					status: 401
+				});
+			}
+
 			return Promise.reject(new Error("Unmocked fetch call"));
 		});
 	});
@@ -191,13 +199,26 @@ describe("Registration to Login Flow Integration", () => {
 	it("should handle registration errors gracefully", async () => {
 		const user = userEvent.setup();
 
-		// Mock registration failure
-		mockFetch.mockImplementationOnce(() =>
-			Promise.resolve({
-				ok: false,
-				json: async () => ({ message: "Email already exists" })
-			})
-		);
+		// Override the mock to fail registration but handle other calls
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/auth/register")) {
+				return Promise.resolve({
+					ok: false,
+					status: 400,
+					json: async () => ({ message: "Email already exists" })
+				});
+			}
+
+			// Mock the useAuth hook initialization call
+			if (url.includes("/api/users/me")) {
+				return Promise.resolve({
+					ok: false,
+					status: 401
+				});
+			}
+
+			return Promise.reject(new Error("Unmocked fetch call"));
+		});
 
 		render(<App />);
 

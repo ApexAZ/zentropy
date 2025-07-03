@@ -36,7 +36,7 @@ class TestOAuthOrganizationCreation:
     """Critical tests for creating organizations during OAuth registration."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_workspace_creates_organization(self, mock_verify_google_token, db_session):
+    def test_google_workspace_creates_organization(self, mock_verify_google_token, db_session, client):
         """Test that Google Workspace users automatically create organization."""
         # Mock Google Workspace user
         mock_google_user_info = {
@@ -82,7 +82,7 @@ class TestOAuthOrganizationCreation:
         print(f"✅ Organization created: {created_org.name} with domain {created_org.domain}")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_existing_organization_reused(self, mock_verify_google_token, db_session):
+    def test_existing_organization_reused(self, mock_verify_google_token, db_session, client):
         """Test that existing organizations are reused for new users."""
         # Create existing organization
         existing_org = Organization(
@@ -124,7 +124,7 @@ class TestOAuthOrganizationCreation:
         print(f"✅ Existing organization reused: {existing_org.name}")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_manual_organization_override(self, mock_verify_google_token, db_session):
+    def test_manual_organization_override(self, mock_verify_google_token, db_session, client):
         """Test that manual organization info overrides Google domain."""
         # Mock Google user
         mock_google_user_info = {
@@ -161,7 +161,7 @@ class TestOAuthOrganizationCreation:
         print(f"✅ Manual organization created: {created_org.name}")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_gmail_user_auto_organization(self, mock_verify_google_token, db_session):
+    def test_gmail_user_auto_organization(self, mock_verify_google_token, db_session, client):
         """Test that Gmail users get automatic organization from domain."""
         # Mock Gmail user
         mock_google_user_info = {
@@ -193,7 +193,7 @@ class TestOrganizationDeduplication:
     """Test organization deduplication logic."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_case_insensitive_domain_matching(self, mock_verify_google_token, db_session):
+    def test_case_insensitive_domain_matching(self, mock_verify_google_token, db_session, client):
         """Test that domain matching is case-insensitive."""
         # Create organization with lowercase domain
         existing_org = Organization(
@@ -229,7 +229,7 @@ class TestOrganizationDeduplication:
         assert len(all_orgs) == 1
     
     @patch('api.routers.auth.verify_google_token')
-    def test_organization_name_normalization(self, mock_verify_google_token, db_session):
+    def test_organization_name_normalization(self, mock_verify_google_token, db_session, client):
         """Test that organization names are normalized consistently."""
         # This test documents the requirement for name normalization
         # Implementation will determine exact normalization rules
@@ -258,7 +258,7 @@ class TestOrganizationFieldPopulation:
     """Test automatic population of organization fields."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_workspace_organization_fields(self, mock_verify_google_token, db_session):
+    def test_google_workspace_organization_fields(self, mock_verify_google_token, db_session, client):
         """Test that Google Workspace organizations get properly populated fields."""
         mock_google_user_info = {
             "sub": "fields_test",

@@ -41,9 +41,6 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
 @pytest.fixture(autouse=True)
 def setup_test_db():
     """Setup and teardown database for each test."""
@@ -58,7 +55,7 @@ class TestGoogleOAuthEndpoint:
     """Critical tests for Google OAuth login endpoint."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_endpoint_exists(self, mock_verify_google_token):
+    def test_google_login_endpoint_exists(self, mock_verify_google_token, client):
         """Test that /auth/google-login endpoint exists and works properly."""
         # Mock invalid token verification (returns None)
         mock_verify_google_token.return_value = None
@@ -70,7 +67,7 @@ class TestGoogleOAuthEndpoint:
         assert "Invalid Google token" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_new_user_creation(self, mock_verify_google_token):
+    def test_google_login_new_user_creation(self, mock_verify_google_token, client):
         """Test Google login creates new user when user doesn't exist."""
         # Mock Google token verification response
         mock_google_user_info = {
@@ -103,7 +100,7 @@ class TestGoogleOAuthEndpoint:
         assert response_data["user"]["has_projects_access"] is True
     
     @patch('api.routers.auth.verify_google_token')  
-    def test_google_login_existing_user_authentication(self, mock_verify_google_token):
+    def test_google_login_existing_user_authentication(self, mock_verify_google_token, client):
         """Test Google login authenticates existing Google user."""
         # Create existing Google user in the test database
         session = TestSessionLocal()
@@ -146,7 +143,7 @@ class TestGoogleOAuthEndpoint:
         assert data["user"]["email"] == "existing@gmail.com"
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_invalid_token(self, mock_verify_google_token):
+    def test_google_login_invalid_token(self, mock_verify_google_token, client):
         """Test Google login with invalid Google token."""
         # Mock invalid token verification
         mock_verify_google_token.return_value = None
@@ -161,7 +158,7 @@ class TestGoogleOAuthEndpoint:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid Google token" in response.json()["detail"]
     
-    def test_google_login_missing_token(self):
+    def test_google_login_missing_token(self, client):
         """Test Google login with missing Google token."""
         # Should return validation error for missing token
         response = client.post("/api/auth/google-login", json={})
@@ -170,7 +167,7 @@ class TestGoogleOAuthEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_unverified_email(self, mock_verify_google_token):
+    def test_google_login_unverified_email(self, mock_verify_google_token, client):
         """Test Google login rejects unverified email addresses."""
         # Mock Google token with unverified email (verify_google_token returns None for unverified)
         mock_verify_google_token.return_value = None
@@ -189,7 +186,7 @@ class TestGoogleOAuthEndpoint:
         assert "Invalid Google token" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_email_linking_security(self, mock_verify_google_token):
+    def test_google_login_email_linking_security(self, mock_verify_google_token, client):
         """Test that Google login cannot hijack existing local accounts."""
         # Create existing local user in the test database
         session = TestSessionLocal()
@@ -235,7 +232,7 @@ class TestGoogleTokenVerification:
     
     @patch('google.auth.transport.requests.Request')
     @patch('google.oauth2.id_token.verify_oauth2_token')
-    def test_verify_google_token_valid_token(self, mock_verify_token, mock_request):
+    def test_verify_google_token_valid_token(self, mock_verify_token, mock_request, client):
         """Test Google token verification with valid token."""
         # Mock Google's verification response
         mock_verify_token.return_value = {
@@ -262,7 +259,7 @@ class TestGoogleTokenVerification:
             assert True  # Test passes because function doesn't exist yet
     
     @patch('google.oauth2.id_token.verify_oauth2_token')
-    def test_verify_google_token_invalid_token(self, mock_verify_token):
+    def test_verify_google_token_invalid_token(self, mock_verify_token, client):
         """Test Google token verification with invalid token."""
         # Mock Google's rejection
         mock_verify_token.side_effect = ValueError("Invalid token")
@@ -276,7 +273,7 @@ class TestGoogleTokenVerification:
             # Expected to fail until implementation
             assert True  # Test passes because function doesn't exist yet
     
-    def test_verify_google_token_missing_environment_variables(self):
+    def test_verify_google_token_missing_environment_variables(self, client):
         """Test that missing Google OAuth environment variables are handled properly."""
         # This should FAIL until we add proper environment variable validation
         try:
@@ -295,7 +292,7 @@ class TestGoogleTokenVerification:
 class TestGoogleOAuthSchemas:
     """Tests for Google OAuth Pydantic schemas (will be implemented)."""
     
-    def test_google_login_request_schema(self):
+    def test_google_login_request_schema(self, client):
         """Test GoogleLoginRequest schema validation."""
         # This should FAIL until we create the schema
         try:
@@ -317,7 +314,7 @@ class TestGoogleOAuthSchemas:
             # Expected to fail until implementation
             assert True  # Test passes because schema doesn't exist yet
     
-    def test_google_login_response_schema(self):
+    def test_google_login_response_schema(self, client):
         """Test that LoginResponse schema works for Google OAuth responses."""
         # LoginResponse should already exist and work for Google auth
         try:
@@ -345,7 +342,7 @@ class TestGoogleOAuthSchemas:
 class TestOAuthSecurityRequirements:
     """Critical security requirements for OAuth implementation."""
     
-    def test_google_client_id_environment_variable_required(self):
+    def test_google_client_id_environment_variable_required(self, client):
         """Test that GOOGLE_CLIENT_ID environment variable is required."""
         # This test documents the security requirement
         import os
@@ -356,13 +353,13 @@ class TestOAuthSecurityRequirements:
         # In production, this should be enforced
         assert client_id is None or isinstance(client_id, str)
     
-    def test_oauth_endpoints_require_https_in_production(self):
+    def test_oauth_endpoints_require_https_in_production(self, client):
         """Test OAuth security requirement for HTTPS in production."""
         # This is a documentation test for security requirements
         # OAuth should only work over HTTPS in production
         assert True  # Placeholder for production HTTPS enforcement
     
-    def test_oauth_state_parameter_csrf_protection(self):
+    def test_oauth_state_parameter_csrf_protection(self, client):
         """Test that OAuth state parameter provides CSRF protection."""
         # Google OAuth should use state parameter for CSRF protection
         # This will be implemented in the frontend integration

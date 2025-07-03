@@ -57,7 +57,7 @@ def client(db_session):
 class TestRoleEnums:
     """Test role enum definitions and values."""
     
-    def test_user_role_enum_values(self):
+    def test_user_role_enum_values(self, client):
         """Test UserRole enum has correct values."""
         assert UserRole.BASIC_USER.value == "basic_user"
         assert UserRole.ADMIN.value == "admin"
@@ -66,21 +66,21 @@ class TestRoleEnums:
         assert UserRole.PROJECT_LEAD.value == "project_lead"
         assert UserRole.STAKEHOLDER.value == "stakeholder"
     
-    def test_team_role_enum_values(self):
+    def test_team_role_enum_values(self, client):
         """Test TeamRole enum has correct values."""
         assert TeamRole.MEMBER.value == "member"
         assert TeamRole.LEAD.value == "lead"
         assert TeamRole.ADMIN.value == "admin"
         assert TeamRole.TEAM_ADMINISTRATOR.value == "team_administrator"
     
-    def test_invitation_status_enum_values(self):
+    def test_invitation_status_enum_values(self, client):
         """Test InvitationStatus enum has correct values."""
         assert InvitationStatus.PENDING.value == "pending"
         assert InvitationStatus.ACCEPTED.value == "accepted"
         assert InvitationStatus.DECLINED.value == "declined"
         assert InvitationStatus.EXPIRED.value == "expired"
     
-    def test_role_enum_count(self):
+    def test_role_enum_count(self, client):
         """Test that enums have the expected number of values."""
         assert len(list(UserRole)) == 6
         assert len(list(TeamRole)) == 4
@@ -90,7 +90,7 @@ class TestRoleEnums:
 class TestDatabaseRoleConstraints:
     """Test database model role constraints and validation."""
     
-    def test_user_default_role(self, db_session):
+    def test_user_default_role(self, db_session, client):
         """Test that new users get basic_user role by default."""
         user = User(
             email="test@example.com",
@@ -104,7 +104,7 @@ class TestDatabaseRoleConstraints:
         
         assert user.role == UserRole.BASIC_USER
     
-    def test_user_role_assignment(self, db_session):
+    def test_user_role_assignment(self, db_session, client):
         """Test assigning different user roles."""
         test_roles = [
             UserRole.PROJECT_ADMINISTRATOR,
@@ -127,7 +127,7 @@ class TestDatabaseRoleConstraints:
             
             assert user.role == role
     
-    def test_team_membership_default_role(self, db_session):
+    def test_team_membership_default_role(self, db_session, client):
         """Test that team memberships get member role by default."""
         # Create user and team first
         user = User(
@@ -154,7 +154,7 @@ class TestDatabaseRoleConstraints:
         
         assert membership.role == TeamRole.MEMBER
     
-    def test_team_membership_role_assignment(self, db_session):
+    def test_team_membership_role_assignment(self, db_session, client):
         """Test assigning different team roles."""
         # Create user and team
         user = User(
@@ -186,7 +186,7 @@ class TestDatabaseRoleConstraints:
             assert membership.role == role
             db_session.delete(membership)  # Clean up for next iteration
     
-    def test_team_invitation_role_and_status(self, db_session):
+    def test_team_invitation_role_and_status(self, db_session, client):
         """Test team invitation role and status defaults."""
         # Create user and team
         user = User(
@@ -342,7 +342,7 @@ class TestRoleAssignmentWorkflows:
 class TestRoleHierarchy:
     """Test role hierarchy and permission inheritance."""
     
-    def test_user_role_hierarchy(self):
+    def test_user_role_hierarchy(self, client):
         """Test that user roles have correct hierarchy."""
         # Define expected hierarchy (higher number = more permissions)
         hierarchy = {
@@ -361,7 +361,7 @@ class TestRoleHierarchy:
         assert hierarchy[UserRole.TEAM_LEAD] > hierarchy[UserRole.STAKEHOLDER]
         assert hierarchy[UserRole.STAKEHOLDER] > hierarchy[UserRole.BASIC_USER]
     
-    def test_team_role_hierarchy(self):
+    def test_team_role_hierarchy(self, client):
         """Test that team roles have correct hierarchy."""
         hierarchy = {
             TeamRole.MEMBER: 1,
@@ -378,7 +378,7 @@ class TestRoleHierarchy:
 class TestRoleSystemIntegration:
     """Test integration between different role system components."""
     
-    def test_role_enum_to_database_mapping(self, db_session):
+    def test_role_enum_to_database_mapping(self, db_session, client):
         """Test that enum values correctly map to database storage."""
         # Test UserRole
         for role in UserRole:
@@ -399,7 +399,7 @@ class TestRoleSystemIntegration:
             
             db_session.delete(retrieved_user)
     
-    def test_schema_validation_with_enums(self):
+    def test_schema_validation_with_enums(self, client):
         """Test that Pydantic schemas correctly validate enum values."""
         from api.schemas import UserCreate, TeamInvitationCreate
         from uuid import uuid4

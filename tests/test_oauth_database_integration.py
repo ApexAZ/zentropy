@@ -33,7 +33,7 @@ def db_session():
 class TestOAuthDatabaseIntegration:
     """Critical OAuth security tests with real database operations."""
     
-    def test_local_user_defaults_in_database(self, db_session):
+    def test_local_user_defaults_in_database(self, db_session, client):
         """Test that local auth users get proper defaults when inserted to database."""
         user = User(
             email="local@example.com",
@@ -60,7 +60,7 @@ class TestOAuthDatabaseIntegration:
         assert user.id is not None
         assert user.created_at is not None
     
-    def test_google_oauth_user_in_database(self, db_session):
+    def test_google_oauth_user_in_database(self, db_session, client):
         """Test Google OAuth user creation in database."""
         google_user = User(
             email="oauth@gmail.com",
@@ -87,7 +87,7 @@ class TestOAuthDatabaseIntegration:
         assert google_user.id is not None
         assert google_user.created_at is not None
     
-    def test_google_id_uniqueness_constraint(self, db_session):
+    def test_google_id_uniqueness_constraint(self, db_session, client):
         """Test that google_id must be unique."""
         # Create first Google user
         user1 = User(
@@ -118,7 +118,7 @@ class TestOAuthDatabaseIntegration:
         with pytest.raises(Exception):  # SQLite raises IntegrityError, Postgres raises different error
             db_session.commit()
     
-    def test_user_can_have_local_and_google_accounts_different_emails(self, db_session):
+    def test_user_can_have_local_and_google_accounts_different_emails(self, db_session, client):
         """Test that the same person can have both local and Google accounts with different emails."""
         # Local account
         local_user = User(
@@ -150,7 +150,7 @@ class TestOAuthDatabaseIntegration:
         assert local_user.auth_provider == AuthProvider.LOCAL
         assert google_user.auth_provider == AuthProvider.GOOGLE
     
-    def test_oauth_user_password_hash_can_be_null(self, db_session):
+    def test_oauth_user_password_hash_can_be_null(self, db_session, client):
         """Test that OAuth users can have NULL password_hash."""
         oauth_user = User(
             email="oauth@example.com",
@@ -170,7 +170,7 @@ class TestOAuthDatabaseIntegration:
         assert oauth_user.auth_provider == AuthProvider.GOOGLE
         assert oauth_user.google_id == "google_oauth_user"
     
-    def test_local_user_requires_password_hash(self, db_session):
+    def test_local_user_requires_password_hash(self, db_session, client):
         """Test that local users should have password_hash (business logic, not DB constraint)."""
         # This is more of a business rule test - the DB allows NULL password_hash
         # but our application logic should require it for local users

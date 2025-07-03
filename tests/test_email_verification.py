@@ -15,29 +15,17 @@ import uuid
 import random
 
 from api.main import app
-from api.database import get_db, User
+from api.database import User
 from api.schemas import UserCreate
 
-
-@pytest.fixture
-def client():
-    """Create test client for FastAPI app."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def db():
-    """Create database session."""
-    from api.database import get_db
-    db_session = next(get_db())
-    yield db_session
-    db_session.close()
+# Note: Using isolated test database fixtures from conftest.py
+# This ensures tests don't pollute the main database
 
 
 class TestEmailVerificationDatabase:
     """Test email verification database schema and models."""
     
-    def test_user_model_has_email_verification_fields(self, db: Session):
+    def test_user_model_has_email_verification_fields(self, db: Session, client):
         """Test that User model has email verification fields."""
         # This test will fail initially - we need to add these fields
         user = User(
@@ -280,18 +268,18 @@ class TestEmailVerificationFlow:
 class TestEmailVerificationSecurity:
     """Test security aspects of email verification."""
     
-    def test_verification_token_is_secure(self, db: Session):
+    def test_verification_token_is_secure(self, db: Session, client):
         """Test that verification tokens are cryptographically secure."""
         # Should generate unique, unpredictable tokens
         # This will be implemented in the email verification service
         pass
         
-    def test_verification_token_expires(self, db: Session):
+    def test_verification_token_expires(self, db: Session, client):
         """Test that verification tokens have expiration."""
         # Tokens should expire after 24 hours by default
         pass
         
-    def test_verification_token_single_use(self, db: Session):
+    def test_verification_token_single_use(self, db: Session, client):
         """Test that verification tokens can only be used once."""
         # Once verified, token should be invalidated
         pass
@@ -300,12 +288,12 @@ class TestEmailVerificationSecurity:
 class TestEmailVerificationNotifications:
     """Test email sending functionality."""
     
-    def test_verification_email_contains_token(self):
+    def test_verification_email_contains_token(self, client):
         """Test that verification email contains the correct token."""
         # This will test the email template and sending service
         pass
         
-    def test_verification_email_format(self):
+    def test_verification_email_format(self, client):
         """Test that verification email has proper format."""
         # Should have proper HTML/text format, links, etc.
         pass
