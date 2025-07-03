@@ -13,6 +13,8 @@ from ..schemas import (
     MessageResponse,
     GoogleLoginRequest,
     GoogleOAuthRequest,
+    EmailVerificationRequest,
+    EmailVerificationResponse,
 )
 from ..auth import (
     authenticate_user,
@@ -32,6 +34,12 @@ from ..google_oauth import (
 )
 from .. import database
 from ..database import AuthProvider, Organization
+from ..email_verification import (
+    create_verification_token,
+    send_verification_email,
+    verify_email_token,
+    resend_verification_email,
+)
 
 router = APIRouter()
 
@@ -88,13 +96,23 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginRes
             "last_name": user.last_name,
             "organization": user.organization,
             "has_projects_access": user.has_projects_access,
+            "email_verified": user.email_verified,
         },
     )
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 def register(user_create: UserCreate, db: Session = Depends(get_db)) -> database.User:
     """Register a new user"""
+    # Validate terms agreement
+    if not user_create.terms_agreement:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You must agree to the terms and conditions",
+        )
+
     # Check if user already exists
     existing_user = (
         db.query(database.User)
@@ -141,6 +159,11 @@ def register(user_create: UserCreate, db: Session = Depends(get_db)) -> database
     )
     db.add(password_history)
     db.commit()
+
+    # Generate verification token and send email
+    token = create_verification_token(db, str(db_user.id))
+    user_name = f"{db_user.first_name} {db_user.last_name}"
+    send_verification_email(str(db_user.email), token, user_name)
 
     return db_user
 
@@ -253,6 +276,7 @@ def google_login(
             auth_provider=AuthProvider.GOOGLE,
             google_id=google_id,
             password_hash=None,  # OAuth users don't need passwords
+            email_verified=True,  # Google OAuth users are pre-verified
             last_login_at=now,
             terms_accepted_at=now,
             terms_version="1.0",
@@ -279,6 +303,7 @@ def google_login(
             "last_name": user.last_name,
             "organization": user.organization,
             "has_projects_access": user.has_projects_access,
+            "email_verified": user.email_verified,
         },
     )
 
@@ -338,3 +363,38 @@ def google_oauth_register(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Google OAuth registration failed: {str(e)}",
         )
+
+
+@router.post("/send-verification", response_model=EmailVerificationResponse)
+def send_verification_email_endpoint(
+    request: EmailVerificationRequest, db: Session = Depends(get_db)
+) -> EmailVerificationResponse:
+    """Send or resend email verification email to user."""
+    success = resend_verification_email(db, request.email)
+
+    if not success:
+        # Don't reveal if email exists for security
+        # Always return success to prevent email enumeration
+        pass
+
+    return EmailVerificationResponse(
+        message=(
+            "If an account with that email exists and is unverified, "
+            "a verification email has been sent"
+        ),
+        email=request.email,
+    )
+
+
+@router.post("/verify-email/{token}", response_model=MessageResponse)
+def verify_email_endpoint(token: str, db: Session = Depends(get_db)) -> MessageResponse:
+    """Verify email address using verification token."""
+    user = verify_email_token(db, token)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+
+    return MessageResponse(message=f"Email verified successfully for {user.email}")

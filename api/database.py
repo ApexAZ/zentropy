@@ -247,6 +247,12 @@ class User(Base):  # type: ignore
     terms_version = Column(String(20), nullable=True)
     privacy_accepted_at = Column(DateTime, nullable=True)
     privacy_version = Column(String(20), nullable=True)
+
+    # Email verification fields
+    email_verified = Column(Boolean, default=False, nullable=False)
+    email_verification_token = Column(String, nullable=True, unique=True)
+    email_verification_expires_at = Column(DateTime, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

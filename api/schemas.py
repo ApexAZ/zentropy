@@ -17,6 +17,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    terms_agreement: bool
 
 
 class UserUpdate(BaseModel):
@@ -32,6 +33,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: UUID
     is_active: bool
+    email_verified: bool
     last_login_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
@@ -173,6 +175,16 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     timestamp: datetime
+
+
+# Email verification schemas
+class EmailVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class EmailVerificationResponse(BaseModel):
+    message: str
+    email: EmailStr
 
 
 # Generic response schemas
