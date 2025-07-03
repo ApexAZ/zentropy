@@ -258,6 +258,7 @@ def test_user_creation_wrong():
 ## Documentation Files
 
 ### **Project Documentation**
+- **MULTIDEV.md** - 🆕 Multi-machine development synchronization guide and setup procedures
 - **CLAUDETaskArchive.md** - Historical completed work record and achievement archive
 - **CLAUDETroubleshooting.md** - Server issue troubleshooting guide and recovery procedures
 - **CLAUDEQuality.md** - Code quality standards, testing protocols, and compliance metrics
