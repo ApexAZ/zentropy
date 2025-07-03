@@ -20,13 +20,13 @@ vi.mock("../hooks/useAuth", () => ({
 }));
 
 // Mock useGoogleOAuth hook with callback support
-const mockInitializeButton = vi.fn();
+const mockTriggerOAuth = vi.fn();
 
 const mockGoogleOAuth = {
 	isReady: true,
 	isLoading: false,
 	error: null,
-	initializeButton: mockInitializeButton
+	triggerOAuth: mockTriggerOAuth
 };
 
 vi.mock("../hooks/useGoogleOAuth", () => ({
@@ -102,8 +102,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
 		});
 
-		it("should redirect to dashboard after successful Google OAuth registration", async () => {
-			// This test will FAIL initially - redirect to dashboard not implemented
+		it("should stay on home page after successful Google OAuth registration", async () => {
+			// Updated test - no longer redirects to dashboard, stays on home page
 			const user = userEvent.setup();
 
 			// Mock successful OAuth response
@@ -125,15 +125,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				json: () => Promise.resolve(mockAuthResponse)
 			});
 
-			// Simulate authenticated state after OAuth
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
-				email: mockAuthResponse.user.email,
-				name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
-				has_projects_access: mockAuthResponse.user.has_projects_access
-			};
-			mockAuth.token = mockAuthResponse.access_token;
-
 			render(<App />);
 
 			// Open navigation panel first
@@ -148,10 +139,20 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			await user.click(googleButton);
 
-			// Should redirect to dashboard after successful OAuth
+			// Should stay on home page after successful OAuth (no automatic redirect)
 			await waitFor(() => {
-				expect(screen.getByText(/welcome to zentropy dashboard/i)).toBeInTheDocument();
+				expect(mockLogin).toHaveBeenCalledWith(mockAuthResponse.access_token, {
+					email: mockAuthResponse.user.email,
+					name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
+					has_projects_access: mockAuthResponse.user.has_projects_access
+				});
 			});
+
+			// Should NOT redirect to dashboard - should remain on home page
+			expect(screen.queryByText(/welcome to zentropy dashboard/i)).not.toBeInTheDocument();
+
+			// Registration modal should be closed
+			expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
 		});
 
 		it("should handle Google OAuth errors gracefully without crashing", async () => {

@@ -16,7 +16,6 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 }) => {
 	const modalRef = useRef<HTMLDivElement>(null);
 	const closeButtonRef = useRef<HTMLButtonElement>(null);
-	const googleButtonRef = useRef<HTMLButtonElement>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
 
@@ -25,13 +24,13 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 		isReady: isGoogleReady,
 		isLoading: isGoogleLoading,
 		error: googleError,
-		initializeButton
+		triggerOAuth
 	} = useGoogleOAuth({
 		onSuccess: async (credential: string) => {
 			setIsProcessingOAuth(true);
 			try {
 				await onSelectGoogle(credential);
-				onClose();
+				// Don't call onClose() here - parent handler closes modal
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "OAuth authentication failed");
 			} finally {
@@ -78,22 +77,15 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 		};
 	}, [isOpen, onClose]);
 
-	// Initialize Google button when modal opens and Google is ready
-	useEffect(() => {
-		if (isOpen && isGoogleReady && googleButtonRef.current) {
-			initializeButton(googleButtonRef.current);
-		}
-	}, [isOpen, isGoogleReady, initializeButton]);
-
 	const handleSelectGoogle = (): void => {
-		// For manual click, we'll use the Google button which should trigger OAuth
-		// This is a fallback in case the Google button doesn't work
+		// Trigger popup-based Google OAuth
 		if (!isGoogleReady) {
 			setError("Google Sign-In not available");
 			return;
 		}
-		// Google OAuth will be handled by the Google button itself
-		// The useGoogleOAuth hook handles the credential response
+
+		setError(null);
+		triggerOAuth();
 	};
 
 	const handleSelectEmail = (): void => {
@@ -161,7 +153,6 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 							<div className="grid grid-cols-2 gap-4">
 								{/* Google OAuth */}
 								<button
-									ref={googleButtonRef}
 									type="button"
 									onClick={handleSelectGoogle}
 									disabled={!isGoogleReady || isGoogleLoading || isProcessingOAuth}

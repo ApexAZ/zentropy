@@ -15,7 +15,7 @@ interface GoogleOAuthConfig {
 interface GoogleAccounts {
 	id: {
 		initialize: (config: GoogleOAuthConfig) => void;
-		prompt: () => void;
+		prompt: (momentListener?: (notification: any) => void) => void;
 		renderButton: (element: HTMLElement, options: GoogleButtonConfig) => void;
 		disableAutoSelect: () => void;
 	};
@@ -46,7 +46,7 @@ interface UseGoogleOAuthReturn {
 	isReady: boolean;
 	isLoading: boolean;
 	error: string | null;
-	initializeButton: (element: HTMLElement | null) => void;
+	triggerOAuth: () => void;
 }
 
 export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): UseGoogleOAuthReturn => {
@@ -150,22 +150,30 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 		}
 	}, [clientId, onError, isReady, handleCredentialResponse]);
 
-	const initializeButton = (element: HTMLElement | null) => {
-		if (!element || !isReady || !window.google?.accounts?.id) {
+	const triggerOAuth = () => {
+		if (!isReady || !window.google?.accounts?.id) {
+			setError("Google Sign-In not available");
+			onError?.("Google Sign-In not available");
 			return;
 		}
 
 		try {
-			window.google.accounts.id.renderButton(element, {
-				theme: "outline",
-				size: "large",
-				width: element.offsetWidth || 200,
-				text: "signin_with",
-				shape: "rectangular"
+			setIsLoading(true);
+			setError(null);
+
+			// Use popup-based OAuth instead of embedded button
+			window.google.accounts.id.prompt(notification => {
+				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+					// Fallback: user dismissed or popup blocked
+					setIsLoading(false);
+					setError("Google Sign-In was cancelled or blocked");
+					onError?.("Google Sign-In was cancelled or blocked");
+				}
 			});
 		} catch {
-			setError("Failed to render Google Sign-In button");
-			onError?.("Failed to render Google Sign-In button");
+			setIsLoading(false);
+			setError("Failed to start Google Sign-In");
+			onError?.("Failed to start Google Sign-In");
 		}
 	};
 
@@ -173,6 +181,6 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 		isReady: isReady && !error,
 		isLoading,
 		error,
-		initializeButton
+		triggerOAuth
 	};
 };

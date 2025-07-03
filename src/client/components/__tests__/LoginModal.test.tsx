@@ -9,6 +9,19 @@ import LoginModal from "../LoginModal";
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Mock useGoogleOAuth hook
+const mockTriggerOAuth = vi.fn();
+const mockGoogleOAuth = {
+	isReady: true,
+	isLoading: false,
+	error: null as string | null,
+	triggerOAuth: mockTriggerOAuth
+};
+
+vi.mock("../../hooks/useGoogleOAuth", () => ({
+	useGoogleOAuth: () => mockGoogleOAuth
+}));
+
 describe("LoginModal", () => {
 	const mockAuth = {
 		isAuthenticated: false,
@@ -29,6 +42,13 @@ describe("LoginModal", () => {
 		vi.clearAllMocks();
 		mockAuth.login.mockClear();
 		mockAuth.logout.mockClear();
+		mockTriggerOAuth.mockClear();
+		
+		// Reset Google OAuth mock state
+		mockGoogleOAuth.isReady = true;
+		mockGoogleOAuth.isLoading = false;
+		mockGoogleOAuth.error = null;
+		
 		// Mock successful API responses by default
 		mockFetch.mockResolvedValue({
 			ok: true,
@@ -39,7 +59,9 @@ describe("LoginModal", () => {
 					email: "user@example.com",
 					first_name: "John",
 					last_name: "Doe",
-					organization: "Test Corp"
+					organization: "Test Corp",
+					has_projects_access: true,
+					email_verified: true
 				}
 			})
 		});
@@ -238,13 +260,17 @@ describe("LoginModal", () => {
 
 			expect(onSuccess).toHaveBeenCalledTimes(1);
 
-			// Verify auth.login was called with correct user data
-			expect(mockAuth.login).toHaveBeenCalledWith("mock-token", {
-				email: "user@example.com",
-				name: "John Doe", // First Last name from backend
-				has_projects_access: false,
-				email_verified: false
-			});
+			// Verify auth.login was called with correct user data (including rememberMe parameter)
+			expect(mockAuth.login).toHaveBeenCalledWith(
+				"mock-token",
+				{
+					email: "user@example.com",
+					name: "John Doe", // First Last name from backend
+					has_projects_access: true,
+					email_verified: true
+				},
+				false
+			);
 		});
 
 		it("should include remember me option in login request", async () => {
@@ -355,24 +381,72 @@ describe("LoginModal", () => {
 
 		it("should trigger Google OAuth flow when clicked", async () => {
 			const user = userEvent.setup();
-			// Mock Google OAuth API
-			const mockGoogleAuth = vi.fn();
-			global.google = {
-				accounts: {
-					id: {
-						initialize: vi.fn(),
-						prompt: mockGoogleAuth
-					}
-				}
-			};
 
 			render(<LoginModal {...defaultProps} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			await user.click(googleButton);
 
-			// Should initiate Google OAuth flow
-			expect(mockGoogleAuth).toHaveBeenCalled();
+			// Should call triggerOAuth from useGoogleOAuth hook
+			expect(mockTriggerOAuth).toHaveBeenCalledTimes(1);
+		});
+
+		it("should handle successful Google OAuth login flow", async () => {
+			// This test verifies that the Google OAuth button triggers the hook correctly
+			// The actual OAuth success flow is tested in the useGoogleOAuth hook tests
+			const user = userEvent.setup();
+
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			await user.click(googleButton);
+
+			// Should call triggerOAuth from useGoogleOAuth hook
+			expect(mockTriggerOAuth).toHaveBeenCalledTimes(1);
+		});
+
+		it("should handle Google OAuth hook errors", () => {
+			// Mock Google OAuth hook error
+			mockGoogleOAuth.error = "Google OAuth failed: Invalid token";
+
+			render(<LoginModal {...defaultProps} />);
+
+			// Should display the error from the hook
+			expect(screen.getByText("Google OAuth failed: Invalid token")).toBeInTheDocument();
+		});
+
+		it("should show disabled state when Google OAuth is not ready", () => {
+			// Mock Google OAuth as not ready
+			mockGoogleOAuth.isReady = false;
+
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /google sign-in not available/i });
+			expect(googleButton).toBeDisabled();
+			expect(googleButton).toHaveClass("cursor-not-allowed", "opacity-50");
+		});
+
+		it("should show loading state during Google OAuth", () => {
+			// Mock Google OAuth as loading
+			mockGoogleOAuth.isLoading = true;
+
+			render(<LoginModal {...defaultProps} />);
+
+			const googleButton = screen.getByRole("button", { name: /loading/i });
+			expect(googleButton).toBeDisabled();
+			
+			// Should show loading spinner
+			const spinner = googleButton.querySelector('[role="progressbar"]');
+			expect(spinner).toBeInTheDocument();
+		});
+
+		it("should display Google OAuth errors", () => {
+			// Mock Google OAuth error
+			mockGoogleOAuth.error = "Google Sign-In temporarily unavailable";
+
+			render(<LoginModal {...defaultProps} />);
+
+			expect(screen.getByText("Google Sign-In temporarily unavailable")).toBeInTheDocument();
 		});
 
 		it("should show divider between regular login and Google OAuth", () => {

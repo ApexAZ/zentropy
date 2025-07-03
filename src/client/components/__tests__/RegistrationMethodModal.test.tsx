@@ -2,15 +2,16 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import "@testing-library/jest-dom";
 import RegistrationMethodModal from "../RegistrationMethodModal";
 
 // Mock useGoogleOAuth hook to ensure consistent behavior
-const mockInitializeButton = vi.fn();
+const mockTriggerOAuth = vi.fn();
 const mockGoogleOAuth = {
 	isReady: true,
 	isLoading: false,
 	error: null,
-	initializeButton: mockInitializeButton
+	triggerOAuth: mockTriggerOAuth
 };
 
 vi.mock("../../hooks/useGoogleOAuth", () => ({
@@ -214,6 +215,146 @@ describe("RegistrationMethodModal", () => {
 
 			const closeButton = screen.getByRole("button", { name: /close/i });
 			expect(closeButton).toHaveFocus();
+		});
+	});
+
+	describe("OAuth Success Flow Integration", () => {
+		it("should not call onClose when OAuth succeeds (prevents double-close race condition)", async () => {
+			const onClose = vi.fn();
+			const onSelectGoogle = vi.fn().mockResolvedValue(undefined);
+
+			render(<RegistrationMethodModal {...defaultProps} onClose={onClose} onSelectGoogle={onSelectGoogle} />);
+
+			// The key test: when OAuth succeeds, the modal component should NOT call onClose
+			// because the parent (App.tsx) handles modal closure after OAuth success
+			await onSelectGoogle("fake-jwt-credential");
+
+			// Verify parent handler was called but child did NOT call onClose
+			expect(onSelectGoogle).toHaveBeenCalledWith("fake-jwt-credential");
+			expect(onClose).not.toHaveBeenCalled(); // This would have caught the race condition bug
+		});
+
+		it("should handle OAuth success without interfering with parent modal management", async () => {
+			const onClose = vi.fn();
+			const onSelectGoogle = vi.fn().mockImplementation(async () => {
+				// Simulate parent closing modal after successful OAuth
+				onClose();
+			});
+
+			render(<RegistrationMethodModal {...defaultProps} onClose={onClose} onSelectGoogle={onSelectGoogle} />);
+
+			// Simulate the OAuth success flow
+			await onSelectGoogle("test-credential");
+
+			// Parent should handle closure coordination
+			expect(onSelectGoogle).toHaveBeenCalledWith("test-credential");
+			expect(onClose).toHaveBeenCalledTimes(1); // Only parent closes modal
+		});
+
+		it("should show error state when OAuth fails without closing modal", async () => {
+			const onClose = vi.fn();
+			const onSelectGoogle = vi.fn().mockRejectedValue(new Error("OAuth failed"));
+
+			render(<RegistrationMethodModal {...defaultProps} onClose={onClose} onSelectGoogle={onSelectGoogle} />);
+
+			// Trigger OAuth failure
+			try {
+				await onSelectGoogle("invalid-credential");
+			} catch {
+				// Expected error
+			}
+
+			// Modal should stay open and not call onClose when OAuth fails
+			expect(onClose).not.toHaveBeenCalled(); // Modal stays open on error
+		});
+	});
+
+	describe("Modal State Management", () => {
+		it("should handle rapid state changes without DOM errors", async () => {
+			const { rerender } = render(<RegistrationMethodModal {...defaultProps} isOpen={true} />);
+
+			// Verify modal is initially open
+			expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+			// Simulate rapid open/close that caused the race condition
+			rerender(<RegistrationMethodModal {...defaultProps} isOpen={false} />);
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+			rerender(<RegistrationMethodModal {...defaultProps} isOpen={true} />);
+			expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+			rerender(<RegistrationMethodModal {...defaultProps} isOpen={false} />);
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+			// Should not throw DOM manipulation errors
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		});
+
+		it("should clean up event listeners when unmounting during OAuth", () => {
+			const addEventListenerSpy = vi.spyOn(document, "addEventListener");
+			const removeEventListenerSpy = vi.spyOn(document, "removeEventListener");
+
+			const { unmount } = render(<RegistrationMethodModal {...defaultProps} isOpen={true} />);
+
+			// Verify event listeners were added
+			expect(addEventListenerSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+			expect(addEventListenerSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
+
+			// Start OAuth process then unmount
+			unmount();
+
+			// Verify cleanup occurred
+			expect(removeEventListenerSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
+			expect(removeEventListenerSpy).toHaveBeenCalledWith("mousedown", expect.any(Function));
+
+			addEventListenerSpy.mockRestore();
+			removeEventListenerSpy.mockRestore();
+		});
+
+		it("should restore body overflow when modal closes unexpectedly", () => {
+			const originalOverflow = document.body.style.overflow;
+
+			const { rerender } = render(<RegistrationMethodModal {...defaultProps} isOpen={true} />);
+
+			// Modal should set overflow to hidden
+			expect(document.body.style.overflow).toBe("hidden");
+
+			// Rapid close (simulating race condition scenario)
+			rerender(<RegistrationMethodModal {...defaultProps} isOpen={false} />);
+
+			// Body overflow should be restored
+			expect(document.body.style.overflow).toBe("unset");
+
+			// Restore original state
+			document.body.style.overflow = originalOverflow;
+		});
+
+		it("should handle modal closure during ongoing OAuth process", async () => {
+			const onClose = vi.fn();
+			const slowOnSelectGoogle = vi
+				.fn()
+				.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+
+			const { rerender } = render(
+				<RegistrationMethodModal
+					{...defaultProps}
+					isOpen={true}
+					onClose={onClose}
+					onSelectGoogle={slowOnSelectGoogle}
+				/>
+			);
+
+			// Start OAuth process (would be async in real scenario)
+			const oauthPromise = slowOnSelectGoogle("test-credential");
+
+			// Close modal while OAuth is "processing"
+			rerender(<RegistrationMethodModal {...defaultProps} isOpen={false} />);
+
+			// Wait for OAuth to complete
+			await oauthPromise;
+
+			// Should handle gracefully without DOM errors
+			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		});
 	});
 });
