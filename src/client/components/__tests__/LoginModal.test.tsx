@@ -241,7 +241,9 @@ describe("LoginModal", () => {
 			// Verify auth.login was called with correct user data
 			expect(mockAuth.login).toHaveBeenCalledWith("mock-token", {
 				email: "user@example.com",
-				name: "John Doe" // First Last name from backend
+				name: "John Doe", // First Last name from backend
+				has_projects_access: false,
+				email_verified: false
 			});
 		});
 

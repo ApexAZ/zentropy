@@ -57,6 +57,11 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 
 	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+	// Validate required environment variables
+	if (!clientId) {
+		console.error("❌ VITE_GOOGLE_CLIENT_ID is not configured in environment variables");
+	}
+
 	const handleCredentialResponse = useCallback(
 		async (response: GoogleCredentialResponse) => {
 			setIsLoading(true);

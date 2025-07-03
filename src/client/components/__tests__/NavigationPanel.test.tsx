@@ -651,7 +651,7 @@ describe("NavigationPanel", () => {
 			});
 		});
 
-		it("should navigate to create-project page when Create Project is clicked", async () => {
+		it("should navigate to teams page when Create Project is clicked", async () => {
 			const user = userEvent.setup();
 			render(
 				<NavigationPanel
@@ -672,14 +672,14 @@ describe("NavigationPanel", () => {
 			const createProjectButton = screen.getByText("Create Project");
 			await user.click(createProjectButton);
 
-			// Should navigate to create-project page and close panel
-			expect(mockOnPageChange).toHaveBeenCalledWith("create-project");
+			// Should navigate to teams page and close panel
+			expect(mockOnPageChange).toHaveBeenCalledWith("teams");
 			await waitFor(() => {
 				expect(screen.queryByText("Project User")).not.toBeInTheDocument();
 			});
 		});
 
-		it("should navigate to join-project page when Join Project is clicked", async () => {
+		it("should navigate to teams page when Join Project is clicked", async () => {
 			const user = userEvent.setup();
 			render(
 				<NavigationPanel
@@ -700,8 +700,8 @@ describe("NavigationPanel", () => {
 			const joinProjectButton = screen.getByText("Join Project");
 			await user.click(joinProjectButton);
 
-			// Should navigate to join-project page and close panel
-			expect(mockOnPageChange).toHaveBeenCalledWith("join-project");
+			// Should navigate to teams page and close panel
+			expect(mockOnPageChange).toHaveBeenCalledWith("teams");
 			await waitFor(() => {
 				expect(screen.queryByText("Project User")).not.toBeInTheDocument();
 			});

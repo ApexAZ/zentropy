@@ -21,8 +21,8 @@ describe("RegistrationMethodModal", () => {
 	const defaultProps = {
 		isOpen: true,
 		onClose: vi.fn(),
-		onSelectEmail: vi.fn()
-		// onSelectGoogle temporarily disabled for debugging
+		onSelectEmail: vi.fn(),
+		onSelectGoogle: vi.fn()
 	};
 
 	beforeEach(() => {
@@ -66,12 +66,12 @@ describe("RegistrationMethodModal", () => {
 	});
 
 	describe("Registration Method Options", () => {
-		it("should display Google OAuth option as temporarily disabled", () => {
+		it("should display Google OAuth option as enabled", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
 
-			const googleButton = screen.getByRole("button", { name: /temporarily unavailable/i });
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			expect(googleButton).toBeInTheDocument();
-			expect(googleButton).toBeDisabled();
+			expect(googleButton).not.toBeDisabled();
 			expect(googleButton).toHaveClass("border-layout-background", "bg-content-background");
 
 			// Should have Google icon
@@ -108,7 +108,7 @@ describe("RegistrationMethodModal", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
 
 			// Should have a container with grid layout
-			const methodsContainer = screen.getByRole("button", { name: /temporarily unavailable/i }).parentElement;
+			const methodsContainer = screen.getByRole("button", { name: /continue with google/i }).parentElement;
 			expect(methodsContainer).toHaveClass("grid");
 		});
 	});
@@ -151,18 +151,18 @@ describe("RegistrationMethodModal", () => {
 	});
 
 	describe("Registration Method Selection", () => {
-		it("should show Google OAuth temporarily disabled", async () => {
+		it("should show Google OAuth as enabled and functional", async () => {
 			const user = userEvent.setup();
 			const onClose = vi.fn();
 
 			render(<RegistrationMethodModal {...defaultProps} onClose={onClose} />);
 
-			const googleButton = screen.getByRole("button", { name: /temporarily unavailable/i });
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			await user.click(googleButton);
 
-			// Google OAuth button should be shown as disabled for debugging
+			// Google OAuth button should be enabled and clickable
 			expect(googleButton).toBeInTheDocument();
-			expect(googleButton).toBeDisabled();
+			expect(googleButton).not.toBeDisabled();
 		});
 
 		it("should call onSelectEmail and close modal when email option is clicked", async () => {

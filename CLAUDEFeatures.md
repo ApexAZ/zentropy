@@ -16,3 +16,4 @@
 - AI Features to monitor chat and teams/zoom calls to produce artifacts
 - Down the road will need API that other tools can interface with it, with mcp and agent support
 - Improve html head meta tags with better key words and descriptions
+- Need to test / validate registration email verification once app is up on hosting

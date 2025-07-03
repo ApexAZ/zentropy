@@ -9,14 +9,13 @@ type Page =
 	| "calendar"
 	| "dashboard"
 	| "login"
-	| "team-configuration"
-	| "create-project"
-	| "join-project";
+	| "team-configuration";
 
 interface AuthUser {
 	email: string;
 	name: string;
 	has_projects_access: boolean;
+	email_verified: boolean;
 }
 
 interface Auth {
@@ -256,7 +255,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 												<button
 													className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent py-3 pr-8 pl-12 text-sm no-underline transition-colors duration-200 focus:outline-none"
 													role="menuitem"
-													onClick={() => handleMenuItemClick("create-project")}
+													onClick={() => handleMenuItemClick("teams")}
 												>
 													<svg
 														className="text-interactive flex-shrink-0"
@@ -273,7 +272,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 												<button
 													className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent py-3 pr-8 pl-12 text-sm no-underline transition-colors duration-200 focus:outline-none"
 													role="menuitem"
-													onClick={() => handleMenuItemClick("join-project")}
+													onClick={() => handleMenuItemClick("teams")}
 												>
 													<svg
 														className="text-interactive flex-shrink-0"

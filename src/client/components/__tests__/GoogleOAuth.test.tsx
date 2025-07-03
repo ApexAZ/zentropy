@@ -25,8 +25,8 @@ describe("Google OAuth Integration", () => {
 	const defaultProps = {
 		isOpen: true,
 		onClose: vi.fn(),
-		onSelectEmail: vi.fn()
-		// onSelectGoogle temporarily disabled for debugging
+		onSelectEmail: vi.fn(),
+		onSelectGoogle: vi.fn()
 	};
 
 	beforeEach(() => {
@@ -61,12 +61,12 @@ describe("Google OAuth Integration", () => {
 	});
 
 	describe("Google Sign-In Button Integration", () => {
-		it("should show Google OAuth as temporarily disabled", () => {
+		it("should show Google OAuth as ready to use", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
 
-			const googleButton = screen.getByRole("button", { name: /temporarily unavailable/i });
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			expect(googleButton).toBeInTheDocument();
-			expect(googleButton).toBeDisabled();
+			expect(googleButton).not.toBeDisabled();
 		});
 
 		// These tests are temporarily disabled while OAuth integration is being debugged
@@ -94,11 +94,11 @@ describe("Google OAuth Integration", () => {
 	});
 
 	describe("Google OAuth State Management", () => {
-		it("should show disabled state when OAuth is temporarily disabled", () => {
+		it("should show enabled state when OAuth is ready", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
 
-			const googleButton = screen.getByRole("button", { name: /temporarily unavailable/i });
-			expect(googleButton).toBeDisabled();
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			expect(googleButton).not.toBeDisabled();
 		});
 
 		// These tests are temporarily disabled while OAuth integration is being debugged
@@ -120,18 +120,18 @@ describe("Google OAuth Integration", () => {
 	});
 
 	describe("Environment Configuration", () => {
-		it("should show temporarily unavailable state", () => {
+		it("should show ready state when properly configured", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
-			expect(screen.getByText("Temporarily Unavailable")).toBeInTheDocument();
+			expect(screen.getByText("Continue with Google")).toBeInTheDocument();
 		});
 	});
 
 	describe("Accessibility", () => {
-		it("should have proper ARIA labels for Google OAuth button when disabled", () => {
+		it("should have proper ARIA labels for Google OAuth button when enabled", () => {
 			render(<RegistrationMethodModal {...defaultProps} />);
 
-			const googleButton = screen.getByRole("button", { name: /temporarily unavailable/i });
-			expect(googleButton).toHaveAttribute("aria-label", "Temporarily Unavailable");
+			const googleButton = screen.getByRole("button", { name: /continue with google/i });
+			expect(googleButton).toHaveAttribute("aria-label", "Continue with Google");
 		});
 
 		// Temporarily disabled while OAuth integration is being debugged

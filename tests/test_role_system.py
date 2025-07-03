@@ -411,7 +411,8 @@ class TestRoleSystemIntegration:
             "last_name": "User",
             "organization": "Test Org",
             "password": "TestPassword123",
-            "role": UserRole.PROJECT_ADMINISTRATOR
+            "role": UserRole.PROJECT_ADMINISTRATOR,
+            "terms_agreement": True
         }
         user = UserCreate(**user_data)
         assert user.role == UserRole.PROJECT_ADMINISTRATOR

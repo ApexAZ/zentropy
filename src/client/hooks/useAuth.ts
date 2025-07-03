@@ -4,6 +4,7 @@ interface AuthUser {
 	email: string;
 	name: string;
 	has_projects_access: boolean;
+	email_verified: boolean;
 }
 
 interface AuthState {
@@ -20,7 +21,7 @@ export const useAuth = () => {
 	});
 
 	// Session timeout configuration
-	const TIMEOUT_DURATION = process.env.NODE_ENV === "test" ? 200 : 15 * 60 * 1000; // 200ms for tests, 15 minutes for production
+	const TIMEOUT_DURATION = import.meta.env.MODE === "test" ? 200 : 15 * 60 * 1000; // 200ms for tests, 15 minutes for production
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const lastActivityRef = useRef<number>(Date.now());
 
@@ -43,7 +44,8 @@ export const useAuth = () => {
 							user: {
 								email: userData.email,
 								name: `${userData.first_name} ${userData.last_name}`,
-								has_projects_access: userData.has_projects_access
+								has_projects_access: userData.has_projects_access,
+								email_verified: userData.email_verified || false
 							},
 							token
 						});

@@ -10,7 +10,7 @@ const OAuthProviders: React.FC<OAuthProvidersProps> = ({ onGoogleSignIn, disable
 		// Initialize Google OAuth when component mounts
 		if (typeof window !== "undefined" && window.google) {
 			window.google.accounts.id.initialize({
-				client_id: process.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID", // TODO: Add to environment variables
+				client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID",
 				callback: onGoogleSignIn || (() => {})
 			});
 		}

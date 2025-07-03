@@ -25,7 +25,7 @@ interface PasswordRequirements {
 interface EmailRegistrationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSuccess: (redirectTo?: string) => void;
+	onSuccess: () => void;
 }
 
 const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -241,6 +241,7 @@ const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen,
 					email: formData.email,
 					organization: formData.organization,
 					password: formData.password,
+					terms_agreement: formData.terms_agreement,
 					has_projects_access: formData.has_projects_access
 				})
 			});
@@ -250,10 +251,9 @@ const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen,
 				throw new Error(errorData.message ?? "Registration failed");
 			}
 
-			// Show success modal
+			// Show success modal (will auto-close and just show the "check email" message)
 			setShowSuccessModal(true);
-			// Call onSuccess callback for successful registration
-			onSuccess();
+			// No immediate callback - let user read the message and manually close
 		} catch (err) {
 			setToast({
 				message: err instanceof Error ? err.message : "Registration failed. Please try again.",
@@ -262,10 +262,6 @@ const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen,
 		} finally {
 			setIsLoading(false);
 		}
-	};
-
-	const handleRedirectToDashboard = (): void => {
-		onSuccess("dashboard");
 	};
 
 	const togglePasswordVisibility = (field: "password" | "confirm"): void => {
@@ -749,17 +745,21 @@ const EmailRegistrationModal: React.FC<EmailRegistrationModalProps> = ({ isOpen,
 			{showSuccessModal && (
 				<div className="bg-opacity-50 fixed inset-0 z-[1000] flex items-center justify-center bg-black p-6">
 					<div className="bg-content-background border-interactive max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg border p-8 text-center shadow-lg">
-						<div className="mb-4 text-5xl">✅</div>
+						<div className="mb-4 text-5xl">📧</div>
 						<h3 className="text-text-primary mb-4 text-xl font-semibold">Account Created Successfully!</h3>
 						<p className="text-text-primary mb-8 leading-6">
-							Welcome to Zentropy! Your account has been created and you&apos;re now logged in.
+							Welcome to Zentropy! Your account has been created. Please check your email and click the
+							verification link to complete your setup, then return to log in.
 						</p>
-						<div className="flex justify-end gap-4">
+						<div className="flex justify-center gap-4">
 							<button
-								onClick={handleRedirectToDashboard}
+								onClick={() => {
+									setShowSuccessModal(false);
+									onSuccess();
+								}}
 								className="bg-interactive hover:bg-interactive-hover hover:text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border-none p-3 px-6 text-center text-base font-medium text-white no-underline transition-all duration-200"
 							>
-								Go to Dashboard
+								Got it!
 							</button>
 						</div>
 					</div>

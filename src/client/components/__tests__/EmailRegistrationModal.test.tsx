@@ -442,10 +442,20 @@ describe("EmailRegistrationModal", () => {
 						email: "john@example.com",
 						organization: "Test Org",
 						password: "StrongPass123!",
+						terms_agreement: true,
 						has_projects_access: true
 					})
 				});
 			});
+
+			// Wait for success modal to appear
+			await waitFor(() => {
+				expect(screen.getByText("Account Created Successfully!")).toBeInTheDocument();
+			});
+
+			// Click "Got it!" to trigger onSuccess
+			const gotItButton = screen.getByRole("button", { name: /got it/i });
+			await user.click(gotItButton);
 
 			expect(onSuccess).toHaveBeenCalledTimes(1);
 		});
@@ -537,7 +547,7 @@ describe("EmailRegistrationModal", () => {
 			});
 		});
 
-		it("should redirect to dashboard from success modal", async () => {
+		it("should close modal when Got it button is clicked", async () => {
 			const user = userEvent.setup();
 			const onSuccess = vi.fn();
 
@@ -553,15 +563,15 @@ describe("EmailRegistrationModal", () => {
 			await user.click(screen.getByRole("checkbox"));
 			await user.click(screen.getByRole("button", { name: /create account/i }));
 
-			// Wait for success modal and click dashboard button
+			// Wait for success modal and click Got it button
 			await waitFor(() => {
 				expect(screen.getByText(/account created successfully/i)).toBeInTheDocument();
 			});
 
-			const dashboardButton = screen.getByRole("button", { name: /go to dashboard/i });
-			await user.click(dashboardButton);
+			const gotItButton = screen.getByRole("button", { name: /got it/i });
+			await user.click(gotItButton);
 
-			expect(onSuccess).toHaveBeenCalledWith("dashboard");
+			expect(onSuccess).toHaveBeenCalledTimes(1);
 		});
 	});
 

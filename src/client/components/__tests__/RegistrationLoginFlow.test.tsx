@@ -43,7 +43,9 @@ describe("Registration to Login Flow Integration", () => {
 							email: "integration.test@example.com",
 							first_name: "Integration",
 							last_name: "Test",
-							organization: "Test Corp"
+							organization: "Test Corp",
+							has_projects_access: true,
+							email_verified: true
 						}
 					})
 				});
@@ -120,17 +122,35 @@ describe("Registration to Login Flow Integration", () => {
 			);
 		});
 
-		// Step 5: Verify registration modal closes and login modal opens
+		// Step 5: Verify registration success modal appears
 		await waitFor(() => {
-			expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
+			expect(screen.getByText("Account Created Successfully!")).toBeInTheDocument();
+			expect(screen.getByText(/check your email and click the verification link/i)).toBeInTheDocument();
 		});
 
+		// Step 6: Click "Got it!" to close success modal
+		const gotItButton = screen.getByRole("button", { name: /got it/i });
+		await user.click(gotItButton);
+
+		// Step 7: Verify registration modal closes (no login modal automatically)
+		await waitFor(() => {
+			expect(screen.queryByText("Create Your Account")).not.toBeInTheDocument();
+			expect(screen.queryByText("Account Created Successfully!")).not.toBeInTheDocument();
+		});
+
+		// Step 8: Manually open login modal (user would click login after email verification)
+		const profileButtonAgain = screen.getByLabelText(/profile menu/i);
+		await user.click(profileButtonAgain);
+		const loginButton = screen.getByText("Login");
+		await user.click(loginButton);
+
+		// Step 9: Verify login modal opens
 		await waitFor(() => {
 			expect(screen.getByText("Welcome Back")).toBeInTheDocument();
 			expect(screen.getByText("Sign in to your Zentropy account")).toBeInTheDocument();
 		});
 
-		// Step 6: Fill out login form
+		// Step 10: Fill out login form
 		const loginEmailInput = screen.getByLabelText(/email address/i);
 		const loginPasswordInput = screen.getByPlaceholderText(/enter your password/i);
 
@@ -138,7 +158,7 @@ describe("Registration to Login Flow Integration", () => {
 		await user.type(loginEmailInput, "integration.test@example.com");
 		await user.type(loginPasswordInput, "SecurePass123!");
 
-		// Step 7: Submit login form
+		// Step 11: Submit login form
 		const signInButton = screen.getByRole("button", { name: /sign in/i });
 		await user.click(signInButton);
 
@@ -154,7 +174,7 @@ describe("Registration to Login Flow Integration", () => {
 			);
 		});
 
-		// Step 8: Verify login modal closes and user stays on current page
+		// Step 12: Verify login modal closes and user stays on current page
 		await waitFor(() => {
 			expect(screen.queryByText("Welcome Back")).not.toBeInTheDocument();
 		});
@@ -277,6 +297,26 @@ describe("Registration to Login Flow Integration", () => {
 
 		const submitButton = screen.getByRole("button", { name: /create account/i });
 		await user.click(submitButton);
+
+		// Wait for registration success modal to appear
+		await waitFor(() => {
+			expect(screen.getByText("Account Created Successfully!")).toBeInTheDocument();
+		});
+
+		// Click "Got it!" to close success modal
+		const gotItButton = screen.getByRole("button", { name: /got it/i });
+		await user.click(gotItButton);
+
+		// Wait for success modal to close
+		await waitFor(() => {
+			expect(screen.queryByText("Account Created Successfully!")).not.toBeInTheDocument();
+		});
+
+		// Manually open login modal (user would do this after email verification)
+		const profileButtonAgain = screen.getByLabelText(/profile menu/i);
+		await user.click(profileButtonAgain);
+		const loginButton = screen.getByText("Login");
+		await user.click(loginButton);
 
 		// Wait for login modal to appear
 		await waitFor(() => {

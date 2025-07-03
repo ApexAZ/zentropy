@@ -57,6 +57,16 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Please verify your email address before logging in. "
+                "Check your email for the verification link."
+            ),
+        )
+
     # Update last login
     user.last_login_at = datetime.utcnow()  # type: ignore
     db.commit()
@@ -76,6 +86,16 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginRes
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
+        )
+
+    # Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Please verify your email address before logging in. "
+                "Check your email for the verification link."
+            ),
         )
 
     # Update last login

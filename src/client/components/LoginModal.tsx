@@ -12,6 +12,8 @@ interface LoginData {
 interface AuthUser {
 	email: string;
 	name: string;
+	has_projects_access: boolean;
+	email_verified: boolean;
 }
 
 interface Auth {
@@ -146,13 +148,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 					first_name: string;
 					last_name: string;
 					organization: string;
+					has_projects_access: boolean;
+					email_verified: boolean;
 				};
 			};
 
 			// Create user object from backend response
 			const user: AuthUser = {
 				email: data.user.email,
-				name: `${data.user.first_name} ${data.user.last_name}`
+				name: `${data.user.first_name} ${data.user.last_name}`,
+				has_projects_access: data.user.has_projects_access || false,
+				email_verified: data.user.email_verified || false
 			};
 
 			// Update auth state with token and user info

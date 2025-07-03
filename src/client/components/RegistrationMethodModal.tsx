@@ -1,31 +1,48 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 
 interface RegistrationMethodModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSelectEmail: () => void;
-	// onSelectGoogle temporarily disabled for debugging
-	// onSelectGoogle: (credential?: string) => void;
+	onSelectGoogle: (credential?: string) => void;
 }
 
 const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 	isOpen,
 	onClose,
-	onSelectEmail
-	// onSelectGoogle temporarily disabled for debugging
+	onSelectEmail,
+	onSelectGoogle
 }) => {
 	const modalRef = useRef<HTMLDivElement>(null);
 	const closeButtonRef = useRef<HTMLButtonElement>(null);
 	const googleButtonRef = useRef<HTMLButtonElement>(null);
 	const [error, setError] = useState<string | null>(null);
-	// Processing state temporarily disabled for debugging
-	// const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
+	const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
 
-	// Temporarily disable Google OAuth to test other functionality
-	const isGoogleReady = false;
-	const isGoogleLoading = false;
-	const googleError = "Google OAuth temporarily disabled for debugging";
-	const initializeButton = () => {};
+	// Re-enable Google OAuth integration
+	const {
+		isReady: isGoogleReady,
+		isLoading: isGoogleLoading,
+		error: googleError,
+		initializeButton
+	} = useGoogleOAuth({
+		onSuccess: async (credential: string) => {
+			setIsProcessingOAuth(true);
+			try {
+				await onSelectGoogle(credential);
+				onClose();
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "OAuth authentication failed");
+			} finally {
+				setIsProcessingOAuth(false);
+			}
+		},
+		onError: (errorMessage: string) => {
+			setError(errorMessage);
+			setIsProcessingOAuth(false);
+		}
+	});
 
 	// Focus management
 	useEffect(() => {
@@ -64,9 +81,9 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 	// Initialize Google button when modal opens and Google is ready
 	useEffect(() => {
 		if (isOpen && isGoogleReady && googleButtonRef.current) {
-			initializeButton();
+			initializeButton(googleButtonRef.current);
 		}
-	}, [isOpen, isGoogleReady]);
+	}, [isOpen, isGoogleReady, initializeButton]);
 
 	const handleSelectGoogle = (): void => {
 		// For manual click, we'll use the Google button which should trigger OAuth
@@ -76,7 +93,7 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 			return;
 		}
 		// Google OAuth will be handled by the Google button itself
-		// Temporarily disabled for debugging
+		// The useGoogleOAuth hook handles the credential response
 	};
 
 	const handleSelectEmail = (): void => {
@@ -147,33 +164,46 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 									ref={googleButtonRef}
 									type="button"
 									onClick={handleSelectGoogle}
-									disabled={!isGoogleReady || isGoogleLoading}
+									disabled={!isGoogleReady || isGoogleLoading || isProcessingOAuth}
 									className={`border-layout-background bg-content-background text-text-primary flex h-20 flex-col items-center justify-center rounded-lg border p-4 transition-all duration-200 ${
-										!isGoogleReady || isGoogleLoading
+										!isGoogleReady || isGoogleLoading || isProcessingOAuth
 											? "cursor-not-allowed opacity-50"
 											: "hover:bg-layout-background cursor-pointer hover:-translate-y-px hover:shadow-md"
 									}`}
 									aria-label={
-										isGoogleLoading
-											? "Loading..."
-											: !isGoogleReady
-												? import.meta.env.VITE_GOOGLE_CLIENT_ID
-													? "Temporarily Unavailable"
-													: "Google Sign-In Not Configured"
-												: "Continue with Google"
+										isProcessingOAuth
+											? "Processing authentication..."
+											: isGoogleLoading
+												? "Loading..."
+												: !isGoogleReady
+													? import.meta.env.VITE_GOOGLE_CLIENT_ID
+														? "Google Sign-In temporarily unavailable"
+														: "Google Sign-In not configured"
+													: "Continue with Google"
 									}
 									aria-describedby="google-oauth-status"
 									title={
-										isGoogleLoading
-											? "Loading..."
-											: !isGoogleReady
-												? import.meta.env.VITE_GOOGLE_CLIENT_ID
-													? "Temporarily Unavailable"
-													: "Google Sign-In Not Configured"
-												: "Continue with Google"
+										isProcessingOAuth
+											? "Processing authentication..."
+											: isGoogleLoading
+												? "Loading..."
+												: !isGoogleReady
+													? import.meta.env.VITE_GOOGLE_CLIENT_ID
+														? "Google Sign-In temporarily unavailable"
+														: "Google Sign-In not configured"
+													: "Continue with Google"
 									}
 								>
-									{isGoogleLoading ? (
+									{isProcessingOAuth ? (
+										<>
+											<div
+												className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-transparent border-t-current"
+												role="progressbar"
+												aria-label="Processing"
+											></div>
+											<span className="text-xs">Processing...</span>
+										</>
+									) : isGoogleLoading ? (
 										<>
 											<div
 												className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-transparent border-t-current"
@@ -212,8 +242,8 @@ const RegistrationMethodModal: React.FC<RegistrationMethodModalProps> = ({
 											<span className="text-xs">
 												{!isGoogleReady
 													? import.meta.env.VITE_GOOGLE_CLIENT_ID
-														? "Temporarily Unavailable"
-														: "Google Sign-In Not Configured"
+														? "Google Sign-In temporarily unavailable"
+														: "Google Sign-In not configured"
 													: "Continue with Google"}
 											</span>
 										</>

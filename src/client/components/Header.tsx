@@ -16,6 +16,7 @@ interface AuthUser {
 	email: string;
 	name: string;
 	has_projects_access: boolean;
+	email_verified: boolean;
 }
 
 interface Auth {

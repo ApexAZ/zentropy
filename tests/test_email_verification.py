@@ -176,7 +176,7 @@ class TestEmailVerificationFlow:
         # For testing, we'll need to extract token from database or mock it
         
     def test_login_requires_verified_email(self, client: TestClient):
-        """Test that login requires verified email."""
+        """Test that login is rejected for unverified users."""
         # Register user (unverified)
         random_id = random.randint(1000, 9999)
         email = f"unverified{random_id}@example.com"
@@ -190,21 +190,91 @@ class TestEmailVerificationFlow:
             "has_projects_access": True
         }
         
-        client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/auth/register", json=user_data)
+        assert register_response.status_code == 201
         
-        # Try to login - should fail or return special status
+        # Try to login with unverified account - should fail
         login_response = client.post("/api/auth/login-json", json={
             "email": email,
             "password": "SecurePass123!"
         })
         
-        # Should either fail or return special response indicating unverified
-        assert login_response.status_code in [401, 403, 200]
-        if login_response.status_code == 200:
-            data = login_response.json()
-            assert "user" in data
-            assert "email_verified" in data["user"]
-            assert data["user"]["email_verified"] is False
+        # Should fail with 403 Forbidden
+        assert login_response.status_code == 403
+        data = login_response.json()
+        assert "detail" in data
+        assert "verify your email" in data["detail"].lower()
+        
+    def test_login_succeeds_after_email_verification(self, client: TestClient, db: Session):
+        """Test that login succeeds after email verification."""
+        # Register user
+        random_id = random.randint(1000, 9999)
+        email = f"verified{random_id}@example.com"
+        user_data = {
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Verified",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
+            "has_projects_access": True
+        }
+        
+        register_response = client.post("/api/auth/register", json=user_data)
+        assert register_response.status_code == 201
+        
+        # Get verification token from database
+        from api.database import User
+        user = db.query(User).filter(User.email == email).first()
+        assert user is not None
+        assert user.email_verification_token is not None
+        token = user.email_verification_token
+        
+        # Verify email
+        verify_response = client.post(f"/api/auth/verify-email/{token}")
+        assert verify_response.status_code == 200
+        
+        # Now login should succeed
+        login_response = client.post("/api/auth/login-json", json={
+            "email": email,
+            "password": "SecurePass123!"
+        })
+        
+        assert login_response.status_code == 200
+        data = login_response.json()
+        assert "access_token" in data
+        assert "user" in data
+        assert data["user"]["email_verified"] is True
+        
+    def test_oauth_login_endpoint_requires_verified_email(self, client: TestClient):
+        """Test that OAuth login endpoint also requires verified email."""
+        # Register user (unverified)
+        random_id = random.randint(1000, 9999)
+        email = f"unverified_oauth{random_id}@example.com"
+        user_data = {
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Unverified",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
+            "has_projects_access": True
+        }
+        
+        register_response = client.post("/api/auth/register", json=user_data)
+        assert register_response.status_code == 201
+        
+        # Try to login with form data (OAuth endpoint) - should also fail
+        login_response = client.post("/api/auth/login", data={
+            "username": email,
+            "password": "SecurePass123!"
+        })
+        
+        # Should fail with 403 Forbidden
+        assert login_response.status_code == 403
+        data = login_response.json()
+        assert "detail" in data
+        assert "verify your email" in data["detail"].lower()
 
 
 class TestEmailVerificationSecurity:
