@@ -90,16 +90,19 @@ npm install
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
+### 4. Database & Redis Setup
 ```bash
-# Start PostgreSQL container
+# Start PostgreSQL and Redis containers
 docker-compose up -d
 
-# Wait a few seconds for database to initialize
+# Wait a few seconds for services to initialize
 sleep 5
 
 # Run database setup script
 ./scripts/setup-database.sh
+
+# Verify Redis is working
+docker exec zentropy_redis redis-cli ping
 ```
 
 ### 5. Verify Installation
@@ -259,8 +262,8 @@ Use VS Code's built-in Settings Sync to keep your personal preferences synchroni
 # Check what's using the ports
 npm run dev:check
 
-# Or manually:
-lsof -i :3000 -i :5173 -i :5432
+# Or manually (includes Redis):
+lsof -i :3000 -i :5173 -i :5432 -i :6379
 
 # Kill processes if needed
 kill -9 [PID]
@@ -268,12 +271,27 @@ kill -9 [PID]
 
 #### Database Connection Failed
 ```bash
-# Check if Docker container is running
-docker ps | grep zentropy_db
+# Check if Docker containers are running
+docker ps | grep zentropy
 
-# Restart container
+# Restart all containers
 docker-compose down
 docker-compose up -d
+```
+
+#### Redis Connection Issues
+```bash
+# Check Redis container status
+docker ps | grep zentropy_redis
+
+# Test Redis connection
+docker exec zentropy_redis redis-cli ping
+
+# Check Redis logs
+docker logs zentropy_redis
+
+# Restart Redis container
+docker-compose restart redis
 ```
 
 #### Module Not Found Errors

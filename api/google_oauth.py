@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from .database import User, UserRole, AuthProvider, RegistrationType
 from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from .rate_limiter import rate_limiter, RateLimitType
 
-# Simple in-memory rate limiter (replace with Redis in production)
+# Legacy in-memory rate limiter for backward compatibility
 _rate_limit_store: Dict[str, List[datetime]] = {}
 
 
@@ -47,45 +48,35 @@ def clear_rate_limit_store() -> None:
     """Clear the rate limit store (for testing purposes)."""
     global _rate_limit_store
     _rate_limit_store.clear()
+    # Also clear Redis rate limit if available
+    rate_limiter.reset_rate_limit("test", RateLimitType.OAUTH)
 
 
 def check_rate_limit(
     identifier: str, max_requests: int = 20, window_minutes: int = 1
 ) -> None:
     """
-    Simple in-memory rate limiter.
+    Redis-based rate limiter with in-memory fallback.
+
+    This function now uses the new Redis-based rate limiting system
+    but maintains the same API for backward compatibility.
 
     Args:
         identifier: Unique identifier for rate limiting (e.g., IP address)
-        max_requests: Maximum requests allowed in the time window
-        window_minutes: Time window in minutes
+        max_requests: Max requests allowed in window (ignored - uses config)
+        window_minutes: Time window in minutes (ignored - uses config)
 
     Raises:
         GoogleRateLimitError: If rate limit is exceeded
     """
-    now = datetime.utcnow()
-    window_start = now - timedelta(minutes=window_minutes)
-
-    # Get or create request history for this identifier
-    if identifier not in _rate_limit_store:
-        _rate_limit_store[identifier] = []
-
-    # Remove old requests outside the window
-    _rate_limit_store[identifier] = [
-        request_time
-        for request_time in _rate_limit_store[identifier]
-        if request_time > window_start
-    ]
-
-    # Check if rate limit is exceeded
-    if len(_rate_limit_store[identifier]) >= max_requests:
-        raise GoogleRateLimitError(
-            f"Rate limit exceeded: {max_requests} requests per "
-            f"{window_minutes} minute(s)"
-        )
-
-    # Add current request
-    _rate_limit_store[identifier].append(now)
+    try:
+        # Use new Redis-based rate limiter
+        rate_limiter.check_rate_limit(identifier, RateLimitType.OAUTH)
+    except Exception as e:
+        # Convert RateLimitError to GoogleRateLimitError for backward compatibility
+        if "Rate limit exceeded" in str(e):
+            raise GoogleRateLimitError(str(e))
+        raise
 
 
 def verify_google_token(credential: str) -> Dict[str, Any]:

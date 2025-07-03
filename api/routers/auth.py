@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta, datetime
 
 from ..database import get_db
+from ..rate_limiter import rate_limiter, RateLimitType, get_client_ip
 from ..schemas import (
     Token,
     LoginResponse,
@@ -46,9 +47,15 @@ router = APIRouter()
 
 @router.post("/login", response_model=Token)
 def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ) -> Token:
     """Login user and return access token"""
+    # Apply rate limiting to prevent brute force attacks
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user or isinstance(user, bool):
         raise HTTPException(
@@ -79,8 +86,14 @@ def login(
 
 
 @router.post("/login-json", response_model=LoginResponse)
-def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginResponse:
+def login_json(
+    request: Request, user_login: UserLogin, db: Session = Depends(get_db)
+) -> LoginResponse:
     """Login user with JSON payload"""
+    # Apply rate limiting to prevent brute force attacks
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
     user = authenticate_user(db, user_login.email, user_login.password)
     if not user or isinstance(user, bool):
         raise HTTPException(
@@ -124,8 +137,14 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginRes
 @router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
-def register(user_create: UserCreate, db: Session = Depends(get_db)) -> database.User:
+def register(
+    request: Request, user_create: UserCreate, db: Session = Depends(get_db)
+) -> database.User:
     """Register a new user"""
+    # Apply rate limiting to prevent spam registrations
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
     # Validate terms agreement
     if not user_create.terms_agreement:
         raise HTTPException(
@@ -387,9 +406,15 @@ def google_oauth_register(
 
 @router.post("/send-verification", response_model=EmailVerificationResponse)
 def send_verification_email_endpoint(
-    request: EmailVerificationRequest, db: Session = Depends(get_db)
+    fastapi_request: Request,
+    request: EmailVerificationRequest,
+    db: Session = Depends(get_db),
 ) -> EmailVerificationResponse:
     """Send or resend email verification email to user."""
+    # Apply strict rate limiting to prevent email spam
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
+
     success = resend_verification_email(db, request.email)
 
     if not success:
@@ -407,8 +432,14 @@ def send_verification_email_endpoint(
 
 
 @router.post("/verify-email/{token}", response_model=MessageResponse)
-def verify_email_endpoint(token: str, db: Session = Depends(get_db)) -> MessageResponse:
+def verify_email_endpoint(
+    request: Request, token: str, db: Session = Depends(get_db)
+) -> MessageResponse:
     """Verify email address using verification token."""
+    # Apply rate limiting to prevent token brute force attacks
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
+
     user = verify_email_token(db, token)
 
     if not user:
