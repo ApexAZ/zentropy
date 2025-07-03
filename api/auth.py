@@ -22,6 +22,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+EXTENDED_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days in minutes (43200)
 
 # Security scheme
 security = HTTPBearer()
@@ -38,18 +39,37 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(
-    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+    data: Dict[str, Any],
+    expires_delta: Optional[timedelta] = None,
+    remember_me: bool = False,
 ) -> str:
-    """Create a JWT access token"""
+    """Create a JWT access token with optional extended expiration for remember_me"""
     to_encode = data.copy()
+
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
+    elif remember_me is True:
+        # Extended expiration for remember me (30 days)
+        expire = datetime.utcnow() + timedelta(minutes=EXTENDED_TOKEN_EXPIRE_MINUTES)
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        # Normal expiration (30 minutes)
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return str(encoded_jwt)
+
+
+def verify_token_string(token: str) -> Dict[str, Any]:
+    """Verify JWT token string and return payload (for testing)"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return dict(payload)  # Ensure we return a proper Dict[str, Any]
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
 
 
 def verify_token(

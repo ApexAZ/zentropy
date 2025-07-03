@@ -61,6 +61,13 @@ class AuthProvider(PyEnum):
     GOOGLE = "google"
 
 
+class RegistrationType(PyEnum):
+    """User registration method types"""
+
+    EMAIL = "email"
+    GOOGLE_OAUTH = "google_oauth"
+
+
 class IndustryType(PyEnum):
     """Industry/sector classification for organizations"""
 
@@ -157,9 +164,13 @@ class Organization(Base):  # type: ignore
         String, nullable=True, unique=True
     )  # For Google Workspace integration
     website = Column(String, nullable=True)
-    industry: SqlColumn[IndustryType] = Column(Enum(IndustryType), nullable=True)
+    industry: SqlColumn[IndustryType] = Column(
+        Enum(IndustryType, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=True,
+    )
     organization_type: SqlColumn[OrganizationType] = Column(
-        Enum(OrganizationType), nullable=True
+        Enum(OrganizationType, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=True,
     )
 
     # Address information
@@ -233,15 +244,26 @@ class User(Base):  # type: ignore
     # DEPRECATED: Keep for backward compatibility during migration
     organization = Column(String, nullable=True)
     role: SqlColumn[UserRole] = Column(
-        Enum(UserRole), nullable=False, default=UserRole.BASIC_USER
+        Enum(UserRole, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=UserRole.BASIC_USER,
     )
     is_active = Column(Boolean, default=True)
     has_projects_access = Column(Boolean, default=True, nullable=False)
     # OAuth fields
     auth_provider: SqlColumn[AuthProvider] = Column(
-        Enum(AuthProvider), nullable=False, default=AuthProvider.LOCAL
+        Enum(AuthProvider, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=AuthProvider.LOCAL,
     )
     google_id = Column(String, nullable=True, unique=True)
+
+    # Registration tracking
+    registration_type: SqlColumn[RegistrationType] = Column(
+        Enum(RegistrationType, values_callable=lambda obj: [e.value for e in obj]),
+        nullable=False,
+        default=RegistrationType.EMAIL,
+    )
     last_login_at = Column(DateTime, nullable=True)
     terms_accepted_at = Column(DateTime, nullable=True)
     terms_version = Column(String(20), nullable=True)
@@ -292,7 +314,10 @@ class TeamMembership(Base):  # type: ignore
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    role: SqlColumn[TeamRole] = Column(Enum(TeamRole), default=TeamRole.MEMBER)
+    role: SqlColumn[TeamRole] = Column(
+        Enum(TeamRole, values_callable=lambda obj: [e.value for e in obj]),
+        default=TeamRole.MEMBER,
+    )
     joined_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -323,10 +348,14 @@ class TeamInvitation(Base):  # type: ignore
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
     email = Column(String, nullable=False)
-    role: SqlColumn[TeamRole] = Column(Enum(TeamRole), default=TeamRole.MEMBER)
+    role: SqlColumn[TeamRole] = Column(
+        Enum(TeamRole, values_callable=lambda obj: [e.value for e in obj]),
+        default=TeamRole.MEMBER,
+    )
     invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     status: SqlColumn[InvitationStatus] = Column(
-        Enum(InvitationStatus), default=InvitationStatus.PENDING
+        Enum(InvitationStatus, values_callable=lambda obj: [e.value for e in obj]),
+        default=InvitationStatus.PENDING,
     )
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

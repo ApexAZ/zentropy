@@ -102,9 +102,9 @@ def login_json(user_login: UserLogin, db: Session = Depends(get_db)) -> LoginRes
     user.last_login_at = datetime.utcnow()  # type: ignore
     db.commit()
 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Create access token with remember_me handling
     access_token = create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
+        data={"sub": str(user.id)}, remember_me=user_login.remember_me
     )
 
     return LoginResponse(

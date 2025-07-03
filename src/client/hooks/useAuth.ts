@@ -27,7 +27,11 @@ export const useAuth = () => {
 
 	// Check for existing token on mount
 	useEffect(() => {
-		const token = localStorage.getItem("access_token");
+		// Check for token in localStorage (remember me) or sessionStorage (session only)
+		const token =
+			localStorage.getItem("access_token") ||
+			localStorage.getItem("authToken") ||
+			sessionStorage.getItem("authToken");
 		if (token) {
 			// Validate token with API and get user info
 			fetch("/api/users/me", {
@@ -74,8 +78,21 @@ export const useAuth = () => {
 		}
 	}, []);
 
-	const login = (token: string, user: AuthUser) => {
+	const login = (token: string, user: AuthUser, rememberMe: boolean = false) => {
+		// Store token based on remember me preference
+		if (rememberMe) {
+			localStorage.setItem("authToken", token);
+			// Remove from sessionStorage if it exists
+			sessionStorage.removeItem("authToken");
+		} else {
+			sessionStorage.setItem("authToken", token);
+			// Remove from localStorage if it exists
+			localStorage.removeItem("authToken");
+		}
+
+		// Also maintain backward compatibility with access_token key
 		localStorage.setItem("access_token", token);
+
 		setAuthState({
 			isAuthenticated: true,
 			user,
@@ -104,6 +121,8 @@ export const useAuth = () => {
 		} finally {
 			// Always clear local state and storage
 			localStorage.removeItem("access_token");
+			localStorage.removeItem("authToken");
+			sessionStorage.removeItem("authToken");
 			setAuthState({
 				isAuthenticated: false,
 				user: null,
@@ -138,6 +157,8 @@ export const useAuth = () => {
 		} finally {
 			// Always clear local state and storage
 			localStorage.removeItem("access_token");
+			localStorage.removeItem("authToken");
+			sessionStorage.removeItem("authToken");
 			setAuthState({
 				isAuthenticated: false,
 				user: null,

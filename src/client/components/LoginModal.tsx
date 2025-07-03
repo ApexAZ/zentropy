@@ -20,7 +20,7 @@ interface Auth {
 	isAuthenticated: boolean;
 	user: AuthUser | null;
 	token: string | null;
-	login: (token: string, user: AuthUser) => void;
+	login: (token: string, user: AuthUser, rememberMe?: boolean) => void;
 	logout: () => Promise<void>;
 }
 
@@ -94,6 +94,44 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 		}
 	}, [toast]);
 
+	// Clear form data when modal closes
+	useEffect(() => {
+		if (!isOpen) {
+			// Clear form data for security when modal closes
+			setFormData({
+				email: "",
+				password: "",
+				remember_me: false
+			});
+			setErrors({});
+			setToast(null);
+		}
+	}, [isOpen]);
+
+	// Clear form data when user logs out (auth state changes)
+	useEffect(() => {
+		if (!auth.isAuthenticated) {
+			// User logged out, clear any cached credentials
+			setFormData({
+				email: "",
+				password: "",
+				remember_me: false
+			});
+			setErrors({});
+			setToast(null);
+		}
+	}, [auth.isAuthenticated]);
+
+	const clearForm = (): void => {
+		setFormData({
+			email: "",
+			password: "",
+			remember_me: false
+		});
+		setErrors({});
+		setToast(null);
+	};
+
 	const validateForm = (): boolean => {
 		const newErrors: Record<string, string> = {};
 
@@ -162,7 +200,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 			};
 
 			// Update auth state with token and user info
-			auth.login(data.access_token, user);
+			auth.login(data.access_token, user, formData.remember_me);
+
+			// Clear form immediately for security
+			clearForm();
 
 			// Call success callback
 			onSuccess();
@@ -249,7 +290,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 								onChange={e => setFormData({ ...formData, email: e.target.value })}
 								className={`${getFieldBorderClass("email")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none`}
 								required
-								autoComplete="email"
+								autoComplete="off"
 								placeholder="Enter your email address"
 							/>
 							{errors.email && <div className="mt-1 text-sm text-red-600">{errors.email}</div>}
@@ -272,7 +313,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, onSuccess, aut
 									onChange={e => setFormData({ ...formData, password: e.target.value })}
 									className={`${getFieldBorderClass("password")} bg-content-background text-text-primary focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 pr-20 text-base leading-6 transition-all duration-200 focus:outline-none`}
 									required
-									autoComplete="current-password"
+									autoComplete="off"
 									placeholder="Enter your password"
 								/>
 								<button

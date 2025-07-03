@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
-from .database import UserRole, TeamRole, InvitationStatus
+from .database import UserRole, TeamRole, InvitationStatus, RegistrationType
 
 
 # User schemas
@@ -34,6 +34,7 @@ class UserResponse(UserBase):
     id: UUID
     is_active: bool
     email_verified: bool
+    registration_type: RegistrationType
     last_login_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
@@ -45,6 +46,7 @@ class UserResponse(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    remember_me: bool = False
 
 
 class PasswordUpdate(BaseModel):

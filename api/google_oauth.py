@@ -6,7 +6,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from .database import User
+from .database import User, UserRole, AuthProvider, RegistrationType
 from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Simple in-memory rate limiter (replace with Redis in production)
@@ -163,9 +163,11 @@ def get_or_create_google_user(db: Session, google_info: Dict[str, Any]) -> User:
             last_name=google_info.get("family_name", ""),
             organization="",  # Google doesn't provide organization
             password_hash=None,  # No password for OAuth users
-            role="BASIC_USER",  # Use PostgreSQL enum value directly
-            auth_provider="GOOGLE",  # Use PostgreSQL enum value directly
+            role=UserRole.BASIC_USER,  # Use enum object
+            auth_provider=AuthProvider.GOOGLE,  # Use enum object
+            registration_type=RegistrationType.GOOGLE_OAUTH,  # Track registration
             google_id=google_info.get("sub"),
+            email_verified=True,  # Google emails are pre-verified
             last_login_at=now,
             terms_accepted_at=now,
             terms_version="1.0",
@@ -225,5 +227,7 @@ def process_google_oauth(
             "last_name": user.last_name,
             "organization": user.organization,
             "has_projects_access": user.has_projects_access,
+            "email_verified": user.email_verified,
+            "registration_type": user.registration_type.value,  # Registration type
         },
     }
