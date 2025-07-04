@@ -41,8 +41,7 @@ class TeamRole(PyEnum):
 
     MEMBER = "member"
     LEAD = "lead"
-    ADMIN = "admin"
-    TEAM_ADMINISTRATOR = "team_administrator"
+    TEAM_ADMIN = "team_admin"
 
 
 class InvitationStatus(PyEnum):
@@ -275,6 +274,9 @@ class User(Base):  # type: ignore
     email_verification_token = Column(String, nullable=True, unique=True)
     email_verification_expires_at = Column(DateTime, nullable=True)
 
+    # User preferences
+    # Note: remember_me functionality handled via JWT token expiration
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -379,15 +381,4 @@ class PasswordHistory(Base):  # type: ignore
     user = relationship("User", back_populates="password_history")
 
 
-# Session model for authentication
-class Session(Base):  # type: ignore
-    __tablename__ = "sessions"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    session_token = Column(String, unique=True, nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    user = relationship("User")
+# Session model removed - JWT authentication is used instead

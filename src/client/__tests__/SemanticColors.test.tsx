@@ -256,7 +256,7 @@ describe("Semantic Color Validation", () => {
 		expect(totalSemanticUsage).toBeGreaterThan(50);
 
 		// Ensure major components are using semantic colors
-		const majorComponents = ["App.tsx", "LoginPage.tsx", "RegisterPage.tsx", "Header.tsx"];
+		const majorComponents = ["App.tsx", "Header.tsx"];
 		majorComponents.forEach(component => {
 			if (usageByFile[component] !== undefined) {
 				expect(usageByFile[component]).toBeGreaterThan(0);

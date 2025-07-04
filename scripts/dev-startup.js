@@ -1,249 +1,108 @@
 #!/usr/bin/env node
 
-import { spawn, execSync } from 'child_process';
-import readline from 'readline';
+/**
+ * ⚠️ WARNING: MANUAL USER SCRIPT ONLY
+ * 
+ * This script spawns long-running development servers and CANNOT be executed by Claude Code
+ * due to timeout limitations with persistent processes.
+ * 
+ * USAGE:
+ * - Run manually in terminal: `npm run dev` or `node scripts/dev-startup.js`
+ * - Claude Code users: Start servers manually in separate terminal windows
+ * 
+ * For Claude Code compatibility, use individual commands:
+ * - `npm run dev:database` (start PostgreSQL)
+ * - `npm run dev:api` (start Python FastAPI) 
+ * - `npm run dev:client` (start React/Vite)
+ */
 
-console.log('🚀 Starting Zentropy development environment...\n');
+import { spawn } from 'child_process';
+import { execSync } from 'child_process';
 
-// Color codes
-const colors = {
-  api: '\x1b[33m',     // yellow
-  client: '\x1b[36m',  // cyan
-  db: '\x1b[32m',      // green
-  reset: '\x1b[0m'
-};
+console.log('🚀 Starting Zentropy development environment...');
+console.log('⚠️  NOTE: This is a long-running process - Claude Code cannot execute this script\n');
 
-// Utility functions
-function checkPort(port) {
+// Function to run a command and capture output
+function runCommand(command) {
   try {
-    execSync(`lsof -i :${port}`, { stdio: 'ignore' });
+    execSync(command, { stdio: 'inherit' });
     return true;
-  } catch {
+  } catch (error) {
     return false;
   }
 }
 
-// More robust API health check
-async function checkApiReady() {
-  try {
-    execSync('curl -sSf http://127.0.0.1:3000/health', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
+// Check if ports are available
+console.log('🔍 Checking port availability...');
+if (!runCommand('node scripts/check-ports.js')) {
+  console.log('❌ Port check failed. Please free up ports 3000 and 5173');
+  process.exit(1);
 }
 
-function checkDockerContainer(containerName) {
-  try {
-    const result = execSync(`docker ps --filter "name=${containerName}" --format "{{.Names}}"`, { encoding: 'utf8' });
-    return result.trim() === containerName;
-  } catch {
-    return false;
-  }
+// Start database
+console.log('📦 Starting database services...');
+if (!runCommand('docker-compose up -d')) {
+  console.log('❌ Failed to start database services');
+  process.exit(1);
 }
 
-function checkDatabaseReady() {
+// Wait for database to be ready
+console.log('⏳ Waiting for database to be ready...');
+let retries = 10;
+while (retries > 0) {
   try {
     execSync('docker exec zentropy_db pg_isready -U dev_user -d zentropy', { stdio: 'ignore' });
-    return true;
+    console.log('✅ Database is ready');
+    break;
   } catch {
-    return false;
-  }
-}
-
-// Service management
-let apiProc = null;
-let clientProc = null;
-
-// Cleanup function
-function cleanup() {
-  console.log('\n👋 Shutting down...');
-  if (apiProc) apiProc.kill();
-  if (clientProc) clientProc.kill();
-  // Database is left running (managed by Docker)
-  process.exit(0);
-}
-
-process.on('SIGINT', cleanup);
-process.on('SIGTERM', cleanup);
-
-// Start services
-async function startServices() {
-  // 1. Check and start database
-  console.log(`${colors.db}[DATABASE]${colors.reset} Checking database...`);
-  
-  if (checkDockerContainer('zentropy_db')) {
-    console.log(`${colors.db}[DATABASE]${colors.reset} ✅ Container already running`);
-    
-    if (checkDatabaseReady()) {
-      console.log(`${colors.db}[DATABASE]${colors.reset} ✅ Database ready`);
-    } else {
-      console.log(`${colors.db}[DATABASE]${colors.reset} ⏳ Waiting for database to be ready...`);
-      // Wait for database to be ready
-      let attempts = 0;
-      while (!checkDatabaseReady() && attempts < 15) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-      }
-      if (checkDatabaseReady()) {
-        console.log(`${colors.db}[DATABASE]${colors.reset} ✅ Database ready`);
-      } else {
-        console.log(`${colors.db}[DATABASE]${colors.reset} ❌ Database not ready after 15 seconds`);
-        process.exit(1);
-      }
-    }
-  } else {
-    console.log(`${colors.db}[DATABASE]${colors.reset} 🚀 Starting database container...`);
-    try {
-      execSync('docker-compose up -d', { stdio: 'pipe' });
-      console.log(`${colors.db}[DATABASE]${colors.reset} ✅ Container started`);
-      
-      // Wait for database to be ready
-      console.log(`${colors.db}[DATABASE]${colors.reset} ⏳ Waiting for database initialization...`);
-      let attempts = 0;
-      while (!checkDatabaseReady() && attempts < 30) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-      }
-      
-      if (checkDatabaseReady()) {
-        console.log(`${colors.db}[DATABASE]${colors.reset} ✅ Database ready`);
-      } else {
-        console.log(`${colors.db}[DATABASE]${colors.reset} ❌ Database failed to start`);
-        process.exit(1);
-      }
-    } catch (error) {
-      console.log(`${colors.db}[DATABASE]${colors.reset} ❌ Failed to start database:`, error.message);
+    retries--;
+    if (retries === 0) {
+      console.log('❌ Database failed to start within 20 seconds');
       process.exit(1);
     }
+    console.log(`⏳ Database starting... (${retries} retries left)`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
   }
-
-  // Small delay to ensure database is fully ready
-  console.log(`${colors.db}[DATABASE]${colors.reset} ⏳ Waiting 2 seconds before starting API...`);
-  await new Promise(resolve => setTimeout(resolve, 2000));
-
-  // 2. Check and start API
-  console.log(`\n${colors.api}[API]${colors.reset} Checking API server...`);
-  
-  if (checkPort(3000)) {
-    console.log(`${colors.api}[API]${colors.reset} ✅ Already running on port 3000`);
-  } else {
-    console.log(`${colors.api}[API]${colors.reset} 🚀 Starting API server...`);
-    
-    apiProc = spawn('python3', ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', '3000', '--reload'], {
-      env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      stdio: ['ignore', 'pipe', 'pipe']  // Don't inherit stdin
-    });
-
-    // Handle API output
-    const apiRl = readline.createInterface({ input: apiProc.stdout });
-    apiRl.on('line', (line) => {
-      console.log(`${colors.api}[API]${colors.reset} ${line}`);
-    });
-
-    const apiErrRl = readline.createInterface({ input: apiProc.stderr });
-    apiErrRl.on('line', (line) => {
-      console.error(`${colors.api}[API]${colors.reset} ${line}`);
-    });
-
-    apiProc.on('exit', (code) => {
-      console.log(`\n❌ API server exited with code ${code}`);
-      cleanup();
-    });
-
-    // Wait for API to be ready
-    console.log(`${colors.api}[API]${colors.reset} ⏳ Waiting for API startup...`);
-    let apiAttempts = 0;
-    while (!(await checkApiReady()) && apiAttempts < 30) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      apiAttempts++;
-    }
-    
-    if (await checkApiReady()) {
-      console.log(`${colors.api}[API]${colors.reset} ✅ API server ready and responding on port 3000`);
-    } else {
-      console.log(`${colors.api}[API]${colors.reset} ❌ API server failed to start or respond to health check`);
-      cleanup();
-      return;
-    }
-  }
-
-  // Small delay before starting client
-  console.log(`${colors.api}[API]${colors.reset} ⏳ Waiting 2 seconds before starting client...`);
-  await new Promise(resolve => setTimeout(resolve, 2000));
-
-  // 3. Check and start client
-  console.log(`\n${colors.client}[CLIENT]${colors.reset} Checking client server...`);
-  
-  if (checkPort(5173)) {
-    console.log(`${colors.client}[CLIENT]${colors.reset} ✅ Already running on port 5173`);
-  } else {
-    console.log(`${colors.client}[CLIENT]${colors.reset} 🚀 Starting client server...`);
-    
-    clientProc = spawn('npm', ['run', 'dev:client'], {
-      stdio: ['ignore', 'pipe', 'pipe']  // Don't inherit stdin
-    });
-
-    // Handle client output
-    const clientRl = readline.createInterface({ input: clientProc.stdout });
-    clientRl.on('line', (line) => {
-      console.log(`${colors.client}[CLIENT]${colors.reset} ${line}`);
-    });
-
-    const clientErrRl = readline.createInterface({ input: clientProc.stderr });
-    clientErrRl.on('line', (line) => {
-      console.error(`${colors.client}[CLIENT]${colors.reset} ${line}`);
-    });
-
-    clientProc.on('exit', (code) => {
-      console.log(`\n❌ Client server exited with code ${code}`);
-      cleanup();
-    });
-
-    // Wait for client to be ready
-    console.log(`${colors.client}[CLIENT]${colors.reset} ⏳ Waiting for client startup...`);
-    let clientAttempts = 0;
-    while (!checkPort(5173) && clientAttempts < 15) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      clientAttempts++;
-    }
-    
-    if (checkPort(5173)) {
-      console.log(`${colors.client}[CLIENT]${colors.reset} ✅ Client server ready on port 5173`);
-    } else {
-      console.log(`${colors.client}[CLIENT]${colors.reset} ❌ Client server failed to start`);
-      cleanup();
-      return;
-    }
-  }
-
-  // Final status
-  console.log('\n🎉 All services are running!');
-  console.log(`   📊 Frontend: http://localhost:5173`);
-  console.log(`   🔌 API: http://localhost:3000`);
-  console.log(`   📚 API Docs: http://localhost:3000/docs`);
-  console.log('\n   Press Ctrl+C to stop all services\n');
 }
 
-// Start the process
-startServices().catch(error => {
-  console.error('❌ Startup failed:', error);
-  cleanup();
+// Start API server
+console.log('🔧 Starting API server...');
+const apiServer = spawn('python3', ['-m', 'uvicorn', 'api.main:app', '--host', '127.0.0.1', '--port', '3000', '--reload'], {
+  stdio: 'inherit',
+  detached: true
 });
+
+// Wait a moment for API to start
+await new Promise(resolve => setTimeout(resolve, 3000));
+
+// Start client server
+console.log('⚛️  Starting React client...');
+const clientServer = spawn('npx', ['vite', 'dev', '--port', '5173'], {
+  cwd: 'src/client',
+  stdio: 'inherit',
+  detached: true
+});
+
+// Handle cleanup on exit
+process.on('SIGINT', () => {
+  console.log('\n🛑 Stopping development servers...');
+  
+  // Kill processes
+  try {
+    execSync('pkill -f uvicorn', { stdio: 'ignore' });
+    execSync('pkill -f vite', { stdio: 'ignore' });
+  } catch (e) {
+    // Ignore errors - processes might already be stopped
+  }
+  
+  process.exit(0);
+});
+
+console.log('\n🎉 Development environment started!');
+console.log('📝 API server: http://localhost:3000');
+console.log('🌐 React client: http://localhost:5173');
+console.log('📚 API docs: http://localhost:3000/docs');
+console.log('\n💡 Press Ctrl+C to stop all servers');
 
 // Keep the process alive
-process.stdin.resume();
-
-// Also handle process termination more gracefully
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  cleanup();
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  cleanup();
-});
-
-// Keep the script alive until manually terminated
-process.stdin.resume();
+setInterval(() => {}, 1000);

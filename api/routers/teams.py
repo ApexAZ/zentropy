@@ -50,7 +50,7 @@ def create_team(
 
     # Add creator as team member
     membership = database.TeamMembership(
-        team_id=db_team.id, user_id=current_user.id, role=TeamRole.ADMIN
+        team_id=db_team.id, user_id=current_user.id, role=TeamRole.TEAM_ADMIN
     )
     db.add(membership)
     db.commit()
@@ -115,7 +115,7 @@ def update_team(
         .filter(
             database.TeamMembership.team_id == team_id,
             database.TeamMembership.user_id == current_user.id,
-            database.TeamMembership.role.in_([TeamRole.ADMIN, TeamRole.LEAD]),
+            database.TeamMembership.role.in_([TeamRole.TEAM_ADMIN, TeamRole.LEAD]),
         )
         .first()
     )

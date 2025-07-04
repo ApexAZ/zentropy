@@ -11,47 +11,15 @@ Comprehensive test suite for the enhanced role system including:
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from unittest.mock import patch
 import uuid
 
 from api.main import app
-from api.database import Base, get_db, UserRole, TeamRole, InvitationStatus
+from api.database import UserRole, TeamRole, InvitationStatus
 from api.database import User, Team, TeamMembership, TeamInvitation
 from api.schemas import UserCreate, TeamCreate, TeamInvitationCreate
-
-
-# Test database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_roles.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-@pytest.fixture
-def db_session():
-    """Create a test database session."""
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture
-def client(db_session):
-    """Create test client with test database."""
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            db_session.close()
-    
-    app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
-    app.dependency_overrides.clear()
+from tests.conftest import create_test_user, create_test_team
 
 
 class TestRoleEnums:
@@ -70,8 +38,7 @@ class TestRoleEnums:
         """Test TeamRole enum has correct values."""
         assert TeamRole.MEMBER.value == "member"
         assert TeamRole.LEAD.value == "lead"
-        assert TeamRole.ADMIN.value == "admin"
-        assert TeamRole.TEAM_ADMINISTRATOR.value == "team_administrator"
+        assert TeamRole.TEAM_ADMIN.value == "team_admin"
     
     def test_invitation_status_enum_values(self, client):
         """Test InvitationStatus enum has correct values."""
@@ -83,14 +50,14 @@ class TestRoleEnums:
     def test_role_enum_count(self, client):
         """Test that enums have the expected number of values."""
         assert len(list(UserRole)) == 6
-        assert len(list(TeamRole)) == 4
+        assert len(list(TeamRole)) == 3
         assert len(list(InvitationStatus)) == 4
 
 
 class TestDatabaseRoleConstraints:
     """Test database model role constraints and validation."""
     
-    def test_user_default_role(self, db_session, client):
+    def test_user_default_role(self, db, client):
         """Test that new users get basic_user role by default."""
         user = User(
             email="test@example.com",
@@ -99,12 +66,12 @@ class TestDatabaseRoleConstraints:
             last_name="User",
             organization="Test Org"
         )
-        db_session.add(user)
-        db_session.commit()
+        db.add(user)
+        db.commit()
         
         assert user.role == UserRole.BASIC_USER
     
-    def test_user_role_assignment(self, db_session, client):
+    def test_user_role_assignment(self, db, client):
         """Test assigning different user roles."""
         test_roles = [
             UserRole.PROJECT_ADMINISTRATOR,
@@ -122,12 +89,12 @@ class TestDatabaseRoleConstraints:
                 organization="Test Org",
                 role=role
             )
-            db_session.add(user)
-            db_session.commit()
+            db.add(user)
+            db.commit()
             
             assert user.role == role
     
-    def test_team_membership_default_role(self, db_session, client):
+    def test_team_membership_default_role(self, db, client):
         """Test that team memberships get member role by default."""
         # Create user and team first
         user = User(
@@ -142,19 +109,19 @@ class TestDatabaseRoleConstraints:
             description="Test Description",
             created_by=user.id
         )
-        db_session.add_all([user, team])
-        db_session.commit()
+        db.add_all([user, team])
+        db.commit()
         
         membership = TeamMembership(
             team_id=team.id,
             user_id=user.id
         )
-        db_session.add(membership)
-        db_session.commit()
+        db.add(membership)
+        db.commit()
         
         assert membership.role == TeamRole.MEMBER
     
-    def test_team_membership_role_assignment(self, db_session, client):
+    def test_team_membership_role_assignment(self, db, client):
         """Test assigning different team roles."""
         # Create user and team
         user = User(
@@ -169,10 +136,10 @@ class TestDatabaseRoleConstraints:
             description="Test Description",
             created_by=user.id
         )
-        db_session.add_all([user, team])
-        db_session.commit()
+        db.add_all([user, team])
+        db.commit()
         
-        test_roles = [TeamRole.ADMIN, TeamRole.LEAD, TeamRole.TEAM_ADMINISTRATOR]
+        test_roles = [TeamRole.TEAM_ADMIN, TeamRole.LEAD]
         
         for i, role in enumerate(test_roles):
             membership = TeamMembership(
@@ -180,13 +147,13 @@ class TestDatabaseRoleConstraints:
                 user_id=user.id,
                 role=role
             )
-            db_session.add(membership)
-            db_session.commit()
+            db.add(membership)
+            db.commit()
             
             assert membership.role == role
-            db_session.delete(membership)  # Clean up for next iteration
+            db.delete(membership)  # Clean up for next iteration
     
-    def test_team_invitation_role_and_status(self, db_session, client):
+    def test_team_invitation_role_and_status(self, db, client):
         """Test team invitation role and status defaults."""
         # Create user and team
         user = User(
@@ -201,8 +168,8 @@ class TestDatabaseRoleConstraints:
             description="Test Description",
             created_by=user.id
         )
-        db_session.add_all([user, team])
-        db_session.commit()
+        db.add_all([user, team])
+        db.commit()
         
         from datetime import datetime, timedelta
         invitation = TeamInvitation(
@@ -211,8 +178,8 @@ class TestDatabaseRoleConstraints:
             invited_by=user.id,
             expires_at=datetime.utcnow() + timedelta(days=7)
         )
-        db_session.add(invitation)
-        db_session.commit()
+        db.add(invitation)
+        db.commit()
         
         assert invitation.role == TeamRole.MEMBER
         assert invitation.status == InvitationStatus.PENDING
@@ -366,19 +333,17 @@ class TestRoleHierarchy:
         hierarchy = {
             TeamRole.MEMBER: 1,
             TeamRole.LEAD: 2,
-            TeamRole.ADMIN: 3,
-            TeamRole.TEAM_ADMINISTRATOR: 4
+            TeamRole.TEAM_ADMIN: 3
         }
         
-        assert hierarchy[TeamRole.TEAM_ADMINISTRATOR] > hierarchy[TeamRole.ADMIN]
-        assert hierarchy[TeamRole.ADMIN] > hierarchy[TeamRole.LEAD]
+        assert hierarchy[TeamRole.TEAM_ADMIN] > hierarchy[TeamRole.LEAD]
         assert hierarchy[TeamRole.LEAD] > hierarchy[TeamRole.MEMBER]
 
 
 class TestRoleSystemIntegration:
     """Test integration between different role system components."""
     
-    def test_role_enum_to_database_mapping(self, db_session, client):
+    def test_role_enum_to_database_mapping(self, db, client):
         """Test that enum values correctly map to database storage."""
         # Test UserRole
         for role in UserRole:
@@ -390,14 +355,14 @@ class TestRoleSystemIntegration:
                 organization="Test Org",
                 role=role
             )
-            db_session.add(user)
-            db_session.commit()
+            db.add(user)
+            db.commit()
             
             # Retrieve from database and verify
-            retrieved_user = db_session.query(User).filter(User.email == user.email).first()
+            retrieved_user = db.query(User).filter(User.email == user.email).first()
             assert retrieved_user.role == role
             
-            db_session.delete(retrieved_user)
+            db.delete(retrieved_user)
     
     def test_schema_validation_with_enums(self, client):
         """Test that Pydantic schemas correctly validate enum values."""
@@ -420,12 +385,12 @@ class TestRoleSystemIntegration:
         # Test TeamInvitationCreate with enum role
         invitation_data = {
             "email": "invite@example.com",
-            "role": TeamRole.TEAM_ADMINISTRATOR,
+            "role": TeamRole.TEAM_ADMIN,
             "team_id": uuid4(),
             "invited_by": uuid4()
         }
         invitation = TeamInvitationCreate(**invitation_data)
-        assert invitation.role == TeamRole.TEAM_ADMINISTRATOR
+        assert invitation.role == TeamRole.TEAM_ADMIN
 
 
 if __name__ == "__main__":

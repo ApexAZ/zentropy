@@ -62,7 +62,7 @@ describe("EmailVerificationStatusBanner", () => {
 			const resendButton = screen.getByRole("button", { name: /resend verification email/i });
 			await user.click(resendButton);
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/auth/send-verification", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/send-verification", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"

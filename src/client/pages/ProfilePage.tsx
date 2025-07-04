@@ -59,7 +59,7 @@ const ProfilePage: React.FC = () => {
 				setIsLoading(true);
 				setError("");
 
-				const response = await fetch("/api/users/me");
+				const response = await fetch("/api/v1/users/me");
 				if (!response.ok) {
 					throw new Error(`Failed to load profile: ${response.status}`);
 				}
@@ -87,6 +87,7 @@ const ProfilePage: React.FC = () => {
 			const timer = setTimeout(() => setToast(null), 5000);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [toast]);
 
 	// Retry function for error recovery
@@ -95,7 +96,7 @@ const ProfilePage: React.FC = () => {
 			setIsLoading(true);
 			setError("");
 
-			const response = await fetch("/api/users/me");
+			const response = await fetch("/api/v1/users/me");
 			if (!response.ok) {
 				throw new Error(`Failed to load profile: ${response.status}`);
 			}
@@ -164,7 +165,7 @@ const ProfilePage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch("/api/users/me", {
+			const response = await fetch("/api/v1/users/me", {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json"
@@ -246,7 +247,7 @@ const ProfilePage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch("/api/users/me/password", {
+			const response = await fetch("/api/v1/users/me/password", {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json"

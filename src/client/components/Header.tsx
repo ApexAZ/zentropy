@@ -1,16 +1,7 @@
 import React from "react";
 import NavigationPanel from "./NavigationPanel";
 
-type Page =
-	| "home"
-	| "about"
-	| "contact"
-	| "profile"
-	| "teams"
-	| "calendar"
-	| "dashboard"
-	| "login"
-	| "team-configuration";
+type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 interface AuthUser {
 	email: string;
@@ -31,11 +22,11 @@ interface HeaderProps {
 	currentPage: Page;
 	onPageChange: (page: Page) => void;
 	onShowRegistration: () => void;
-	onShowLogin: () => void;
+	onShowSignIn: () => void;
 	auth: Auth;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowLogin, auth }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowSignIn, auth }) => {
 	return (
 		<header className="border-layout-background bg-content-background flex w-full items-center justify-between border-b px-8 py-4 shadow-sm">
 			<h1 className="m-0 flex-shrink-0 text-3xl">
@@ -91,7 +82,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 					<NavigationPanel
 						onPageChange={onPageChange}
 						onShowRegistration={onShowRegistration}
-						onShowLogin={onShowLogin}
+						onShowSignIn={onShowSignIn}
 						auth={auth}
 					/>
 				</div>

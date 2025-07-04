@@ -52,7 +52,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		vi.restoreAllMocks();
 	});
 
-	test("login with rememberMe=true stores token in localStorage", () => {
+	test("sign in with rememberMe=true stores token in localStorage", () => {
 		const { result } = renderHook(() => useAuth());
 
 		const testUser = {
@@ -68,7 +68,8 @@ describe("useAuth Hook Remember Me Integration", () => {
 
 		// Should store in localStorage for persistent sessions
 		expect(mockLocalStorage.setItem).toHaveBeenCalledWith("authToken", "test-token-123");
-		expect(mockLocalStorage.setItem).toHaveBeenCalledWith("access_token", "test-token-123");
+		// Should NOT call access_token anymore (removed in fix)
+		expect(mockLocalStorage.setItem).not.toHaveBeenCalledWith("access_token", "test-token-123");
 
 		// Should clear sessionStorage
 		expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
@@ -79,7 +80,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		expect(result.current.token).toBe("test-token-123");
 	});
 
-	test("login with rememberMe=false stores token in sessionStorage", () => {
+	test("sign in with rememberMe=false stores token in sessionStorage", () => {
 		const { result } = renderHook(() => useAuth());
 
 		const testUser = {
@@ -95,7 +96,8 @@ describe("useAuth Hook Remember Me Integration", () => {
 
 		// Should store in sessionStorage for session-only
 		expect(mockSessionStorage.setItem).toHaveBeenCalledWith("authToken", "test-token-456");
-		expect(mockLocalStorage.setItem).toHaveBeenCalledWith("access_token", "test-token-456");
+		// Should NOT call access_token anymore (removed in fix)
+		expect(mockLocalStorage.setItem).not.toHaveBeenCalledWith("access_token", "test-token-456");
 
 		// Should clear localStorage authToken
 		expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
@@ -106,7 +108,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		expect(result.current.token).toBe("test-token-456");
 	});
 
-	test("login with default rememberMe (false) stores token in sessionStorage", () => {
+	test("sign in with default rememberMe (false) stores token in sessionStorage", () => {
 		const { result } = renderHook(() => useAuth());
 
 		const testUser = {
@@ -123,7 +125,8 @@ describe("useAuth Hook Remember Me Integration", () => {
 
 		// Should store in sessionStorage by default
 		expect(mockSessionStorage.setItem).toHaveBeenCalledWith("authToken", "test-token-789");
-		expect(mockLocalStorage.setItem).toHaveBeenCalledWith("access_token", "test-token-789");
+		// Should NOT call access_token anymore (removed in fix)
+		expect(mockLocalStorage.setItem).not.toHaveBeenCalledWith("access_token", "test-token-789");
 
 		// Should clear localStorage authToken
 		expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
@@ -132,7 +135,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 	test("logout clears both localStorage and sessionStorage", async () => {
 		const { result } = renderHook(() => useAuth());
 
-		// Mock successful logout response
+		// Mock successful sign out response
 		mockFetch.mockResolvedValueOnce({
 			ok: true
 		});
@@ -153,15 +156,16 @@ describe("useAuth Hook Remember Me Integration", () => {
 		mockLocalStorage.removeItem.mockClear();
 		mockSessionStorage.removeItem.mockClear();
 
-		// Logout
+		// Sign out
 		await act(async () => {
 			await result.current.logout();
 		});
 
-		// Should clear all token storage locations
-		expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+		// Should clear all token storage locations (access_token removed in fix)
 		expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 		expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
+		// Should NOT call access_token anymore (removed in fix)
+		expect(mockLocalStorage.removeItem).not.toHaveBeenCalledWith("access_token");
 
 		// Should update auth state
 		expect(result.current.isAuthenticated).toBe(false);
@@ -194,18 +198,21 @@ describe("useAuth Hook Remember Me Integration", () => {
 			await new Promise(resolve => setTimeout(resolve, 0));
 		});
 
-		// Should check all token storage locations
-		expect(mockLocalStorage.getItem).toHaveBeenCalledWith("access_token");
+		// Should check new token storage locations (access_token removed in fix)
 		expect(mockLocalStorage.getItem).toHaveBeenCalledWith("authToken");
-		// SessionStorage is only checked if localStorage tokens are not found
-		// Since we mocked localStorage to return a token, sessionStorage won't be checked
+		expect(mockSessionStorage.getItem).toHaveBeenCalledWith("authToken");
+		// Should NOT check access_token anymore (removed in fix)
+		expect(mockLocalStorage.getItem).not.toHaveBeenCalledWith("access_token");
 	});
 
-	test("initialization prioritizes access_token over authToken for backward compatibility", async () => {
-		// Mock both localStorage having tokens
+	test("initialization prioritizes sessionStorage over localStorage for current session", async () => {
+		// Mock both storage locations having tokens
+		mockSessionStorage.getItem.mockImplementation(key => {
+			if (key === "authToken") return "session-token-123";
+			return null;
+		});
 		mockLocalStorage.getItem.mockImplementation(key => {
-			if (key === "access_token") return "old-token-123";
-			if (key === "authToken") return "new-token-456";
+			if (key === "authToken") return "local-token-456";
 			return null;
 		});
 
@@ -227,10 +234,10 @@ describe("useAuth Hook Remember Me Integration", () => {
 			await new Promise(resolve => setTimeout(resolve, 0));
 		});
 
-		// Should use access_token first for backward compatibility
-		expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
+		// Should prioritize sessionStorage for current session
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
 			headers: {
-				Authorization: "Bearer old-token-123",
+				Authorization: "Bearer session-token-123",
 				"Content-Type": "application/json"
 			}
 		});
@@ -262,7 +269,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		});
 
 		// Should use sessionStorage token
-		expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
 			headers: {
 				Authorization: "Bearer session-token-789",
 				"Content-Type": "application/json"

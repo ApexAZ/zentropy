@@ -223,7 +223,7 @@ class TestCrossEnumInteractions:
         """Test that system admin users can have team admin roles consistently."""
         # This tests that enum combinations make sense semantically
         user_role = UserRole.ADMIN
-        team_role = TeamRole.ADMIN
+        team_role = TeamRole.TEAM_ADMIN
         
         # Both should be admin-level roles
         assert "admin" in user_role.value

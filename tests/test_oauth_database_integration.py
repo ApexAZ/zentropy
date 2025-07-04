@@ -4,36 +4,18 @@ OAuth Database Integration Tests
 Critical security tests for OAuth user model functionality with real database operations.
 """
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from datetime import datetime
 import uuid
 
-from api.database import Base, User, AuthProvider
-
-
-# Test database setup
-TEST_DATABASE_URL = "sqlite:///:memory:"
-test_engine = create_engine(TEST_DATABASE_URL, echo=False)
-TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
-
-@pytest.fixture
-def db_session():
-    """Create a fresh database session for each test."""
-    Base.metadata.create_all(bind=test_engine)
-    session = TestSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-        Base.metadata.drop_all(bind=test_engine)
+from api.database import User, AuthProvider
+from tests.conftest import create_test_user
 
 
 class TestOAuthDatabaseIntegration:
     """Critical OAuth security tests with real database operations."""
     
-    def test_local_user_defaults_in_database(self, db_session, client):
+    def test_local_user_defaults_in_database(self, db, client):
         """Test that local auth users get proper defaults when inserted to database."""
         user = User(
             email="local@example.com",
@@ -48,9 +30,9 @@ class TestOAuthDatabaseIntegration:
         assert user.id is None  # Not yet applied
         
         # Insert to database
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
         
         # After database insert - defaults should be applied
         assert user.auth_provider == AuthProvider.LOCAL
@@ -60,7 +42,7 @@ class TestOAuthDatabaseIntegration:
         assert user.id is not None
         assert user.created_at is not None
     
-    def test_google_oauth_user_in_database(self, db_session, client):
+    def test_google_oauth_user_in_database(self, db, client):
         """Test Google OAuth user creation in database."""
         google_user = User(
             email="oauth@gmail.com",
@@ -73,9 +55,9 @@ class TestOAuthDatabaseIntegration:
         )
         
         # Insert to database
-        db_session.add(google_user)
-        db_session.commit()
-        db_session.refresh(google_user)
+        db.add(google_user)
+        db.commit()
+        db.refresh(google_user)
         
         # Verify OAuth user in database
         assert google_user.email == "oauth@gmail.com"
@@ -87,7 +69,7 @@ class TestOAuthDatabaseIntegration:
         assert google_user.id is not None
         assert google_user.created_at is not None
     
-    def test_google_id_uniqueness_constraint(self, db_session, client):
+    def test_google_id_uniqueness_constraint(self, db, client):
         """Test that google_id must be unique."""
         # Create first Google user
         user1 = User(
@@ -99,8 +81,8 @@ class TestOAuthDatabaseIntegration:
             google_id="duplicate_id",
             password_hash=None
         )
-        db_session.add(user1)
-        db_session.commit()
+        db.add(user1)
+        db.commit()
         
         # Try to create second user with same google_id
         user2 = User(
@@ -112,13 +94,13 @@ class TestOAuthDatabaseIntegration:
             google_id="duplicate_id",  # Same as user1
             password_hash=None
         )
-        db_session.add(user2)
+        db.add(user2)
         
         # Should raise integrity error due to unique constraint
         with pytest.raises(Exception):  # SQLite raises IntegrityError, Postgres raises different error
-            db_session.commit()
+            db.commit()
     
-    def test_user_can_have_local_and_google_accounts_different_emails(self, db_session, client):
+    def test_user_can_have_local_and_google_accounts_different_emails(self, db, client):
         """Test that the same person can have both local and Google accounts with different emails."""
         # Local account
         local_user = User(
@@ -141,8 +123,8 @@ class TestOAuthDatabaseIntegration:
             password_hash=None
         )
         
-        db_session.add_all([local_user, google_user])
-        db_session.commit()
+        db.add_all([local_user, google_user])
+        db.commit()
         
         # Both should exist successfully
         assert local_user.id != google_user.id
@@ -150,7 +132,7 @@ class TestOAuthDatabaseIntegration:
         assert local_user.auth_provider == AuthProvider.LOCAL
         assert google_user.auth_provider == AuthProvider.GOOGLE
     
-    def test_oauth_user_password_hash_can_be_null(self, db_session, client):
+    def test_oauth_user_password_hash_can_be_null(self, db, client):
         """Test that OAuth users can have NULL password_hash."""
         oauth_user = User(
             email="oauth@example.com",
@@ -162,15 +144,15 @@ class TestOAuthDatabaseIntegration:
             password_hash=None  # Explicitly NULL
         )
         
-        db_session.add(oauth_user)
-        db_session.commit()
-        db_session.refresh(oauth_user)
+        db.add(oauth_user)
+        db.commit()
+        db.refresh(oauth_user)
         
         assert oauth_user.password_hash is None
         assert oauth_user.auth_provider == AuthProvider.GOOGLE
         assert oauth_user.google_id == "google_oauth_user"
     
-    def test_local_user_requires_password_hash(self, db_session, client):
+    def test_local_user_requires_password_hash(self, db, client):
         """Test that local users should have password_hash (business logic, not DB constraint)."""
         # This is more of a business rule test - the DB allows NULL password_hash
         # but our application logic should require it for local users
@@ -184,8 +166,8 @@ class TestOAuthDatabaseIntegration:
         )
         
         # Database will allow this, but our auth logic should prevent it
-        db_session.add(local_user_no_password)
-        db_session.commit()
+        db.add(local_user_no_password)
+        db.commit()
         
         # This passes at DB level - we need to enforce at application level
         assert local_user_no_password.password_hash is None

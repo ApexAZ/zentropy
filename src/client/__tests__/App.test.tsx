@@ -298,7 +298,7 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			// Verify the credential was sent to backend
 			await waitFor(() => {
 				expect(global.fetch).toHaveBeenCalledWith(
-					"/api/auth/google-oauth",
+					"/api/v1/auth/google-oauth",
 					expect.objectContaining({
 						method: "POST",
 						headers: { "Content-Type": "application/json" },

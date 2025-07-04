@@ -1,5 +1,8 @@
+# Zentropy Development Infrastructure
+# Provides PostgreSQL database and Redis cache for local development
 services:
   postgres:
+    # Primary data store for all application data
     image: postgres:15
     container_name: zentropy_db
     environment:
@@ -13,6 +16,7 @@ services:
     restart: unless-stopped
 
   redis:
+    # Rate limiting and caching layer
     image: redis:7-alpine
     container_name: zentropy_redis
     ports:

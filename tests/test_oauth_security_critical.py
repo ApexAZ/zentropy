@@ -5,38 +5,20 @@ This test verifies that the email hijacking security prevention works correctly.
 🚨 SECURITY CRITICAL: This test must pass to prevent account hijacking.
 """
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from unittest.mock import patch
 
-from api.database import Base, User, AuthProvider
+from api.database import User, AuthProvider
 from api.routers.auth import google_login
 from api.schemas import GoogleLoginRequest
-
-
-# Test database setup
-TEST_DATABASE_URL = "sqlite:///:memory:"
-test_engine = create_engine(TEST_DATABASE_URL, echo=False)
-TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
-
-@pytest.fixture
-def db_session():
-    """Create a fresh database session for each test."""
-    Base.metadata.create_all(bind=test_engine)
-    session = TestSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-        Base.metadata.drop_all(bind=test_engine)
+from tests.conftest import create_test_user
 
 
 class TestCriticalOAuthSecurity:
     """CRITICAL security tests for OAuth implementation."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_email_hijacking_prevention_real_database(self, mock_verify_google_token, db_session, client):
+    def test_email_hijacking_prevention_real_database(self, mock_verify_google_token, db, client):
         """🚨 CRITICAL: Test that Google OAuth cannot hijack existing local accounts (real DB test)."""
         
         # Step 1: Create existing local user
@@ -49,14 +31,14 @@ class TestCriticalOAuthSecurity:
             password_hash="$2b$12$secure_hashed_password",
             google_id=None
         )
-        db_session.add(local_user)
-        db_session.commit()
-        db_session.refresh(local_user)
+        db.add(local_user)
+        db.commit()
+        db.refresh(local_user)
         
         print(f"✅ Created local user: {local_user.email} with auth_provider: {local_user.auth_provider}")
         
         # Step 2: Verify local user exists
-        existing_user_check = db_session.query(User).filter(User.email == "victim@example.com").first()
+        existing_user_check = db.query(User).filter(User.email == "victim@example.com").first()
         assert existing_user_check is not None
         assert existing_user_check.auth_provider == AuthProvider.LOCAL
         assert existing_user_check.google_id is None
@@ -82,7 +64,7 @@ class TestCriticalOAuthSecurity:
         print(f"🔥 Attempting OAuth hijack attack...")
         
         try:
-            result = google_login(request, db_session)
+            result = google_login(request, db)
             # If we get here, the security check FAILED - this is a critical vulnerability
             pytest.fail(
                 f"🚨 CRITICAL SECURITY VULNERABILITY: OAuth hijacking succeeded! "
@@ -100,7 +82,7 @@ class TestCriticalOAuthSecurity:
                 pytest.fail(f"🚨 UNEXPECTED ERROR: {str(e)}")
         
         # Step 6: Verify original user is unchanged
-        final_user_check = db_session.query(User).filter(User.email == "victim@example.com").first()
+        final_user_check = db.query(User).filter(User.email == "victim@example.com").first()
         assert final_user_check is not None
         assert final_user_check.auth_provider == AuthProvider.LOCAL
         assert final_user_check.google_id is None
@@ -108,7 +90,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Original user account remains secure and unchanged")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_user_can_login_with_different_email(self, mock_verify_google_token, db_session, client):
+    def test_google_user_can_login_with_different_email(self, mock_verify_google_token, db, client):
         """✅ POSITIVE TEST: Google users can create accounts with different emails."""
         
         # Step 1: Create existing local user
@@ -121,8 +103,8 @@ class TestCriticalOAuthSecurity:
             password_hash="$2b$12$secure_password",
             google_id=None
         )
-        db_session.add(local_user)
-        db_session.commit()
+        db.add(local_user)
+        db.commit()
         
         # Step 2: Mock Google user with DIFFERENT email
         mock_google_user_info = {
@@ -141,7 +123,7 @@ class TestCriticalOAuthSecurity:
         )
         
         # Step 4: OAuth login should succeed (different email)
-        result = google_login(request, db_session)
+        result = google_login(request, db)
         
         # Step 5: Verify Google user was created successfully
         assert result.access_token is not None
@@ -149,11 +131,11 @@ class TestCriticalOAuthSecurity:
         assert result.user["first_name"] == "Google"
         
         # Step 6: Verify both users exist in database
-        users = db_session.query(User).all()
+        users = db.query(User).all()
         assert len(users) == 2
         
-        local_user_db = db_session.query(User).filter(User.email == "local@company.com").first()
-        google_user_db = db_session.query(User).filter(User.email == "googleuser@gmail.com").first()
+        local_user_db = db.query(User).filter(User.email == "local@company.com").first()
+        google_user_db = db.query(User).filter(User.email == "googleuser@gmail.com").first()
         
         assert local_user_db.auth_provider == AuthProvider.LOCAL
         assert google_user_db.auth_provider == AuthProvider.GOOGLE
@@ -162,7 +144,7 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Both users coexist safely with different emails")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_existing_google_user_can_login_again(self, mock_verify_google_token, db_session, client):
+    def test_existing_google_user_can_login_again(self, mock_verify_google_token, db, client):
         """✅ POSITIVE TEST: Existing Google users can login again."""
         
         # Step 1: Create existing Google user
@@ -175,8 +157,8 @@ class TestCriticalOAuthSecurity:
             google_id="google_existing_123",
             password_hash=None
         )
-        db_session.add(google_user)
-        db_session.commit()
+        db.add(google_user)
+        db.commit()
         
         # Step 2: Mock the same Google user logging in again
         mock_google_user_info = {
@@ -190,21 +172,21 @@ class TestCriticalOAuthSecurity:
         
         # Step 3: OAuth login should succeed (existing Google user)
         request = GoogleLoginRequest(google_token="existing_user_token")
-        result = google_login(request, db_session)
+        result = google_login(request, db)
         
         # Step 4: Verify successful authentication
         assert result.access_token is not None
         assert result.user["email"] == "existing@gmail.com"
         
         # Step 5: Verify only one user exists (no duplicates)
-        users = db_session.query(User).filter(User.email == "existing@gmail.com").all()
+        users = db.query(User).filter(User.email == "existing@gmail.com").all()
         assert len(users) == 1
         assert users[0].auth_provider == AuthProvider.GOOGLE
         
         print(f"✅ Existing Google user successfully re-authenticated")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_workspace_organization_extraction(self, mock_verify_google_token, db_session, client):
+    def test_google_workspace_organization_extraction(self, mock_verify_google_token, db, client):
         """✅ TEST: Google Workspace users get organization from hosted domain."""
         
         # Mock Google Workspace user (has 'hd' field)
@@ -220,19 +202,19 @@ class TestCriticalOAuthSecurity:
         
         # OAuth login without specifying organization
         request = GoogleLoginRequest(google_token="workspace_token")
-        result = google_login(request, db_session)
+        result = google_login(request, db)
         
         # Should use hosted domain as organization
         assert result.user["organization"] == "Acmecorp.Com"
         
         # Verify in database
-        user = db_session.query(User).filter(User.email == "employee@acmecorp.com").first()
+        user = db.query(User).filter(User.email == "employee@acmecorp.com").first()
         assert user.organization == "Acmecorp.Com"
         
         print(f"✅ Google Workspace organization extracted: {user.organization}")
     
     @patch('api.routers.auth.verify_google_token')
-    def test_gmail_user_organization_fallback(self, mock_verify_google_token, db_session, client):
+    def test_gmail_user_organization_fallback(self, mock_verify_google_token, db, client):
         """✅ TEST: Regular Gmail users get organization from email domain."""
         
         # Mock regular Gmail user (no 'hd' field)
@@ -248,7 +230,7 @@ class TestCriticalOAuthSecurity:
         
         # OAuth login without specifying organization
         request = GoogleLoginRequest(google_token="gmail_token")
-        result = google_login(request, db_session)
+        result = google_login(request, db)
         
         # Should use email domain as organization fallback
         assert result.user["organization"] == "Gmail.Com"

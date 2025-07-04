@@ -8,6 +8,24 @@
 	--color-interactive-hover: #B8D4F0;     /* Pastel blue - hover feedback */
 	--color-text-primary: #4A4A4A;          /* Dark gray - headings, body text, labels */
 	--color-text-contrast: #000000;         /* Black - high contrast when needed */
+	
+	/* Semantic spacing scale - consistent spacing across the app */
+	--space-1: 0.25rem;  /* 4px */
+	--space-2: 0.5rem;   /* 8px */
+	--space-3: 0.75rem;  /* 12px */
+	--space-4: 1rem;     /* 16px */
+	--space-5: 1.25rem;  /* 20px */
+	--space-6: 1.5rem;   /* 24px */
+	--space-8: 2rem;     /* 32px */
+	--space-10: 2.5rem;  /* 40px */
+	--space-12: 3rem;    /* 48px */
+	--space-16: 4rem;    /* 64px */
+	
+	/* Semantic design tokens */
+	--radius-sm: 0.25rem;   /* 4px - small elements */
+	--radius-md: 0.375rem;  /* 6px - buttons, inputs */
+	--radius-lg: 0.5rem;    /* 8px - cards, modals */
+	--radius-xl: 0.75rem;   /* 12px - large containers */
 }
 
 /* Custom focus shadow using semantic colors */
@@ -19,174 +37,4 @@
 .focus-ring {
 	@apply focus:border-interactive focus:outline-none;
 	box-shadow: var(--focus-shadow);
-}
-
-/* Legacy component-specific variables */
-:root {
-	--primary-blue: #3b82f6;
-	--primary-blue-dark: #2563eb;
-	--primary-blue-light: #60a5fa;
-	--danger-red: #dc2626;
-	--spacing-lg: 1rem;
-	--spacing-md: 0.75rem;
-	--spacing-xl: 1.5rem;
-	--spacing-2xl: 2rem;
-	--radius-md: 6px;
-	--shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
-	--font-sans: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
-}
-
-/* Component-specific animations */
-@keyframes slideIn {
-	from {
-		opacity: 0;
-		transform: translateX(100%);
-	}
-	to {
-		opacity: 1;
-		transform: translateX(0);
-	}
-}
-
-@keyframes slideDown {
-	from {
-		opacity: 0;
-		transform: translateY(-10px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
-
-.animate-slideIn {
-	animation: slideIn 0.3s ease;
-}
-
-.animate-slideDown {
-	animation: slideDown 0.3s ease-out;
-}
-
-/* Navigation panel component styles */
-.navigation-panel-backdrop {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100vh;
-	background: transparent;
-	z-index: 999;
-}
-
-.navigation-panel {
-	position: fixed;
-	top: 0;
-	right: 0;
-	width: 320px;
-	height: 100vh;
-	background: #fff;
-	border-left: 1px solid var(--primary-blue-light);
-	box-shadow: var(--shadow-lg);
-	z-index: 1000;
-	opacity: 0;
-	visibility: hidden;
-	transform: translateX(100%);
-	transition: all 0.6s ease;
-	overflow-y: auto;
-}
-
-.navigation-panel.show {
-	opacity: 1;
-	visibility: visible;
-	transform: translateX(0);
-}
-
-.profile-close-overlay {
-	position: fixed;
-	top: var(--spacing-lg);
-	right: calc(var(--spacing-2xl) + var(--spacing-md));
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 40px;
-	height: 40px;
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-md);
-	color: #374151;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	z-index: 1001;
-}
-
-.profile-close-overlay:hover {
-	background: #f3f4f6;
-	color: #111827;
-}
-
-.profile-close-overlay:focus {
-	outline: 2px solid var(--primary-blue);
-	outline-offset: 2px;
-}
-
-/* Calendar component styles */
-.calendar-day {
-	min-height: 120px;
-	position: relative;
-	cursor: default;
-	display: flex;
-	flex-direction: column;
-}
-
-.calendar-day.clickable {
-	cursor: pointer;
-}
-
-.calendar-day.other-month {
-	color: #9ca3af;
-}
-
-.calendar-day.weekend {
-	background-color: #fef3c7;
-}
-
-.calendar-day.current-sprint {
-	border: 2px solid var(--primary-blue-light);
-}
-
-.calendar-day.holiday {
-	background-color: #dbeafe;
-}
-
-.calendar-day.pto {
-	background-color: #fce7f3;
-}
-
-.day-entries {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	margin-top: auto;
-}
-
-.entry-dot {
-	height: 4px;
-	border-radius: 2px;
-	margin-bottom: 1px;
-}
-
-.entry-dot.pto {
-	background-color: var(--danger-red);
-}
-
-.entry-dot.holiday {
-	background-color: var(--primary-blue);
-}
-
-.entry-dot.sick {
-	background-color: #f59e0b;
-}
-
-.entry-dot.personal {
-	background-color: #8b5cf6;
 }

@@ -19,7 +19,7 @@ const EmailVerificationStatusBanner: React.FC<EmailVerificationStatusBannerProps
 			setIsResending(true);
 			setResendMessage("");
 
-			const response = await fetch("/api/auth/send-verification", {
+			const response = await fetch("/api/v1/auth/send-verification", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"

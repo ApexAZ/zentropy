@@ -110,6 +110,7 @@ const TeamConfigurationPage: React.FC = () => {
 			const timer = setTimeout(() => setToast(null), 5000);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [toast]);
 
 	const loadTeamConfiguration = async (): Promise<void> => {
@@ -121,9 +122,9 @@ const TeamConfigurationPage: React.FC = () => {
 			const teamId = "1"; // This would typically come from route params
 
 			const [teamResponse, membersResponse, sprintsResponse] = await Promise.all([
-				fetch(`/api/teams/${teamId}`),
-				fetch(`/api/teams/${teamId}/members`),
-				fetch(`/api/teams/${teamId}/sprints`)
+				fetch(`/api/v1/teams/${teamId}`),
+				fetch(`/api/v1/teams/${teamId}/members`),
+				fetch(`/api/v1/teams/${teamId}/sprints`)
 			]);
 
 			if (!teamResponse.ok) {
@@ -164,7 +165,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/teams/${team.id}`, {
+			const response = await fetch(`/api/v1/teams/${team.id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json"
@@ -204,7 +205,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/teams/${team.id}`, {
+			const response = await fetch(`/api/v1/teams/${team.id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json"
@@ -254,7 +255,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/teams/${team.id}/members`, {
+			const response = await fetch(`/api/v1/teams/${team.id}/members`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
@@ -291,7 +292,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/teams/${team.id}/members/${memberId}`, {
+			const response = await fetch(`/api/v1/teams/${team.id}/members/${memberId}`, {
 				method: "DELETE"
 			});
 
@@ -344,7 +345,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/teams/${team.id}/sprints`, {
+			const response = await fetch(`/api/v1/teams/${team.id}/sprints`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
@@ -388,7 +389,7 @@ const TeamConfigurationPage: React.FC = () => {
 
 	const getDayName = (day: number): string => {
 		const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-		return names[day];
+		return names[day] || "Unknown";
 	};
 
 	const formatDate = (dateString: string): string => {

@@ -1,15 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-type Page =
-	| "home"
-	| "about"
-	| "contact"
-	| "profile"
-	| "teams"
-	| "calendar"
-	| "dashboard"
-	| "login"
-	| "team-configuration";
+type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 interface AuthUser {
 	email: string;
@@ -29,11 +20,11 @@ interface Auth {
 interface NavigationPanelProps {
 	onPageChange: (page: Page) => void;
 	onShowRegistration: () => void;
-	onShowLogin: () => void;
+	onShowSignIn: () => void;
 	auth: Auth;
 }
 
-const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowRegistration, onShowLogin, auth }) => {
+const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowRegistration, onShowSignIn, auth }) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 	const panelRef = useRef<HTMLDivElement>(null);
@@ -78,9 +69,9 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 		setIsProjectsExpanded(!isProjectsExpanded);
 	};
 
-	const handleShowLogin = (): void => {
+	const handleShowSignIn = (): void => {
 		setIsOpen(false);
-		onShowLogin();
+		onShowSignIn();
 	};
 
 	const handleShowRegistration = (): void => {
@@ -171,13 +162,13 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 									<div className="-ml-3 flex items-center gap-1">
 										<button
 											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-											onClick={handleShowLogin}
-											aria-label="Login"
+											onClick={handleShowSignIn}
+											aria-label="Sign in"
 										>
 											<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
 												<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
 											</svg>
-											Login
+											Sign in
 										</button>
 										<button
 											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"

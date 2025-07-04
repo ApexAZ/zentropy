@@ -287,7 +287,7 @@ class TestRedisIntegration:
 class TestRateLimitingIntegration:
     """Integration tests for rate limiting with FastAPI endpoints."""
 
-    def test_auth_endpoint_rate_limiting(self, client, test_db_session):
+    def test_auth_endpoint_rate_limiting(self, client, db):
         """Test that authentication endpoints have rate limiting."""
         # This test would require the full FastAPI app setup
         # For now, we'll test that the rate limiter is properly imported

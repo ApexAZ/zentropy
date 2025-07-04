@@ -19,36 +19,8 @@ from api.main import app
 from api.schemas import LoginResponse
 
 
-# Test database setup with thread safety
-TEST_DATABASE_URL = "sqlite:///:memory:?check_same_thread=false"
-test_engine = create_engine(
-    TEST_DATABASE_URL, 
-    echo=False,
-    poolclass=StaticPool,
-    connect_args={
-        "check_same_thread": False,
-    },
-)
-TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
-def override_get_db():
-    """Override database dependency for testing."""
-    session = TestSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-@pytest.fixture(autouse=True)
-def setup_test_db():
-    """Setup and teardown database for each test."""
-    # Create tables before each test
-    Base.metadata.create_all(bind=test_engine)
-    yield
-    # Clean up after each test
-    Base.metadata.drop_all(bind=test_engine)
+# Note: Using centralized database fixtures from conftest.py
+# No custom database setup needed - tests use client and db fixtures
 
 
 class TestGoogleOAuthEndpoint:

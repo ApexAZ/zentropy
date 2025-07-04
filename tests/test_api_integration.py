@@ -45,7 +45,7 @@ class TestAuthenticationFlow:
     def test_login_endpoint_invalid_credentials(self, client):
         """Test login with invalid credentials returns 401."""
         response = client.post(
-            "/api/auth/login-json",
+            "/api/v1/auth/login-json",
             json={
                 "email": "nonexistent@example.com",
                 "password": "wrongpassword"
@@ -60,7 +60,7 @@ class TestAuthenticationFlow:
     def test_login_endpoint_missing_fields(self, client):
         """Test login with missing fields returns 422."""
         response = client.post(
-            "/api/auth/login-json",
+            "/api/v1/auth/login-json",
             json={"email": "test@example.com"}  # Missing password
         )
         
@@ -71,7 +71,7 @@ class TestAuthenticationFlow:
     def test_login_endpoint_invalid_email_format(self, client):
         """Test login with invalid email format returns 422."""
         response = client.post(
-            "/api/auth/login-json", 
+            "/api/v1/auth/login-json", 
             json={
                 "email": "not-an-email",
                 "password": "somepassword"

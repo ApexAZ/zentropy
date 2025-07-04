@@ -39,7 +39,7 @@ const DashboardPage: React.FC = () => {
 			setError("");
 
 			// Load teams and calculate stats
-			const teamsResponse = await fetch("/api/teams");
+			const teamsResponse = await fetch("/api/v1/teams");
 			if (!teamsResponse.ok) {
 				throw new Error("Failed to load dashboard data");
 			}

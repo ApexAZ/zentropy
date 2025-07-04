@@ -61,14 +61,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.include_router(teams.router, prefix="/api/teams", tags=["teams"])
+# Include routers with v1 API versioning
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
+app.include_router(teams.router, prefix="/api/v1/teams", tags=["teams"])
 app.include_router(
-    calendar_entries.router, prefix="/api/calendar-entries", tags=["calendar"]
+    calendar_entries.router, prefix="/api/v1/calendar_entries", tags=["calendar"]
 )
-app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
+app.include_router(
+    invitations.router, prefix="/api/v1/invitations", tags=["invitations"]
+)
 
 # Serve React static files
 if os.path.exists("dist/public"):

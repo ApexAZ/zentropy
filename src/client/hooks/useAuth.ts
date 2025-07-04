@@ -28,13 +28,11 @@ export const useAuth = () => {
 	// Check for existing token on mount
 	useEffect(() => {
 		// Check for token in localStorage (remember me) or sessionStorage (session only)
-		const token =
-			localStorage.getItem("access_token") ||
-			localStorage.getItem("authToken") ||
-			sessionStorage.getItem("authToken");
+		// Priority: sessionStorage first (current session), then localStorage (remember me)
+		const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 		if (token) {
 			// Validate token with API and get user info
-			fetch("/api/users/me", {
+			fetch("/api/v1/users/me", {
 				headers: {
 					Authorization: `Bearer ${token}`,
 					"Content-Type": "application/json"
@@ -56,8 +54,9 @@ export const useAuth = () => {
 						// Reset activity tracking when token is validated
 						lastActivityRef.current = Date.now();
 					} else {
-						// Token is invalid, remove it
-						localStorage.removeItem("access_token");
+						// Token is invalid, remove all tokens
+						localStorage.removeItem("authToken");
+						sessionStorage.removeItem("authToken");
 						setAuthState({
 							isAuthenticated: false,
 							user: null,
@@ -67,8 +66,9 @@ export const useAuth = () => {
 				})
 				.catch(error => {
 					console.warn("Failed to validate token:", error);
-					// Token validation failed, remove it
-					localStorage.removeItem("access_token");
+					// Token validation failed, remove all tokens
+					localStorage.removeItem("authToken");
+					sessionStorage.removeItem("authToken");
 					setAuthState({
 						isAuthenticated: false,
 						user: null,
@@ -81,17 +81,16 @@ export const useAuth = () => {
 	const login = (token: string, user: AuthUser, rememberMe: boolean = false) => {
 		// Store token based on remember me preference
 		if (rememberMe) {
+			// Remember me: store in localStorage (persists across browser sessions)
 			localStorage.setItem("authToken", token);
-			// Remove from sessionStorage if it exists
+			// Remove from sessionStorage to avoid conflicts
 			sessionStorage.removeItem("authToken");
 		} else {
+			// No remember me: store in sessionStorage (cleared when browser closes)
 			sessionStorage.setItem("authToken", token);
-			// Remove from localStorage if it exists
+			// Remove from localStorage to avoid conflicts
 			localStorage.removeItem("authToken");
 		}
-
-		// Also maintain backward compatibility with access_token key
-		localStorage.setItem("access_token", token);
 
 		setAuthState({
 			isAuthenticated: true,
@@ -104,10 +103,10 @@ export const useAuth = () => {
 
 	const logout = async (): Promise<void> => {
 		try {
-			// Call logout endpoint
-			const token = localStorage.getItem("access_token");
+			// Call logout endpoint with current token
+			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 			if (token) {
-				await fetch("/api/auth/logout", {
+				await fetch("/api/v1/auth/logout", {
 					method: "POST",
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -120,7 +119,6 @@ export const useAuth = () => {
 			console.warn("Logout API call failed:", error);
 		} finally {
 			// Always clear local state and storage
-			localStorage.removeItem("access_token");
 			localStorage.removeItem("authToken");
 			sessionStorage.removeItem("authToken");
 			setAuthState({
@@ -140,10 +138,10 @@ export const useAuth = () => {
 	const logoutDueToInactivity = useCallback(async (): Promise<void> => {
 		console.warn("Session expired due to inactivity");
 		try {
-			// Call logout endpoint
-			const token = localStorage.getItem("access_token");
+			// Call logout endpoint with current token
+			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 			if (token) {
-				await fetch("/api/auth/logout", {
+				await fetch("/api/v1/auth/logout", {
 					method: "POST",
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -156,7 +154,6 @@ export const useAuth = () => {
 			console.warn("Logout API call failed:", error);
 		} finally {
 			// Always clear local state and storage
-			localStorage.removeItem("access_token");
 			localStorage.removeItem("authToken");
 			sessionStorage.removeItem("authToken");
 			setAuthState({

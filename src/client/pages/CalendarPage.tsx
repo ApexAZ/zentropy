@@ -83,7 +83,10 @@ const CalendarPage: React.FC = () => {
 				setError("");
 
 				// Load teams and users in parallel
-				const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/teams"), fetch("/api/users")]);
+				const [teamsResponse, usersResponse] = await Promise.all([
+					fetch("/api/v1/teams"),
+					fetch("/api/v1/users")
+				]);
 
 				if (!teamsResponse.ok || !usersResponse.ok) {
 					throw new Error("Failed to load initial data");
@@ -116,11 +119,13 @@ const CalendarPage: React.FC = () => {
 				}
 				if (selectedMonth) {
 					const [year, month] = selectedMonth.split("-");
-					params.append("month", month);
-					params.append("year", year);
+					if (year && month) {
+						params.append("month", month);
+						params.append("year", year);
+					}
 				}
 
-				const response = await fetch(`/api/calendar-entries?${params.toString()}`);
+				const response = await fetch(`/api/v1/calendar_entries?${params.toString()}`);
 				if (!response.ok) {
 					throw new Error(`Failed to load entries: ${response.status}`);
 				}
@@ -144,11 +149,13 @@ const CalendarPage: React.FC = () => {
 			}
 			if (selectedMonth) {
 				const [year, month] = selectedMonth.split("-");
-				params.append("month", month);
-				params.append("year", year);
+				if (year && month) {
+					params.append("month", month);
+					params.append("year", year);
+				}
 			}
 
-			const response = await fetch(`/api/calendar-entries?${params.toString()}`);
+			const response = await fetch(`/api/v1/calendar_entries?${params.toString()}`);
 			if (!response.ok) {
 				throw new Error(`Failed to load entries: ${response.status}`);
 			}
@@ -167,7 +174,7 @@ const CalendarPage: React.FC = () => {
 			setError("");
 
 			// Load teams and users in parallel
-			const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/teams"), fetch("/api/users")]);
+			const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/v1/teams"), fetch("/api/v1/users")]);
 
 			if (!teamsResponse.ok || !usersResponse.ok) {
 				throw new Error("Failed to load initial data");
@@ -193,6 +200,7 @@ const CalendarPage: React.FC = () => {
 			const timer = setTimeout(() => setToast(null), 5000);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [toast]);
 
 	// Load team users when team is selected
@@ -207,7 +215,7 @@ const CalendarPage: React.FC = () => {
 
 	const loadTeamUsers = async (teamId: string): Promise<void> => {
 		try {
-			const response = await fetch(`/api/teams/${teamId}/users`);
+			const response = await fetch(`/api/v1/teams/${teamId}/users`);
 			if (response.ok) {
 				const users = (await response.json()) as User[];
 				setTeamUsers(users);
@@ -242,8 +250,8 @@ const CalendarPage: React.FC = () => {
 			user_id: entry.user_id,
 			entry_type: entry.entry_type,
 			title: entry.title,
-			start_date: entry.start_date.split("T")[0], // Extract date part
-			end_date: entry.end_date.split("T")[0],
+			start_date: entry.start_date.split("T")[0] || entry.start_date, // Extract date part, fallback to original
+			end_date: entry.end_date.split("T")[0] || entry.end_date,
 			description: entry.description ?? "",
 			all_day: entry.all_day
 		});
@@ -304,7 +312,7 @@ const CalendarPage: React.FC = () => {
 
 		try {
 			const method = isEditing ? "PUT" : "POST";
-			const url = isEditing ? `/api/calendar-entries/${currentEntry?.id}` : "/api/calendar-entries";
+			const url = isEditing ? `/api/v1/calendar_entries/${currentEntry?.id}` : "/api/v1/calendar_entries";
 
 			const response = await fetch(url, {
 				method,
@@ -341,7 +349,7 @@ const CalendarPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/calendar-entries/${currentEntry.id}`, {
+			const response = await fetch(`/api/v1/calendar_entries/${currentEntry.id}`, {
 				method: "DELETE"
 			});
 

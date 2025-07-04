@@ -7,6 +7,9 @@ Historical record of completed tasks and system achievements for the Zentropy Pr
 ## ✅ Completed Tasks (Chronological Order)
 
 ### **Recent Major Achievements** - *Compacted for brevity*
+- ✅ **Major Codebase Cleanup & Architecture Consolidation** (2025-07-04) - Removed ~1,600 lines obsolete code (LoginPage + RegisterPage), confirmed modal-based auth, 194 tests passing
+- ✅ **Complete TDD Remember Me Implementation** (2025-07-03) - Database schema, API endpoints, frontend integration, 100% functional through LoginModal
+- ✅ **Google OAuth Login Modal Implementation & Test Updates** (2025-07-03 20:45:00) - Fixed OAuth race conditions, comprehensive test updates, 164 React tests passing
 - ✅ **Registration Type Implementation & Authentication Analysis** (2025-07-03) - Enum tracking, 48 new tests, UX analysis
 - ✅ **Registration Modal TDD Implementation** (2025-07-03) - Modal overlay with 26 tests, accessibility support
 - ✅ **Session Continuity & Repository Status Verification** (2025-07-03) - Clean state validation, 194 tests passing

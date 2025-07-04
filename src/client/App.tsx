@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
-import RegistrationMethodModal from "./components/RegistrationMethodModal";
-import EmailRegistrationModal from "./components/EmailRegistrationModal";
-import LoginModal from "./components/LoginModal";
+import AuthModal from "./components/AuthModal";
 import EmailVerificationStatusBanner from "./components/EmailVerificationStatusBanner";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -11,26 +9,15 @@ import TeamsPage from "./pages/TeamsPage";
 import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
-import LoginPage from "./pages/LoginPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
 import { useAuth } from "./hooks/useAuth";
 
-type Page =
-	| "home"
-	| "about"
-	| "contact"
-	| "profile"
-	| "teams"
-	| "calendar"
-	| "dashboard"
-	| "login"
-	| "team-configuration";
+type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 function App(): React.JSX.Element {
 	const [currentPage, setCurrentPage] = useState<Page>("home");
-	const [showRegistrationMethodModal, setShowRegistrationMethodModal] = useState(false);
-	const [showEmailRegistrationModal, setShowEmailRegistrationModal] = useState(false);
-	const [showLoginModal, setShowLoginModal] = useState(false);
+	const [showAuthModal, setShowAuthModal] = useState(false);
+	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup" | "method-selection">("method-selection");
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 	const verificationAttempted = useRef<Set<string>>(new Set());
 	const auth = useAuth();
@@ -60,12 +47,13 @@ function App(): React.JSX.Element {
 			const timer = setTimeout(() => setToast(null), 5000);
 			return () => clearTimeout(timer);
 		}
+		return undefined;
 	}, [toast]);
 
 	const verifyEmailInBackground = async (token: string) => {
 		console.log("🔍 Email verification started for token:", token);
 		try {
-			const response = await fetch(`/api/auth/verify-email/${token}`, {
+			const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
@@ -79,108 +67,50 @@ function App(): React.JSX.Element {
 			setCurrentPage("home");
 
 			if (response.ok) {
-				// Success - show login modal with success toast
+				// Success - show sign in modal with success toast
 				console.log("✅ Email verification successful");
-				setToast({ message: "Email verified successfully! Please log in.", type: "success" });
-				setShowLoginModal(true);
+				setToast({ message: "Email verified successfully! Please sign in.", type: "success" });
+				setAuthModalMode("signin");
+				setShowAuthModal(true);
 			} else {
-				// Error - show login modal with error toast
+				// Error - show sign in modal with error toast
 				const errorData = await response.json();
 				console.log("❌ Email verification failed:", errorData);
 				setToast({
 					message: errorData.detail || "Email verification failed. Please try again.",
 					type: "error"
 				});
-				setShowLoginModal(true);
+				setAuthModalMode("signin");
+				setShowAuthModal(true);
 			}
 		} catch (error) {
-			// Network error - clean URL and show login with error toast
+			// Network error - clean URL and show sign in with error toast
 			console.log("🚨 Network error during verification:", error);
 			window.history.pushState({}, "", "/");
 			setCurrentPage("home");
 			setToast({ message: "Network error during email verification. Please try again.", type: "error" });
-			setShowLoginModal(true);
+			setAuthModalMode("signin");
+			setShowAuthModal(true);
 		}
 	};
 
 	const handleShowRegistration = (): void => {
-		setShowRegistrationMethodModal(true);
+		setAuthModalMode("method-selection");
+		setShowAuthModal(true);
 	};
 
-	const handleCloseRegistrationMethod = (): void => {
-		setShowRegistrationMethodModal(false);
+	const handleShowSignIn = (): void => {
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
 	};
 
-	const handleSelectEmailRegistration = (): void => {
-		// Method modal closes itself, now show email registration modal
-		setShowEmailRegistrationModal(true);
+	const handleCloseAuth = (): void => {
+		setShowAuthModal(false);
 	};
 
-	// Google OAuth registration handler
-	const handleSelectGoogleRegistration = async (credential?: string): Promise<void> => {
-		if (!credential) {
-			console.error("No credential received from Google OAuth");
-			return;
-		}
-
-		try {
-			console.log("Processing Google OAuth credential...");
-			// Make API call to backend OAuth endpoint
-			const response = await fetch("http://localhost:3000/api/auth/google-oauth", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ credential })
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.detail || "Google OAuth authentication failed");
-			}
-
-			const data = await response.json();
-			console.log("Google OAuth successful:", data);
-
-			// Store auth token and update state
-			if (data.access_token && data.user) {
-				auth.login(data.access_token, {
-					email: data.user.email,
-					name: `${data.user.first_name} ${data.user.last_name}`,
-					has_projects_access: data.user.has_projects_access || false,
-					email_verified: data.user.email_verified || false
-				});
-			}
-
-			// Close registration modal and stay on current page
-			setShowRegistrationMethodModal(false);
-			// TODO: Add proper redirect logic later - for now stay on home page
-		} catch (error) {
-			console.error("Google OAuth registration failed:", error);
-			throw error; // Re-throw to let the modal handle the error display
-		}
-	};
-
-	const handleCloseEmailRegistration = (): void => {
-		setShowEmailRegistrationModal(false);
-	};
-
-	const handleEmailRegistrationSuccess = (): void => {
-		setShowEmailRegistrationModal(false);
-		// Registration success - user will check email and then manually navigate to login
-	};
-
-	const handleShowLogin = (): void => {
-		setShowLoginModal(true);
-	};
-
-	const handleCloseLogin = (): void => {
-		setShowLoginModal(false);
-	};
-
-	const handleLoginSuccess = (): void => {
-		setShowLoginModal(false);
-		// Stay on current page after successful login
+	const handleAuthSuccess = (): void => {
+		setShowAuthModal(false);
+		// Stay on current page after successful authentication
 	};
 
 	const renderPage = (): React.JSX.Element => {
@@ -213,8 +143,6 @@ function App(): React.JSX.Element {
 				return <ProfilePage />;
 			case "dashboard":
 				return <DashboardPage />;
-			case "login":
-				return <LoginPage />;
 			case "team-configuration":
 				return <TeamConfigurationPage />;
 			default:
@@ -231,7 +159,7 @@ function App(): React.JSX.Element {
 				currentPage={currentPage}
 				onPageChange={setCurrentPage}
 				onShowRegistration={handleShowRegistration}
-				onShowLogin={handleShowLogin}
+				onShowSignIn={handleShowSignIn}
 				auth={auth}
 			/>
 			{showEmailVerificationBanner && (
@@ -242,22 +170,13 @@ function App(): React.JSX.Element {
 				<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
 			</footer>
 
-			{showRegistrationMethodModal && (
-				<RegistrationMethodModal
-					isOpen={showRegistrationMethodModal}
-					onClose={handleCloseRegistrationMethod}
-					onSelectEmail={handleSelectEmailRegistration}
-					onSelectGoogle={handleSelectGoogleRegistration}
-				/>
-			)}
-
-			<EmailRegistrationModal
-				isOpen={showEmailRegistrationModal}
-				onClose={handleCloseEmailRegistration}
-				onSuccess={handleEmailRegistrationSuccess}
+			<AuthModal
+				isOpen={showAuthModal}
+				onClose={handleCloseAuth}
+				onSuccess={handleAuthSuccess}
+				auth={auth}
+				initialMode={authModalMode}
 			/>
-
-			<LoginModal isOpen={showLoginModal} onClose={handleCloseLogin} onSuccess={handleLoginSuccess} auth={auth} />
 
 			{/* Toast Notification */}
 			{toast && (

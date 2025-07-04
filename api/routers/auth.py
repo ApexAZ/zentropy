@@ -23,6 +23,7 @@ from ..auth import (
     get_password_hash,
     validate_password_strength,
     verify_google_token,
+    get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from ..google_oauth import (
@@ -208,8 +209,12 @@ def register(
 
 
 @router.post("/logout", response_model=MessageResponse)
-def logout() -> MessageResponse:
-    """Logout user (client should discard token)"""
+def logout(
+    current_user: database.User = Depends(get_current_user),
+) -> MessageResponse:
+    """Logout user"""
+    # Note: JWT token handling is done client-side
+    # Server-side logout could implement token blacklisting if needed
     return MessageResponse(message="Successfully logged out")
 
 

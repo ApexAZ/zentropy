@@ -18,12 +18,26 @@ Object.defineProperty(window, "localStorage", {
 	value: mockLocalStorage
 });
 
+// Mock sessionStorage
+const mockSessionStorage = {
+	getItem: vi.fn(),
+	setItem: vi.fn(),
+	removeItem: vi.fn(),
+	clear: vi.fn()
+};
+Object.defineProperty(window, "sessionStorage", {
+	value: mockSessionStorage
+});
+
 describe("useAuth", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLocalStorage.getItem.mockClear();
 		mockLocalStorage.setItem.mockClear();
 		mockLocalStorage.removeItem.mockClear();
+		mockSessionStorage.getItem.mockClear();
+		mockSessionStorage.setItem.mockClear();
+		mockSessionStorage.removeItem.mockClear();
 	});
 
 	afterEach(() => {
@@ -33,6 +47,7 @@ describe("useAuth", () => {
 	describe("Initial State", () => {
 		it("should start with unauthenticated state when no token exists", () => {
 			mockLocalStorage.getItem.mockReturnValue(null);
+			mockSessionStorage.getItem.mockReturnValue(null);
 
 			const { result } = renderHook(() => useAuth());
 
@@ -41,8 +56,9 @@ describe("useAuth", () => {
 			expect(result.current.token).toBe(null);
 		});
 
-		it("should not call API when no token exists in localStorage", () => {
+		it("should not call API when no token exists in storage", () => {
 			mockLocalStorage.getItem.mockReturnValue(null);
+			mockSessionStorage.getItem.mockReturnValue(null);
 
 			renderHook(() => useAuth());
 
@@ -51,7 +67,7 @@ describe("useAuth", () => {
 	});
 
 	describe("Token Validation on Mount", () => {
-		it("should validate existing token with /api/users/me API call", async () => {
+		it("should validate existing token with /api/v1/users/me API call", async () => {
 			const mockToken = "valid-jwt-token";
 			const mockUserData = {
 				email: "integration.test@example.com",
@@ -73,7 +89,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify API call was made correctly
-			expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
 				headers: {
 					Authorization: `Bearer ${mockToken}`,
 					"Content-Type": "application/json"
@@ -83,7 +99,9 @@ describe("useAuth", () => {
 			// Verify auth state is set correctly
 			expect(result.current.user).toEqual({
 				email: "integration.test@example.com",
-				name: "Integration Test" // first_name + last_name
+				name: "Integration Test", // first_name + last_name
+				has_projects_access: undefined, // Not provided in mock data
+				email_verified: false // Default fallback in useAuth
 			});
 			expect(result.current.token).toBe(mockToken);
 		});
@@ -104,7 +122,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify token was removed from localStorage
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state is cleared
 			expect(result.current.user).toBe(null);
@@ -128,7 +146,7 @@ describe("useAuth", () => {
 			expect(consoleWarnSpy).toHaveBeenCalledWith("Failed to validate token:", expect.any(Error));
 
 			// Verify token was removed due to validation failure
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state is cleared
 			expect(result.current.user).toBe(null);
@@ -155,7 +173,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify token was removed due to parsing error
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
 	});
 
@@ -168,7 +186,9 @@ describe("useAuth", () => {
 			const mockToken = "new-jwt-token";
 			const mockUser = {
 				email: "user@example.com",
-				name: "John Doe"
+				name: "John Doe",
+				has_projects_access: true,
+				email_verified: true
 			};
 
 			// Call login function
@@ -176,8 +196,8 @@ describe("useAuth", () => {
 				result.current.login(mockToken, mockUser);
 			});
 
-			// Verify token was stored
-			expect(mockLocalStorage.setItem).toHaveBeenCalledWith("access_token", mockToken);
+			// Verify token was stored in sessionStorage (default without rememberMe)
+			expect(mockSessionStorage.setItem).toHaveBeenCalledWith("authToken", mockToken);
 
 			// Verify auth state was updated
 			expect(result.current.isAuthenticated).toBe(true);
@@ -221,7 +241,7 @@ describe("useAuth", () => {
 			});
 
 			// Verify logout API was called
-			expect(mockFetch).toHaveBeenCalledWith("/api/auth/logout", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/logout", {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${mockToken}`,
@@ -229,8 +249,9 @@ describe("useAuth", () => {
 				}
 			});
 
-			// Verify token was removed
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			// Verify tokens were removed from both storage locations
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
+			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state was cleared
 			expect(result.current.isAuthenticated).toBe(false);
@@ -274,7 +295,7 @@ describe("useAuth", () => {
 			expect(consoleWarnSpy).toHaveBeenCalledWith("Logout API call failed:", expect.any(Error));
 
 			// Verify token was still removed despite API failure
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state was cleared despite API failure
 			expect(result.current.isAuthenticated).toBe(false);
@@ -398,7 +419,7 @@ describe("useAuth", () => {
 			renderHook(() => useAuth());
 
 			// Verify API call happens immediately
-			expect(mockFetch).toHaveBeenCalledWith("/api/users/me", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
 				headers: {
 					Authorization: `Bearer ${mockToken}`,
 					"Content-Type": "application/json"
@@ -445,7 +466,7 @@ describe("useAuth", () => {
 			);
 
 			// Verify logout API was called
-			expect(mockFetch).toHaveBeenCalledWith("/api/auth/logout", {
+			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/logout", {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${mockToken}`,
@@ -453,8 +474,9 @@ describe("useAuth", () => {
 				}
 			});
 
-			// Verify token was removed
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("access_token");
+			// Verify tokens were removed from both storage locations
+			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
+			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
 
 		it("should reset timeout on user activity", async () => {

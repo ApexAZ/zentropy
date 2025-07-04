@@ -126,6 +126,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 		if (window.google?.accounts?.id) {
 			console.log("Google Identity Services already loaded");
 			initializeGoogleOAuth();
+			return undefined;
 		} else {
 			console.log("Waiting for Google Identity Services to load...");
 			// Wait for Google Identity Services to load
