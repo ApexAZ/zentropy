@@ -597,7 +597,7 @@ const CalendarPage: React.FC = () => {
 
 			{/* Entry Modal */}
 			{showEntryModal && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
 							<h3 className="text-text-contrast m-0 text-xl font-semibold">
@@ -777,7 +777,7 @@ const CalendarPage: React.FC = () => {
 
 			{/* Delete Modal */}
 			{showDeleteModal && currentEntry && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
 							<h3 className="text-text-contrast m-0 text-xl font-semibold">Delete Calendar Entry</h3>

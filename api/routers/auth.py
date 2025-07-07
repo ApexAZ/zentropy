@@ -180,7 +180,7 @@ def register(
         password_hash=hashed_password,
         first_name=user_create.first_name,
         last_name=user_create.last_name,
-        organization=user_create.organization,
+        organization=user_create.organization or "",
         role=user_create.role,
         has_projects_access=user_create.has_projects_access,
         terms_accepted_at=now,

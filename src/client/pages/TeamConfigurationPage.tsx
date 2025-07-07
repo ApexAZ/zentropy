@@ -681,7 +681,7 @@ const TeamConfigurationPage: React.FC = () => {
 
 			{/* Add Member Modal */}
 			{showAddMemberModal && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
 						<h3 className="text-text-contrast mb-4 text-lg font-semibold">Add Team Member</h3>
 						<form onSubmit={e => void handleAddMember(e)} className="space-y-4">
@@ -753,7 +753,7 @@ const TeamConfigurationPage: React.FC = () => {
 
 			{/* Create Sprint Modal */}
 			{showCreateSprintModal && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
 						<h3 className="text-text-contrast mb-4 text-lg font-semibold">Create New Sprint</h3>
 						<form onSubmit={e => void handleCreateSprint(e)} className="space-y-4">

@@ -196,7 +196,7 @@ const TeamsPage: React.FC = () => {
 
 			{/* Team Modal */}
 			{showTeamModal && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
 							<h3 className="text-text-contrast m-0 text-xl font-semibold">
@@ -304,7 +304,7 @@ const TeamsPage: React.FC = () => {
 
 			{/* Delete Modal */}
 			{showDeleteModal && currentTeam && (
-				<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
 							<h3 className="text-text-contrast m-0 text-xl font-semibold">Delete Team</h3>

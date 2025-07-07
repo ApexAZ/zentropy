@@ -91,7 +91,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		if (!signUpData.first_name.trim()) newErrors.first_name = "First name is required";
 		if (!signUpData.last_name.trim()) newErrors.last_name = "Last name is required";
 		if (!signUpData.email.trim()) newErrors.email = "Email is required";
-		if (!signUpData.organization.trim()) newErrors.organization = "Organization is required";
+		// Organization is optional
 		if (!signUpData.password.trim()) newErrors.password = "Password is required";
 		if (!signUpData.confirm_password.trim()) newErrors.confirm_password = "Confirm password is required";
 
@@ -451,10 +451,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					</div>
 
 					<div>
-						<label className="text-text-primary mb-1 block text-sm font-medium">
-							Organization{" "}
-							<RequiredAsterisk isEmpty={!signUpData.organization.trim()} isRequired={true} />
-						</label>
+						<label className="text-text-primary mb-1 block text-sm font-medium">Organization</label>
 						<input
 							type="text"
 							value={signUpData.organization}
@@ -597,7 +594,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	};
 
 	return (
-		<div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
 			<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-xl">
 				<div className="p-6">
 					{/* Close button */}

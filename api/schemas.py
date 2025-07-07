@@ -10,7 +10,7 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    organization: str
+    organization: Optional[str] = None
     role: UserRole = UserRole.BASIC_USER
     has_projects_access: bool = True
 

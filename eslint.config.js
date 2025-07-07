@@ -44,7 +44,15 @@ export default [
       // Basic rules that don't require TypeScript project configuration
       '@typescript-eslint/no-unused-vars': 'warn',
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn'
+      'react-hooks/exhaustive-deps': 'warn',
+      // Custom Tailwind CSS checks
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'Literal[value=/bg-opacity-\\d+.*bg-/]',
+          message: 'Use bg-color/opacity syntax instead of bg-opacity-* with bg-color (e.g., bg-black/50 instead of bg-opacity-50 bg-black)'
+        }
+      ]
     }
   }
 ];
