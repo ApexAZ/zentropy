@@ -12,7 +12,7 @@ This document provides step-by-step functional testing procedures for the Workin
 ## Test Environment Setup
 1. **Start Services**:
    ```bash
-   cd /home/brianhusk/repos/claude-code/zentropy
+   cd /home/brianhusk/repos/zentropy
    docker-compose up -d
    npm run dev
    ```

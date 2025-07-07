@@ -4,6 +4,86 @@
 
 The Zentropy testing infrastructure provides a comprehensive, automated testing system with a revolutionary auto-isolation feature that ensures database tests never pollute the main database. Built on pytest for Python and Vitest for React, it enables reliable Test-Driven Development (TDD) practices.
 
+## Core Testing Workflow: A Practical Guide
+
+This guide provides a step-by-step workflow for writing tests for new features. Following this process is the best way to contribute high-quality, maintainable code to the project.
+
+### Step 1: Identify What You Are Building
+
+First, determine the nature of your feature. This will decide the type of test you need to write.
+
+-   **Are you adding a new API endpoint?** -> Write a **Backend Integration Test**.
+-   **Are you building a new UI component or page?** -> Write a **Frontend Workflow Test**.
+
+### Step 2: Writing a New Backend Test (for an API Endpoint)
+
+1.  **Create the Test File:** In the `tests/` directory, create a new file, e.g., `tests/test_widgets.py`.
+2.  **Write the Test Function:**
+    *   Give it a descriptive name, like `test_create_widget_with_valid_data()`.
+    *   **Crucially, add the `client` and `db` fixtures to its signature.** This is the most important step to ensure your test is isolated.
+3.  **Follow the "Arrange-Act-Assert" Pattern:**
+
+    ```python
+    # tests/test_widgets.py
+    from .utils import create_test_user, get_auth_headers # Example helper imports
+
+    # The signature requests the fixtures, enabling isolated testing.
+    def test_create_widget_as_authorized_user(client, db):
+        # 1. Arrange: Set up the world for your test.
+        #    Create any necessary data, like the user who will perform the action.
+        test_user = create_test_user(db) # A helper function to create a user in the test DB
+        auth_headers = get_auth_headers(test_user) # A helper to get their auth token
+
+        widget_data = {"name": "My New Widget", "value": 100}
+
+        # 2. Act: Perform the single action you are testing.
+        #    In this case, make the API call to the endpoint.
+        response = client.post("/api/v1/widgets", json=widget_data, headers=auth_headers)
+
+        # 3. Assert: Check that the outcome is what you expected.
+        assert response.status_code == 201
+        data = response.json()
+        assert data["name"] == "My New Widget"
+        # You can even verify the data was correctly saved to the isolated database.
+        assert db.query(Widget).count() == 1
+    ```
+
+### Step 3: Writing a New Frontend Test (for a UI Component/Page)
+
+1.  **Create the Test File:** Next to your component, create a `__tests__` directory and add your test file, e.g., `WidgetPage.test.tsx`.
+2.  **Think in User Stories:** Don't test internal component state. Test the user's entire goal.
+    *   *Bad:* "Test that the `handleChange` function updates the state."
+    *   *Good:* "Test that when a user types in the form and clicks save, a success message is shown."
+3.  **Use `render` and `userEvent`:**
+
+    ```typescript
+    // src/client/pages/__tests__/WidgetPage.test.tsx
+    import { render, screen, waitFor } from '@testing-library/react';
+    import userEvent from '@testing-library/user-event';
+    import { WidgetPage } from '../WidgetPage';
+
+    it('allows a user to create a new widget and see it in the list', async () => {
+      // 1. Arrange: Render the component and set up the user simulator.
+      const user = userEvent.setup();
+      render(<WidgetPage />);
+
+      // Mock any API calls the component will make.
+      // (This is often done in a setup file or with a library like msw)
+
+      // 2. Act: Simulate the user's actions.
+      //    Find elements by their accessible role or text, just like a user would.
+      await user.type(screen.getByLabelText(/widget name/i), 'My Test Widget');
+      await user.click(screen.getByRole('button', { name: /save widget/i }));
+
+      // 3. Assert: Check for the expected outcome on the screen.
+      //    Use `findBy` or `waitFor` to handle asynchronous updates.
+      expect(await screen.findByText(/widget created successfully/i)).toBeInTheDocument();
+      expect(await screen.findByText(/my test widget/i)).toBeInTheDocument();
+    });
+    ```
+
+By following these patterns, you ensure that every new piece of code is accompanied by a meaningful, robust test that verifies its functionality from a user's perspective.
+
 ## Test Statistics
 
 ```

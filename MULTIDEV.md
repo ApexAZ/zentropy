@@ -36,8 +36,8 @@ This guide ensures seamless development across multiple machines (desktop and la
 ### 1. Clone Repository
 ```bash
 # Create directory structure
-mkdir -p ~/repos/claude-code
-cd ~/repos/claude-code
+mkdir -p ~/repos
+cd ~/repos
 
 # Clone the repository
 git clone https://github.com/ApexAZ/zentropy.git
