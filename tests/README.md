@@ -1,660 +1,147 @@
-# Testing Infrastructure Documentation
+# Zentropy Testing & Quality Handbook
 
-## Overview
+**Purpose**: This is the **single source of truth** for all testing and code quality standards in the Zentropy project.
 
-The Zentropy testing infrastructure provides a comprehensive, automated testing system with a revolutionary auto-isolation feature that ensures database tests never pollute the main database. Built on pytest for Python and Vitest for React, it enables reliable Test-Driven Development (TDD) practices.
+## 1. Quality Philosophy: Test What Can Break
 
-## Core Testing Workflow: A Practical Guide
+Our testing strategy is built on a simple, powerful idea: **write meaningful tests that prevent real bugs.** We favor clarity and effectiveness over dogma.
 
-This guide provides a step-by-step workflow for writing tests for new features. Following this process is the best way to contribute high-quality, maintainable code to the project.
+-   **TDD is Mandatory**: Write tests before you write code. Follow the Red-Green-Refactor cycle.
+-   **Focus on Behavior**: Test what the user experiences and what the code *does*, not its internal implementation details.
+-   **Zero-Tolerance for Lint**: All code must pass static analysis checks (`npm run quality`) before it is considered complete.
 
-### Step 1: Identify What You Are Building
+## 2. The Core Testing Workflow
 
-First, determine the nature of your feature. This will decide the type of test you need to write.
+This is the practical, step-by-step guide for adding new, tested features.
 
--   **Are you adding a new API endpoint?** -> Write a **Backend Integration Test**.
--   **Are you building a new UI component or page?** -> Write a **Frontend Workflow Test**.
+### Step 1: What Are You Building?
 
-### Step 2: Writing a New Backend Test (for an API Endpoint)
+-   **A new API endpoint?** -> Write a **Backend Integration Test**.
+-   **A new UI component or page?** -> Write a **Frontend Workflow Test**.
 
-1.  **Create the Test File:** In the `tests/` directory, create a new file, e.g., `tests/test_widgets.py`.
-2.  **Write the Test Function:**
-    *   Give it a descriptive name, like `test_create_widget_with_valid_data()`.
-    *   **Crucially, add the `client` and `db` fixtures to its signature.** This is the most important step to ensure your test is isolated.
-3.  **Follow the "Arrange-Act-Assert" Pattern:**
+### Step 2: Writing a Backend Test (API Endpoints)
+
+1.  **Create the Test File**: e.g., `tests/test_your_feature.py`.
+2.  **Write the Test Function**:
+    -   Use a descriptive name: `test_create_widget_as_authorized_user()`.
+    -   **Crucially, add the `client` and `db` fixtures to the function signature.** This automatically enables the isolated test database.
+3.  **Follow the Arrange-Act-Assert Pattern**:
 
     ```python
-    # tests/test_widgets.py
-    from .utils import create_test_user, get_auth_headers # Example helper imports
-
-    # The signature requests the fixtures, enabling isolated testing.
+    # The `client` and `db` fixtures are requested, so auto-isolation is activated.
     def test_create_widget_as_authorized_user(client, db):
-        # 1. Arrange: Set up the world for your test.
-        #    Create any necessary data, like the user who will perform the action.
-        test_user = create_test_user(db) # A helper function to create a user in the test DB
-        auth_headers = get_auth_headers(test_user) # A helper to get their auth token
-
+        # 1. Arrange: Set up the test data and state.
+        test_user = create_test_user(db)
+        auth_headers = get_auth_headers(test_user)
         widget_data = {"name": "My New Widget", "value": 100}
 
-        # 2. Act: Perform the single action you are testing.
-        #    In this case, make the API call to the endpoint.
+        # 2. Act: Perform the single action being tested.
         response = client.post("/api/v1/widgets", json=widget_data, headers=auth_headers)
 
-        # 3. Assert: Check that the outcome is what you expected.
+        # 3. Assert: Verify the outcome.
         assert response.status_code == 201
-        data = response.json()
-        assert data["name"] == "My New Widget"
-        # You can even verify the data was correctly saved to the isolated database.
-        assert db.query(Widget).count() == 1
+        assert response.json()["name"] == "My New Widget"
+        assert db.query(Widget).count() == 1 # Verify database state
     ```
 
-### Step 3: Writing a New Frontend Test (for a UI Component/Page)
+### Step 3: Writing a Frontend Test (UI Components & Pages)
 
-1.  **Create the Test File:** Next to your component, create a `__tests__` directory and add your test file, e.g., `WidgetPage.test.tsx`.
-2.  **Think in User Stories:** Don't test internal component state. Test the user's entire goal.
-    *   *Bad:* "Test that the `handleChange` function updates the state."
-    *   *Good:* "Test that when a user types in the form and clicks save, a success message is shown."
-3.  **Use `render` and `userEvent`:**
+Our frontend testing uses a **Hybrid Approach**: we test business logic separately from the UI, which makes our tests faster and more resilient.
+
+1.  **Extract Logic**: First, pull any complex validation, data formatting, or state management out of your component and into a pure utility function (`src/client/utils/`) or a custom hook (`src/client/hooks/`). Write fast, simple unit tests for that extracted logic.
+2.  **Create the Component Test File**: e.g., `src/client/components/__tests__/YourComponent.test.tsx`.
+3.  **Test the User's Goal**: The component test should verify the user's workflow, not the component's internal state.
 
     ```typescript
-    // src/client/pages/__tests__/WidgetPage.test.tsx
-    import { render, screen, waitFor } from '@testing-library/react';
-    import userEvent from '@testing-library/user-event';
-    import { WidgetPage } from '../WidgetPage';
-
     it('allows a user to create a new widget and see it in the list', async () => {
       // 1. Arrange: Render the component and set up the user simulator.
       const user = userEvent.setup();
       render(<WidgetPage />);
-
       // Mock any API calls the component will make.
-      // (This is often done in a setup file or with a library like msw)
 
       // 2. Act: Simulate the user's actions.
-      //    Find elements by their accessible role or text, just like a user would.
       await user.type(screen.getByLabelText(/widget name/i), 'My Test Widget');
       await user.click(screen.getByRole('button', { name: /save widget/i }));
 
       // 3. Assert: Check for the expected outcome on the screen.
-      //    Use `findBy` or `waitFor` to handle asynchronous updates.
       expect(await screen.findByText(/widget created successfully/i)).toBeInTheDocument();
       expect(await screen.findByText(/my test widget/i)).toBeInTheDocument();
     });
     ```
 
-By following these patterns, you ensure that every new piece of code is accompanied by a meaningful, robust test that verifies its functionality from a user's perspective.
+## 3. The Backend Auto-Isolation System
 
-## Test Statistics
+You don't need to do anything to get a clean, isolated database for your Python tests—it's automatic.
 
-```
-📊 194 Total Tests (9x increase from initial 22)
+-   **What it is**: A revolutionary system in `tests/conftest.py` that automatically provides an isolated, in-memory SQLite database for any test that needs it.
+-   **How it works**: It detects the need for a database based on test name patterns (e.g., `_user_creation_`), fixture requests (`client`, `db`), or module imports (e.g., importing a database model).
+-   **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
 
-🐍 Python Backend: 30 tests
-⚛️ React Frontend: 164 tests
-🚀 100% Pass Rate with Auto-Isolation
-```
+## 4. Static Analysis & Code Quality: The Linter is the Law
 
-## The Auto-Isolation System
+We enforce a strict, consistent, and automated approach to code quality. The linter and formatter are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors. These checks are run automatically by pre-commit hooks.
 
-### What Makes It Revolutionary
+### Philosophy: Zero Tolerance
+-   **If the linter fails, your code is not ready.** No exceptions.
+-   **Automate Everything**: We use tools to format and fix issues automatically. Use `npm run fix` before every commit.
+-   **Consistency is Key**: All code, regardless of author, must look and feel the same.
 
-Traditional testing requires developers to manually manage test database fixtures, leading to:
-- Forgotten fixtures causing database pollution
-- Mental overhead remembering isolation requirements
-- Boilerplate code in every test
+### Our Tooling
+-   **Formatting**: **Prettier** for TypeScript/React and **Black** for Python. These are opinionated formatters that handle all stylistic choices.
+    -   *Your job is to write the code, their job is to format it.*
+    -   **Configuration**: `.prettierrc`, `.prettierignore`, `pyproject.toml` (for Black).
+-   **Linting**: **ESLint** for TypeScript/React and **Flake8** for Python. These tools catch potential bugs, enforce best practices, and prevent unsafe patterns.
+    -   **Configuration**: `eslint.config.js` is the source of truth for all frontend linting rules.
+-   **Type Checking**: **TypeScript (tsc)** for the frontend and **MyPy** for the backend. This is our first line of defense against runtime errors.
+    -   **Configuration**: `tsconfig.json`, `mypy.ini`.
 
-Our auto-isolation system **automatically detects** when a test needs database isolation and provides it transparently.
+### Key ESLint/TypeScript Guidelines
+While the full configuration is in `eslint.config.js`, these are the most important principles we enforce:
 
-### How It Works
+-   **No `any`**: The `any` type is forbidden. If you need an escape hatch, use `unknown` and perform type-safe validation.
+-   **No Unsafe Operations**: Rules like `@typescript-eslint/no-unsafe-assignment` and `@typescript-eslint/no-unsafe-call` are enabled to prevent runtime type errors.
+-   **Strict Type Checking**: All `strict` flags in `tsconfig.json` are enabled. This includes `noImplicitReturns` and `noUncheckedIndexedAccess`.
+-   **Explicit Return Types**: Functions must have explicit return types to ensure clarity and prevent bugs.
 
-```python
-# In tests/conftest.py
+### How to Comply
+1.  **Install the Recommended VS Code Extensions**: `dbaeumer.vscode-eslint` and `ms-python.black-formatter`. This will give you real-time feedback.
+2.  **Run `npm run fix` Often**: This command will automatically format your code with Prettier/Black and fix any auto-fixable ESLint errors.
+3.  **Run `npm run quality` Before Committing**: This is the same check the CI pipeline runs. If it passes on your machine, it will pass in the pipeline.
 
-@pytest.fixture(scope="function", autouse=True)
-def auto_isolation(request):
-    """Automatically provides database isolation when needed."""
-    if should_apply_isolation(request):
-        # Creates in-memory SQLite database
-        # Injects test client and session
-        # Cleans up automatically
-```
+## 5. Running Tests & Quality Checks
 
-The detection algorithm checks for:
-1. **Test name patterns**: `database`, `user_creation`, `auth_flow`, etc.
-2. **Fixture dependencies**: Tests requesting database fixtures
-3. **Module imports**: Importing database models or `get_db`
+### Essential Commands
 
-### Writing Tests with Auto-Isolation
-
-```python
-# ✅ AUTOMATIC - No fixtures needed!
-def test_user_registration_flow():
-    """This test automatically gets database isolation."""
-    # 'user_registration' in name triggers isolation
-    response = client.post("/api/auth/register", json={
-        "email": "test@example.com",
-        "password": "SecurePassword123!"
-    })
-    assert response.status_code == 201
-    
-    # db_session is automatically available
-    user = db_session.query(User).first()
-    assert user.email == "test@example.com"
-
-# ✅ AUTOMATIC - Import detection
-def test_team_creation():
-    from api.database import Team  # Import triggers isolation
-    
-    team = Team(name="Test Team")
-    db_session.add(team)
-    db_session.commit()
-    assert team.id is not None
-
-# ✅ NO ISOLATION - Pure unit test
-def test_password_validation():
-    # No database keywords, no isolation needed
-    from api.auth import validate_password
-    assert validate_password("weak") == False
-    assert validate_password("SecurePassword123!") == True
-```
-
-### Performance Metrics
-
-- **Detection Speed**: <0.1ms per test
-- **Setup Overhead**: ~3-15ms for in-memory database
-- **Zero False Positives**: Refined detection logic
-- **No Manual Intervention**: Works automatically
-
-## Python Testing Guide
-
-### Test Structure
-
-```
-tests/
-├── conftest.py              # Auto-isolation system & shared fixtures
-├── test_startup.py          # Server startup validation
-├── test_api_integration.py  # API endpoint tests
-├── test_auth_endpoints.py   # Authentication tests
-├── test_google_oauth.py     # OAuth integration tests
-├── test_role_system.py      # Role-based access tests
-├── test_auto_isolation.py   # Auto-isolation validation
-└── reference/              # Testing documentation
-```
-
-### Writing API Tests
-
-```python
-# Basic API test with auto-isolation
-def test_create_calendar_entry():
-    """Test calendar entry creation."""
-    # Auto-isolation provides authenticated client
-    response = client.post("/api/v1/calendar-entries", json={
-        "title": "Project Planning",
-        "description": "Q1 planning session",
-        "entry_type": "meeting",
-        "status": "scheduled"
-    }, headers=auth_headers)
-    
-    assert response.status_code == 201
-    data = response.json()
-    assert data["title"] == "Project Planning"
-    
-    # Verify in database (db_session auto-provided)
-    entry = db_session.query(CalendarEntry).first()
-    assert entry.title == "Project Planning"
-```
-
-### Testing Authentication
-
-```python
-def test_jwt_authentication():
-    """Test JWT token generation and validation."""
-    # Register user
-    response = client.post("/api/auth/register", json={
-        "email": "user@example.com",
-        "password": "SecurePassword123!",
-        "full_name": "Test User"
-    })
-    assert response.status_code == 201
-    
-    # Login
-    response = client.post("/api/auth/login", data={
-        "username": "user@example.com",
-        "password": "SecurePassword123!"
-    })
-    assert response.status_code == 200
-    token = response.json()["access_token"]
-    
-    # Use token
-    response = client.get(
-        "/api/v1/users/me",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    assert response.status_code == 200
-    assert response.json()["email"] == "user@example.com"
-```
-
-### Testing Google OAuth
-
-```python
-@patch('api.google_oauth.id_token.verify_oauth2_token')
-def test_google_oauth_flow(mock_verify):
-    """Test Google OAuth integration."""
-    # Mock Google's token verification
-    mock_verify.return_value = {
-        'email': 'user@gmail.com',
-        'name': 'Google User',
-        'sub': '1234567890'
-    }
-    
-    response = client.post("/api/auth/google", json={
-        "credential": "mock-google-token"
-    })
-    
-    assert response.status_code == 200
-    assert "access_token" in response.json()
-    
-    # Verify user created
-    user = db_session.query(User).filter_by(email="user@gmail.com").first()
-    assert user is not None
-    assert user.oauth_provider == "google"
-```
-
-### Testing Role-Based Access
-
-```python
-def test_team_role_hierarchy():
-    """Test role-based permissions."""
-    # Create team with owner
-    owner = create_test_user("owner@example.com")
-    team = create_test_team("Test Team", owner)
-    
-    # Add members with different roles
-    admin = create_test_user("admin@example.com")
-    add_team_member(team, admin, TeamRole.ADMIN)
-    
-    member = create_test_user("member@example.com")
-    add_team_member(team, member, TeamRole.MEMBER)
-    
-    # Test permissions
-    # Owner can delete team
-    response = client.delete(
-        f"/api/v1/teams/{team.id}",
-        headers=get_auth_headers(owner)
-    )
-    assert response.status_code == 200
-    
-    # Member cannot delete team
-    response = client.delete(
-        f"/api/v1/teams/{another_team.id}",
-        headers=get_auth_headers(member)
-    )
-    assert response.status_code == 403
-```
-
-## React Testing Guide
-
-### Test Structure
-
-```
-src/client/
-├── components/
-│   ├── __tests__/
-│   │   ├── AuthModal.test.tsx
-│   │   ├── NavigationPanel.test.tsx
-│   │   └── ...
-│   └── atoms/__tests__/
-│       ├── Button.test.tsx
-│       └── Input.test.tsx
-├── hooks/__tests__/
-│   ├── useAuth.test.ts
-│   └── useTeams.test.ts
-└── test-utils/
-    └── setup.ts
-```
-
-### Component Testing
-
-```typescript
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { AuthModal } from '../AuthModal';
-
-describe('AuthModal', () => {
-  it('should handle sign in flow', async () => {
-    const user = userEvent.setup();
-    const onSuccess = vi.fn();
-    
-    render(
-      <AuthModal
-        isOpen={true}
-        onClose={() => {}}
-        onSuccess={onSuccess}
-        initialMode="signin"
-      />
-    );
-    
-    // Fill form
-    await user.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
-    
-    // Submit
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
-    
-    // Verify success
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledWith({
-        user: expect.objectContaining({
-          email: 'user@example.com'
-        })
-      });
-    });
-  });
-  
-  it('should prevent modal race conditions', async () => {
-    const { rerender } = render(
-      <AuthModal isOpen={true} onClose={() => {}} />
-    );
-    
-    // Rapid state changes
-    rerender(<AuthModal isOpen={false} onClose={() => {}} />);
-    rerender(<AuthModal isOpen={true} onClose={() => {}} />);
-    
-    // Should handle gracefully without errors
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-  });
-});
-```
-
-### Hook Testing
-
-```typescript
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAuth } from '../useAuth';
-
-describe('useAuth', () => {
-  it('should handle authentication flow', async () => {
-    const { result } = renderHook(() => useAuth());
-    
-    expect(result.current.user).toBeNull();
-    expect(result.current.isLoading).toBe(true);
-    
-    // Sign in
-    await act(async () => {
-      await result.current.signIn('user@example.com', 'password');
-    });
-    
-    expect(result.current.user).toEqual({
-      email: 'user@example.com',
-      id: expect.any(String)
-    });
-    
-    // Sign out
-    act(() => {
-      result.current.signOut();
-    });
-    
-    expect(result.current.user).toBeNull();
-  });
-});
-```
-
-### Testing Async Operations
-
-```typescript
-it('should load teams on mount', async () => {
-  const { result } = renderHook(() => useTeams());
-  
-  // Initial loading state
-  expect(result.current.isLoading).toBe(true);
-  expect(result.current.teams).toEqual([]);
-  
-  // Wait for data
-  await waitFor(() => {
-    expect(result.current.isLoading).toBe(false);
-  });
-  
-  expect(result.current.teams).toHaveLength(2);
-  expect(result.current.teams[0]).toMatchObject({
-    id: expect.any(String),
-    name: expect.any(String)
-  });
-});
-```
-
-## Test Utilities
-
-### Python Test Utilities
-
-```python
-# tests/conftest.py provides:
-
-@pytest.fixture
-def test_user():
-    """Create a test user."""
-    return User(
-        email="test@example.com",
-        hashed_password=get_password_hash("password"),
-        full_name="Test User"
-    )
-
-@pytest.fixture
-def auth_headers(test_user):
-    """Get authentication headers."""
-    token = create_access_token({"sub": test_user.email})
-    return {"Authorization": f"Bearer {token}"}
-
-@pytest.fixture
-def test_team(test_user):
-    """Create a test team."""
-    return Team(
-        name="Test Team",
-        owner_id=test_user.id,
-        settings={}
-    )
-```
-
-### React Test Utilities
-
-```typescript
-// src/client/test-utils/setup.ts
-
-export function renderWithProviders(
-  ui: React.ReactElement,
-  options?: RenderOptions
-) {
-  function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <BrowserRouter>
-        <AuthProvider>
-          <TeamProvider>
-            {children}
-          </TeamProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    );
-  }
-  
-  return render(ui, { wrapper: Wrapper, ...options });
-}
-
-// Mock API responses
-export const mockApiResponse = (url: string, data: any) => {
-  fetchMock.mockResponseOnce(JSON.stringify(data));
-};
-```
-
-## Running Tests
-
-### All Tests
 ```bash
-npm run test              # Run all tests (Python + React)
-npm run test:watch        # Watch mode for development
+# Run the complete test suite (Python + React)
+npm run test
+
+# Run the full quality pipeline (lint, format, type-check, test)
+# This is the command to run before committing.
+npm run quality
+
+# Auto-fix all possible formatting and linting issues
+npm run fix
 ```
 
-### Python Tests Only
+### Advanced Commands
+
 ```bash
-npm run test:python       # All Python tests
-pytest tests/test_api_integration.py  # Specific file
-pytest -k "test_user"     # Pattern matching
-pytest -v                 # Verbose output
+# Run only Python tests
+npm run test:python
+
+# Run only React tests
+npm run test:react
+
+# Run React tests in watch mode
+npm run test:react:watch
+
+# Run the full linting suite
+npm run lint
+
+# Run the full formatting suite
+npm run format
+
+# Run the full type-checking suite
+npm run type-check
 ```
-
-### React Tests Only
-```bash
-npm run test:react        # All React tests
-npm run test:react:watch  # Watch mode
-npm run test:react:coverage  # With coverage
-```
-
-### Test Coverage
-```bash
-# Python coverage
-pytest --cov=api --cov-report=html
-
-# React coverage  
-npm run test:react:coverage
-```
-
-## Best Practices
-
-### 1. **Test Behavior, Not Implementation**
-```python
-# ❌ Bad - Testing implementation details
-def test_password_hash():
-    hashed = get_password_hash("password")
-    assert hashed.startswith("$2b$")  # Brittle
-
-# ✅ Good - Testing behavior
-def test_password_verification():
-    hashed = get_password_hash("password")
-    assert verify_password("password", hashed) == True
-    assert verify_password("wrong", hashed) == False
-```
-
-### 2. **Use Descriptive Test Names**
-```python
-# ❌ Bad
-def test_1():
-    pass
-
-# ✅ Good
-def test_user_cannot_delete_team_without_owner_permission():
-    pass
-```
-
-### 3. **Arrange-Act-Assert Pattern**
-```python
-def test_team_invitation():
-    # Arrange
-    owner = create_test_user()
-    team = create_test_team(owner)
-    
-    # Act
-    response = client.post(f"/api/v1/teams/{team.id}/invite", 
-        json={"email": "new@example.com"},
-        headers=get_auth_headers(owner)
-    )
-    
-    # Assert
-    assert response.status_code == 201
-    assert TeamInvitation.query.count() == 1
-```
-
-### 4. **Test Edge Cases**
-```python
-def test_rate_limiting():
-    # Make requests up to limit
-    for _ in range(50):
-        response = client.get("/api/health")
-        assert response.status_code == 200
-    
-    # 51st request should be rate limited
-    response = client.get("/api/health")
-    assert response.status_code == 429
-```
-
-### 5. **Mock External Services**
-```python
-@patch('api.email_verification.send_email')
-def test_email_verification(mock_send):
-    # Test without actually sending emails
-    response = client.post("/api/auth/register", json=user_data)
-    assert mock_send.called
-    assert "verification" in mock_send.call_args[0][1]
-```
-
-## Debugging Tests
-
-### Python Debugging
-```python
-# Use pytest debugging
-pytest -s  # No capture, see print statements
-pytest --pdb  # Drop into debugger on failure
-pytest --pdb-trace  # Start debugger at beginning
-
-# Add breakpoints
-import pdb; pdb.set_trace()
-```
-
-### React Debugging
-```typescript
-// Use screen.debug()
-it('should render', () => {
-  render(<Component />);
-  screen.debug();  // Prints DOM
-  screen.debug(screen.getByRole('button'));  // Specific element
-});
-
-// Use testing-library queries
-const utils = render(<Component />);
-console.log(utils.container.innerHTML);
-```
-
-### Common Issues
-
-1. **Database Already Exists Error**
-   - Auto-isolation handles this automatically
-   - If manual testing, ensure proper cleanup
-
-2. **Async Timeout**
-   ```typescript
-   // Increase timeout for slow operations
-   await waitFor(() => {
-     expect(screen.getByText('Loaded')).toBeInTheDocument();
-   }, { timeout: 5000 });
-   ```
-
-3. **Mock Not Working**
-   ```python
-   # Ensure correct import path
-   @patch('api.module.function')  # Full path from project root
-   ```
-
-## Continuous Integration
-
-Tests run automatically on:
-- Every commit (pre-commit hooks)
-- Every push (GitHub Actions)
-- Every pull request
-
-### Pre-commit Hook
-```bash
-# .husky/pre-commit
-npm run quality:pre-commit  # Runs fast tests
-```
-
-### GitHub Actions
-```yaml
-# .github/workflows/test.yml
-- name: Run tests
-  run: |
-    npm run test
-    npm run test:coverage
-```
-
-## Related Documentation
-
-- [API Documentation](../api/README.md)
-- [Frontend Hooks](../src/client/hooks/README.md)
-- [Development Guide](../CLAUDE.md)
