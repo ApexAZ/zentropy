@@ -30,7 +30,7 @@ interface SignUpFormData {
 	first_name: string;
 	last_name: string;
 	email: string;
-	organization: string;
+	organization_id: string;
 	password: string;
 	confirm_password: string;
 	terms_agreement: boolean;
@@ -64,7 +64,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		first_name: "",
 		last_name: "",
 		email: "",
-		organization: "",
+		organization_id: "",
 		password: "",
 		confirm_password: "",
 		terms_agreement: false,
@@ -134,7 +134,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			first_name: "",
 			last_name: "",
 			email: "",
-			organization: "",
+			organization_id: "",
 			password: "",
 			confirm_password: "",
 			terms_agreement: false,
@@ -202,10 +202,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				first_name: signUpData.first_name,
 				last_name: signUpData.last_name,
 				email: signUpData.email,
-				organization: signUpData.organization,
 				password: signUpData.password,
 				terms_agreement: signUpData.terms_agreement,
-				has_projects_access: signUpData.has_projects_access
+				has_projects_access: signUpData.has_projects_access,
+				...(signUpData.organization_id && { organization_id: signUpData.organization_id })
 			};
 
 			const { token, user } = await AuthService.signUp(userData);
@@ -451,13 +451,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						<label className="text-text-primary mb-1 block text-sm font-medium">Organization</label>
 						<input
 							type="text"
-							value={signUpData.organization}
-							onChange={e => setSignUpData(prev => ({ ...prev, organization: e.target.value }))}
+							value={signUpData.organization_id}
+							onChange={e => setSignUpData(prev => ({ ...prev, organization_id: e.target.value }))}
 							className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 							disabled={isLoading}
 						/>
-						{signUpErrors.organization && (
-							<p className="mt-1 text-sm text-red-500">{signUpErrors.organization}</p>
+						{signUpErrors.organization_id && (
+							<p className="mt-1 text-sm text-red-500">{signUpErrors.organization_id}</p>
 						)}
 					</div>
 

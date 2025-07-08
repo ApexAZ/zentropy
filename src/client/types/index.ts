@@ -25,7 +25,7 @@ export interface SignUpData {
 	first_name: string;
 	last_name: string;
 	email: string;
-	organization: string;
+	organization_id?: string;
 	password: string;
 	terms_agreement: boolean;
 	has_projects_access?: boolean;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
+import { AuthService } from "../services/AuthService";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -454,10 +455,74 @@ const ProfilePage: React.FC = () => {
 										{passwordErrors.new_password}
 									</span>
 								)}
-								<div className="text-text-primary mt-2 text-sm">
-									Password must contain at least 8 characters with uppercase, lowercase, number, and
-									symbol.
-								</div>
+								{passwordData.new_password && (
+									<div className="mt-2 space-y-1 text-xs">
+										{(() => {
+											const validation = AuthService.validatePassword(
+												passwordData.new_password,
+												passwordData.confirm_new_password
+											);
+											return (
+												<>
+													<div
+														className={
+															validation.requirements.length
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ At least 8 characters
+													</div>
+													<div
+														className={
+															validation.requirements.uppercase
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ One uppercase letter
+													</div>
+													<div
+														className={
+															validation.requirements.lowercase
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ One lowercase letter
+													</div>
+													<div
+														className={
+															validation.requirements.number
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ One number
+													</div>
+													<div
+														className={
+															validation.requirements.symbol
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ One special character
+													</div>
+													<div
+														className={
+															validation.requirements.match
+																? "text-green-600"
+																: "text-red-500"
+														}
+													>
+														✓ Passwords match
+													</div>
+												</>
+											);
+										})()}
+									</div>
+								)}
 							</div>
 
 							<div>

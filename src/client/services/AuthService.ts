@@ -67,7 +67,7 @@ export class AuthService {
 	static async oauthSignIn(
 		provider: "google",
 		credential: string,
-		organization?: string
+		organization_id?: string
 	): Promise<{ token: string; user: AuthUser }> {
 		if (provider !== "google") {
 			throw new Error("Only Google OAuth is currently supported");
@@ -80,7 +80,7 @@ export class AuthService {
 			},
 			body: JSON.stringify({
 				credential,
-				organization
+				...(organization_id && { organization_id })
 			})
 		});
 

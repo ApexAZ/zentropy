@@ -112,9 +112,17 @@ These recommendations align with the principles outlined in:
         *   **Backward Compatibility**: Preserved legacy functions as `useFormValidationLegacy` for existing components during migration
         *   **Type Safety**: Full TypeScript support with generic types and proper interfaces
         *   **Testing**: Verified all React tests pass and no TypeScript errors
-*   **Consistent Password Validation**:
+*   **✅ Consistent Password Validation** [COMPLETED]:
     *   **Issue**: Password validation logic is duplicated in `AuthService.validatePassword` and within components like `ProfilePage.tsx` and `AuthModal.tsx`.
     *   **Recommendation**: Ensure `AuthService.validatePassword` is the single source of truth for password policy. Components should exclusively call this service method for validation and use its returned requirements for UI feedback, adhering to `src/client/services/README.md` - "Best Practices" (Single Responsibility, Validation).
+    *   **✅ Actions Taken**:
+        *   **Refactored UserService.validatePasswordUpdate**: Replaced custom password validation logic with AuthService.validatePassword as single source of truth
+        *   **Enhanced Password Requirements Display**: Updated ProfilePage.tsx to dynamically show password requirements using AuthService validation results instead of hardcoded text
+        *   **Consistent Password Policy**: All password validation now uses the same criteria: 8+ characters, uppercase, lowercase, number, special character, and password matching
+        *   **Improved User Experience**: Password requirements in ProfilePage now show real-time validation status with green/red indicators based on AuthService results
+        *   **Eliminated Code Duplication**: Removed duplicate password validation regex patterns and hardcoded requirement messages
+        *   **AuthModal Integration**: AuthModal already properly uses AuthService.validatePassword with dynamic requirement checklist (lines 391, 484-528)
+        *   **Verified Quality**: All TypeScript compilation, ESLint, and React tests pass successfully
 
 ---
 
@@ -125,8 +133,15 @@ These recommendations align with the principles outlined in:
 *   `src/client/components/README.md` - "Overview" (Atomic Design), "Design Patterns" (Semantic Color System), "Best Practices" (Props Design, Accessibility)
 *   `src/client/services/README.md` - "Type Safety", "Authentication Integration"
 
-*   **`AuthService.ts`**:
-    *   **Fix Deprecated Field**: Update `SignUpData` and `oauthSignIn` method parameters/payloads to use `organization_id?: string` instead of `organization: string` to align with backend changes.
+*   **✅ `AuthService.ts`** [COMPLETED]:
+    *   **✅ Fix Deprecated Field**: Update `SignUpData` and `oauthSignIn` method parameters/payloads to use `organization_id?: string` instead of `organization: string` to align with backend changes.
+    *   **✅ Actions Taken**:
+        *   **Updated SignUpData interface** in `src/client/types/index.ts` to use `organization_id?: string` instead of `organization: string`
+        *   **Updated AuthModal.tsx** SignUpFormData interface and all form handling to use `organization_id` instead of `organization`
+        *   **Updated AuthService.oauthSignIn method** to accept `organization_id?: string` parameter and conditionally include it in the request payload
+        *   **Proper Optional Handling**: Used spread operator to only include `organization_id` in payloads when it has a value
+        *   **TypeScript Compliance**: All changes pass TypeScript compilation and maintain type safety
+        *   **Testing Verified**: React tests (45 tests) pass successfully after changes
     *   **Refactor `signOut`**: Modify `AuthService.signOut` to directly clear authentication tokens from `localStorage` and `sessionStorage`. This improves encapsulation and aligns with `src/client/services/README.md` - "Service Pattern" and "Best Practices" (Single Responsibility).
 *   **`useAuth.ts`**:
     *   **Type Import**: Import `AuthUser` from a central types file (`src/client/types/index.ts` once created) to avoid duplication.

@@ -1,4 +1,5 @@
 import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
+import { AuthService } from "./AuthService";
 
 export class UserService {
 	private static async handleResponse<T>(response: Response): Promise<T> {
@@ -94,7 +95,7 @@ export class UserService {
 	}
 
 	/**
-	 * Validate password data
+	 * Validate password data using AuthService as single source of truth
 	 */
 	static validatePasswordUpdate(passwordData: PasswordUpdateData): {
 		isValid: boolean;
@@ -108,15 +109,32 @@ export class UserService {
 
 		if (!passwordData.new_password) {
 			errors.new_password = "New password is required";
-		} else if (passwordData.new_password.length < 8) {
-			errors.new_password = "Password must be at least 8 characters";
-		} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(passwordData.new_password)) {
-			errors.new_password = "Password must contain uppercase, lowercase, number, and symbol";
+		} else {
+			// Use AuthService.validatePassword as single source of truth
+			const passwordValidation = AuthService.validatePassword(
+				passwordData.new_password,
+				passwordData.confirm_new_password
+			);
+
+			if (!passwordValidation.isValid) {
+				const requirements = passwordValidation.requirements;
+				const missingRequirements = [];
+
+				if (!requirements.length) missingRequirements.push("at least 8 characters");
+				if (!requirements.uppercase) missingRequirements.push("one uppercase letter");
+				if (!requirements.lowercase) missingRequirements.push("one lowercase letter");
+				if (!requirements.number) missingRequirements.push("one number");
+				if (!requirements.symbol) missingRequirements.push("one special character");
+
+				if (missingRequirements.length > 0) {
+					errors.new_password = `Password must contain ${missingRequirements.join(", ")}`;
+				}
+			}
 		}
 
 		if (!passwordData.confirm_new_password) {
 			errors.confirm_new_password = "Please confirm your new password";
-		} else if (passwordData.new_password !== passwordData.confirm_new_password) {
+		} else if (passwordData.new_password && passwordData.new_password !== passwordData.confirm_new_password) {
 			errors.confirm_new_password = "Passwords do not match";
 		}
 
