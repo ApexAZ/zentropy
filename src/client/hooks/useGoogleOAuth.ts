@@ -12,6 +12,7 @@ interface UseGoogleOAuthReturn {
 	isLoading: boolean;
 	error: string | null;
 	triggerOAuth: () => void;
+	clearError: () => void;
 }
 
 export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): UseGoogleOAuthReturn => {
@@ -22,10 +23,19 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 
 	const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-	// Validate required environment variables
-	if (!clientId) {
-		logger.error("VITE_GOOGLE_CLIENT_ID is not configured in environment variables");
-	}
+	const clearError = useCallback(() => {
+		setError(null);
+	}, []);
+
+	// Validate required environment variables on mount
+	useEffect(() => {
+		if (!clientId) {
+			const errorMessage = "VITE_GOOGLE_CLIENT_ID is not configured in environment variables";
+			logger.error(errorMessage);
+			setError(errorMessage);
+			onError?.(errorMessage);
+		}
+	}, [clientId, onError]);
 
 	const handleCredentialResponse = useCallback(
 		async (response: GoogleCredentialResponse) => {
@@ -55,13 +65,21 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 		if (initializedRef.current) return;
 
 		const initializeGoogleOAuth = () => {
+			setError(null); // Clear any previous errors
+			
 			if (!window.google?.accounts?.id) {
-				setError("Google Identity Services not available");
+				const errorMessage = "Google Identity Services not available";
+				logger.error(errorMessage);
+				setError(errorMessage);
+				onError?.(errorMessage);
 				return;
 			}
 
 			if (!clientId) {
-				setError("Google Sign-In not configured");
+				const errorMessage = "Google Sign-In not configured";
+				logger.error(errorMessage);
+				setError(errorMessage);
+				onError?.(errorMessage);
 				return;
 			}
 
@@ -80,9 +98,10 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 				initializedRef.current = true;
 				logger.info("Google OAuth initialized successfully");
 			} catch (err) {
-				logger.error("Google OAuth initialization failed", { err });
-				setError("Failed to initialize Google OAuth");
-				onError?.("Failed to initialize Google OAuth");
+				const errorMessage = "Failed to initialize Google OAuth";
+				logger.error(errorMessage, { err });
+				setError(errorMessage);
+				onError?.(errorMessage);
 			}
 		};
 
@@ -105,9 +124,11 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 			// Extended timeout to 30 seconds for slower connections
 			setTimeout(() => {
 				clearInterval(checkGoogleLoaded);
-				if (!isReady) {
-					logger.error("Google Identity Services failed to load after 30 seconds");
-					setError("Google Identity Services failed to load");
+				if (!isReady && !initializedRef.current) {
+					const errorMessage = "Google Identity Services failed to load after 30 seconds";
+					logger.error(errorMessage);
+					setError(errorMessage);
+					onError?.(errorMessage);
 				}
 			}, 30000);
 
@@ -115,37 +136,45 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 		}
 	}, [clientId, onError, isReady, handleCredentialResponse]);
 
-	const triggerOAuth = () => {
+	const triggerOAuth = useCallback(() => {
+		// Clear any previous errors before starting
+		setError(null);
+		
 		if (!isReady || !window.google?.accounts?.id) {
-			setError("Google Sign-In not available");
-			onError?.("Google Sign-In not available");
+			const errorMessage = "Google Sign-In not available";
+			logger.error(errorMessage);
+			setError(errorMessage);
+			onError?.(errorMessage);
 			return;
 		}
 
 		try {
 			setIsLoading(true);
-			setError(null);
 
 			// Use popup-based OAuth instead of embedded button
 			window.google.accounts.id.prompt((notification: GoogleOAuthNotification) => {
 				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
 					// Fallback: user dismissed or popup blocked
+					const errorMessage = "Google Sign-In was cancelled or blocked";
 					setIsLoading(false);
-					setError("Google Sign-In was cancelled or blocked");
-					onError?.("Google Sign-In was cancelled or blocked");
+					setError(errorMessage);
+					onError?.(errorMessage);
 				}
 			});
-		} catch {
+		} catch (err) {
+			const errorMessage = "Failed to start Google Sign-In";
+			logger.error(errorMessage, { err });
 			setIsLoading(false);
-			setError("Failed to start Google Sign-In");
-			onError?.("Failed to start Google Sign-In");
+			setError(errorMessage);
+			onError?.(errorMessage);
 		}
-	};
+	}, [isReady, onError]);
 
 	return {
 		isReady: isReady && !error,
 		isLoading,
 		error,
-		triggerOAuth
+		triggerOAuth,
+		clearError
 	};
 };

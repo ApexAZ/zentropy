@@ -108,14 +108,14 @@ export const useAuth = () => {
 		} finally {
 			// Clear authentication tokens using AuthService
 			await AuthService.signOut();
-			
+
 			// Clear React state
 			setAuthState({
 				isAuthenticated: false,
 				user: null,
 				token: null
 			});
-			
+
 			// Clear timeout when logging out
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
@@ -145,14 +145,14 @@ export const useAuth = () => {
 		} finally {
 			// Clear authentication tokens using AuthService
 			await AuthService.signOut();
-			
+
 			// Clear React state
 			setAuthState({
 				isAuthenticated: false,
 				user: null,
 				token: null
 			});
-			
+
 			// Clear timeout when logging out
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
