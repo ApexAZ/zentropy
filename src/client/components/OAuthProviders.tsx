@@ -9,7 +9,7 @@ interface OAuthProvidersProps {
 
 const OAuthProviders: React.FC<OAuthProvidersProps> = ({ onGoogleSignIn, disabled = false }) => {
 	// Use centralized Google OAuth hook instead of direct initialization
-	const { isReady, isLoading, error, triggerOAuth, clearError: _ } = useGoogleOAuth({
+	const { isReady, isLoading, error, triggerOAuth } = useGoogleOAuth({
 		onSuccess: (credential: string) => {
 			// Transform credential string back to GoogleCredentialResponse format for backward compatibility
 			if (onGoogleSignIn) {
