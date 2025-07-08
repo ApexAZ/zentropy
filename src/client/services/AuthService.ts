@@ -103,12 +103,12 @@ export class AuthService {
 	}
 
 	/**
-	 * Sign out - handled by useAuth hook
+	 * Sign out - clear authentication tokens from storage
 	 */
 	static async signOut(): Promise<void> {
-		// Note: Actual logout logic is in useAuth hook
-		// This method exists for consistency but delegates to useAuth.logout()
-		throw new Error("Use auth.logout() from useAuth hook instead");
+		// Clear authentication tokens from both storage locations
+		localStorage.removeItem("authToken");
+		sessionStorage.removeItem("authToken");
 	}
 
 	/**
