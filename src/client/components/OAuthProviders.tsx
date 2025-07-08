@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
+import type { GoogleCredentialResponse } from "../types/global";
 
 interface OAuthProvidersProps {
-	onGoogleSignIn?: (credentialResponse: any) => void;
+	onGoogleSignIn?: (credentialResponse: GoogleCredentialResponse) => void;
 	disabled?: boolean;
 }
 

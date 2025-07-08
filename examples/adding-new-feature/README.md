@@ -22,7 +22,7 @@ We'll add a **Projects** feature that allows teams to:
 
 ### Step 1: Database Model (SQLAlchemy 2.0 Typed Syntax)
 
-Add the Project model to `api/database.py` using the fully-typed SQLAlchemy 2.0 style. This is the standard for our project to ensure type safety with `mypy`.
+Add the Project model to `api/database.py` using the fully-typed SQLAlchemy 2.0 style. This is the standard for our project to ensure type safety with `pyright`.
 
 ```python
 # Add to existing imports

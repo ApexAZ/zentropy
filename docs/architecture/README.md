@@ -211,7 +211,7 @@ Frontend                  Backend
 
 **Observable Evidence:**
 - PostgreSQL with SQLAlchemy ORM using the **fully-typed 2.0 style**.
-- `Mapped` and `mapped_column` used for all model attributes, ensuring mypy compatibility.
+- `Mapped` and `mapped_column` used for all model attributes, ensuring pyright compatibility.
 - UUID primary keys for all tables.
 - `created_at` and `updated_at` timestamps for audit trails.
 - Foreign key relationships with proper constraints.

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { logger } from "../utils/logger";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
@@ -86,7 +87,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 			// Redirect to home page after successful logout
 			onPageChange("home");
 		} catch (error) {
-			console.error("Logout error:", error);
+			logger.error("Logout error", { error });
 			// Still redirect even if API call fails since we cleared local state
 			onPageChange("home");
 		}

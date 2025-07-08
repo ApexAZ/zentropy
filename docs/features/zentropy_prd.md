@@ -382,7 +382,7 @@ Project Capacity = Sum(Team Capacities) × Project Allocation Factor
 - ✅ Test-Driven Development approach
 - ✅ Python: pytest with FastAPI TestClient, httpx, pytest-asyncio
 - ✅ React: Vitest with React Testing Library, Jest DOM, user-event
-- ✅ Quality pipeline: ESLint, Prettier, Black, Flake8, MyPy, TypeScript compiler
+- ✅ Quality pipeline: ESLint, Prettier, Black, Flake8, Pyright, TypeScript compiler
 
 ### **🔄 FUTURE ENHANCEMENTS (Phase 2):**
 - Email verification and password reset workflows

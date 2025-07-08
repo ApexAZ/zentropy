@@ -80,7 +80,7 @@ We use a combination of industry-standard tools to analyze and format the code:
 - **Python (Backend):**
     - `flake8`: For linting and style checking.
     - `black`: For automated, opinionated code formatting.
-    - `mypy`: For static type checking.
+    - `pyright`: For static type checking.
 - **TypeScript (Frontend):**
     - `ESLint`: For linting and identifying issues in TypeScript and React code.
     - `Prettier`: For automated code formatting.

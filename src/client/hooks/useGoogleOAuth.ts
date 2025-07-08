@@ -1,41 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-interface GoogleCredentialResponse {
-	credential: string;
-	clientId?: string;
-}
-
-interface GoogleOAuthConfig {
-	client_id: string;
-	callback: (response: GoogleCredentialResponse) => void;
-	auto_select?: boolean;
-	cancel_on_tap_outside?: boolean;
-}
-
-interface GoogleAccounts {
-	id: {
-		initialize: (config: GoogleOAuthConfig) => void;
-		prompt: (momentListener?: (notification: any) => void) => void;
-		renderButton: (element: HTMLElement, options: GoogleButtonConfig) => void;
-		disableAutoSelect: () => void;
-	};
-}
-
-interface GoogleButtonConfig {
-	theme?: "outline" | "filled_blue" | "filled_black";
-	size?: "large" | "medium" | "small";
-	width?: number;
-	text?: string;
-	shape?: "rectangular" | "pill" | "circle" | "square";
-}
-
-declare global {
-	interface Window {
-		google?: {
-			accounts: GoogleAccounts;
-		};
-	}
-}
+import { logger } from "../utils/logger";
+import type { GoogleCredentialResponse, GoogleOAuthNotification } from "../types/global";
 
 interface UseGoogleOAuthProps {
 	onSuccess: (credential: string) => void;
@@ -59,7 +24,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 
 	// Validate required environment variables
 	if (!clientId) {
-		console.error("❌ VITE_GOOGLE_CLIENT_ID is not configured in environment variables");
+		logger.error("VITE_GOOGLE_CLIENT_ID is not configured in environment variables");
 	}
 
 	const handleCredentialResponse = useCallback(
@@ -72,7 +37,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 					throw new Error("No credential received from Google");
 				}
 
-				await onSuccess(response.credential);
+				onSuccess(response.credential);
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Google OAuth failed";
 				setError(errorMessage);
@@ -101,8 +66,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 			}
 
 			try {
-				console.log("Initializing Google OAuth with Client ID:", clientId);
-				console.log("Current origin:", window.location.origin);
+				logger.info("Initializing Google OAuth", { clientId, origin: window.location.origin });
 
 				window.google.accounts.id.initialize({
 					client_id: clientId,
@@ -114,9 +78,9 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 				setIsReady(true);
 				setError(null);
 				initializedRef.current = true;
-				console.log("Google OAuth initialized successfully");
+				logger.info("Google OAuth initialized successfully");
 			} catch (err) {
-				console.error("Google OAuth initialization failed:", err);
+				logger.error("Google OAuth initialization failed", { err });
 				setError("Failed to initialize Google OAuth");
 				onError?.("Failed to initialize Google OAuth");
 			}
@@ -124,15 +88,15 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 
 		// Check if Google Identity Services is already loaded
 		if (window.google?.accounts?.id) {
-			console.log("Google Identity Services already loaded");
+			logger.debug("Google Identity Services already loaded");
 			initializeGoogleOAuth();
 			return undefined;
 		} else {
-			console.log("Waiting for Google Identity Services to load...");
+			logger.debug("Waiting for Google Identity Services to load");
 			// Wait for Google Identity Services to load
 			const checkGoogleLoaded = setInterval(() => {
 				if (window.google?.accounts?.id) {
-					console.log("Google Identity Services loaded successfully");
+					logger.debug("Google Identity Services loaded successfully");
 					clearInterval(checkGoogleLoaded);
 					initializeGoogleOAuth();
 				}
@@ -142,7 +106,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 			setTimeout(() => {
 				clearInterval(checkGoogleLoaded);
 				if (!isReady) {
-					console.error("Google Identity Services failed to load after 30 seconds");
+					logger.error("Google Identity Services failed to load after 30 seconds");
 					setError("Google Identity Services failed to load");
 				}
 			}, 30000);
@@ -163,7 +127,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 			setError(null);
 
 			// Use popup-based OAuth instead of embedded button
-			window.google.accounts.id.prompt(notification => {
+			window.google.accounts.id.prompt((notification: GoogleOAuthNotification) => {
 				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
 					// Fallback: user dismissed or popup blocked
 					setIsLoading(false);

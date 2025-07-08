@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { logger } from "../utils/logger";
 
 interface EmailVerificationStatusBannerProps {
 	userEmail: string;
@@ -36,7 +37,7 @@ const EmailVerificationStatusBanner: React.FC<EmailVerificationStatusBannerProps
 			}
 		} catch (error) {
 			setResendMessage("Network error. Please try again.");
-			console.error("Resend verification error:", error);
+			logger.error("Resend verification error", { error });
 		} finally {
 			setIsResending(false);
 		}

@@ -93,7 +93,7 @@ We enforce a strict, consistent, and automated approach to code quality. The lin
 -   **Linting**: **ESLint** for TypeScript/React and **Flake8** for Python. These tools catch potential bugs, enforce best practices, and prevent unsafe patterns.
     -   **Configuration**: `eslint.config.js` is the source of truth for all frontend linting rules.
 -   **Type Checking**: **TypeScript (tsc)** for the frontend and **MyPy** for the backend. This is our first line of defense against runtime errors.
-    -   **Configuration**: `tsconfig.json`, `mypy.ini`.
+    -   **Configuration**: `tsconfig.json`, `pyrightconfig.json`.
 
 ### Key ESLint/TypeScript Guidelines
 While the full configuration is in `eslint.config.js`, these are the most important principles we enforce:

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logger } from "../utils/logger";
 
 interface AuthUser {
 	email: string;
@@ -65,7 +66,7 @@ export const useAuth = () => {
 					}
 				})
 				.catch(error => {
-					console.warn("Failed to validate token:", error);
+					logger.warn("Failed to validate token", { error });
 					// Token validation failed, remove all tokens
 					localStorage.removeItem("authToken");
 					sessionStorage.removeItem("authToken");

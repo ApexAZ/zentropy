@@ -11,6 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
 import { useAuth } from "./hooks/useAuth";
+import { logger } from "./utils/logger";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
@@ -24,18 +25,18 @@ function App(): React.JSX.Element {
 
 	// Handle email verification in background
 	useEffect(() => {
-		console.log("🔄 App useEffect running, pathname:", window.location.pathname);
+		logger.debug("App useEffect running", { pathname: window.location.pathname });
 		const pathSegments = window.location.pathname.split("/");
 		if (pathSegments[1] === "verify-email" && pathSegments[2]) {
 			const token = pathSegments[2];
 
 			// Check if we've already attempted verification for this token
 			if (verificationAttempted.current.has(token)) {
-				console.log("🚫 Skipping duplicate verification attempt for token:", token);
+				logger.debug("Skipping duplicate verification attempt", { token });
 				return;
 			}
 
-			console.log("🎯 Email verification token detected:", token);
+			logger.info("Email verification token detected", { token });
 			verificationAttempted.current.add(token);
 			verifyEmailInBackground(token);
 		}
@@ -51,7 +52,7 @@ function App(): React.JSX.Element {
 	}, [toast]);
 
 	const verifyEmailInBackground = async (token: string) => {
-		console.log("🔍 Email verification started for token:", token);
+		logger.info("Email verification started", { token });
 		try {
 			const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
 				method: "POST",
@@ -60,7 +61,7 @@ function App(): React.JSX.Element {
 				}
 			});
 
-			console.log("📡 Verification response:", response.status, response.ok);
+			logger.info("Verification response received", { status: response.status, ok: response.ok });
 
 			// Clean URL immediately
 			window.history.pushState({}, "", "/");
@@ -68,14 +69,14 @@ function App(): React.JSX.Element {
 
 			if (response.ok) {
 				// Success - show sign in modal with success toast
-				console.log("✅ Email verification successful");
+				logger.info("Email verification successful");
 				setToast({ message: "Email verified successfully! Please sign in.", type: "success" });
 				setAuthModalMode("signin");
 				setShowAuthModal(true);
 			} else {
 				// Error - show sign in modal with error toast
 				const errorData = await response.json();
-				console.log("❌ Email verification failed:", errorData);
+				logger.warn("Email verification failed", { errorData });
 				setToast({
 					message: errorData.detail || "Email verification failed. Please try again.",
 					type: "error"
@@ -85,7 +86,7 @@ function App(): React.JSX.Element {
 			}
 		} catch (error) {
 			// Network error - clean URL and show sign in with error toast
-			console.log("🚨 Network error during verification:", error);
+			logger.error("Network error during verification", { error });
 			window.history.pushState({}, "", "/");
 			setCurrentPage("home");
 			setToast({ message: "Network error during email verification. Please try again.", type: "error" });
@@ -162,8 +163,8 @@ function App(): React.JSX.Element {
 				onShowSignIn={handleShowSignIn}
 				auth={auth}
 			/>
-			{showEmailVerificationBanner && (
-				<EmailVerificationStatusBanner userEmail={auth.user!.email} isVisible={true} />
+			{showEmailVerificationBanner && auth.user && (
+				<EmailVerificationStatusBanner userEmail={auth.user.email} isVisible={true} />
 			)}
 			{renderPage()}
 			<footer className="border-layout-background bg-layout-background text-text-primary mt-auto border-t px-8 py-6 text-center text-sm">
