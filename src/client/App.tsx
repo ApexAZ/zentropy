@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import AuthModal from "./components/AuthModal";
 import EmailVerificationStatusBanner from "./components/EmailVerificationStatusBanner";
@@ -11,7 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
 import { useAuth } from "./hooks/useAuth";
-import { logger } from "./utils/logger";
+import { useEmailVerification } from "./hooks/useEmailVerification";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
@@ -20,27 +20,29 @@ function App(): React.JSX.Element {
 	const [showAuthModal, setShowAuthModal] = useState(false);
 	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup" | "method-selection">("method-selection");
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-	const verificationAttempted = useRef<Set<string>>(new Set());
 	const auth = useAuth();
 
-	// Handle email verification in background
-	useEffect(() => {
-		logger.debug("App useEffect running", { pathname: window.location.pathname });
-		const pathSegments = window.location.pathname.split("/");
-		if (pathSegments[1] === "verify-email" && pathSegments[2]) {
-			const token = pathSegments[2];
-
-			// Check if we've already attempted verification for this token
-			if (verificationAttempted.current.has(token)) {
-				logger.debug("Skipping duplicate verification attempt", { token });
-				return;
-			}
-
-			logger.info("Email verification token detected", { token });
-			verificationAttempted.current.add(token);
-			verifyEmailInBackground(token);
+	// Email verification hook with callbacks for UI actions
+	useEmailVerification({
+		onSuccess: (message: string) => {
+			setToast({ message, type: "success" });
+			setAuthModalMode("signin");
+			setShowAuthModal(true);
+		},
+		onError: (message: string) => {
+			setToast({ message, type: "error" });
+			setAuthModalMode("signin");
+			setShowAuthModal(true);
+		},
+		onRedirectHome: () => {
+			setCurrentPage("home");
+		},
+		onShowSignIn: () => {
+			setAuthModalMode("signin");
+			setShowAuthModal(true);
 		}
-	}, []);
+	});
+
 
 	// Auto-hide toast after 5 seconds
 	useEffect(() => {
@@ -50,50 +52,6 @@ function App(): React.JSX.Element {
 		}
 		return undefined;
 	}, [toast]);
-
-	const verifyEmailInBackground = async (token: string) => {
-		logger.info("Email verification started", { token });
-		try {
-			const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				}
-			});
-
-			logger.info("Verification response received", { status: response.status, ok: response.ok });
-
-			// Clean URL immediately
-			window.history.pushState({}, "", "/");
-			setCurrentPage("home");
-
-			if (response.ok) {
-				// Success - show sign in modal with success toast
-				logger.info("Email verification successful");
-				setToast({ message: "Email verified successfully! Please sign in.", type: "success" });
-				setAuthModalMode("signin");
-				setShowAuthModal(true);
-			} else {
-				// Error - show sign in modal with error toast
-				const errorData = await response.json();
-				logger.warn("Email verification failed", { errorData });
-				setToast({
-					message: errorData.detail || "Email verification failed. Please try again.",
-					type: "error"
-				});
-				setAuthModalMode("signin");
-				setShowAuthModal(true);
-			}
-		} catch (error) {
-			// Network error - clean URL and show sign in with error toast
-			logger.error("Network error during verification", { error });
-			window.history.pushState({}, "", "/");
-			setCurrentPage("home");
-			setToast({ message: "Network error during email verification. Please try again.", type: "error" });
-			setAuthModalMode("signin");
-			setShowAuthModal(true);
-		}
-	};
 
 	const handleShowRegistration = (): void => {
 		setAuthModalMode("method-selection");

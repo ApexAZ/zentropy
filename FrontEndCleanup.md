@@ -296,7 +296,28 @@ These recommendations align with the principles outlined in:
         *   **Safelist Protection**: Added `animate-slide-in` to `tailwind.config.js` safelist to prevent CSS purging during production builds
         *   **Clean Implementation**: Final solution uses only Tailwind configuration with no additional CSS files, maintaining design system consistency
         *   **Verified Quality**: All TypeScript compilation, ESLint, and React tests (42 tests) pass successfully after proper Tailwind integration
-    *   **Encapsulate Email Verification**: Consider encapsulating the email verification URL parsing and API call logic into a custom hook for better separation of concerns.
+    *   **✅ Encapsulate Email Verification** [COMPLETED]: Consider encapsulating the email verification URL parsing and API call logic into a custom hook for better separation of concerns.
+    *   **✅ Actions Taken**:
+        *   **Created `useEmailVerification` Custom Hook**: Developed comprehensive hook following patterns from `src/client/hooks/README.md`:
+            *   **Single Responsibility**: Handles only email verification logic with clear purpose
+            *   **Type Safety**: Full TypeScript interfaces for state, callbacks, and return values
+            *   **Error Handling**: Graceful handling of network errors, API failures, and duplicate attempts
+            *   **Callback System**: Configurable callbacks for UI actions (onSuccess, onError, onRedirectHome, onShowSignIn)
+            *   **Cleanup Prevention**: Uses useRef to prevent duplicate verification attempts for same token
+        *   **Hook State Management**: Provides comprehensive state including `isVerifying`, `error`, `success`, and `token`
+        *   **URL Detection & Parsing**: Automatically detects `/verify-email/{token}` patterns in URL
+        *   **API Integration**: Handles POST request to `/api/v1/auth/verify-email/${token}` with proper headers
+        *   **URL Cleanup**: Automatically cleans verification URLs using `window.history.pushState`
+        *   **Comprehensive Logging**: Maintains detailed logging for debugging and monitoring
+        *   **App.tsx Refactoring**: Successfully integrated hook with callback system:
+            *   Removed 42 lines of inline verification logic from App.tsx
+            *   Eliminated `verificationAttempted` ref (now encapsulated in hook)
+            *   Removed `verifyEmailInBackground` function (now in hook)
+            *   Removed manual URL parsing useEffect (now in hook)
+            *   Added clean callback integration for toast notifications, modal management, and page navigation
+        *   **Better Separation of Concerns**: App.tsx now focuses on UI orchestration while hook handles verification business logic
+        *   **Reusability**: Hook can be used by other components that need email verification functionality
+        *   **Verified Quality**: TypeScript compilation and React tests (42 tests) pass successfully after refactoring
 *   **`DashboardPage.tsx`**:
     *   **Incomplete Features**: Implement data fetching for `total_members`, `active_sprints`, and `upcoming_pto` to fulfill the dashboard's purpose.
     *   **Consistent Button Usage**: Use the `Button` component for the "Create Team" button in the "Teams Overview" section for consistent styling and behavior.
