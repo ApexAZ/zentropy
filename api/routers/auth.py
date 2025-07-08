@@ -221,9 +221,13 @@ def logout(
 
 @router.post("/google-login", response_model=LoginResponse)
 def google_login(
-    request: GoogleLoginRequest, db: Session = Depends(get_db)
+    request: GoogleLoginRequest, http_request: Request, db: Session = Depends(get_db)
 ) -> LoginResponse:
     """Login or register user using Google OAuth"""
+    # Apply rate limiting to prevent brute force attacks
+    client_ip = get_client_ip(http_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
     # Verify Google token
     try:
         google_user_info = verify_google_token(request.google_token)

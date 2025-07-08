@@ -19,8 +19,15 @@ from api.database import Base, get_db
 
 @pytest.fixture(scope="function")
 def test_db_engine():
-    """Create isolated test database engine using in-memory SQLite."""
-    test_database_url = "sqlite:///:memory:"
+    """Create isolated test database engine using temporary SQLite file."""
+    import tempfile
+    import os
+    
+    # Create a temporary database file that can be shared across connections
+    temp_db_fd, temp_db_path = tempfile.mkstemp(suffix='.db')
+    os.close(temp_db_fd)  # Close the file descriptor, keep the path
+    
+    test_database_url = f"sqlite:///{temp_db_path}"
     
     engine = create_engine(
         test_database_url,
@@ -33,9 +40,13 @@ def test_db_engine():
     
     yield engine
     
-    # Cleanup: Drop all tables after test
+    # Cleanup: Drop all tables and remove temp file
     Base.metadata.drop_all(bind=engine)
     engine.dispose()
+    try:
+        os.unlink(temp_db_path)
+    except OSError:
+        pass  # File might already be deleted
 
 
 @pytest.fixture(scope="function") 
@@ -60,13 +71,12 @@ def db(test_db_engine) -> Generator[Session, None, None]:
     try:
         yield session
     finally:
-        # Rollback any uncommitted changes
-        session.rollback()
+        # Clean up session without rollback for shared database file
         session.close()
 
 
 @pytest.fixture(scope="function")
-def client(db: Session) -> TestClient:
+def client(test_db_engine) -> TestClient:
     """
     Provides a test client with isolated database.
     
@@ -77,12 +87,18 @@ def client(db: Session) -> TestClient:
             response = client.post("/api/auth/register", json=user_data)
             assert response.status_code == 201
     """
+    from sqlalchemy.orm import sessionmaker
+    
+    # Create a session factory that uses the same engine as the test
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_db_engine)
+    
     def override_get_db():
-        """Override database dependency with test database."""
+        """Override database dependency with test database sessions from same engine."""
+        test_session = TestingSessionLocal()
         try:
-            yield db
+            yield test_session
         finally:
-            pass  # Session cleanup handled by db fixture
+            test_session.close()
     
     # Override the database dependency
     app.dependency_overrides[get_db] = override_get_db
@@ -110,6 +126,31 @@ def api_client() -> TestClient:
     return TestClient(app)
 
 
+@pytest.fixture(scope="function", autouse=True)
+def reset_rate_limiter():
+    """
+    Automatically reset rate limiter state between tests.
+    
+    This prevents rate limiting from affecting subsequent tests
+    when running the test suite.
+    """
+    from api.rate_limiter import rate_limiter, RateLimitType
+    
+    # Reset all rate limit types for common test identifiers
+    test_identifiers = ["127.0.0.1", "testclient", "unknown"]
+    
+    for identifier in test_identifiers:
+        for limit_type in RateLimitType:
+            rate_limiter.reset_rate_limit(identifier, limit_type)
+    
+    yield
+    
+    # Clean up after test as well
+    for identifier in test_identifiers:
+        for limit_type in RateLimitType:
+            rate_limiter.reset_rate_limit(identifier, limit_type)
+
+
 # Utility functions for common test patterns
 def create_test_user(db: Session, email: str = "test@example.com", **kwargs):
     """
@@ -130,7 +171,7 @@ def create_test_user(db: Session, email: str = "test@example.com", **kwargs):
         "first_name": "Test",
         "last_name": "User",
         "password_hash": "hashed_password_123",
-        "organization": "Test Corp",
+        "organization": "Test Organization",  # Use string field for backwards compatibility
         **kwargs
     }
     

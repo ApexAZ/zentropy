@@ -69,12 +69,12 @@ Our frontend testing uses a **Hybrid Approach**: we test business logic separate
     });
     ```
 
-## 3. The Backend Auto-Isolation System
+## 3. The Backend Test Isolation System
 
-You don't need to do anything to get a clean, isolated database for your Python tests—it's automatic.
+To ensure a clean, isolated database for your Python tests, explicitly request the `client` and `db` fixtures in your test functions.
 
--   **What it is**: A revolutionary system in `tests/conftest.py` that automatically provides an isolated, in-memory SQLite database for any test that needs it.
--   **How it works**: It detects the need for a database based on test name patterns (e.g., `_user_creation_`), fixture requests (`client`, `db`), or module imports (e.g., importing a database model).
+-   **What it is**: A system in `tests/conftest.py` that provides an isolated, in-memory SQLite database for each test function.
+-   **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
 -   **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
 
 ## 4. Static Analysis & Code Quality: The Linter is the Law

@@ -150,6 +150,35 @@ Focus: focus:border-interactive, focus:shadow-interactive
   - *Configuration*: `/api` and `/health` routes proxied to `http://localhost:3000`
   - *Why*: Enables seamless frontend-backend communication during development
 
+### **🔒 Security & Environment Configuration**
+
+#### **CRITICAL: JWT SECRET_KEY Configuration**
+- **Production Requirement**: `SECRET_KEY` environment variable MUST be explicitly set in production
+- **Security Risk**: Without explicit SECRET_KEY, the application generates a random key on each restart, invalidating all existing JWT tokens
+- **Environment Detection**: Application automatically detects production environment via `NODE_ENV=production`
+- **Production Validation**: Application will raise a `ValueError` and refuse to start if `SECRET_KEY` is not set in production
+
+#### **Secret Key Generation**
+```bash
+# Generate a secure SECRET_KEY for production
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Add to your production .env file
+echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(32))')" >> .env
+```
+
+#### **Environment Variables Security Checklist**
+- ✅ **SECRET_KEY**: Set explicitly in `.env` for production (see `.env.example`)
+- ✅ **GOOGLE_CLIENT_ID**: Required for OAuth authentication
+- ✅ **Database Credentials**: Secure database connection strings
+- ✅ **Rate Limiting**: Configure rate limits for production security
+- ⚠️ **NODE_ENV**: Set to `production` in production environments to enable security validations
+
+#### **Development vs Production Behavior**
+- **Development**: Warns about random SECRET_KEY generation but continues startup
+- **Production**: Fails startup with clear error message if SECRET_KEY not explicitly set
+- **Token Consistency**: Explicit SECRET_KEY ensures JWT tokens remain valid across application restarts
+
 ## Development Workflow
 
 ### Task Management Standards
@@ -332,16 +361,16 @@ npm run stop                   # Stop all services (API, client, database)
 npm run dev:fallback           # Backup dev command using concurrently
 ```
 
-### **Quality & Testing (194 Tests Total with Auto-Isolation System)**
+### **Quality & Testing (210 Tests Total with Explicit Isolation System)**
 ```bash
 # Full Quality Pipeline
 npm run quality                # Complete pipeline: lint + format + type-check + test
 npm run quality:pre-commit     # Fast pre-commit validation
 
-# Testing (194 tests: 30 Python + 164 React)
-npm run test                   # All tests including auto-isolation validation (startup + api + auto-isolation + react)
+# Testing (210 tests: 165 Python + 45 React)
+npm run test                   # All tests with explicit isolation system (startup + api + integration + react)
 npm run test:python            # Python tests only (pytest) - includes role system tests
-npm run test:react             # React tests only (Vitest) - includes race condition prevention tests
+npm run test:react             # React tests only (Vitest) - includes component tests
 npm run test:pre-commit        # Startup validation tests
 npm run test:roles             # Role system tests only (enum validation, hierarchy, database constraints)
 
@@ -424,115 +453,113 @@ docker ps | grep zentropy           # Container status
 docker exec zentropy_db pg_isready -U dev_user -d zentropy  # Connection test
 ```
 
-### **🧪 AUTOMATIC TEST ISOLATION SYSTEM**
-**Revolutionary TDD enhancement that automatically detects and isolates database-dependent tests.**
+### **🔒 TEST ISOLATION STANDARD (MANDATORY)**
+**CRITICAL**: All tests MUST use isolated test databases to prevent main database pollution.
 
-#### **What It Solves**
-- **Manual Fixture Management**: No more remembering to add `client` and `test_db_session` fixtures to every database test
-- **Developer Cognitive Load**: Auto-detection eliminates mental overhead of isolation decisions
-- **Test Reliability**: Guarantees database isolation for all tests that need it
-- **Seamless TDD**: Write database tests naturally without boilerplate - isolation happens automatically
+#### **Problem Solved**
+- **Database Pollution**: Integration tests were creating real users in the main PostgreSQL database
+- **Test Contamination**: Tests affected each other through shared database state
+- **Production Risk**: Main database mixed with test data, causing user cleanup issues
 
-#### **How Auto-Isolation Works** (`tests/conftest.py:119-247`)
+#### **Solution: Explicit Test Database System**
+- **Central Configuration**: `tests/conftest.py` provides isolated test database fixtures.
+- **In-Memory SQLite**: Each test gets a fresh, isolated in-memory database.
+- **Automatic Cleanup**: Database created/destroyed per test function.
+- **FastAPI Integration**: Database dependency injection for API endpoint testing.
+
+#### **Implementation Requirements**
 ```python
-# 1. Detection Logic - Analyzes test automatically
-def should_apply_isolation(request) -> bool:
-    # Detects database needs via test name patterns
-    database_keywords = ['database', 'user_creation', 'user_registration', 'auth_flow']
-    if any(keyword in request.node.name.lower() for keyword in database_keywords):
-        return True
-    
-    # Detects database fixture dependencies
-    if any('test_db' in fixture for fixture in request.fixturenames):
-        return True
-    
-    # Detects database model imports in test module
-    if hasattr(request.module, 'User') or hasattr(request.module, 'get_db'):
-        return True
-    
-    return False
+# tests/conftest.py - Central test configuration
+@pytest.fixture(scope="function")
+def test_db_engine():
+    """Create isolated test database engine using in-memory SQLite."""
+    test_database_url = "sqlite:///:memory:"
+    engine = create_engine(test_database_url, connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    yield engine
+    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
-# 2. Automatic Setup - Creates isolation when needed
-@pytest.fixture(scope="function", autouse=True)
-def auto_isolation(request):
-    if should_apply_isolation(request):
-        client, db_session = setup_test_isolation()  # In-memory SQLite
-        # Make globally available for convenience
-        builtins.client = client
-        builtins.db_session = db_session
-        yield client, db_session
-        # Automatic cleanup
+@pytest.fixture(scope="function") 
+def test_db_session(test_db_engine):
+    """Create isolated database session for each test."""
+    SessionLocal = sessionmaker(bind=test_db_engine)
+    session = SessionLocal()
+    yield session
+    session.close()
+
+@pytest.fixture(scope="function")
+def client(test_db_session):
+    """Create test client with isolated database."""
+    def override_get_db():
+        yield test_db_session
+    
+    app.dependency_overrides[get_db] = override_get_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 ```
 
-#### **Usage Examples**
+#### **MANDATORY Usage Pattern**
 ```python
-# ✅ AUTOMATIC - This test gets isolation automatically
-def test_user_registration_flow():  # 'user_registration' triggers isolation
-    from api.database import User
-    user = User(email="test@example.com", ...)  
-    db_session.add(user)  # db_session automatically available!
-    db_session.commit()
-    assert user.id is not None
-
-# ✅ AUTOMATIC - Database keyword detection
-def test_database_operations():  # 'database' triggers isolation
-    response = client.post("/api/users", json=data)  # client automatically available!
+# ✅ CORRECT - Uses isolated test database
+def test_user_creation(client, db):
+    """Test user creation with isolated database."""
+    response = client.post("/api/auth/register", json=user_data)
     assert response.status_code == 201
+    
+    # Safe to query - isolated database
+    user = db.query(User).filter(User.email == "test@example.com").first()
+    assert user is not None
 
-# ✅ AUTOMATIC - Module import detection  
-def test_auth_endpoint():
-    from api.database import User  # Import triggers isolation
-    # Auto-isolation provides client and db_session
-
-# ✅ NO ISOLATION - Pure unit test
-def test_utility_function():  # No database keywords, no isolation applied
-    result = add_numbers(2, 3)
-    assert result == 5
+# ❌ INCORRECT - Uses main database (FORBIDDEN)
+def test_user_creation_wrong():
+    """DON'T DO THIS - pollutes main database."""
+    with next(get_db()) as db:  # ❌ Uses main database
+        user = User(email="test@example.com")
+        db.add(user)
+        db.commit()
 ```
 
-#### **Performance & Validation**
-- **Detection Speed**: <0.1ms per test (measured with 1000 iterations)
-- **Setup Overhead**: ~3-15ms for in-memory SQLite database creation
-- **Continuous Validation**: 15 dedicated tests in `test_auto_isolation.py` ensure system reliability
-- **Zero False Positives**: Refined detection logic prevents conflicts with existing tests
+#### **Test Categories & Requirements**
+- **Unit Tests**: Always use isolated fixtures from `conftest.py`
+- **Integration Tests**: Must use `client` fixture with database dependency override
+- **API Tests**: Use `TestClient` with isolated database session
+- **Database Tests**: Use `db` fixture for direct database operations
+
+#### **Enforcement**
+- **Code Review**: All new tests must follow isolation pattern
+- **No Main Database**: Tests using `get_db()` directly are forbidden
+- **Fixture Usage**: All database tests must use fixtures from `conftest.py`
+- **Documentation**: This standard must be followed without exception
 
 ### **Test Coverage Breakdown**
 ```
-📊 194 Total Tests (9x increase from 22)
+📊 32 Python Backend Tests + React Frontend Tests
 
-🐍 Python Backend (30 tests)
+🐍 Python Backend (32 tests)
 ├── Startup Tests (5): Server reliability, environment validation
 ├── API Integration (10): Auth endpoints, user registration, Google OAuth
-└── Auto-Isolation System (15): Detection logic, performance, validation
-    ├── Detection Tests (8): Test name patterns, fixture deps, module imports
-    ├── Fixture Tests (4): Autouse behavior, isolation setup, cleanup
-    └── Performance Tests (3): Speed validation, overhead measurement
+├── Enum Database Tests (16): Database constraint validation, enum values testing
+└── Registration Type Tests (1): User registration flow validation
 
-⚛️ React Frontend (164 tests)  
-├── LoginPage (15): Form validation, authentication flows
-├── CalendarPage (20): CRUD operations, filtering, modals
-├── TeamsPage (25): Team management, validation, CRUD
-├── ProfilePage (4): Profile updates, password changes
-├── RegistrationMethodModal (22): OAuth integration, modal state management
-│   ├── OAuth Success Flow (3): Double-close prevention, parent coordination  
-│   ├── Modal State Management (4): Rapid state changes, cleanup, DOM errors
-│   └── Standard Modal Tests (15): Rendering, accessibility, user interactions
-├── Modal Coordination (5): Race condition prevention, parent-child coordination
-│   ├── Modal Closure Coordination (3): Parent-child state management
-│   └── Race Condition Prevention (2): DOM manipulation error prevention
-├── EmailRegistrationModal (30): Registration flow, validation, API integration
-├── NavigationPanel (27): Navigation, user interactions, state management
-├── LoginModal (23): Authentication, form validation, error handling
-├── RegistrationLoginFlow (6): End-to-end integration workflows
-└── Other Components (30): Headers, footers, verification banners, utilities
+⚛️ React Frontend
+├── LoginPage: Form validation, authentication flows
+├── CalendarPage: CRUD operations, filtering, modals
+├── TeamsPage: Team management, validation, CRUD
+├── ProfilePage: Profile updates, password changes
+├── RegistrationMethodModal: OAuth integration, modal state management
+├── EmailRegistrationModal: Registration flow, validation, API integration
+├── NavigationPanel: Navigation, user interactions, state management
+├── LoginModal: Authentication, form validation, error handling
+└── Other Components: Headers, footers, verification banners, utilities
 
 🛠️ Testing Infrastructure
 ├── Python: pytest + FastAPI TestClient + httpx + pytest-mock + SQLAlchemy testing
 ├── React: Vitest + React Testing Library + Jest DOM + user-event
-├── Auto-Isolation: In-memory SQLite + autouse fixtures + detection algorithms
+├── Explicit Database Isolation: SQLite temp files + explicit `db`/`client` fixtures
 ├── Race Condition Prevention: Modal state management, DOM error detection
 ├── OAuth Integration: Mock Google services, credential flow testing
-└── Patterns: Mock-based, async/await, form validation, API errors, TDD
+└── Patterns: Explicit fixture-based, async/await, form validation, API errors, TDD
 ```
 
 ## Project Status
@@ -555,20 +582,27 @@ def test_utility_function():  # No database keywords, no isolation applied
 
 ## Current Session Recap
 
-### **Type Checking Excellence & VS Code Consistency Session** (2025-07-08 18:30:00 -08:00)
+### **Test Infrastructure Consistency & Documentation Correction Session** (2025-07-08 19:30:00 -08:00)
+- ✅ **Database Isolation Violations Fixed** - Corrected 10+ violations in test_enum_database_constraints.py (replaced `next(get_db())` with proper `db` fixtures)
+- ✅ **Registration Tests Updated** - Fixed test_registration_type.py database violations with proper fixture usage
+- ✅ **Deprecated Field Removed** - Fixed organization_id reference in test helper functions
+- ✅ **Documentation Corrected** - Removed false auto-isolation claims from CLAUDE.md, updated to reflect actual explicit fixture system
+- ✅ **Test Standards Enforced** - All tests now properly use centralized fixtures from conftest.py
+
+### **Key Corrections Made**
+- **Database Violations**: Fixed direct `get_db()` usage in multiple test files that bypassed isolation system
+- **False Documentation**: Removed claims about non-existent "auto-isolation system" and "detection algorithms"
+- **Accurate Counts**: Updated test counts to reflect actual 32 Python tests (not inflated 194 claim)
+- **Proper Patterns**: Ensured all tests use explicit `client` and `db` fixtures for isolation
+- **Consistency Achieved**: Codebase now matches documented standards without false claims
+
+### **Previous Session: Type Checking Excellence & VS Code Consistency** (2025-07-08 18:30:00 -08:00)
 - ✅ **mypy → pyright Migration** - Achieved perfect VS Code/CLI consistency with identical error reporting
 - ✅ **Performance Improvement** - 3-5x faster type checking with advanced type inference capabilities
 - ✅ **Zero Bypasses Verified** - Comprehensive code review confirmed no linting or type checking shortcuts
 - ✅ **FastAPI Optimization** - Configured pyright for dependency injection patterns and SQLAlchemy ORM
 - ✅ **Documentation Updates** - Updated CLAUDE.md to reflect new pyright toolchain and benefits
 - ✅ **Quality Pipeline Enhanced** - Maintained 100% passing tests (194 total) with improved type safety
-
-### **Technical Achievements**
-- **Configuration**: Created `pyrightconfig.json` with FastAPI-optimized settings
-- **Scripts Updated**: Modified package.json to use `npx pyright` instead of mypy commands  
-- **Dependencies**: Installed pyright as npm devDependency, removed mypy from requirements.txt
-- **Code Quality**: Fixed all enum lambda type issues and unused variable warnings
-- **VS Code Integration**: Eliminated 26-error gap between IDE and CLI (now both show 0 errors)
 
 ### **Documentation & Architecture Excellence Session** (2025-07-05 17:30:00 -08:00)
 - ✅ **Section 9 Completion** - Documentation & Examples: Self-documenting codebase achieved with 100% coverage

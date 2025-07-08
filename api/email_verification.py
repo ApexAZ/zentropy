@@ -21,14 +21,22 @@ def generate_verification_token() -> str:
 
 def create_verification_token(db: Session, user_id: str) -> str:
     """Create and store a verification token for a user."""
+    import uuid
+
     # Generate new token
     token = generate_verification_token()
 
     # Set expiration to 24 hours from now
     expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
+    # Convert string UUID back to UUID object for database query compatibility
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise ValueError(f"Invalid UUID format: {user_id}")
+
     # Update user with verification token
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_uuid).first()
     if user:
         user.email_verification_token = token
         user.email_verification_expires_at = expires_at
