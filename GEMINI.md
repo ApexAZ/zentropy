@@ -33,7 +33,7 @@ The architecture is a decoupled frontend/backend system.
 
 ### Core Commands
 - `npm run dev`: Starts the full development environment (API + React + DB). **Note**: This may not work in all remote execution environments; manual startup might be needed.
-- `npm run quality`: **RUN THIS BEFORE COMMITTING.** It runs the full quality pipeline (lint, format, type-check, tests).
+- `npm run quality`: **RUN THIS BEFORE COMMITTING.** It runs the full quality pipeline (lint, format, type-check, test).
 - `npm run test`: Runs the complete test suite (Python + React).
 - `npm run fix`: Auto-fixes formatting and linting issues.
 
@@ -42,14 +42,26 @@ The architecture is a decoupled frontend/backend system.
 - **Frontend**: `src/client/.env.local`. This is critical due to Vite's root configuration.
 - **Reference**: `MULTIDEV.md` for multi-machine setup.
 
+### SECRET_KEY Configuration
+
+The `SECRET_KEY` environment variable is crucial for JWT token security.
+
+- **Production Requirement**: `SECRET_KEY` MUST be explicitly set in production environments. If not set, the application will raise a `ValueError` and refuse to start.
+- **Development Behavior**: In development, a random `SECRET_KEY` will be generated if not set, but a warning will be issued. This is acceptable for local development but **not** for production.
+- **Generating a Secure Key**:
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  ```
+  Add the output to your `.env` file (or production environment configuration).
+
 ## 4. Testing: The Cornerstone of Quality
 
 This project has a **mandatory TDD culture** and a unique, powerful testing infrastructure.
 
-### The Auto-Isolation System (Python)
-- **What it is**: A system in `tests/conftest.py` that **automatically provides an isolated, in-memory SQLite database for any test that needs it.**
-- **How it works**: It detects the need for a database based on test name patterns (e.g., `_user_creation_`), fixture requests, or module imports (e.g., importing a database model).
-- **Your Task**: When writing a backend test that touches the database, simply write the test logic. The isolation is handled for you. You can use the `client` and `db` fixtures as needed.
+### The Backend Test Isolation System (Python)
+- **What it is**: A system in `tests/conftest.py` that provides an isolated, in-memory SQLite database for each test function.
+- **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
+- **Your Task**: When writing a backend test that touches the database, you must explicitly request the `client` and `db` fixtures in your test function signature.
 - **Reference**: `tests/README.md` and `CLAUDE.md` have detailed explanations.
 
 ### Hybrid Testing Strategy (Frontend)

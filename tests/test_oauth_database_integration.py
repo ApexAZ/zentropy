@@ -48,7 +48,7 @@ class TestOAuthDatabaseIntegration:
             email="oauth@gmail.com",
             first_name="OAuth",
             last_name="User",
-            organization="Google Inc",
+            organization_id=None,  # Use proper foreign key field
             auth_provider=AuthProvider.GOOGLE,
             google_id="google_123456789",
             password_hash=None  # OAuth users don't need password
@@ -76,7 +76,7 @@ class TestOAuthDatabaseIntegration:
             email="user1@gmail.com",
             first_name="User",
             last_name="One",
-            organization="Test",
+            organization_id=None,  # Use proper foreign key field
             auth_provider=AuthProvider.GOOGLE,
             google_id="duplicate_id",
             password_hash=None
@@ -89,7 +89,7 @@ class TestOAuthDatabaseIntegration:
             email="user2@gmail.com",
             first_name="User",
             last_name="Two", 
-            organization="Test",
+            organization_id=None,  # Use proper foreign key field
             auth_provider=AuthProvider.GOOGLE,
             google_id="duplicate_id",  # Same as user1
             password_hash=None

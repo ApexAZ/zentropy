@@ -128,9 +128,10 @@ def login_json(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "organization": user.organization,
+            "organization_id": user.organization_id,
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
+            "registration_type": user.registration_type.value,
         },
     )
 
@@ -183,6 +184,8 @@ def register(
         organization=user_create.organization or "",
         role=user_create.role,
         has_projects_access=user_create.has_projects_access,
+        registration_type=database.RegistrationType.EMAIL,  # Set registration type
+        auth_provider=database.AuthProvider.LOCAL,  # Set auth provider
         terms_accepted_at=now,
         terms_version="1.0",
         privacy_accepted_at=now,
@@ -355,9 +358,10 @@ def google_login(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "organization": user.organization,
+            "organization_id": user.organization_id,
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
+            "registration_type": user.registration_type.value,
         },
     )
 

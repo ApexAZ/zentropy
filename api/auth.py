@@ -17,7 +17,34 @@ from . import database
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT settings
-SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
+
+
+def get_secret_key() -> str:
+    """Get SECRET_KEY with production environment validation"""
+    secret_key = os.getenv("SECRET_KEY")
+
+    # Check if we're in production environment
+    env = os.getenv("NODE_ENV", "development").lower()
+
+    if env == "production" and not secret_key:
+        raise ValueError(
+            "SECRET_KEY environment variable must be explicitly set in "
+            "production. Generate a secure key with: "
+            "python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+        )
+
+    # Fall back to random key for development (will warn)
+    if not secret_key:
+        secret_key = secrets.token_urlsafe(32)
+        print(
+            "⚠️  WARNING: Using randomly generated SECRET_KEY. "
+            "Set SECRET_KEY environment variable for production."
+        )
+
+    return secret_key
+
+
+SECRET_KEY = get_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 EXTENDED_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days in minutes (43200)

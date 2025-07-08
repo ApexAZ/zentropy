@@ -37,12 +37,10 @@ class TestUserModelRegistrationType:
 
     def test_user_model_has_registration_type_field(self, client):
         """Test that User model includes registration_type field."""
-        # This should FAIL initially since registration_type field doesn't exist
         user = User(
             email="test@example.com",
             first_name="Test",
             last_name="User",
-            organization="Test Org",
             registration_type=RegistrationType.EMAIL
         )
         assert user.registration_type == RegistrationType.EMAIL
@@ -52,8 +50,7 @@ class TestUserModelRegistrationType:
         user = User(
             email="test@example.com", 
             first_name="Test",
-            last_name="User",
-            organization="Test Org"
+            last_name="User"
         )
         
         # Save to database to trigger default value
@@ -70,7 +67,6 @@ class TestUserModelRegistrationType:
             email="oauth@example.com",
             first_name="OAuth",
             last_name="User", 
-            organization="OAuth Org",
             registration_type=RegistrationType.GOOGLE_OAUTH
         )
         assert user.registration_type == RegistrationType.GOOGLE_OAUTH
@@ -79,9 +75,8 @@ class TestUserModelRegistrationType:
 class TestEmailRegistrationWithType:
     """Test email registration sets registration_type=EMAIL."""
 
-    def test_email_registration_sets_email_type(self, client):
+    def test_email_registration_sets_email_type(self, client, db):
         """Test that email registration sets registration_type to EMAIL."""
-        # This should FAIL initially since endpoint doesn't set registration_type
         user_data = {
             "email": "email@example.com",
             "password": "Password123!",
@@ -91,14 +86,15 @@ class TestEmailRegistrationWithType:
             "terms_agreement": True
         }
 
-        response = client.post("/api/auth/register", json=user_data)
+        response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
 
-        # Get the created user from database to check registration_type - NOTE: This test requires client + db fixtures
-        # The client makes the API call, but we need db to verify the result
-        # In practice, this test should use a separate fixture to query the test database
+        # Verify user was created with EMAIL registration type
+        user = db.query(User).filter(User.email == "email@example.com").first()
+        assert user is not None
+        assert user.registration_type == RegistrationType.EMAIL
 
-    def test_multiple_email_registrations_all_have_email_type(self, client):
+    def test_multiple_email_registrations_all_have_email_type(self, client, db):
         """Test that multiple email registrations all get EMAIL type."""
         users_data = [
             {
@@ -120,19 +116,21 @@ class TestEmailRegistrationWithType:
         ]
 
         for user_data in users_data:
-            response = client.post("/api/auth/register", json=user_data)
+            response = client.post("/api/v1/auth/register", json=user_data)
             assert response.status_code == 201
 
-        # Check all users have EMAIL registration type - NOTE: This test requires client + db fixtures
-        # The client makes the API calls, but we need db to verify the results
-        # In practice, this test should use a separate fixture to query the test database
+        # Verify all users have EMAIL registration type
+        users = db.query(User).filter(User.email.in_(["user1@example.com", "user2@example.com"])).all()
+        assert len(users) == 2
+        for user in users:
+            assert user.registration_type == RegistrationType.EMAIL
 
 
 class TestGoogleOAuthRegistrationWithType:
     """Test Google OAuth registration sets registration_type=GOOGLE_OAUTH."""
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_registration_sets_google_type(self, mock_verify_token, client):
+    def test_google_oauth_registration_sets_google_type(self, mock_verify_token, client, db):
         """Test that Google OAuth registration sets registration_type to GOOGLE_OAUTH."""
         # Mock Google token verification to return valid user info
         mock_verify_token.return_value = {
@@ -147,15 +145,16 @@ class TestGoogleOAuthRegistrationWithType:
             "credential": "mock-google-jwt-token"
         }
 
-        response = client.post("/api/auth/google-oauth", json=oauth_data)
+        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
         assert response.status_code == 200
 
-        # Check that the user was created with GOOGLE_OAUTH registration type - NOTE: This test requires client + db fixtures
-        # The client makes the API call, but we need db to verify the result
-        # In practice, this test should use a separate fixture to query the test database
+        # Verify user was created with GOOGLE_OAUTH registration type
+        user = db.query(User).filter(User.email == "oauth@example.com").first()
+        assert user is not None
+        assert user.registration_type == RegistrationType.GOOGLE_OAUTH
 
     @patch('api.google_oauth.verify_google_token')
-    def test_multiple_google_oauth_registrations_all_have_google_type(self, mock_verify_token, client):
+    def test_multiple_google_oauth_registrations_all_have_google_type(self, mock_verify_token, client, db):
         """Test that multiple Google OAuth registrations all get GOOGLE_OAUTH type."""
         # Mock different Google OAuth users
         oauth_users = [
@@ -189,14 +188,16 @@ class TestGoogleOAuthRegistrationWithType:
                 "email_verified": True
             }
 
-            response = client.post("/api/auth/google-oauth", json={
+            response = client.post("/api/v1/auth/google-oauth", json={
                 "credential": oauth_user["credential"]
             })
             assert response.status_code == 200
 
-        # Check all OAuth users have GOOGLE_OAUTH registration type - NOTE: This test requires client + db fixtures  
-        # The client makes the API calls, but we need db to verify the results
-        # In practice, this test should use a separate fixture to query the test database
+        # Verify all OAuth users have GOOGLE_OAUTH registration type
+        users = db.query(User).filter(User.email.in_(["oauth1@example.com", "oauth2@example.com"])).all()
+        assert len(users) == 2
+        for user in users:
+            assert user.registration_type == RegistrationType.GOOGLE_OAUTH
 
 
 class TestRegistrationTypeInResponses:
@@ -214,7 +215,7 @@ class TestRegistrationTypeInResponses:
             "terms_agreement": True
         }
 
-        response = client.post("/api/auth/register", json=user_data)
+        response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
         
         # This should FAIL initially since UserResponse schema doesn't include registration_type
@@ -240,7 +241,7 @@ class TestRegistrationTypeInResponses:
         }
 
         oauth_data = {"credential": "mock-jwt-token"}
-        response = client.post("/api/auth/google-oauth", json=oauth_data)
+        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
         assert response.status_code == 200
         
         # This should FAIL initially since response doesn't include registration_type
@@ -264,7 +265,7 @@ class TestRegistrationTypeImmutable:
             "terms_agreement": True
         }
 
-        create_response = client.post("/api/auth/register", json=user_data)
+        create_response = client.post("/api/v1/auth/register", json=user_data)
         assert create_response.status_code == 201
 
         # Try to update registration_type (should be ignored/rejected) - NOTE: This test requires client + db fixtures

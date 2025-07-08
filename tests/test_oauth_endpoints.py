@@ -29,17 +29,18 @@ class TestGoogleOAuthEndpoint:
     @patch('api.routers.auth.verify_google_token')
     def test_google_login_endpoint_exists(self, mock_verify_google_token, client):
         """Test that /auth/google-login endpoint exists and works properly."""
-        # Mock invalid token verification (returns None)
-        mock_verify_google_token.return_value = None
+        # Mock invalid token verification (raises exception)
+        from api.google_oauth import GoogleTokenInvalidError
+        mock_verify_google_token.side_effect = GoogleTokenInvalidError("Invalid Google token")
         
-        response = client.post("/api/auth/google-login", json={"google_token": "fake_token"})
+        response = client.post("/api/v1/auth/google-login", json={"google_token": "fake_token"})
         
         # Should return 401 for invalid token (endpoint exists and is working)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Invalid Google token" in response.json()["detail"]
+        assert "Google token verification failed" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_new_user_creation(self, mock_verify_google_token, client):
+    def test_google_login_new_user_creation(self, mock_verify_google_token, client, db):
         """Test Google login creates new user when user doesn't exist."""
         # Mock Google token verification response
         mock_google_user_info = {
@@ -53,7 +54,7 @@ class TestGoogleOAuthEndpoint:
         
         # This should FAIL initially until we implement the endpoint
         response = client.post(
-            "/api/auth/google-login", 
+            "/api/v1/auth/google-login", 
             json={
                 "google_token": "valid_google_token",
                 "organization": "Test Company"
@@ -72,25 +73,21 @@ class TestGoogleOAuthEndpoint:
         assert response_data["user"]["has_projects_access"] is True
     
     @patch('api.routers.auth.verify_google_token')  
-    def test_google_login_existing_user_authentication(self, mock_verify_google_token, client):
+    def test_google_login_existing_user_authentication(self, mock_verify_google_token, client, db):
         """Test Google login authenticates existing Google user."""
         # Create existing Google user in the test database
-        session = TestSessionLocal()
-        try:
-            existing_user = User(
-                email="existing@gmail.com",
-                first_name="Existing",
-                last_name="User",
-                organization="Test Company",
-                auth_provider=AuthProvider.GOOGLE,
-                google_id="google_existing_123",
-                password_hash=None
-            )
-            session.add(existing_user)
-            session.commit()
-            session.refresh(existing_user)
-        finally:
-            session.close()
+        existing_user = User(
+            email="existing@gmail.com",
+            first_name="Existing",
+            last_name="User",
+            organization="Test Company",
+            auth_provider=AuthProvider.GOOGLE,
+            google_id="google_existing_123",
+            password_hash=None
+        )
+        db.add(existing_user)
+        db.commit()
+        db.refresh(existing_user)
         
         # Mock Google token verification
         mock_google_user_info = {
@@ -104,7 +101,7 @@ class TestGoogleOAuthEndpoint:
         
         # Should authenticate existing user
         response = client.post(
-            "/api/auth/google-login",
+            "/api/v1/auth/google-login",
             json={"google_token": "valid_google_token"}
         )
         
@@ -118,22 +115,23 @@ class TestGoogleOAuthEndpoint:
     def test_google_login_invalid_token(self, mock_verify_google_token, client):
         """Test Google login with invalid Google token."""
         # Mock invalid token verification
-        mock_verify_google_token.return_value = None
+        from api.google_oauth import GoogleTokenInvalidError
+        mock_verify_google_token.side_effect = GoogleTokenInvalidError("Invalid Google token")
         
         # Should reject invalid token
         response = client.post(
-            "/api/auth/google-login",
+            "/api/v1/auth/google-login",
             json={"google_token": "invalid_google_token"}
         )
         
         # Should return 401 for invalid token
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Invalid Google token" in response.json()["detail"]
+        assert "Google token verification failed" in response.json()["detail"]
     
     def test_google_login_missing_token(self, client):
         """Test Google login with missing Google token."""
         # Should return validation error for missing token
-        response = client.post("/api/auth/google-login", json={})
+        response = client.post("/api/v1/auth/google-login", json={})
         
         # Should return 422 for missing required field
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -141,42 +139,39 @@ class TestGoogleOAuthEndpoint:
     @patch('api.routers.auth.verify_google_token')
     def test_google_login_unverified_email(self, mock_verify_google_token, client):
         """Test Google login rejects unverified email addresses."""
-        # Mock Google token with unverified email (verify_google_token returns None for unverified)
-        mock_verify_google_token.return_value = None
+        # Mock Google token with unverified email (verify_google_token raises exception for unverified)
+        from api.google_oauth import GoogleEmailUnverifiedError
+        mock_verify_google_token.side_effect = GoogleEmailUnverifiedError("Email must be verified")
         
-        # Should reject unverified email (verify_google_token returns None)
+        # Should reject unverified email (verify_google_token raises exception)
         response = client.post(
-            "/api/auth/google-login",
+            "/api/v1/auth/google-login",
             json={
                 "google_token": "valid_token_unverified_email",
                 "organization": "Test Company"
             }
         )
         
-        # Should return 401 for unverified email (verify_google_token returns None)
+        # Should return 401 for unverified email
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Invalid Google token" in response.json()["detail"]
+        assert "Google token verification failed" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_email_linking_security(self, mock_verify_google_token, client):
+    def test_google_login_email_linking_security(self, mock_verify_google_token, client, db):
         """Test that Google login cannot hijack existing local accounts."""
         # Create existing local user in the test database
-        session = TestSessionLocal()
-        try:
-            local_user = User(
-                email="shared@example.com",
-                first_name="Local",
-                last_name="User",
-                organization="Local Company",
-                auth_provider=AuthProvider.LOCAL,
-                password_hash="$2b$12$hashed_password",
-                google_id=None
-            )
-            session.add(local_user)
-            session.commit()
-            session.refresh(local_user)
-        finally:
-            session.close()
+        local_user = User(
+            email="shared@example.com",
+            first_name="Local",
+            last_name="User",
+            organization="Local Company",
+            auth_provider=AuthProvider.LOCAL,
+            password_hash="$2b$12$hashed_password",
+            google_id=None
+        )
+        db.add(local_user)
+        db.commit()
+        db.refresh(local_user)
         
         # Mock Google user with same email but different Google ID
         mock_google_user_info = {
@@ -190,7 +185,7 @@ class TestGoogleOAuthEndpoint:
         
         # Should prevent email hijacking - reject OAuth for existing local account
         response = client.post(
-            "/api/auth/google-login",
+            "/api/v1/auth/google-login",
             json={"google_token": "valid_google_token"}
         )
         

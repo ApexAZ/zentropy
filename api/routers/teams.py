@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -10,7 +10,6 @@ from ..schemas import (
     TeamCreate,
     TeamUpdate,
     TeamWithMembers,
-    UserResponse,
     MessageResponse,
 )
 from ..auth import require_projects_access
@@ -68,34 +67,19 @@ def get_team(
 ) -> TeamWithMembers:
     """Get team by ID with members"""
     _ = current_user  # Reserved for future authorization implementation
-    team = db.query(database.Team).filter(database.Team.id == team_id).first()
+    team = (
+        db.query(database.Team)
+        .options(selectinload(database.Team.members))
+        .filter(database.Team.id == team_id)
+        .first()
+    )
     if not team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
         )
 
-    # Get team members
-    members = (
-        db.query(database.User)
-        .join(database.TeamMembership)
-        .filter(database.TeamMembership.team_id == team_id)
-        .all()
-    )
-
-    team_with_members = TeamWithMembers(
-        id=team.id,
-        name=team.name,
-        description=team.description,
-        velocity_baseline=team.velocity_baseline,
-        sprint_length_days=team.sprint_length_days,
-        working_days_per_week=team.working_days_per_week,
-        created_by=team.created_by,
-        created_at=team.created_at,
-        updated_at=team.updated_at,
-        members=[UserResponse.model_validate(member) for member in members],
-    )
-
-    return team_with_members
+    # Use Pydantic's from_attributes for efficient serialization
+    return TeamWithMembers.model_validate(team)
 
 
 @router.put("/{team_id}", response_model=TeamResponse)

@@ -6,7 +6,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
-from .database import User, UserRole, AuthProvider, RegistrationType
+from .database import User, UserRole, AuthProvider, RegistrationType, Organization
 from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from .rate_limiter import rate_limiter, RateLimitType
 
@@ -126,6 +126,36 @@ def verify_google_token(credential: str) -> Mapping[str, Any]:
         raise GoogleTokenInvalidError(f"Token verification failed: {str(e)}")
 
 
+def get_or_create_organization_from_google_domain(
+    db: Session, domain: str
+) -> Organization:
+    """
+    Get existing organization or create new one from Google Workspace domain.
+
+    Args:
+        db: Database session
+        domain: Google Workspace domain (e.g., "company.com")
+
+    Returns:
+        Organization: The existing or newly created organization
+    """
+    # Check if organization already exists for this domain
+    existing_org = db.query(Organization).filter(Organization.domain == domain).first()
+
+    if existing_org:
+        return existing_org
+
+    # Create new organization from Google Workspace domain
+    new_org = Organization.create_from_google_domain(
+        domain=domain, name=domain.split(".")[0].title()  # Use domain as company name
+    )
+    db.add(new_org)
+    db.commit()
+    db.refresh(new_org)
+
+    return new_org
+
+
 def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> User:
     """
     Get existing user or create new user from Google OAuth information.
@@ -150,13 +180,23 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
         if existing_user:
             return existing_user
 
+        # Handle organization assignment for Google Workspace users
+        organization_id = None
+        google_domain = google_info.get("hd")  # Google Workspace hosted domain
+        if google_domain:
+            # User is from Google Workspace - create/get organization
+            organization = get_or_create_organization_from_google_domain(
+                db, google_domain
+            )
+            organization_id = organization.id
+
         # Create new user from Google info
         now = datetime.now(timezone.utc)
         new_user = User(
             email=email,
             first_name=google_info.get("given_name", ""),
             last_name=google_info.get("family_name", ""),
-            organization="",  # Google doesn't provide organization
+            organization_id=organization_id,  # Use proper foreign key
             password_hash=None,  # No password for OAuth users
             role=UserRole.BASIC_USER,  # Use enum object
             auth_provider=AuthProvider.GOOGLE,  # Use enum object
@@ -220,7 +260,7 @@ def process_google_oauth(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "organization": user.organization,
+            "organization_id": user.organization_id,  # Use organization_id instead
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,  # Registration type
