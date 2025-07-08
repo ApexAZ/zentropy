@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
+import { AuthService } from "../services/AuthService";
 import type { AuthUser, AuthState } from "../types";
 
 export const useAuth = () => {
@@ -43,9 +44,8 @@ export const useAuth = () => {
 						// Reset activity tracking when token is validated
 						lastActivityRef.current = Date.now();
 					} else {
-						// Token is invalid, remove all tokens
-						localStorage.removeItem("authToken");
-						sessionStorage.removeItem("authToken");
+						// Token is invalid, clear tokens using AuthService
+						await AuthService.signOut();
 						setAuthState({
 							isAuthenticated: false,
 							user: null,
@@ -53,11 +53,10 @@ export const useAuth = () => {
 						});
 					}
 				})
-				.catch(error => {
+				.catch(async error => {
 					logger.warn("Failed to validate token", { error });
-					// Token validation failed, remove all tokens
-					localStorage.removeItem("authToken");
-					sessionStorage.removeItem("authToken");
+					// Token validation failed, clear tokens using AuthService
+					await AuthService.signOut();
 					setAuthState({
 						isAuthenticated: false,
 						user: null,
@@ -107,14 +106,16 @@ export const useAuth = () => {
 			// Log error but don't prevent logout
 			console.warn("Logout API call failed:", error);
 		} finally {
-			// Always clear local state and storage
-			localStorage.removeItem("authToken");
-			sessionStorage.removeItem("authToken");
+			// Clear authentication tokens using AuthService
+			await AuthService.signOut();
+			
+			// Clear React state
 			setAuthState({
 				isAuthenticated: false,
 				user: null,
 				token: null
 			});
+			
 			// Clear timeout when logging out
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);
@@ -142,14 +143,16 @@ export const useAuth = () => {
 			// Log error but don't prevent logout
 			console.warn("Logout API call failed:", error);
 		} finally {
-			// Always clear local state and storage
-			localStorage.removeItem("authToken");
-			sessionStorage.removeItem("authToken");
+			// Clear authentication tokens using AuthService
+			await AuthService.signOut();
+			
+			// Clear React state
 			setAuthState({
 				isAuthenticated: false,
 				user: null,
 				token: null
 			});
+			
 			// Clear timeout when logging out
 			if (timeoutRef.current) {
 				clearTimeout(timeoutRef.current);

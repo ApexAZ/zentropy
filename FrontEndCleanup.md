@@ -149,9 +149,20 @@ These recommendations align with the principles outlined in:
         *   **Improved Encapsulation**: AuthService now properly handles authentication domain concerns without external dependencies
         *   **Updated Documentation**: Added clear JSDoc comment explaining the method's purpose
         *   **Verified Implementation**: All TypeScript compilation, ESLint, and tests (19 Python + 45 React tests) pass successfully
-*   **`useAuth.ts`**:
-    *   **Type Import**: Import `AuthUser` from a central types file (`src/client/types/index.ts` once created) to avoid duplication.
-    *   **Logout Integration**: If `AuthService.signOut` is refactored, `useAuth.logout` should call `AuthService.signOut` for token clearing and then handle the API call for server-side logout.
+*   **✅ `useAuth.ts`** [COMPLETED]:
+    *   **✅ Type Import** [COMPLETED]: Import `AuthUser` from a central types file (`src/client/types/index.ts` once created) to avoid duplication.
+    *   **✅ Actions Taken**:
+        *   Verified that `useAuth.ts` already imports `AuthUser` and `AuthState` from central types file (`src/client/types/index.ts`) on line 4
+        *   This task was already completed as part of the type centralization effort
+    *   **✅ Logout Integration** [COMPLETED]: If `AuthService.signOut` is refactored, `useAuth.logout` should call `AuthService.signOut` for token clearing and then handle the API call for server-side logout.
+    *   **✅ Actions Taken**:
+        *   **Added AuthService Import**: Added `import { AuthService } from "../services/AuthService";` to useAuth.ts
+        *   **Refactored logout Method**: Updated `useAuth.logout` to call `AuthService.signOut()` for token clearing instead of manually removing tokens from localStorage and sessionStorage
+        *   **Refactored logoutDueToInactivity**: Updated inactivity logout function to use `AuthService.signOut()` for consistency
+        *   **Updated Token Validation**: Updated token validation failure cases to use `AuthService.signOut()` instead of manual token clearing
+        *   **Maintained API Integration**: Preserved server-side logout API call (`/api/v1/auth/logout`) while delegating token clearing to AuthService
+        *   **Service Pattern Compliance**: Now follows Single Responsibility principle where AuthService handles authentication domain concerns
+        *   **Verified Implementation**: All TypeScript compilation and React tests (45 tests) pass successfully
 *   **`useGoogleOAuth.ts`**:
     *   **Centralize Initialization**: Refactor to ensure `useGoogleOAuth` is the sole point of Google SDK initialization, preventing duplication of logic found in `OAuthProviders.tsx`.
     *   **Error Handling**: Ensure consistent error propagation and state management within the hook.
