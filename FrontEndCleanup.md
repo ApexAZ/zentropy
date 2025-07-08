@@ -351,8 +351,28 @@ These recommendations align with the principles outlined in:
         *   **Maintained Visual Hierarchy**: Preserved all existing layout, spacing, and semantic structure while adopting the semantic color system
         *   **Design System Compliance**: All colors now use semantic variables from `src/client/styles.css` that can be changed in one place to update entire site theme
         *   **TypeScript Verification**: Confirmed TypeScript compilation passes successfully after semantic styling updates
-*   **`AboutPage.tsx`, `ContactPage.tsx`**:
-    *   **Semantic Styling**: Replace hardcoded color classes (e.g., `bg-white`, `text-gray-800`) with semantic Tailwind classes defined in `src/client/styles.css` (e.g., `bg-content-background`, `text-text-primary`), adhering to `CLAUDE.md` - "Design System & Semantic Color Variables".
+*   **✅ `AboutPage.tsx`, `ContactPage.tsx`** [COMPLETED]:
+    *   **✅ Semantic Styling** [COMPLETED]: Replace hardcoded color classes (e.g., `bg-white`, `text-gray-800`) with semantic Tailwind classes defined in `src/client/styles.css` (e.g., `bg-content-background`, `text-text-primary`), adhering to `CLAUDE.md` - "Design System & Semantic Color Variables".
+    *   **✅ Actions Taken**:
+        *   **AboutPage.tsx Semantic Color Migration**: Updated all hardcoded color classes to semantic design system:
+            *   **Page Title**: Replaced `text-gray-800` with `text-primary` for main heading consistency
+            *   **Section Background**: Updated `bg-white` to `bg-content-background` for content container styling  
+            *   **Body Text**: Replaced all `text-gray-600` instances with `text-primary` across 4 paragraph elements
+            *   **Subheading Consistency**: Updated both h3 headings (`text-gray-800` → `text-primary`) for "Our Vision" and "Key Features" sections
+            *   **List Text**: Updated `text-gray-600` to `text-primary` for feature list items maintaining text hierarchy
+        *   **ContactPage.tsx Semantic Color Migration**: Updated all hardcoded color classes to semantic design system:
+            *   **Page Title**: Replaced `text-gray-800` with `text-primary` for main "Contact Us" heading
+            *   **Section Background**: Updated `bg-white` to `bg-content-background` for content container styling
+            *   **Body Text Standardization**: Replaced all `text-gray-600` instances with `text-primary` across 10+ paragraph elements
+            *   **Heading Hierarchy**: Updated all headings to use `text-primary`:
+                *   H3 headings: "Get In Touch" and "Office Hours" sections
+                *   H4 headings: "Support", "General Inquiries", and "Feedback" subsections
+            *   **List Styling**: Updated contact hours list from `text-gray-600` to `text-primary` for consistency
+        *   **Design System Compliance**: Both pages now follow established semantic color patterns:
+            *   **Centralized Theme Management**: All colors use semantic variables from `src/client/styles.css` enabling theme changes in one place
+            *   **Consistent Visual Hierarchy**: Text colors maintain proper contrast and readability with unified color scheme
+            *   **Maintainable Styling**: No hardcoded colors remain, making future theme updates simple and reliable
+        *   **Quality Verification**: TypeScript compilation passes successfully after semantic styling migration with zero errors
 
 ---
 
