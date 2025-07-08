@@ -60,6 +60,7 @@ Thumbs.db
 # Temporary files
 tmp/
 docs/tmp/
+docs/archive/
 temp/*.db
 scripts/test_*.py
 scripts/pylance_integration_guide.py

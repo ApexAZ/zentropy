@@ -1,4 +1,5 @@
 import React from "react";
+import RequiredAsterisk from "../RequiredAsterisk";
 
 interface Option {
 	value: string | number;
@@ -95,7 +96,10 @@ const Input: React.FC<InputProps> = ({
 		<div className="mb-6">
 			<label htmlFor={inputId} className="text-text-primary mb-2 block font-medium">
 				{label}
-				{required && <span className="ml-1 text-red-500">*</span>}
+				<RequiredAsterisk 
+					isEmpty={!props.value || String(props.value).trim() === ""} 
+					isRequired={required} 
+				/>
 			</label>
 
 			{renderInput()}

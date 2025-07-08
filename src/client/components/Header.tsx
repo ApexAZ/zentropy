@@ -34,42 +34,28 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 			<nav id="nav-container" className="flex flex-grow items-center justify-end">
 				<ul className="m-0 mr-4 flex list-none gap-6 p-0">
 					<li>
-						<a
-							className={`cursor-pointer text-base font-medium no-underline transition-all duration-200 ${
+						<button
+							className={`cursor-pointer text-base font-medium bg-transparent border-none transition-all duration-200 ${
 								currentPage === "about"
 									? "text-interactive border-interactive border-b"
 									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
 							}`}
 							onClick={() => onPageChange("about")}
-							role="button"
-							tabIndex={0}
-							onKeyDown={e => {
-								if (e.key === "Enter" || e.key === " ") {
-									onPageChange("about");
-								}
-							}}
 						>
 							About
-						</a>
+						</button>
 					</li>
 					<li>
-						<a
-							className={`cursor-pointer text-base font-medium no-underline transition-all duration-200 ${
+						<button
+							className={`cursor-pointer text-base font-medium bg-transparent border-none transition-all duration-200 ${
 								currentPage === "contact"
 									? "text-interactive border-interactive border-b"
 									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
 							}`}
 							onClick={() => onPageChange("contact")}
-							role="button"
-							tabIndex={0}
-							onKeyDown={e => {
-								if (e.key === "Enter" || e.key === " ") {
-									onPageChange("contact");
-								}
-							}}
 						>
 							Contact
-						</a>
+						</button>
 					</li>
 				</ul>
 				<div className="nav-auth">
