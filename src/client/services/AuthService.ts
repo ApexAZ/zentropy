@@ -147,7 +147,10 @@ export class AuthService {
 	/**
 	 * Validate password strength
 	 */
-	static validatePassword(password: string): {
+	static validatePassword(
+		password: string,
+		confirmPassword?: string
+	): {
 		isValid: boolean;
 		requirements: {
 			length: boolean;
@@ -155,6 +158,7 @@ export class AuthService {
 			lowercase: boolean;
 			number: boolean;
 			symbol: boolean;
+			match: boolean;
 		};
 	} {
 		const requirements = {
@@ -162,7 +166,8 @@ export class AuthService {
 			uppercase: /[A-Z]/.test(password),
 			lowercase: /[a-z]/.test(password),
 			number: /\d/.test(password),
-			symbol: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+			symbol: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+			match: confirmPassword !== undefined && confirmPassword !== "" ? password === confirmPassword : false
 		};
 
 		const isValid = Object.values(requirements).every(req => req);

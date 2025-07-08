@@ -92,7 +92,7 @@ We enforce a strict, consistent, and automated approach to code quality. The lin
     -   **Configuration**: `.prettierrc`, `.prettierignore`, `pyproject.toml` (for Black).
 -   **Linting**: **ESLint** for TypeScript/React and **Flake8** for Python. These tools catch potential bugs, enforce best practices, and prevent unsafe patterns.
     -   **Configuration**: `eslint.config.js` is the source of truth for all frontend linting rules.
--   **Type Checking**: **TypeScript (tsc)** for the frontend and **MyPy** for the backend. This is our first line of defense against runtime errors.
+-   **Type Checking**: **TypeScript (tsc)** for the frontend and **pyright** for the backend. This is our first line of defense against runtime errors.
     -   **Configuration**: `tsconfig.json`, `pyrightconfig.json`.
 
 ### Key ESLint/TypeScript Guidelines
@@ -133,8 +133,8 @@ npm run test:python
 # Run only React tests
 npm run test:react
 
-# Run React tests in watch mode
-npm run test:react:watch
+# Run React tests with coverage
+vitest run --coverage
 
 # Run the full linting suite
 npm run lint

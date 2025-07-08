@@ -180,13 +180,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 		if (!validateSignUpForm()) return;
 
-		// Additional validation
-		if (signUpData.password !== signUpData.confirm_password) {
-			setSignUpFieldError("confirm_password", "Passwords do not match");
-			return;
-		}
+		// Password matching validation is now handled by the password policy checklist
 
-		const passwordValidation = AuthService.validatePassword(signUpData.password);
+		const passwordValidation = AuthService.validatePassword(signUpData.password, signUpData.confirm_password);
 		if (!passwordValidation.isValid) {
 			setSignUpFieldError("password", "Password does not meet requirements");
 			return;
@@ -391,7 +387,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	);
 
 	const renderSignUp = () => {
-		const passwordValidation = AuthService.validatePassword(signUpData.password);
+		const passwordValidation = AuthService.validatePassword(signUpData.password, signUpData.confirm_password);
 
 		return (
 			<div className="space-y-6">
@@ -521,6 +517,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								>
 									✓ One special character
 								</div>
+								<div
+									className={
+										passwordValidation.requirements.match ? "text-green-600" : "text-red-500"
+									}
+								>
+									✓ Passwords match
+								</div>
 							</div>
 						)}
 						{signUpErrors.password && <p className="mt-1 text-sm text-red-500">{signUpErrors.password}</p>}
@@ -547,12 +550,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								{showPasswords.confirm ? "👁️" : "👁️‍🗨️"}
 							</button>
 						</div>
-						{signUpData.confirm_password && signUpData.password !== signUpData.confirm_password && (
-							<p className="mt-1 text-sm text-red-500">Passwords do not match</p>
-						)}
-						{signUpErrors.confirm_password && (
-							<p className="mt-1 text-sm text-red-500">{signUpErrors.confirm_password}</p>
-						)}
 					</div>
 
 					<div className="flex items-start">
