@@ -65,8 +65,8 @@ describe("EmailVerificationStatusBanner", () => {
 
 	describe("Resend Functionality", () => {
 		it("should call resend verification API when resend button is clicked", async () => {
-			mockAuthService.sendEmailVerification.mockResolvedValue({ 
-				message: "Verification email sent! Please check your inbox." 
+			mockAuthService.sendEmailVerification.mockResolvedValue({
+				message: "Verification email sent! Please check your inbox."
 			});
 
 			const user = userEvent.setup();
@@ -79,8 +79,8 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should show success message after successful resend", async () => {
-			mockAuthService.sendEmailVerification.mockResolvedValue({ 
-				message: "Verification email sent! Please check your inbox." 
+			mockAuthService.sendEmailVerification.mockResolvedValue({
+				message: "Verification email sent! Please check your inbox."
 			});
 
 			const user = userEvent.setup();
@@ -95,9 +95,7 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should show error message when resend fails", async () => {
-			mockAuthService.sendEmailVerification.mockRejectedValue(
-				new Error("Failed to send verification email")
-			);
+			mockAuthService.sendEmailVerification.mockRejectedValue(new Error("Failed to send verification email"));
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -150,8 +148,8 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should use appropriate semantic colors for messages", async () => {
-			mockAuthService.sendEmailVerification.mockResolvedValue({ 
-				message: "Verification email sent! Please check your inbox." 
+			mockAuthService.sendEmailVerification.mockResolvedValue({
+				message: "Verification email sent! Please check your inbox."
 			});
 
 			const user = userEvent.setup();
@@ -167,9 +165,7 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should use error colors for error messages", async () => {
-			mockAuthService.sendEmailVerification.mockRejectedValue(
-				new Error("Failed to send verification email")
-			);
+			mockAuthService.sendEmailVerification.mockRejectedValue(new Error("Failed to send verification email"));
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -186,8 +182,8 @@ describe("EmailVerificationStatusBanner", () => {
 
 	describe("User Interaction", () => {
 		it("should remain visible after resend operation", async () => {
-			mockAuthService.sendEmailVerification.mockResolvedValue({ 
-				message: "Email sent" 
+			mockAuthService.sendEmailVerification.mockResolvedValue({
+				message: "Email sent"
 			});
 
 			const user = userEvent.setup();
@@ -205,8 +201,8 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should allow multiple resend attempts", async () => {
-			mockAuthService.sendEmailVerification.mockResolvedValue({ 
-				message: "Email sent" 
+			mockAuthService.sendEmailVerification.mockResolvedValue({
+				message: "Email sent"
 			});
 
 			const user = userEvent.setup();

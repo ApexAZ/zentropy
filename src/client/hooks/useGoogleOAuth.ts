@@ -66,7 +66,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 
 		const initializeGoogleOAuth = () => {
 			setError(null); // Clear any previous errors
-			
+
 			if (!window.google?.accounts?.id) {
 				const errorMessage = "Google Identity Services not available";
 				logger.error(errorMessage);
@@ -139,7 +139,7 @@ export const useGoogleOAuth = ({ onSuccess, onError }: UseGoogleOAuthProps): Use
 	const triggerOAuth = useCallback(() => {
 		// Clear any previous errors before starting
 		setError(null);
-		
+
 		if (!isReady || !window.google?.accounts?.id) {
 			const errorMessage = "Google Sign-In not available";
 			logger.error(errorMessage);

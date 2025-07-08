@@ -39,8 +39,20 @@ const OAuthProviders: React.FC<OAuthProvidersProps> = ({ onGoogleSignIn, disable
 						onClick={handleGoogleSignIn}
 						disabled={disabled || !isReady || isLoading || !!error}
 						className="border-layout-background bg-content-background text-text-primary hover:bg-layout-background flex aspect-square cursor-pointer items-center justify-center rounded-lg border p-3 transition-all duration-200 hover:-translate-y-px hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
-						aria-label={error ? `Google Sign-In Error: ${error}` : isLoading ? "Signing in with Google..." : "Continue with Google"}
-						title={error ? `Google Sign-In Error: ${error}` : isLoading ? "Signing in with Google..." : "Continue with Google"}
+						aria-label={
+							error
+								? `Google Sign-In Error: ${error}`
+								: isLoading
+									? "Signing in with Google..."
+									: "Continue with Google"
+						}
+						title={
+							error
+								? `Google Sign-In Error: ${error}`
+								: isLoading
+									? "Signing in with Google..."
+									: "Continue with Google"
+						}
 					>
 						{isLoading ? (
 							/* Loading Spinner */

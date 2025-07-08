@@ -202,7 +202,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		}
 	}, [isOpen, initialMode, resetForms]);
 
-
 	const handleSignIn = async (e: React.FormEvent) => {
 		setIsLoading(true);
 		setToast(null);
@@ -403,7 +402,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	);
 
 	const renderSignUp = () => {
-		const passwordValidation = AuthService.validatePassword(signUpForm.values.password, signUpForm.values.confirm_password);
+		const passwordValidation = AuthService.validatePassword(
+			signUpForm.values.password,
+			signUpForm.values.confirm_password
+		);
 
 		return (
 			<div className="space-y-6">
@@ -435,7 +437,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 						<div>
 							<label className="text-text-primary mb-1 block text-sm font-medium">
-								Last Name <RequiredAsterisk isEmpty={!signUpForm.values.last_name.trim()} isRequired={true} />
+								Last Name{" "}
+								<RequiredAsterisk isEmpty={!signUpForm.values.last_name.trim()} isRequired={true} />
 							</label>
 							<input
 								type="text"
