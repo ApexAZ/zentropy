@@ -38,9 +38,9 @@ class TestUserModelRegistrationType:
     def test_user_model_has_registration_type_field(self, client):
         """Test that User model includes registration_type field."""
         user = User(
-            email="test@example.com",
-            first_name="Test",
-            last_name="User",
+            email="test@example.com"
+            first_name="Test"
+            last_name="User"
             registration_type=RegistrationType.EMAIL
         )
         assert user.registration_type == RegistrationType.EMAIL
@@ -49,7 +49,7 @@ class TestUserModelRegistrationType:
         """Test that registration_type defaults to EMAIL when saved to database."""
         user = User(
             email="test@example.com", 
-            first_name="Test",
+            first_name="Test"
             last_name="User"
         )
         
@@ -64,8 +64,8 @@ class TestUserModelRegistrationType:
     def test_user_can_be_created_with_google_oauth_registration_type(self, client):
         """Test that users can be created with GOOGLE_OAUTH registration type."""
         user = User(
-            email="oauth@example.com",
-            first_name="OAuth",
+            email="oauth@example.com"
+            first_name="OAuth"
             last_name="User", 
             registration_type=RegistrationType.GOOGLE_OAUTH
         )
@@ -78,11 +78,11 @@ class TestEmailRegistrationWithType:
     def test_email_registration_sets_email_type(self, client, db):
         """Test that email registration sets registration_type to EMAIL."""
         user_data = {
-            "email": "email@example.com",
-            "password": "Password123!",
-            "first_name": "Email",
-            "last_name": "User",
-            "organization": "Email Org",
+            "email": "email@example.com"
+            "password": "Password123!"
+            "first_name": "Email"
+            "last_name": "User"
+            "organization": "Email Org"
             "terms_agreement": True
         }
 
@@ -98,19 +98,19 @@ class TestEmailRegistrationWithType:
         """Test that multiple email registrations all get EMAIL type."""
         users_data = [
             {
-                "email": "user1@example.com",
-                "password": "Password123!",
+                "email": "user1@example.com"
+                "password": "Password123!"
                 "first_name": "User", 
-                "last_name": "One",
-                "organization": "Org1",
+                "last_name": "One"
+                "organization": "Org1"
                 "terms_agreement": True
-            },
+            }
             {
                 "email": "user2@example.com", 
-                "password": "Password123!",
-                "first_name": "User",
+                "password": "Password123!"
+                "first_name": "User"
                 "last_name": "Two", 
-                "organization": "Org2",
+                "organization": "Org2"
                 "terms_agreement": True
             }
         ]
@@ -134,10 +134,10 @@ class TestGoogleOAuthRegistrationWithType:
         """Test that Google OAuth registration sets registration_type to GOOGLE_OAUTH."""
         # Mock Google token verification to return valid user info
         mock_verify_token.return_value = {
-            "email": "oauth@example.com",
-            "given_name": "OAuth",
-            "family_name": "User",
-            "sub": "google-oauth-123",
+            "email": "oauth@example.com"
+            "given_name": "OAuth"
+            "family_name": "User"
+            "sub": "google-oauth-123"
             "email_verified": True
         }
 
@@ -159,19 +159,19 @@ class TestGoogleOAuthRegistrationWithType:
         # Mock different Google OAuth users
         oauth_users = [
             {
-                "credential": "mock-jwt-1",
+                "credential": "mock-jwt-1"
                 "user_data": {
-                    "email": "oauth1@example.com",
+                    "email": "oauth1@example.com"
                     "first_name": "OAuth1", 
-                    "last_name": "User1",
+                    "last_name": "User1"
                     "organization": "OAuth Org1"
                 }
-            },
+            }
             {
-                "credential": "mock-jwt-2",
+                "credential": "mock-jwt-2"
                 "user_data": {
-                    "email": "oauth2@example.com",
-                    "first_name": "OAuth2",
+                    "email": "oauth2@example.com"
+                    "first_name": "OAuth2"
                     "last_name": "User2", 
                     "organization": "OAuth Org2"
                 }
@@ -181,10 +181,10 @@ class TestGoogleOAuthRegistrationWithType:
         for oauth_user in oauth_users:
             # Mock Google token verification for each user
             mock_verify_token.return_value = {
-                "email": oauth_user["user_data"]["email"],
-                "given_name": oauth_user["user_data"]["first_name"],
-                "family_name": oauth_user["user_data"]["last_name"],
-                "sub": f"google-{oauth_user['user_data']['email']}",
+                "email": oauth_user["user_data"]["email"]
+                "given_name": oauth_user["user_data"]["first_name"]
+                "family_name": oauth_user["user_data"]["last_name"]
+                "sub": f"google-{oauth_user['user_data']['email']}"
                 "email_verified": True
             }
 
@@ -207,11 +207,11 @@ class TestRegistrationTypeInResponses:
         """Test that user API responses include registration_type field."""
         # Create a user first
         user_data = {
-            "email": "response@example.com",
-            "password": "Password123!",
-            "first_name": "Response",
-            "last_name": "User",
-            "organization": "Response Org",
+            "email": "response@example.com"
+            "password": "Password123!"
+            "first_name": "Response"
+            "last_name": "User"
+            "organization": "Response Org"
             "terms_agreement": True
         }
 
@@ -227,15 +227,15 @@ class TestRegistrationTypeInResponses:
     def test_google_oauth_response_includes_registration_type(self, mock_process_oauth, client):
         """Test that Google OAuth responses include registration_type field."""
         mock_process_oauth.return_value = {
-            "access_token": "test-token",
-            "token_type": "bearer",
+            "access_token": "test-token"
+            "token_type": "bearer"
             "user": {
-                "email": "oauth-response@example.com",
-                "first_name": "OAuth",
-                "last_name": "Response",
-                "organization": "OAuth Org",
-                "has_projects_access": True,
-                "email_verified": True,
+                "email": "oauth-response@example.com"
+                "first_name": "OAuth"
+                "last_name": "Response"
+                "organization": "OAuth Org"
+                "has_projects_access": True
+                "email_verified": True
                 "registration_type": "google_oauth"  # Should be included in response
             }
         }
@@ -257,11 +257,11 @@ class TestRegistrationTypeImmutable:
         """Test that registration_type cannot be updated via user update API."""
         # Create user with email registration
         user_data = {
-            "email": "immutable@example.com",
-            "password": "Password123!",
-            "first_name": "Immutable",
-            "last_name": "User",
-            "organization": "Immutable Org",
+            "email": "immutable@example.com"
+            "password": "Password123!"
+            "first_name": "Immutable"
+            "last_name": "User"
+            "organization": "Immutable Org"
             "terms_agreement": True
         }
 

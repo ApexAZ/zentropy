@@ -48,12 +48,12 @@ class TestAuthenticationFlow:
         import uuid
         unique_email = f"test-{uuid.uuid4().hex[:8]}@example.com"
         registration_data = {
-            "first_name": "Test",
-            "last_name": "User",
-            "email": unique_email,
-            "organization": "",
-            "password": "Password123",
-            "terms_agreement": True,
+            "first_name": "Test"
+            "last_name": "User"
+            "email": unique_email
+            "organization": ""
+            "password": "Password123"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -76,7 +76,7 @@ class TestAuthenticationFlow:
     def test_registration_endpoint_missing_required_fields(self, client):
         """Test registration with missing required fields returns 422."""
         incomplete_data = {
-            "first_name": "Test",
+            "first_name": "Test"
             "email": "test@example.com"
             # Missing: last_name, password, terms_agreement
         }
@@ -90,10 +90,10 @@ class TestAuthenticationFlow:
     def test_registration_endpoint_invalid_email_format(self, client):
         """Test registration with invalid email format returns 422."""
         invalid_data = {
-            "first_name": "Test",
-            "last_name": "User",
-            "email": "not-an-email",
-            "password": "Password123",
+            "first_name": "Test"
+            "last_name": "User"
+            "email": "not-an-email"
+            "password": "Password123"
             "terms_agreement": True
         }
         
@@ -107,12 +107,12 @@ class TestAuthenticationFlow:
         import uuid
         unique_email = f"duplicate-{uuid.uuid4().hex[:8]}@example.com"
         registration_data = {
-            "first_name": "First",
-            "last_name": "User",
-            "email": unique_email,
-            "organization": "",
-            "password": "Password123",
-            "terms_agreement": True,
+            "first_name": "First"
+            "last_name": "User"
+            "email": unique_email
+            "organization": ""
+            "password": "Password123"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -122,12 +122,12 @@ class TestAuthenticationFlow:
         
         # Try to create second user with same email
         duplicate_data = {
-            "first_name": "Second",
+            "first_name": "Second"
             "last_name": "User", 
-            "email": unique_email,
-            "organization": "",
-            "password": "DifferentPassword123",
-            "terms_agreement": True,
+            "email": unique_email
+            "organization": ""
+            "password": "DifferentPassword123"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -144,9 +144,9 @@ class TestAuthenticationFlow:
     def test_login_endpoint_invalid_credentials(self, client):
         """Test login with invalid credentials returns 401."""
         response = client.post(
-            "/api/v1/auth/login-json",
+            "/api/v1/auth/login-json"
             json={
-                "email": "nonexistent@example.com",
+                "email": "nonexistent@example.com"
                 "password": "wrongpassword"
             }
         )
@@ -159,7 +159,7 @@ class TestAuthenticationFlow:
     def test_login_endpoint_missing_fields(self, client):
         """Test login with missing fields returns 422."""
         response = client.post(
-            "/api/v1/auth/login-json",
+            "/api/v1/auth/login-json"
             json={"email": "test@example.com"}  # Missing password
         )
         
@@ -172,7 +172,7 @@ class TestAuthenticationFlow:
         response = client.post(
             "/api/v1/auth/login-json", 
             json={
-                "email": "not-an-email",
+                "email": "not-an-email"
                 "password": "somepassword"
             }
         )

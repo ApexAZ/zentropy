@@ -23,12 +23,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing local user
         local_user = User(
-            email="victim@example.com",
-            first_name="Victim",
-            last_name="User",
-            organization="Victim Company",
-            auth_provider=AuthProvider.LOCAL,
-            password_hash="$2b$12$secure_hashed_password",
+            email="victim@example.com"
+            first_name="Victim"
+            last_name="User"
+            
+            auth_provider=AuthProvider.LOCAL
+            password_hash="$2b$12$secure_hashed_password"
             google_id=None
         )
         db.add(local_user)
@@ -48,16 +48,16 @@ class TestCriticalOAuthSecurity:
         mock_google_user_info = {
             "sub": "attacker_google_id_12345",  # Different Google ID
             "email": "victim@example.com",      # Same email as victim
-            "given_name": "Attacker",
-            "family_name": "Hacker",
+            "given_name": "Attacker"
+            "family_name": "Hacker"
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Step 4: Create Google login request
         request = GoogleLoginRequest(
-            google_token="attacker_token",
-            organization="Attacker Company"
+            google_token="attacker_token"
+            
         )
         
         # Step 5: Attempt OAuth login - MUST fail with security error
@@ -95,12 +95,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing local user
         local_user = User(
-            email="local@company.com",
-            first_name="Local",
-            last_name="User",
-            organization="Company",
-            auth_provider=AuthProvider.LOCAL,
-            password_hash="$2b$12$secure_password",
+            email="local@company.com"
+            first_name="Local"
+            last_name="User"
+            
+            auth_provider=AuthProvider.LOCAL
+            password_hash="$2b$12$secure_password"
             google_id=None
         )
         db.add(local_user)
@@ -108,18 +108,18 @@ class TestCriticalOAuthSecurity:
         
         # Step 2: Mock Google user with DIFFERENT email
         mock_google_user_info = {
-            "sub": "google_user_12345",
+            "sub": "google_user_12345"
             "email": "googleuser@gmail.com",  # Different email - should succeed
-            "given_name": "Google",
-            "family_name": "User",
+            "given_name": "Google"
+            "family_name": "User"
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Step 3: Create Google login request
         request = GoogleLoginRequest(
-            google_token="valid_google_token",
-            organization="Google Company"
+            google_token="valid_google_token"
+            
         )
         
         # Step 4: OAuth login should succeed (different email)
@@ -149,12 +149,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing Google user
         google_user = User(
-            email="existing@gmail.com",
-            first_name="Existing",
-            last_name="GoogleUser",
-            organization="Google Inc",
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="google_existing_123",
+            email="existing@gmail.com"
+            first_name="Existing"
+            last_name="GoogleUser"
+            
+            auth_provider=AuthProvider.GOOGLE
+            google_id="google_existing_123"
             password_hash=None
         )
         db.add(google_user)
@@ -164,8 +164,8 @@ class TestCriticalOAuthSecurity:
         mock_google_user_info = {
             "sub": "google_existing_123",  # Same Google ID
             "email": "existing@gmail.com", # Same email
-            "given_name": "Existing",
-            "family_name": "GoogleUser",
+            "given_name": "Existing"
+            "family_name": "GoogleUser"
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -191,11 +191,11 @@ class TestCriticalOAuthSecurity:
         
         # Mock Google Workspace user (has 'hd' field)
         mock_google_user_info = {
-            "sub": "workspace_user_123",
-            "email": "employee@acmecorp.com",
-            "given_name": "Employee",
-            "family_name": "Worker",
-            "email_verified": True,
+            "sub": "workspace_user_123"
+            "email": "employee@acmecorp.com"
+            "given_name": "Employee"
+            "family_name": "Worker"
+            "email_verified": True
             "hd": "acmecorp.com"  # Google Workspace hosted domain
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -219,11 +219,11 @@ class TestCriticalOAuthSecurity:
         
         # Mock regular Gmail user (no 'hd' field)
         mock_google_user_info = {
-            "sub": "gmail_user_123",
-            "email": "user@gmail.com",
-            "given_name": "Gmail",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "gmail_user_123"
+            "email": "user@gmail.com"
+            "given_name": "Gmail"
+            "family_name": "User"
+            "email_verified": True
             "hd": None  # No hosted domain
         }
         mock_verify_google_token.return_value = mock_google_user_info

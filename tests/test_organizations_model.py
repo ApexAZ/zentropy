@@ -39,11 +39,11 @@ class TestOrganizationModel:
             pytest.skip("Organization model not yet implemented")
             
         org = Organization(
-            name="Acme Corporation",
-            short_name="Acme",
-            domain="acme.com",
-            website="https://www.acme.com",
-            industry=IndustryType.SOFTWARE,
+            name="Acme Corporation"
+            short_name="Acme"
+            domain="acme.com"
+            website="https://www.acme.com"
+            industry=IndustryType.SOFTWARE
             organization_type=OrganizationType.CORPORATION
         )
         
@@ -72,27 +72,27 @@ class TestOrganizationModel:
             pytest.skip("Organization model not yet implemented")
             
         org = Organization(
-            name="TechCorp Industries LLC",
-            short_name="TechCorp",
-            domain="techcorp.com",
-            website="https://techcorp.com",
-            industry=IndustryType.SOFTWARE,
-            organization_type=OrganizationType.LLC,
-            headquarters_address="123 Tech Street",
-            headquarters_city="San Francisco",
-            headquarters_state="CA",
-            headquarters_country="USA",
-            headquarters_postal_code="94105",
-            main_phone="+1-555-123-4567",
-            primary_contact_name="John Smith",
-            primary_contact_title="CEO",
-            primary_contact_email="john@techcorp.com",
-            primary_contact_phone="+1-555-123-4568",
-            employee_count_range="51-200",
-            time_zone="America/Los_Angeles",
-            founded_year=2020,
-            description="Leading software development company",
-            logo_url="https://techcorp.com/logo.png",
+            name="TechCorp Industries LLC"
+            short_name="TechCorp"
+            domain="techcorp.com"
+            website="https://techcorp.com"
+            industry=IndustryType.SOFTWARE
+            organization_type=OrganizationType.LLC
+            headquarters_address="123 Tech Street"
+            headquarters_city="San Francisco"
+            headquarters_state="CA"
+            headquarters_country="USA"
+            headquarters_postal_code="94105"
+            main_phone="+1-555-123-4567"
+            primary_contact_name="John Smith"
+            primary_contact_title="CEO"
+            primary_contact_email="john@techcorp.com"
+            primary_contact_phone="+1-555-123-4568"
+            employee_count_range="51-200"
+            time_zone="America/Los_Angeles"
+            founded_year=2020
+            description="Leading software development company"
+            logo_url="https://techcorp.com/logo.png"
             linkedin_url="https://linkedin.com/company/techcorp"
         )
         
@@ -112,17 +112,17 @@ class TestUserOrganizationRelationship:
         
         # Create organization first
         org = Organization(
-            name="Test Company",
+            name="Test Company"
             domain="testcompany.com"
         )
         
         # Create user with organization
         user = User(
-            email="employee@testcompany.com",
-            first_name="Test",
-            last_name="Employee",
+            email="employee@testcompany.com"
+            first_name="Test"
+            last_name="Employee"
             organization_id=org.id,  # Foreign key relationship
-            auth_provider=AuthProvider.LOCAL,
+            auth_provider=AuthProvider.LOCAL
             password_hash="hashed_password"
         )
         
@@ -155,8 +155,8 @@ class TestOrganizationEnums:
         # Should have comprehensive industry options
         expected_industries = [
             "SOFTWARE", "MANUFACTURING", "HEALTHCARE", "FINANCE", 
-            "EDUCATION", "RETAIL", "CONSULTING", "GOVERNMENT",
-            "NON_PROFIT", "TECHNOLOGY", "MEDIA", "REAL_ESTATE",
+            "EDUCATION", "RETAIL", "CONSULTING", "GOVERNMENT"
+            "NON_PROFIT", "TECHNOLOGY", "MEDIA", "REAL_ESTATE"
             "CONSTRUCTION", "ENERGY", "TELECOMMUNICATIONS"
         ]
         
@@ -172,7 +172,7 @@ class TestOrganizationEnums:
         
         # Should have common organization types
         expected_types = [
-            "CORPORATION", "LLC", "PARTNERSHIP", "SOLE_PROPRIETORSHIP",
+            "CORPORATION", "LLC", "PARTNERSHIP", "SOLE_PROPRIETORSHIP"
             "NON_PROFIT", "GOVERNMENT", "COOPERATIVE", "OTHER"
         ]
         
@@ -196,7 +196,7 @@ class TestOrganizationCreationFromGoogleOAuth:
         
         # Should be able to create organization from domain
         org = Organization.create_from_google_domain(
-            domain=google_data["hd"],
+            domain=google_data["hd"]
             name="Acmecorp.Com"  # Derived from domain
         )
         
@@ -228,7 +228,7 @@ class TestOrganizationBusinessLogic:
         
         # Should have method to find similar organizations
         potential_duplicates = Organization.find_potential_duplicates(
-            name="Acme Corp",
+            name="Acme Corp"
             domain="acme.com"
         )
         

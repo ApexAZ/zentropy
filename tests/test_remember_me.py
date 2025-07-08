@@ -26,8 +26,8 @@ class TestRememberMeBackend:
         """Test that UserLogin schema accepts remember_me field."""
         # This should FAIL initially since remember_me is not in the schema
         login_data = {
-            "email": "test@example.com",
-            "password": "password123",
+            "email": "test@example.com"
+            "password": "password123"
             "remember_me": True
         }
         
@@ -53,20 +53,20 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
-                email="test@example.com",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org",
-                email_verified=True,
+                id="test-user-id"
+                email="test@example.com"
+                first_name="Test"
+                last_name="User"
+                
+                email_verified=True
                 is_active=True
             )
             mock_auth.return_value = mock_user
 
             # Login with remember_me=True
             response = client.post("/api/auth/login-json", json={
-                "email": "test@example.com",
-                "password": "password123",
+                "email": "test@example.com"
+                "password": "password123"
                 "remember_me": True
             })
 
@@ -89,19 +89,19 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
-                email="test@example.com",
-                first_name="Test",
+                id="test-user-id"
+                email="test@example.com"
+                first_name="Test"
                 last_name="User", 
-                organization="Test Org",
-                email_verified=True,
+                
+                email_verified=True
                 is_active=True
             )
             mock_auth.return_value = mock_user
 
             # Login with remember_me=False
             response = client.post("/api/auth/login-json", json={
-                "email": "test@example.com",
+                "email": "test@example.com"
                 "password": "password123", 
                 "remember_me": False
             })
@@ -125,19 +125,19 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
-                email="test@example.com",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org", 
-                email_verified=True,
+                id="test-user-id"
+                email="test@example.com"
+                first_name="Test"
+                last_name="User"
+                , 
+                email_verified=True
                 is_active=True
             )
             mock_auth.return_value = mock_user
 
             # Login without remember_me field
             response = client.post("/api/auth/login-json", json={
-                "email": "test@example.com",
+                "email": "test@example.com"
                 "password": "password123"
             })
 
@@ -176,7 +176,7 @@ class TestRememberMeConstants:
         
         # Test with remember_me=False  
         token_normal = create_access_token(
-            data={"sub": "test-user-id"},
+            data={"sub": "test-user-id"}
             remember_me=False
         )
         

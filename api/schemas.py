@@ -10,7 +10,7 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    organization: Optional[str] = None
+    organization_id: Optional[UUID] = None
     role: UserRole = UserRole.BASIC_USER
     has_projects_access: bool = True
 
@@ -24,7 +24,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    organization: Optional[str] = None
+    organization_id: Optional[UUID] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     has_projects_access: Optional[bool] = None
@@ -43,6 +43,21 @@ class UserResponse(UserBase):
         from_attributes = True
 
 
+# Organization schema for user responses
+class OrganizationResponse(BaseModel):
+    id: UUID
+    name: str
+    short_name: Optional[str] = None
+    domain: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserWithOrganizationResponse(UserResponse):
+    organization_rel: Optional[OrganizationResponse] = None
+
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -57,7 +72,6 @@ class PasswordUpdate(BaseModel):
 # Google OAuth schemas
 class GoogleLoginRequest(BaseModel):
     google_token: str
-    organization: Optional[str] = None
 
 
 class GoogleOAuthRequest(BaseModel):

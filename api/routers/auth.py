@@ -181,7 +181,7 @@ def register(
         password_hash=hashed_password,
         first_name=user_create.first_name,
         last_name=user_create.last_name,
-        organization=user_create.organization or "",
+        organization_id=user_create.organization_id,
         role=user_create.role,
         has_projects_access=user_create.has_projects_access,
         registration_type=database.RegistrationType.EMAIL,  # Set registration type
@@ -296,13 +296,6 @@ def google_login(
                 db.commit()
                 db.refresh(organization_record)
 
-        elif request.organization:
-            # Manual organization specified - create new one
-            organization_record = Organization(name=request.organization)
-            db.add(organization_record)
-            db.commit()
-            db.refresh(organization_record)
-
         else:
             # Gmail user - create organization from email domain
             email_domain = email.split("@")[1]
@@ -329,7 +322,6 @@ def google_login(
             first_name=first_name,
             last_name=last_name,
             organization_id=organization_record.id,  # Foreign key
-            organization=organization_record.name,  # Legacy field
             auth_provider=AuthProvider.GOOGLE,
             google_id=google_id,
             password_hash=None,  # OAuth users don't need passwords
@@ -339,6 +331,7 @@ def google_login(
             terms_version="1.0",
             privacy_accepted_at=now,
             privacy_version="1.0",
+            registration_type=database.RegistrationType.GOOGLE_OAUTH,
         )
 
         db.add(user)

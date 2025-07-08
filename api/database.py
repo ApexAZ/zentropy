@@ -276,8 +276,6 @@ class User(Base):
     organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
     )
-    # DEPRECATED: Keep for backward compatibility during migration
-    organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, values_callable=get_enum_values),
         nullable=False,

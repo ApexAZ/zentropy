@@ -18,11 +18,11 @@ class TestOAuthDatabaseIntegration:
     def test_local_user_defaults_in_database(self, db, client):
         """Test that local auth users get proper defaults when inserted to database."""
         user = User(
-            email="local@example.com",
-            first_name="Local",
-            last_name="User",
-            password_hash="$2b$12$hashed_password",
-            organization="Test Org"
+            email="local@example.com"
+            first_name="Local"
+            last_name="User"
+            password_hash="$2b$12$hashed_password"
+            
         )
         
         # Before database insert - no defaults applied
@@ -45,12 +45,12 @@ class TestOAuthDatabaseIntegration:
     def test_google_oauth_user_in_database(self, db, client):
         """Test Google OAuth user creation in database."""
         google_user = User(
-            email="oauth@gmail.com",
-            first_name="OAuth",
-            last_name="User",
+            email="oauth@gmail.com"
+            first_name="OAuth"
+            last_name="User"
             organization_id=None,  # Use proper foreign key field
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="google_123456789",
+            auth_provider=AuthProvider.GOOGLE
+            google_id="google_123456789"
             password_hash=None  # OAuth users don't need password
         )
         
@@ -73,12 +73,12 @@ class TestOAuthDatabaseIntegration:
         """Test that google_id must be unique."""
         # Create first Google user
         user1 = User(
-            email="user1@gmail.com",
-            first_name="User",
-            last_name="One",
+            email="user1@gmail.com"
+            first_name="User"
+            last_name="One"
             organization_id=None,  # Use proper foreign key field
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="duplicate_id",
+            auth_provider=AuthProvider.GOOGLE
+            google_id="duplicate_id"
             password_hash=None
         )
         db.add(user1)
@@ -86,11 +86,11 @@ class TestOAuthDatabaseIntegration:
         
         # Try to create second user with same google_id
         user2 = User(
-            email="user2@gmail.com",
-            first_name="User",
+            email="user2@gmail.com"
+            first_name="User"
             last_name="Two", 
             organization_id=None,  # Use proper foreign key field
-            auth_provider=AuthProvider.GOOGLE,
+            auth_provider=AuthProvider.GOOGLE
             google_id="duplicate_id",  # Same as user1
             password_hash=None
         )
@@ -104,22 +104,22 @@ class TestOAuthDatabaseIntegration:
         """Test that the same person can have both local and Google accounts with different emails."""
         # Local account
         local_user = User(
-            email="user@company.com",
-            first_name="John",
-            last_name="Doe",
-            organization="Company",
-            password_hash="$2b$12$hashed",
+            email="user@company.com"
+            first_name="John"
+            last_name="Doe"
+            
+            password_hash="$2b$12$hashed"
             auth_provider=AuthProvider.LOCAL
         )
         
         # Google account (different email)
         google_user = User(
-            email="john.doe@gmail.com",
-            first_name="John",
+            email="john.doe@gmail.com"
+            first_name="John"
             last_name="Doe", 
-            organization="Company",
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="google_john_doe",
+            
+            auth_provider=AuthProvider.GOOGLE
+            google_id="google_john_doe"
             password_hash=None
         )
         
@@ -135,12 +135,12 @@ class TestOAuthDatabaseIntegration:
     def test_oauth_user_password_hash_can_be_null(self, db, client):
         """Test that OAuth users can have NULL password_hash."""
         oauth_user = User(
-            email="oauth@example.com",
-            first_name="OAuth",
-            last_name="User",
-            organization="Test",
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="google_oauth_user",
+            email="oauth@example.com"
+            first_name="OAuth"
+            last_name="User"
+            
+            auth_provider=AuthProvider.GOOGLE
+            google_id="google_oauth_user"
             password_hash=None  # Explicitly NULL
         )
         
@@ -157,11 +157,11 @@ class TestOAuthDatabaseIntegration:
         # This is more of a business rule test - the DB allows NULL password_hash
         # but our application logic should require it for local users
         local_user_no_password = User(
-            email="nopass@example.com",
-            first_name="No",
-            last_name="Password",
-            organization="Test",
-            auth_provider=AuthProvider.LOCAL,
+            email="nopass@example.com"
+            first_name="No"
+            last_name="Password"
+            
+            auth_provider=AuthProvider.LOCAL
             password_hash=None  # This should be caught by business logic
         )
         

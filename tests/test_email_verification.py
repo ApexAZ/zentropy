@@ -29,10 +29,10 @@ class TestEmailVerificationDatabase:
         """Test that User model has email verification fields."""
         # This test will fail initially - we need to add these fields
         user = User(
-            email="test@example.com",
-            first_name="Test",
-            last_name="User",
-            password_hash="hashed_password",
+            email="test@example.com"
+            first_name="Test"
+            last_name="User"
+            password_hash="hashed_password"
             email_verified=False,  # Should exist
             email_verification_token="test-token",  # Should exist
             email_verification_expires_at=datetime.utcnow() + timedelta(hours=24)  # Should exist
@@ -55,12 +55,12 @@ class TestEmailVerificationEndpoints:
         # Use random email to avoid conflicts with existing users
         random_id = random.randint(1000, 9999)
         user_data = {
-            "email": f"newuser{random_id}@example.com",
-            "password": "SecurePass123!",
-            "first_name": "New",
-            "last_name": "User",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": f"newuser{random_id}@example.com"
+            "password": "SecurePass123!"
+            "first_name": "New"
+            "last_name": "User"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -87,12 +87,12 @@ class TestEmailVerificationEndpoints:
         # First, register a user to get a verification token
         random_id = random.randint(1000, 9999)
         user_data = {
-            "email": f"verify{random_id}@example.com",
-            "password": "SecurePass123!",
-            "first_name": "Verify",
-            "last_name": "User",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": f"verify{random_id}@example.com"
+            "password": "SecurePass123!"
+            "first_name": "Verify"
+            "last_name": "User"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -144,12 +144,12 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"flowtest{random_id}@example.com"
         user_data = {
-            "email": email,
-            "password": "SecurePass123!",
-            "first_name": "Flow",
-            "last_name": "Test",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": email
+            "password": "SecurePass123!"
+            "first_name": "Flow"
+            "last_name": "Test"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -169,12 +169,12 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"unverified{random_id}@example.com"
         user_data = {
-            "email": email,
-            "password": "SecurePass123!",
-            "first_name": "Unverified",
-            "last_name": "User",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": email
+            "password": "SecurePass123!"
+            "first_name": "Unverified"
+            "last_name": "User"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -183,7 +183,7 @@ class TestEmailVerificationFlow:
         
         # Try to login with unverified account - should fail
         login_response = client.post("/api/auth/login-json", json={
-            "email": email,
+            "email": email
             "password": "SecurePass123!"
         })
         
@@ -199,12 +199,12 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"verified{random_id}@example.com"
         user_data = {
-            "email": email,
-            "password": "SecurePass123!",
-            "first_name": "Verified",
-            "last_name": "User",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": email
+            "password": "SecurePass123!"
+            "first_name": "Verified"
+            "last_name": "User"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -224,7 +224,7 @@ class TestEmailVerificationFlow:
         
         # Now login should succeed
         login_response = client.post("/api/auth/login-json", json={
-            "email": email,
+            "email": email
             "password": "SecurePass123!"
         })
         
@@ -240,12 +240,12 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"unverified_oauth{random_id}@example.com"
         user_data = {
-            "email": email,
-            "password": "SecurePass123!",
-            "first_name": "Unverified",
-            "last_name": "User",
-            "organization": "Test Org",
-            "terms_agreement": True,
+            "email": email
+            "password": "SecurePass123!"
+            "first_name": "Unverified"
+            "last_name": "User"
+            "organization": "Test Org"
+            "terms_agreement": True
             "has_projects_access": True
         }
         
@@ -254,7 +254,7 @@ class TestEmailVerificationFlow:
         
         # Try to login with form data (OAuth endpoint) - should also fail
         login_response = client.post("/api/auth/login", data={
-            "username": email,
+            "username": email
             "password": "SecurePass123!"
         })
         

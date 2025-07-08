@@ -65,7 +65,7 @@ def test_development_with_explicit_secret_key():
         del sys.modules['api.auth']
     
     with patch.dict(os.environ, {
-        'NODE_ENV': 'development',
+        'NODE_ENV': 'development'
         'SECRET_KEY': 'explicit_dev_key'
     }, clear=False):
         # Should use explicit key without warning

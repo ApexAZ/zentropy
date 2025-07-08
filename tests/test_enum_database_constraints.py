@@ -21,10 +21,10 @@ class TestDatabaseEnumConstraints:
         """Test that invalid UserRole values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             user = User(
-                email="invalid-role@example.com",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org",
+                email="invalid-role@example.com"
+                first_name="Test"
+                last_name="User"
+                
                 role="INVALID_ROLE"  # Should fail
             )
             db.add(user)
@@ -34,10 +34,10 @@ class TestDatabaseEnumConstraints:
         """Test that invalid AuthProvider values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             user = User(
-                email="invalid-auth@example.com",
-                first_name="Test",
+                email="invalid-auth@example.com"
+                first_name="Test"
                 last_name="User", 
-                organization="Test Org",
+                
                 auth_provider="INVALID_PROVIDER"  # Should fail
             )
             db.add(user)
@@ -47,10 +47,10 @@ class TestDatabaseEnumConstraints:
         """Test that invalid RegistrationType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             user = User(
-                email="invalid-regtype@example.com",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org", 
+                email="invalid-regtype@example.com"
+                first_name="Test"
+                last_name="User"
+                , 
                 registration_type="INVALID_TYPE"  # Should fail
             )
             db.add(user)
@@ -74,7 +74,7 @@ class TestDatabaseEnumConstraints:
             
             invitation = TeamInvitation(
                 team_id="550e8400-e29b-41d4-a716-446655440000",  # Fake UUID
-                email="test@example.com",
+                email="test@example.com"
                 invited_by="550e8400-e29b-41d4-a716-446655440001",  # Fake UUID
                 status="INVALID_STATUS",  # Should fail
                 expires_at=datetime.utcnow() + timedelta(days=7)
@@ -86,7 +86,7 @@ class TestDatabaseEnumConstraints:
         """Test that invalid IndustryType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             org = Organization(
-                name="Test Org",
+                name="Test Org"
                 industry="INVALID_INDUSTRY"  # Should fail
             )
             db.add(org)
@@ -96,7 +96,7 @@ class TestDatabaseEnumConstraints:
         """Test that invalid OrganizationType values are rejected by database."""
         with pytest.raises((DataError, IntegrityError)):
             org = Organization(
-                name="Test Org",
+                name="Test Org"
                 organization_type="INVALID_ORG_TYPE"  # Should fail
             )
             db.add(org)
@@ -109,10 +109,10 @@ class TestEnumValuesCallableIntegration:
     def test_user_role_values_callable_works(self, db):
         """Test UserRole enum uses values, not names in database."""
         user = User(
-            email="role-test@example.com",
-            first_name="Test",
-            last_name="User",
-            organization="Test Org",
+            email="role-test@example.com"
+            first_name="Test"
+            last_name="User"
+            
             role=UserRole.BASIC_USER  # Should store 'basic_user', not 'BASIC_USER'
         )
         db.add(user)
@@ -128,9 +128,9 @@ class TestEnumValuesCallableIntegration:
         """Test RegistrationType enum uses values, not names in database."""
         user = User(
             email="regtype-test@example.com", 
-            first_name="Test",
-            last_name="User",
-            organization="Test Org",
+            first_name="Test"
+            last_name="User"
+            
             registration_type=RegistrationType.EMAIL  # Should store 'email', not 'EMAIL'
         )
         db.add(user)
@@ -145,10 +145,10 @@ class TestEnumValuesCallableIntegration:
     def test_auth_provider_values_callable_works(self, db):
         """Test AuthProvider enum uses values, not names in database."""
         user = User(
-            email="auth-test@example.com",
+            email="auth-test@example.com"
             first_name="Test", 
-            last_name="User",
-            organization="Test Org",
+            last_name="User"
+            
             auth_provider=AuthProvider.LOCAL  # Should store 'local', not 'LOCAL'
         )
         db.add(user)
@@ -167,12 +167,12 @@ class TestCrossEnumInteractions:
     def test_google_oauth_sets_both_auth_and_registration_enums(self, db):
         """Test Google OAuth users get both AuthProvider.GOOGLE and RegistrationType.GOOGLE_OAUTH."""
         user = User(
-            email="oauth-cross-test@example.com",
-            first_name="OAuth",
-            last_name="User",
-            organization="OAuth Org",
-            auth_provider=AuthProvider.GOOGLE,
-            registration_type=RegistrationType.GOOGLE_OAUTH,
+            email="oauth-cross-test@example.com"
+            first_name="OAuth"
+            last_name="User"
+            
+            auth_provider=AuthProvider.GOOGLE
+            registration_type=RegistrationType.GOOGLE_OAUTH
             email_verified=True  # Google users are pre-verified
         )
         db.add(user)
@@ -187,12 +187,12 @@ class TestCrossEnumInteractions:
     def test_email_registration_sets_correct_enum_combination(self, db):
         """Test email registration users get AuthProvider.LOCAL and RegistrationType.EMAIL."""
         user = User(
-            email="email-cross-test@example.com",
-            first_name="Email",
-            last_name="User",
-            organization="Email Org",
-            auth_provider=AuthProvider.LOCAL,
-            registration_type=RegistrationType.EMAIL,
+            email="email-cross-test@example.com"
+            first_name="Email"
+            last_name="User"
+            
+            auth_provider=AuthProvider.LOCAL
+            registration_type=RegistrationType.EMAIL
             email_verified=False  # Email users need verification
         )
         db.add(user)

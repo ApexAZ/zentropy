@@ -22,11 +22,11 @@ class TestOAuthOrganizationCreation:
         """Test that Google Workspace users automatically create organization."""
         # Mock Google Workspace user
         mock_google_user_info = {
-            "sub": "workspace_user_123",
-            "email": "employee@newcompany.com",
-            "given_name": "New",
-            "family_name": "Employee",
-            "email_verified": True,
+            "sub": "workspace_user_123"
+            "email": "employee@newcompany.com"
+            "given_name": "New"
+            "family_name": "Employee"
+            "email_verified": True
             "hd": "newcompany.com"  # Google Workspace domain
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -68,8 +68,8 @@ class TestOAuthOrganizationCreation:
         """Test that existing organizations are reused for new users."""
         # Create existing organization
         existing_org = Organization(
-            name="Acme Corporation",
-            domain="acme.com",
+            name="Acme Corporation"
+            domain="acme.com"
             website="https://acme.com"
         )
         db.add(existing_org)
@@ -78,11 +78,11 @@ class TestOAuthOrganizationCreation:
         
         # Mock new user from same domain
         mock_google_user_info = {
-            "sub": "new_employee_456",
-            "email": "newuser@acme.com",
-            "given_name": "New",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "new_employee_456"
+            "email": "newuser@acme.com"
+            "given_name": "New"
+            "family_name": "User"
+            "email_verified": True
             "hd": "acme.com"  # Same domain as existing org
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -110,19 +110,19 @@ class TestOAuthOrganizationCreation:
         """Test that manual organization info overrides Google domain."""
         # Mock Google user
         mock_google_user_info = {
-            "sub": "user_789",
-            "email": "contractor@gmail.com",
-            "given_name": "Contractor",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "user_789"
+            "email": "contractor@gmail.com"
+            "given_name": "Contractor"
+            "family_name": "User"
+            "email_verified": True
             "hd": None  # Regular Gmail user
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # OAuth login with manual organization
         request = GoogleLoginRequest(
-            google_token="gmail_token",
-            organization="Custom Consulting LLC"
+            google_token="gmail_token"
+            
         )
         result = google_login(request, db)
         
@@ -147,11 +147,11 @@ class TestOAuthOrganizationCreation:
         """Test that Gmail users get automatic organization from domain."""
         # Mock Gmail user
         mock_google_user_info = {
-            "sub": "gmail_user_999",
-            "email": "user@gmail.com",
-            "given_name": "Gmail",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "gmail_user_999"
+            "email": "user@gmail.com"
+            "given_name": "Gmail"
+            "family_name": "User"
+            "email_verified": True
             "hd": None  # Regular Gmail user
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -179,7 +179,7 @@ class TestOrganizationDeduplication:
         """Test that domain matching is case-insensitive."""
         # Create organization with lowercase domain
         existing_org = Organization(
-            name="Test Company",
+            name="Test Company"
             domain="testcompany.com"
         )
         db.add(existing_org)
@@ -187,11 +187,11 @@ class TestOrganizationDeduplication:
         
         # Mock user with uppercase domain
         mock_google_user_info = {
-            "sub": "user_case_test",
-            "email": "user@TESTCOMPANY.COM",
-            "given_name": "Test",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "user_case_test"
+            "email": "user@TESTCOMPANY.COM"
+            "given_name": "Test"
+            "family_name": "User"
+            "email_verified": True
             "hd": "TESTCOMPANY.COM"  # Uppercase domain
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -217,11 +217,11 @@ class TestOrganizationDeduplication:
         # Implementation will determine exact normalization rules
         
         mock_google_user_info = {
-            "sub": "normalize_test",
-            "email": "user@normalize-test.com",
-            "given_name": "Test",
-            "family_name": "User",
-            "email_verified": True,
+            "sub": "normalize_test"
+            "email": "user@normalize-test.com"
+            "given_name": "Test"
+            "family_name": "User"
+            "email_verified": True
             "hd": "normalize-test.com"
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -243,11 +243,11 @@ class TestOrganizationFieldPopulation:
     def test_google_workspace_organization_fields(self, mock_verify_google_token, db, client):
         """Test that Google Workspace organizations get properly populated fields."""
         mock_google_user_info = {
-            "sub": "fields_test",
-            "email": "user@fieldstest.com",
-            "given_name": "Fields",
-            "family_name": "Test",
-            "email_verified": True,
+            "sub": "fields_test"
+            "email": "user@fieldstest.com"
+            "given_name": "Fields"
+            "family_name": "Test"
+            "email_verified": True
             "hd": "fieldstest.com"
         }
         mock_verify_google_token.return_value = mock_google_user_info

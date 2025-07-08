@@ -19,11 +19,11 @@ class TestDeprecatedOrganizationField:
         """Test that Google Workspace users get organization_id, not deprecated organization field."""
         # Mock Google Workspace user with hosted domain
         google_info_workspace = {
-            'sub': '987654321',
-            'email': 'employee@testcompany.com',
-            'given_name': 'Jane',
-            'family_name': 'Smith',
-            'email_verified': True,
+            'sub': '987654321'
+            'email': 'employee@testcompany.com'
+            'given_name': 'Jane'
+            'family_name': 'Smith'
+            'email_verified': True
             'hd': 'testcompany.com'  # Google Workspace hosted domain
         }
 
@@ -45,10 +45,10 @@ class TestDeprecatedOrganizationField:
         """Test that personal Gmail users have no organization assignment."""
         # Mock personal Gmail user (no hosted domain)
         google_info_personal = {
-            'sub': '123456789',
-            'email': 'user@gmail.com',
-            'given_name': 'John',
-            'family_name': 'Doe',
+            'sub': '123456789'
+            'email': 'user@gmail.com'
+            'given_name': 'John'
+            'family_name': 'Doe'
             'email_verified': True
             # No 'hd' field - personal account
         }
@@ -67,8 +67,8 @@ class TestDeprecatedOrganizationField:
         """Test that API response uses organization_rel.name instead of deprecated field."""
         # Create organization first
         org = Organization(
-            name="Test Corporation",
-            domain="testcorp.com",
+            name="Test Corporation"
+            domain="testcorp.com"
             website="https://testcorp.com"
         )
         db.add(org)
@@ -77,14 +77,14 @@ class TestDeprecatedOrganizationField:
 
         # Create user with organization relationship
         user = User(
-            email="test@testcorp.com",
-            first_name="Test",
-            last_name="User",
+            email="test@testcorp.com"
+            first_name="Test"
+            last_name="User"
             organization_id=org.id,  # Use proper foreign key
-            organization="Old Deprecated Value",  # Different from actual org name
-            auth_provider=AuthProvider.GOOGLE,
-            google_id="test_google_id",
-            registration_type=RegistrationType.GOOGLE_OAUTH,
+            ,  # Different from actual org name
+            auth_provider=AuthProvider.GOOGLE
+            google_id="test_google_id"
+            registration_type=RegistrationType.GOOGLE_OAUTH
         )
         db.add(user)
         db.commit()
@@ -93,10 +93,10 @@ class TestDeprecatedOrganizationField:
         # Mock process_google_oauth to return user info
         with patch('api.google_oauth.verify_google_token') as mock_verify:
             mock_verify.return_value = {
-                'sub': 'test_google_id',
-                'email': 'test@testcorp.com',
-                'given_name': 'Test',
-                'family_name': 'User',
+                'sub': 'test_google_id'
+                'email': 'test@testcorp.com'
+                'given_name': 'Test'
+                'family_name': 'User'
                 'email_verified': True
             }
 
@@ -110,11 +110,11 @@ class TestDeprecatedOrganizationField:
         """Test that organization deduplication works with the new foreign key approach."""
         # First user creates organization
         google_info_1 = {
-            'sub': '111111111',
-            'email': 'user1@company.com',
-            'given_name': 'User',
-            'family_name': 'One',
-            'email_verified': True,
+            'sub': '111111111'
+            'email': 'user1@company.com'
+            'given_name': 'User'
+            'family_name': 'One'
+            'email_verified': True
             'hd': 'company.com'
         }
 
@@ -123,11 +123,11 @@ class TestDeprecatedOrganizationField:
 
         # Second user from same domain should reuse organization
         google_info_2 = {
-            'sub': '222222222',
-            'email': 'user2@company.com',
-            'given_name': 'User',
-            'family_name': 'Two',
-            'email_verified': True,
+            'sub': '222222222'
+            'email': 'user2@company.com'
+            'given_name': 'User'
+            'family_name': 'Two'
+            'email_verified': True
             'hd': 'company.com'  # Same domain
         }
 

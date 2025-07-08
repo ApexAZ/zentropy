@@ -19,14 +19,14 @@ class TestGoogleOAuthEndpoint:
     def mock_google_token(self):
         """Mock Google JWT token for testing"""
         return {
-            "iss": "https://accounts.google.com",
-            "sub": "1234567890",
-            "email": "test.user@gmail.com",
-            "email_verified": True,
-            "given_name": "Test",
-            "family_name": "User",
-            "picture": "https://example.com/photo.jpg",
-            "iat": 1234567890,
+            "iss": "https://accounts.google.com"
+            "sub": "1234567890"
+            "email": "test.user@gmail.com"
+            "email_verified": True
+            "given_name": "Test"
+            "family_name": "User"
+            "picture": "https://example.com/photo.jpg"
+            "iat": 1234567890
             "exp": 1234567890 + 3600
         }
 

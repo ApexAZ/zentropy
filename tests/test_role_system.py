@@ -63,8 +63,7 @@ class TestDatabaseRoleConstraints:
             email="test@example.com",
             password_hash="hashed_password",
             first_name="Test",
-            last_name="User",
-            organization="Test Org"
+            last_name="User"
         )
         db.add(user)
         db.commit()
@@ -74,19 +73,19 @@ class TestDatabaseRoleConstraints:
     def test_user_role_assignment(self, db, client):
         """Test assigning different user roles."""
         test_roles = [
-            UserRole.PROJECT_ADMINISTRATOR,
-            UserRole.PROJECT_LEAD,
-            UserRole.STAKEHOLDER,
+            UserRole.PROJECT_ADMINISTRATOR
+            UserRole.PROJECT_LEAD
+            UserRole.STAKEHOLDER
             UserRole.ADMIN
         ]
         
         for role in test_roles:
             user = User(
-                email=f"test_{role.value}@example.com",
-                password_hash="hashed_password",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org",
+                email=f"test_{role.value}@example.com"
+                password_hash="hashed_password"
+                first_name="Test"
+                last_name="User"
+                
                 role=role
             )
             db.add(user)
@@ -98,22 +97,22 @@ class TestDatabaseRoleConstraints:
         """Test that team memberships get member role by default."""
         # Create user and team first
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password",
-            first_name="Test",
-            last_name="User",
-            organization="Test Org"
+            email="test@example.com"
+            password_hash="hashed_password"
+            first_name="Test"
+            last_name="User"
+            
         )
         team = Team(
-            name="Test Team",
-            description="Test Description",
+            name="Test Team"
+            description="Test Description"
             created_by=user.id
         )
         db.add_all([user, team])
         db.commit()
         
         membership = TeamMembership(
-            team_id=team.id,
+            team_id=team.id
             user_id=user.id
         )
         db.add(membership)
@@ -125,15 +124,15 @@ class TestDatabaseRoleConstraints:
         """Test assigning different team roles."""
         # Create user and team
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password",
-            first_name="Test",
-            last_name="User",
-            organization="Test Org"
+            email="test@example.com"
+            password_hash="hashed_password"
+            first_name="Test"
+            last_name="User"
+            
         )
         team = Team(
-            name="Test Team",
-            description="Test Description",
+            name="Test Team"
+            description="Test Description"
             created_by=user.id
         )
         db.add_all([user, team])
@@ -143,8 +142,8 @@ class TestDatabaseRoleConstraints:
         
         for i, role in enumerate(test_roles):
             membership = TeamMembership(
-                team_id=team.id,
-                user_id=user.id,
+                team_id=team.id
+                user_id=user.id
                 role=role
             )
             db.add(membership)
@@ -157,15 +156,15 @@ class TestDatabaseRoleConstraints:
         """Test team invitation role and status defaults."""
         # Create user and team
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password",
-            first_name="Test",
-            last_name="User",
-            organization="Test Org"
+            email="test@example.com"
+            password_hash="hashed_password"
+            first_name="Test"
+            last_name="User"
+            
         )
         team = Team(
-            name="Test Team",
-            description="Test Description",
+            name="Test Team"
+            description="Test Description"
             created_by=user.id
         )
         db.add_all([user, team])
@@ -173,9 +172,9 @@ class TestDatabaseRoleConstraints:
         
         from datetime import datetime, timedelta
         invitation = TeamInvitation(
-            team_id=team.id,
-            email="invite@example.com",
-            invited_by=user.id,
+            team_id=team.id
+            email="invite@example.com"
+            invited_by=user.id
             expires_at=datetime.utcnow() + timedelta(days=7)
         )
         db.add(invitation)
@@ -191,11 +190,11 @@ class TestRoleBasedAPIAccess:
     def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
-            "email": email,
-            "password": "TestPassword123",
-            "first_name": "Test",
-            "last_name": "User",
-            "organization": "Test Org",
+            "email": email
+            "password": "TestPassword123"
+            "first_name": "Test"
+            "last_name": "User"
+            "organization": "Test Org"
             "role": role.value
         }
         
@@ -218,7 +217,7 @@ class TestRoleBasedAPIAccess:
         headers = self.create_test_user(client, role=UserRole.BASIC_USER)
         
         team_data = {
-            "name": "Test Team",
+            "name": "Test Team"
             "description": "A test team"
         }
         
@@ -275,7 +274,7 @@ class TestRoleAssignmentWorkflows:
         # This would require implementing the invitation endpoints with role specification
         # For now, verify that the invitation system supports role specification
         invitation_data = {
-            "email": "newmember@example.com",
+            "email": "newmember@example.com"
             "role": TeamRole.LEAD.value
         }
         
@@ -287,11 +286,11 @@ class TestRoleAssignmentWorkflows:
     def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
-            "email": email,
-            "password": "TestPassword123",
-            "first_name": "Test",
-            "last_name": "User",
-            "organization": "Test Org",
+            "email": email
+            "password": "TestPassword123"
+            "first_name": "Test"
+            "last_name": "User"
+            "organization": "Test Org"
             "role": role.value
         }
         
@@ -313,11 +312,11 @@ class TestRoleHierarchy:
         """Test that user roles have correct hierarchy."""
         # Define expected hierarchy (higher number = more permissions)
         hierarchy = {
-            UserRole.BASIC_USER: 1,
-            UserRole.STAKEHOLDER: 2,
-            UserRole.TEAM_LEAD: 3,
-            UserRole.PROJECT_LEAD: 4,
-            UserRole.PROJECT_ADMINISTRATOR: 5,
+            UserRole.BASIC_USER: 1
+            UserRole.STAKEHOLDER: 2
+            UserRole.TEAM_LEAD: 3
+            UserRole.PROJECT_LEAD: 4
+            UserRole.PROJECT_ADMINISTRATOR: 5
             UserRole.ADMIN: 6
         }
         
@@ -331,8 +330,8 @@ class TestRoleHierarchy:
     def test_team_role_hierarchy(self, client):
         """Test that team roles have correct hierarchy."""
         hierarchy = {
-            TeamRole.MEMBER: 1,
-            TeamRole.LEAD: 2,
+            TeamRole.MEMBER: 1
+            TeamRole.LEAD: 2
             TeamRole.TEAM_ADMIN: 3
         }
         
@@ -348,11 +347,11 @@ class TestRoleSystemIntegration:
         # Test UserRole
         for role in UserRole:
             user = User(
-                email=f"test_{role.value}@example.com",
-                password_hash="hashed_password",
-                first_name="Test",
-                last_name="User",
-                organization="Test Org",
+                email=f"test_{role.value}@example.com"
+                password_hash="hashed_password"
+                first_name="Test"
+                last_name="User"
+                
                 role=role
             )
             db.add(user)
@@ -371,12 +370,12 @@ class TestRoleSystemIntegration:
         
         # Test UserCreate with enum role
         user_data = {
-            "email": "test@example.com",
-            "first_name": "Test",
-            "last_name": "User",
-            "organization": "Test Org",
-            "password": "TestPassword123",
-            "role": UserRole.PROJECT_ADMINISTRATOR,
+            "email": "test@example.com"
+            "first_name": "Test"
+            "last_name": "User"
+            "organization": "Test Org"
+            "password": "TestPassword123"
+            "role": UserRole.PROJECT_ADMINISTRATOR
             "terms_agreement": True
         }
         user = UserCreate(**user_data)
@@ -384,9 +383,9 @@ class TestRoleSystemIntegration:
         
         # Test TeamInvitationCreate with enum role
         invitation_data = {
-            "email": "invite@example.com",
-            "role": TeamRole.TEAM_ADMIN,
-            "team_id": uuid4(),
+            "email": "invite@example.com"
+            "role": TeamRole.TEAM_ADMIN
+            "team_id": uuid4()
             "invited_by": uuid4()
         }
         invitation = TeamInvitationCreate(**invitation_data)

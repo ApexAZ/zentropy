@@ -171,7 +171,6 @@ def create_test_user(db: Session, email: str = "test@example.com", **kwargs):
         "first_name": "Test",
         "last_name": "User",
         "password_hash": "hashed_password_123",
-        "organization": "Test Organization",  # Use string field for backwards compatibility
         **kwargs
     }
     
