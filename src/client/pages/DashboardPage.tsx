@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { Team, DashboardStats } from '../types';
-import { formatDate, getVelocityStatus } from '../utils/formatters';
+import type { Team, DashboardStats } from "../types";
+import { formatDate, getVelocityStatus } from "../utils/formatters";
 
 const DashboardPage: React.FC = () => {
 	const [teams, setTeams] = useState<Team[]>([]);
@@ -45,7 +45,6 @@ const DashboardPage: React.FC = () => {
 			setIsLoading(false);
 		}
 	};
-
 
 	if (isLoading) {
 		return (

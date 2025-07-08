@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
-import type { AuthUser, AuthState } from '../types';
+import type { AuthUser, AuthState } from "../types";
 
 export const useAuth = () => {
 	const [authState, setAuthState] = useState<AuthState>({

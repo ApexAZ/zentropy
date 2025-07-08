@@ -1,4 +1,4 @@
-import type { Team, CreateTeamData, TeamValidationResult } from '../types';
+import type { Team, CreateTeamData, TeamValidationResult } from "../types";
 
 export class TeamService {
 	private static async handleResponse<T>(response: Response): Promise<T> {
@@ -97,5 +97,4 @@ export class TeamService {
 			errors
 		};
 	}
-
 }

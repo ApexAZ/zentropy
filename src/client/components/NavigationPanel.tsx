@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { logger } from "../utils/logger";
-import type { AuthUser } from '../types';
+import type { AuthUser } from "../types";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 

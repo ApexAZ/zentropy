@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { CalendarEntry, Team, User, CreateCalendarEntryData } from '../types';
-import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from '../utils/formatters';
+import type { CalendarEntry, Team, User, CreateCalendarEntryData } from "../types";
+import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from "../utils/formatters";
 
 const CalendarPage: React.FC = () => {
 	// State management
@@ -334,7 +334,6 @@ const CalendarPage: React.FC = () => {
 		}
 	};
 
-
 	const getUserDisplayName = (userId: string): string => {
 		const user = users.find(u => u.id === userId);
 		return user ? `${user.first_name} ${user.last_name}` : "Unknown User";
@@ -344,7 +343,6 @@ const CalendarPage: React.FC = () => {
 		const team = teams.find(t => t.id === teamId);
 		return team ? team.name : "Unknown Team";
 	};
-
 
 	if (isLoading) {
 		return (

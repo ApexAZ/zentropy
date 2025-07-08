@@ -1,4 +1,4 @@
-import type { AuthUser, SignInCredentials, SignUpData, AuthResponse, PasswordValidationResult } from '../types';
+import type { AuthUser, SignInCredentials, SignUpData, AuthResponse, PasswordValidationResult } from "../types";
 
 export class AuthService {
 	/**
@@ -114,10 +114,7 @@ export class AuthService {
 	/**
 	 * Validate password strength
 	 */
-	static validatePassword(
-		password: string,
-		confirmPassword?: string
-	): PasswordValidationResult {
+	static validatePassword(password: string, confirmPassword?: string): PasswordValidationResult {
 		const requirements = {
 			length: password.length >= 8,
 			uppercase: /[A-Z]/.test(password),
@@ -143,4 +140,3 @@ export class AuthService {
 		return emailRegex.test(email);
 	}
 }
-

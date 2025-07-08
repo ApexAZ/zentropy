@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import type { Team, CreateTeamData } from '../types';
+import type { Team, CreateTeamData } from "../types";
 
 // interface ValidationError {
 //   message: string

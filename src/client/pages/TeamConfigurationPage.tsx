@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberData, CreateSprintData } from '../types';
-import { formatDate, getDayName } from '../utils/formatters';
+import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberData, CreateSprintData } from "../types";
+import { formatDate, getDayName } from "../utils/formatters";
 
 // interface GenerateSprintsData {
 //   starting_sprint_number: number
@@ -336,7 +336,6 @@ const TeamConfigurationPage: React.FC = () => {
 				: [...prev.working_days, day].sort()
 		}));
 	};
-
 
 	if (isLoading) {
 		return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { AuthService } from "../services/AuthService";
-import type { AuthUser, SignInCredentials, SignUpData } from '../types';
+import type { AuthUser, SignInCredentials, SignUpData } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import RequiredAsterisk from "./RequiredAsterisk";
 

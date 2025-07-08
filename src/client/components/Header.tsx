@@ -1,6 +1,6 @@
 import React from "react";
 import NavigationPanel from "./NavigationPanel";
-import type { AuthUser } from '../types';
+import type { AuthUser } from "../types";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 

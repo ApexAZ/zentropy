@@ -4,8 +4,8 @@ import Input from "../components/atoms/Input";
 import Card from "../components/atoms/Card";
 import { useTeams } from "../hooks/useTeams";
 import { TeamService } from "../services/TeamService";
-import type { Team, CreateTeamData } from '../types';
-import { formatDate, formatVelocity, formatSprintLength, formatWorkingDays } from '../utils/formatters';
+import type { Team, CreateTeamData } from "../types";
+import { formatDate, formatVelocity, formatSprintLength, formatWorkingDays } from "../utils/formatters";
 
 const TeamsPage: React.FC = () => {
 	// Use teams hook for all data management

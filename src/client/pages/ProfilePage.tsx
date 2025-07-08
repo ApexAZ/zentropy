@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import type { User, ProfileUpdateData, PasswordUpdateData } from '../types';
-import { formatDate, getRoleLabel, getRoleBadgeColor } from '../utils/formatters';
+import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
+import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -268,7 +268,6 @@ const ProfilePage: React.FC = () => {
 		}));
 	};
 
-
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
@@ -449,7 +448,9 @@ const ProfilePage: React.FC = () => {
 
 							<div>
 								<div className="mb-1 block text-sm font-medium text-gray-500">Member Since</div>
-								<div className="text-gray-900">{user.created_at ? formatDate(user.created_at, "long") : "N/A"}</div>
+								<div className="text-gray-900">
+									{user.created_at ? formatDate(user.created_at, "long") : "N/A"}
+								</div>
 							</div>
 						</div>
 					)}
@@ -635,7 +636,9 @@ const ProfilePage: React.FC = () => {
 
 						<div>
 							<div className="mb-1 block text-sm font-medium text-gray-500">Last Updated</div>
-							<div className="text-gray-900">{user.updated_at ? formatDate(user.updated_at, "long") : "N/A"}</div>
+							<div className="text-gray-900">
+								{user.updated_at ? formatDate(user.updated_at, "long") : "N/A"}
+							</div>
 						</div>
 					</div>
 				</div>
