@@ -171,6 +171,14 @@ These recommendations align with the principles outlined in:
         *   **Maintained API Integration**: Preserved server-side logout API call (`/api/v1/auth/logout`) while delegating token clearing to AuthService
         *   **Service Pattern Compliance**: Now follows Single Responsibility principle where AuthService handles authentication domain concerns
         *   **Verified Implementation**: All TypeScript compilation and React tests (45 tests) pass successfully
+    *   **✅ Enhanced Remember Me Test Coverage** [COMPLETED]:
+        *   **Comprehensive Testing**: All 7 useAuth.rememberMe.test.tsx tests now pass, covering token persistence, session management, and authentication state
+        *   **Token Storage Validation**: Tests verify proper token storage in localStorage vs sessionStorage based on remember me preference
+        *   **Session Persistence**: Validates that authentication state persists across browser sessions when remember me is enabled
+        *   **Security Testing**: Ensures proper token cleanup and expiration handling in different storage scenarios
+        *   **State Management**: Tests confirm correct authentication state updates when switching between remember me modes
+        *   **User Experience**: Validates smooth authentication flow with proper remember me checkbox behavior and state restoration
+        *   **Integration Testing**: Confirms proper integration between useAuth hook and AuthService token management
 *   **✅ `useGoogleOAuth.ts`** [COMPLETED]:
     *   **✅ Centralize Initialization** [COMPLETED]: Refactor to ensure `useGoogleOAuth` is the sole point of Google SDK initialization, preventing duplication of logic found in `OAuthProviders.tsx`.
     *   **✅ Actions Taken**:
@@ -225,8 +233,33 @@ These recommendations align with the principles outlined in:
         *   **Quality Verified**: TypeScript compilation, ESLint checks, and React tests all pass successfully after integration with enhanced test infrastructure
 *   **`Header.tsx`**:
     *   **Semantic HTML**: Change navigation links (`<a>` with `role="button"`) to actual `<button>` elements if they perform an action rather than direct navigation, improving semantic correctness and accessibility.
+    *   **✅ Enhanced Test Infrastructure** [COMPLETED]:
+        *   **DOM Cleanup Integration**: Added proper `cleanup()` import and `afterEach` hook to prevent DOM pollution between tests, following React Testing Library best practices
+        *   **Jest DOM Matchers**: Added `@testing-library/jest-dom` import for proper test assertions (`toBeInTheDocument`, `toHaveClass`, `toHaveTextContent`)
+        *   **Mock Data Standardization**: Updated mock user data to include required `has_projects_access` and `email_verified` fields for TypeScript compliance
+        *   **Prop Interface Compliance**: Fixed test props to match actual Header component interface (`onShowSignIn` instead of `onShowLogin`)
+        *   **Test Isolation**: All 6 Header tests now pass with proper test isolation and no "multiple elements" DOM conflicts
+        *   **Accessibility Testing**: Maintained proper semantic HTML testing with role-based element queries and navigation structure validation
+*   **✅ `NavigationPanel.tsx`** [COMPLETED]:
+    *   **✅ Enhanced User-Focused Test Infrastructure** [COMPLETED]:
+        *   **DOM Cleanup Integration**: Added proper `cleanup()` import and `afterEach` hook to prevent DOM pollution between tests, resolving test isolation issues
+        *   **User-Focused Testing**: All 6 NavigationPanel tests now pass with comprehensive user workflow validation rather than implementation details
+        *   **Consolidated Test Suite**: Reduced from 27 granular tests to 6 meaningful user scenarios covering complete workflows
+        *   **Authentication State Testing**: Validates authenticated vs unauthenticated user experiences with proper navigation and sign-out flows
+        *   **Permission-Based Testing**: Tests users with/without projects access see appropriate navigation options
+        *   **Multi-User Format Testing**: Validates proper display of various user name formats (international characters, hyphenated names)
+        *   **Accessibility Testing**: Confirms keyboard navigation, click-outside behavior, and proper ARIA attributes
+        *   **Real User Data Testing**: Tests actual user workflows with real data instead of hardcoded fallbacks
+        *   **Panel State Management**: Validates proper panel opening/closing behavior with waitFor patterns for async operations
 *   **`Input.tsx`**:
     *   **Use `RequiredAsterisk` Component**: Replace the inline asterisk `<span>` with the dedicated `RequiredAsterisk` component for consistency and maintainability, aligning with `src/client/components/README.md` - "Atomic Components".
+    *   **✅ RequiredAsterisk Component Test Infrastructure Enhancement** [COMPLETED]:
+        *   **DOM Cleanup Integration**: Added proper `cleanup()` import and `afterEach` hook to prevent DOM pollution between tests, resolving "multiple elements" errors
+        *   **Jest DOM Matchers**: Added `@testing-library/jest-dom` import for proper test assertions and component interaction validation
+        *   **Comprehensive Test Coverage**: All 10 RequiredAsterisk tests now pass covering visibility logic, styling, accessibility, and component API
+        *   **Test Categories**: Validates visibility logic (4 tests), styling compliance (2 tests), accessibility features (2 tests), and component API behavior (2 tests)
+        *   **User Experience Testing**: Ensures asterisk only appears when field is empty AND required, following proper UX patterns
+        *   **Accessibility Compliance**: Validates inline span elements and screen reader compatibility within form labels
 *   **`App.tsx`**:
     *   **Externalize Inline Style**: Move the inline `<style>` tag for keyframe animation to `src/client/styles.css` for better separation of concerns and maintainability.
     *   **Encapsulate Email Verification**: Consider encapsulating the email verification URL parsing and API call logic into a custom hook for better separation of concerns.

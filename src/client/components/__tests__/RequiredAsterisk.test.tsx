@@ -1,9 +1,14 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import "@testing-library/jest-dom";
 import RequiredAsterisk from "../RequiredAsterisk";
 
 describe("RequiredAsterisk", () => {
+	afterEach(() => {
+		cleanup(); // Ensure DOM is cleaned up after each test
+	});
+
 	describe("Visibility Logic", () => {
 		it("should show asterisk when field is empty and required", () => {
 			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);

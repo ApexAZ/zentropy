@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import "@testing-library/jest-dom";
 import Header from "../Header";
 
 const mockOnPageChange = vi.fn();
@@ -9,7 +10,9 @@ const mockAuth = {
 	isAuthenticated: true,
 	user: {
 		name: "John Doe",
-		email: "john@example.com"
+		email: "john@example.com",
+		has_projects_access: true,
+		email_verified: true
 	},
 	token: "mock-token",
 	login: vi.fn(),
@@ -21,13 +24,17 @@ describe("Header", () => {
 		mockOnPageChange.mockClear();
 	});
 
+	afterEach(() => {
+		cleanup(); // Ensure DOM is cleaned up after each test
+	});
+
 	it("renders Zentropy logo", () => {
 		render(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);
@@ -42,7 +49,7 @@ describe("Header", () => {
 				currentPage="about"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);
@@ -62,7 +69,7 @@ describe("Header", () => {
 				currentPage="home"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);
@@ -79,7 +86,7 @@ describe("Header", () => {
 				currentPage="home"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);
@@ -94,7 +101,7 @@ describe("Header", () => {
 				currentPage="home"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);
@@ -112,7 +119,7 @@ describe("Header", () => {
 				currentPage="home"
 				onPageChange={mockOnPageChange}
 				onShowRegistration={vi.fn()}
-				onShowLogin={vi.fn()}
+				onShowSignIn={vi.fn()}
 				auth={mockAuth}
 			/>
 		);

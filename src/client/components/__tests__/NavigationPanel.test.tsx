@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import NavigationPanel from "../NavigationPanel";
@@ -59,6 +59,10 @@ describe("NavigationPanel - User Workflows", () => {
 		mockOnShowRegistration.mockClear();
 		mockOnShowSignIn.mockClear();
 		mockLogout.mockClear();
+	});
+
+	afterEach(() => {
+		cleanup(); // Ensure DOM is cleaned up after each test
 	});
 
 	it("authenticated user can navigate and sign out successfully", async () => {
