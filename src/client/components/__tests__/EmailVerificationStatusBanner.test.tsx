@@ -1,13 +1,17 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import EmailVerificationStatusBanner from "../EmailVerificationStatusBanner";
+import { AuthService } from "../../services/AuthService";
 
-// Mock fetch for API calls
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+// Mock AuthService instead of global fetch
+vi.mock("../../services/AuthService", () => ({
+	AuthService: {
+		sendEmailVerification: vi.fn()
+	}
+}));
 
 describe("EmailVerificationStatusBanner", () => {
 	const defaultProps = {
@@ -19,8 +23,11 @@ describe("EmailVerificationStatusBanner", () => {
 		vi.clearAllMocks();
 	});
 
+	const mockAuthService = vi.mocked(AuthService);
+
 	afterEach(() => {
 		vi.restoreAllMocks();
+		cleanup(); // Ensure DOM is cleaned up after each test
 	});
 
 	describe("Banner Display", () => {
@@ -42,18 +49,24 @@ describe("EmailVerificationStatusBanner", () => {
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
 
-			const dismissButton = screen.getByRole("button", { name: /dismiss/i });
+			// First verify the banner is visible
+			expect(screen.getByText("Email verification required.")).toBeInTheDocument();
+
+			// Find and click the dismiss button with exact name match
+			const dismissButton = screen.getByRole("button", { name: "Dismiss" });
 			await user.click(dismissButton);
 
-			expect(screen.queryByText("Email verification required.")).not.toBeInTheDocument();
+			// Wait for the component to be removed
+			await waitFor(() => {
+				expect(screen.queryByText("Email verification required.")).not.toBeInTheDocument();
+			});
 		});
 	});
 
 	describe("Resend Functionality", () => {
 		it("should call resend verification API when resend button is clicked", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: async () => ({ message: "Verification email sent! Please check your inbox." })
+			mockAuthService.sendEmailVerification.mockResolvedValue({ 
+				message: "Verification email sent! Please check your inbox." 
 			});
 
 			const user = userEvent.setup();
@@ -62,19 +75,12 @@ describe("EmailVerificationStatusBanner", () => {
 			const resendButton = screen.getByRole("button", { name: /resend verification email/i });
 			await user.click(resendButton);
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/send-verification", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ email: "user@example.com" })
-			});
+			expect(mockAuthService.sendEmailVerification).toHaveBeenCalledWith("user@example.com");
 		});
 
 		it("should show success message after successful resend", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: async () => ({ message: "Verification email sent! Please check your inbox." })
+			mockAuthService.sendEmailVerification.mockResolvedValue({ 
+				message: "Verification email sent! Please check your inbox." 
 			});
 
 			const user = userEvent.setup();
@@ -89,10 +95,9 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should show error message when resend fails", async () => {
-			mockFetch.mockResolvedValue({
-				ok: false,
-				json: async () => ({ detail: "Failed to send verification email" })
-			});
+			mockAuthService.sendEmailVerification.mockRejectedValue(
+				new Error("Failed to send verification email")
+			);
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -106,7 +111,7 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should show loading state while resending", async () => {
-			mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+			mockAuthService.sendEmailVerification.mockImplementation(() => new Promise(() => {})); // Never resolves
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -119,7 +124,7 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should handle network errors gracefully", async () => {
-			mockFetch.mockRejectedValue(new Error("Network error"));
+			mockAuthService.sendEmailVerification.mockRejectedValue(new Error("Network error"));
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -145,9 +150,8 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should use appropriate semantic colors for messages", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: async () => ({ message: "Verification email sent! Please check your inbox." })
+			mockAuthService.sendEmailVerification.mockResolvedValue({ 
+				message: "Verification email sent! Please check your inbox." 
 			});
 
 			const user = userEvent.setup();
@@ -163,10 +167,9 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should use error colors for error messages", async () => {
-			mockFetch.mockResolvedValue({
-				ok: false,
-				json: async () => ({ detail: "Failed to send verification email" })
-			});
+			mockAuthService.sendEmailVerification.mockRejectedValue(
+				new Error("Failed to send verification email")
+			);
 
 			const user = userEvent.setup();
 			render(<EmailVerificationStatusBanner {...defaultProps} />);
@@ -183,9 +186,8 @@ describe("EmailVerificationStatusBanner", () => {
 
 	describe("User Interaction", () => {
 		it("should remain visible after resend operation", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: async () => ({ message: "Email sent" })
+			mockAuthService.sendEmailVerification.mockResolvedValue({ 
+				message: "Email sent" 
 			});
 
 			const user = userEvent.setup();
@@ -203,9 +205,8 @@ describe("EmailVerificationStatusBanner", () => {
 		});
 
 		it("should allow multiple resend attempts", async () => {
-			mockFetch.mockResolvedValue({
-				ok: true,
-				json: async () => ({ message: "Email sent" })
+			mockAuthService.sendEmailVerification.mockResolvedValue({ 
+				message: "Email sent" 
 			});
 
 			const user = userEvent.setup();
@@ -215,11 +216,11 @@ describe("EmailVerificationStatusBanner", () => {
 
 			// First resend
 			await user.click(resendButton);
-			await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+			await waitFor(() => expect(mockAuthService.sendEmailVerification).toHaveBeenCalledTimes(1));
 
 			// Second resend
 			await user.click(resendButton);
-			await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+			await waitFor(() => expect(mockAuthService.sendEmailVerification).toHaveBeenCalledTimes(2));
 		});
 	});
 });
