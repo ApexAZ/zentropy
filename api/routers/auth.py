@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from ..database import get_db
 from ..rate_limiter import rate_limiter, RateLimitType, get_client_ip
@@ -174,7 +174,7 @@ def register(
 
     # Create user
     hashed_password = get_password_hash(user_create.password)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     db_user = database.User(
         email=user_create.email.lower(),
         password_hash=hashed_password,
@@ -309,7 +309,7 @@ def google_login(
                 db.commit()
                 db.refresh(organization_record)
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         user = database.User(
             email=email,

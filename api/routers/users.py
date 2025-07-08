@@ -57,7 +57,7 @@ def update_current_user(
     current_user: database.User = Depends(get_current_active_user),
 ) -> database.User:
     """Update current user profile"""
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     # Check if email is being updated and if it already exists
     if "email" in update_data:
@@ -107,7 +107,7 @@ def update_user(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     # Check if email is being updated and if it already exists
     if "email" in update_data:

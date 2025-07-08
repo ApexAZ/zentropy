@@ -164,7 +164,7 @@ def update_calendar_entry(
             detail="Not authorized to update this entry",
         )
 
-    update_data = entry_update.dict(exclude_unset=True)
+    update_data = entry_update.model_dump(exclude_unset=True)
 
     # Validate dates if being updated
     start_date = update_data.get("start_date", entry.start_date)

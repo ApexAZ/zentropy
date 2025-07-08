@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ..database import get_db, TeamRole, InvitationStatus
 from ..schemas import TeamInvitationResponse, TeamInvitationCreate, MessageResponse
@@ -23,7 +23,7 @@ def get_invitations(
         .filter(
             database.TeamInvitation.email == current_user.email,
             database.TeamInvitation.status == InvitationStatus.PENDING,
-            database.TeamInvitation.expires_at > datetime.utcnow(),
+            database.TeamInvitation.expires_at > datetime.now(timezone.utc),
         )
         .all()
     )
@@ -97,7 +97,7 @@ def create_invitation(
             database.TeamInvitation.team_id == invitation_create.team_id,
             database.TeamInvitation.email == invitation_create.email.lower(),
             database.TeamInvitation.status == InvitationStatus.PENDING,
-            database.TeamInvitation.expires_at > datetime.utcnow(),
+            database.TeamInvitation.expires_at > datetime.now(timezone.utc),
         )
         .first()
     )
@@ -114,7 +114,7 @@ def create_invitation(
         email=invitation_create.email.lower(),
         role=invitation_create.role,
         invited_by=current_user.id,
-        expires_at=datetime.utcnow() + timedelta(days=7),  # 7 days to accept
+        expires_at=datetime.now(timezone.utc) + timedelta(days=7),  # 7 days to accept
     )
 
     db.add(db_invitation)
@@ -137,7 +137,7 @@ def accept_invitation(
             database.TeamInvitation.id == invitation_id,
             database.TeamInvitation.email == current_user.email,
             database.TeamInvitation.status == InvitationStatus.PENDING,
-            database.TeamInvitation.expires_at > datetime.utcnow(),
+            database.TeamInvitation.expires_at > datetime.now(timezone.utc),
         )
         .first()
     )

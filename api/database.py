@@ -16,7 +16,7 @@ from typing import Generator, Optional, List, Any
 from sqlalchemy.sql.schema import Column as SqlColumn
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 from enum import Enum as PyEnum
@@ -200,8 +200,12 @@ class Organization(Base):  # type: ignore
     # System fields
     is_active = Column(Boolean, default=True)
     settings = Column(Text, nullable=True)  # JSON for org-level settings
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
     users = relationship("User", back_populates="organization_rel")
@@ -277,8 +281,12 @@ class User(Base):  # type: ignore
     # User preferences
     # Note: remember_me functionality handled via JWT token expiration
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
     organization_rel = relationship("Organization", back_populates="users")
@@ -299,8 +307,12 @@ class Team(Base):  # type: ignore
     sprint_length_days = Column(Integer, default=14)
     working_days_per_week = Column(Integer, default=5)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
     creator = relationship("User", back_populates="created_teams")
@@ -320,7 +332,7 @@ class TeamMembership(Base):  # type: ignore
         Enum(TeamRole, values_callable=lambda obj: [e.value for e in obj]),
         default=TeamRole.MEMBER,
     )
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # Calendar entry model
@@ -335,8 +347,12 @@ class CalendarEntry(Base):  # type: ignore
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     all_day = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
     user = relationship("User", back_populates="calendar_entries")
@@ -360,8 +376,12 @@ class TeamInvitation(Base):  # type: ignore
         default=InvitationStatus.PENDING,
     )
     expires_at = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     # Relationships
     team = relationship("Team", back_populates="invitations")
@@ -375,7 +395,7 @@ class PasswordHistory(Base):  # type: ignore
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = relationship("User", back_populates="password_history")

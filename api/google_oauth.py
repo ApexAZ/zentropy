@@ -5,7 +5,7 @@ from typing import Dict, List, Any
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .database import User, UserRole, AuthProvider, RegistrationType
 from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from .rate_limiter import rate_limiter, RateLimitType
@@ -147,7 +147,7 @@ def get_or_create_google_user(db: Session, google_info: Dict[str, Any]) -> User:
             return existing_user
 
         # Create new user from Google info
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         new_user = User(
             email=email,
             first_name=google_info.get("given_name", ""),

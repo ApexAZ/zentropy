@@ -125,7 +125,7 @@ def update_team(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
 
-    update_data = team_update.dict(exclude_unset=True)
+    update_data = team_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(team, field, value)
 

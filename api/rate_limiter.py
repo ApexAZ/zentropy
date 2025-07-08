@@ -7,7 +7,7 @@ production deployments and falls back to in-memory storage for development.
 
 import os
 import redis
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 
@@ -125,7 +125,7 @@ class RateLimiter:
         if not self.redis_client:
             raise redis.RedisError("Redis client not available")
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(seconds=window_seconds)
 
         pipe = self.redis_client.pipeline()
@@ -172,7 +172,7 @@ class RateLimiter:
         window_minutes: int,
     ) -> None:
         """In-memory sliding window rate limiting (development fallback)."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(minutes=window_minutes)
 
         # Get or create request history for this specific key
@@ -288,7 +288,7 @@ class RateLimiter:
                 pass
 
         # Fall back to memory store
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         window_start = now - timedelta(minutes=window_minutes)
 
         if key in self._memory_store:

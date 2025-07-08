@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.exc import OperationalError
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import time
 
@@ -90,7 +90,9 @@ def health_check() -> HealthResponse:
     except Exception:
         db_status = "disconnected"
 
-    return HealthResponse(status="ok", database=db_status, timestamp=datetime.utcnow())
+    return HealthResponse(
+        status="ok", database=db_status, timestamp=datetime.now(timezone.utc)
+    )
 
 
 # Serve React app for any non-API routes

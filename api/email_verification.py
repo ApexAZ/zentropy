@@ -6,7 +6,7 @@ Handles email verification token generation, validation, and email sending.
 
 import secrets
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
 from .database import User
@@ -25,7 +25,7 @@ def create_verification_token(db: Session, user_id: str) -> str:
     token = generate_verification_token()
 
     # Set expiration to 24 hours from now
-    expires_at = datetime.utcnow() + timedelta(hours=24)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     # Update user with verification token
     user = db.query(User).filter(User.id == user_id).first()
@@ -48,7 +48,7 @@ def verify_email_token(db: Session, token: str) -> Optional[User]:
     # Check if token is expired
     if (
         user.email_verification_expires_at
-        and user.email_verification_expires_at < datetime.utcnow()
+        and user.email_verification_expires_at < datetime.now(timezone.utc)
     ):
         return None
 
