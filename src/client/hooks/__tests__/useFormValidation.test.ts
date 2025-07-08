@@ -1,5 +1,5 @@
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { useFormValidation } from "../useFormValidation";
 
 interface TestFormData {
@@ -10,129 +10,367 @@ interface TestFormData {
 }
 
 describe("useFormValidation", () => {
-	const initialData: TestFormData = {
+	const initialValues: TestFormData = {
 		name: "",
 		email: "",
 		age: 0,
 		description: ""
 	};
 
-	const requiredFields: (keyof TestFormData)[] = ["name", "email"];
+	// Mock validation function
+	const mockValidate = vi.fn((data: TestFormData) => {
+		const errors: Record<string, string> = {};
+		
+		if (!data.name || data.name.trim() === "") {
+			errors.name = "Name is required";
+		}
+		
+		if (!data.email || data.email.trim() === "") {
+			errors.email = "Email is required";
+		} else if (data.email && !data.email.includes("@")) {
+			errors.email = "Email must be valid";
+		}
 
-	describe("Field Empty Checking", () => {
-		it("should identify empty string fields as empty", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
-
-			expect(result.current.isFieldEmpty("name")).toBe(true);
-			expect(result.current.isFieldEmpty("email")).toBe(true);
-		});
-
-		it("should identify zero numeric fields as empty", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
-
-			expect(result.current.isFieldEmpty("age")).toBe(true);
-		});
-
-		it("should identify fields with only whitespace as empty", () => {
-			const dataWithWhitespace = { ...initialData, name: "   ", email: "\t\n" };
-			const { result } = renderHook(() => useFormValidation(dataWithWhitespace, requiredFields));
-
-			expect(result.current.isFieldEmpty("name")).toBe(true);
-			expect(result.current.isFieldEmpty("email")).toBe(true);
-		});
-
-		it("should identify populated fields as not empty", () => {
-			const populatedData = { ...initialData, name: "John", email: "john@example.com", age: 25 };
-			const { result } = renderHook(() => useFormValidation(populatedData, requiredFields));
-
-			expect(result.current.isFieldEmpty("name")).toBe(false);
-			expect(result.current.isFieldEmpty("email")).toBe(false);
-			expect(result.current.isFieldEmpty("age")).toBe(false);
-		});
+		return {
+			isValid: Object.keys(errors).length === 0,
+			errors
+		};
 	});
 
-	describe("Border Class Generation", () => {
-		it("should return red border for empty required fields", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
+	describe("Form State Management", () => {
+		it("should initialize with correct initial state", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
 
-			expect(result.current.getFieldBorderClass("name")).toBe("border-red-300");
-			expect(result.current.getFieldBorderClass("email")).toBe("border-red-300");
+			expect(result.current.values).toEqual(initialValues);
+			expect(result.current.errors).toEqual({});
+			expect(result.current.touched).toEqual({});
+			expect(result.current.isValid).toBe(true);
+			expect(result.current.isSubmitting).toBe(false);
 		});
 
-		it("should return normal border for populated required fields", () => {
-			const populatedData = { ...initialData, name: "John", email: "john@example.com" };
-			const { result } = renderHook(() => useFormValidation(populatedData, requiredFields));
+		it("should handle field value changes", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
 
-			expect(result.current.getFieldBorderClass("name")).toBe("border-layout-background");
-			expect(result.current.getFieldBorderClass("email")).toBe("border-layout-background");
-		});
-
-		it("should return normal border for optional fields regardless of content", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
-
-			// Optional field (not in requiredFields)
-			expect(result.current.getFieldBorderClass("description")).toBe("border-layout-background");
-			expect(result.current.getFieldBorderClass("age")).toBe("border-layout-background");
-		});
-
-		it("should allow manual override of required status", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
-
-			// Force required field to be treated as optional
-			expect(result.current.getFieldBorderClass("name", false)).toBe("border-layout-background");
-
-			// Force optional field to be treated as required
-			expect(result.current.getFieldBorderClass("description", true)).toBe("border-red-300");
-		});
-	});
-
-	describe("Required Field Status", () => {
-		it("should correctly identify which fields are required", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
-
-			expect(result.current.isFieldRequired("name")).toBe(true);
-			expect(result.current.isFieldRequired("email")).toBe(true);
-			expect(result.current.isFieldRequired("description")).toBe(false);
-			expect(result.current.isFieldRequired("age")).toBe(false);
-		});
-	});
-
-	describe("Form Data Updates", () => {
-		it("should handle form data changes and update validation accordingly", () => {
-			let formData = initialData;
-			const { result, rerender } = renderHook(() => useFormValidation(formData, requiredFields));
-
-			// Initially empty
-			expect(result.current.isFieldEmpty("name")).toBe(true);
-			expect(result.current.getFieldBorderClass("name")).toBe("border-red-300");
-
-			// Update form data
 			act(() => {
-				formData = { ...formData, name: "John Doe" };
-				rerender();
+				result.current.handleChange("name", "John Doe");
 			});
 
-			// Should now be populated
-			expect(result.current.isFieldEmpty("name")).toBe(false);
-			expect(result.current.getFieldBorderClass("name")).toBe("border-layout-background");
+			expect(result.current.values.name).toBe("John Doe");
+		});
+
+		it("should clear errors when field value changes", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			// First, create an error
+			act(() => {
+				result.current.setFieldError("name", "Name is required");
+			});
+
+			expect(result.current.errors.name).toBe("Name is required");
+
+			// Then change the field value - should clear the error
+			act(() => {
+				result.current.handleChange("name", "John");
+			});
+
+			expect(result.current.errors.name).toBe("");
+		});
+
+		it("should mark fields as touched on blur", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			act(() => {
+				result.current.handleBlur("name");
+			});
+
+			expect(result.current.touched.name).toBe(true);
 		});
 	});
 
-	describe("Type Safety", () => {
-		it("should only accept valid field names from the form data type", () => {
-			const { result } = renderHook(() => useFormValidation(initialData, requiredFields));
+	describe("Form Validation", () => {
+		it("should validate form and set errors", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
 
-			// These should work (valid field names)
-			expect(() => result.current.isFieldEmpty("name")).not.toThrow();
-			expect(() => result.current.isFieldEmpty("email")).not.toThrow();
-			expect(() => result.current.isFieldEmpty("age")).not.toThrow();
-			expect(() => result.current.isFieldEmpty("description")).not.toThrow();
+			// Trigger validation
+			act(() => {
+				const isValid = result.current.validateForm();
+				expect(isValid).toBe(false);
+			});
 
-			// TypeScript should prevent invalid field names at compile time
-			// This test validates the hook accepts the correct types
-			expect(typeof result.current.isFieldEmpty).toBe("function");
-			expect(typeof result.current.getFieldBorderClass).toBe("function");
-			expect(typeof result.current.isFieldRequired).toBe("function");
+			expect(result.current.errors).toEqual({
+				name: "Name is required",
+				email: "Email is required"
+			});
+			expect(result.current.isValid).toBe(false);
+		});
+
+		it("should validate individual fields", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			// Set a valid name
+			act(() => {
+				result.current.setFieldValue("name", "John");
+			});
+
+			// Validate the name field separately
+			act(() => {
+				result.current.validateField("name");
+			});
+
+			// Name should not have an error after setting valid value
+			expect(result.current.errors.name).toBeFalsy();
+
+			// Validate empty email field
+			act(() => {
+				result.current.validateField("email");
+			});
+
+			expect(result.current.errors.email).toBe("Email is required");
+		});
+
+		it("should handle email format validation", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues: {
+						name: "John", // Set valid name so email validation gets priority
+						email: "",
+						age: 0,
+						description: ""
+					},
+					validate: mockValidate
+				})
+			);
+
+			// Set invalid email first
+			act(() => {
+				result.current.setFieldValue("email", "invalid-email");
+			});
+
+			// Then validate email field
+			act(() => {
+				result.current.validateField("email");
+			});
+
+			expect(result.current.errors.email).toBe("Email must be valid");
+
+			// Set valid email
+			act(() => {
+				result.current.setFieldValue("email", "john@example.com");
+			});
+
+			// Validate again
+			act(() => {
+				result.current.validateField("email");
+			});
+
+			expect(result.current.errors.email).toBeFalsy();
+		});
+	});
+
+	describe("Form Submission", () => {
+		it("should handle successful form submission", async () => {
+			const mockOnSubmit = vi.fn();
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues: {
+						name: "John",
+						email: "john@example.com",
+						age: 25,
+						description: ""
+					},
+					validate: mockValidate,
+					onSubmit: mockOnSubmit
+				})
+			);
+
+			await act(async () => {
+				await result.current.handleSubmit();
+			});
+
+			expect(mockOnSubmit).toHaveBeenCalledWith({
+				name: "John",
+				email: "john@example.com",
+				age: 25,
+				description: ""
+			});
+		});
+
+		it("should prevent submission when form is invalid", async () => {
+			const mockOnSubmit = vi.fn();
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues, // Empty initial values
+					validate: mockValidate,
+					onSubmit: mockOnSubmit
+				})
+			);
+
+			await act(async () => {
+				await result.current.handleSubmit();
+			});
+
+			expect(mockOnSubmit).not.toHaveBeenCalled();
+			expect(result.current.errors).toEqual({
+				name: "Name is required",
+				email: "Email is required"
+			});
+		});
+
+		it("should mark all fields as touched on submission", async () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			await act(async () => {
+				await result.current.handleSubmit();
+			});
+
+			expect(result.current.touched).toEqual({
+				name: true,
+				email: true,
+				age: true,
+				description: true
+			});
+		});
+
+		it("should manage submitting state", async () => {
+			const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues: {
+						name: "John",
+						email: "john@example.com",
+						age: 25,
+						description: ""
+					},
+					validate: mockValidate,
+					onSubmit: mockOnSubmit
+				})
+			);
+
+			expect(result.current.isSubmitting).toBe(false);
+
+			const submitPromise = act(async () => {
+				await result.current.handleSubmit();
+			});
+
+			await submitPromise;
+
+			expect(result.current.isSubmitting).toBe(false);
+		});
+	});
+
+	describe("Form Reset", () => {
+		it("should reset form to initial state", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			// Make changes to the form
+			act(() => {
+				result.current.setFieldValue("name", "John");
+				result.current.setFieldError("email", "Some error");
+				result.current.setFieldTouched("name", true);
+			});
+
+			// Reset form
+			act(() => {
+				result.current.resetForm();
+			});
+
+			expect(result.current.values).toEqual(initialValues);
+			expect(result.current.errors).toEqual({});
+			expect(result.current.touched).toEqual({});
+			expect(result.current.isSubmitting).toBe(false);
+		});
+	});
+
+	describe("Field Management", () => {
+		it("should set individual field values", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			act(() => {
+				result.current.setFieldValue("name", "Jane");
+			});
+
+			expect(result.current.values.name).toBe("Jane");
+		});
+
+		it("should set individual field errors", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			act(() => {
+				result.current.setFieldError("name", "Custom error");
+			});
+
+			expect(result.current.errors.name).toBe("Custom error");
+		});
+
+		it("should set individual field touched state", () => {
+			const { result } = renderHook(() => 
+				useFormValidation({
+					initialValues,
+					validate: mockValidate
+				})
+			);
+
+			act(() => {
+				result.current.setFieldTouched("name", true);
+			});
+
+			expect(result.current.touched.name).toBe(true);
+
+			act(() => {
+				result.current.setFieldTouched("email", false);
+			});
+
+			expect(result.current.touched.email).toBe(false);
 		});
 	});
 });

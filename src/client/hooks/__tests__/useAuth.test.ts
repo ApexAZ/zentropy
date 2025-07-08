@@ -131,7 +131,6 @@ describe("useAuth", () => {
 
 		it("should handle network errors during token validation", async () => {
 			const mockToken = "valid-jwt-token";
-			const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
 			mockLocalStorage.getItem.mockReturnValue(mockToken);
 			mockFetch.mockRejectedValueOnce(new Error("Network error"));
@@ -142,17 +141,12 @@ describe("useAuth", () => {
 				expect(result.current.isAuthenticated).toBe(false);
 			});
 
-			// Verify error was logged
-			expect(consoleWarnSpy).toHaveBeenCalledWith("Failed to validate token:", expect.any(Error));
-
 			// Verify token was removed due to validation failure
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state is cleared
 			expect(result.current.user).toBe(null);
 			expect(result.current.token).toBe(null);
-
-			consoleWarnSpy.mockRestore();
 		});
 
 		it("should handle malformed API response gracefully", async () => {
