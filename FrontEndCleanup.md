@@ -342,7 +342,16 @@ These recommendations align with the principles outlined in:
             *   **Upcoming PTO**: Count of PTO calendar entries starting within next 30 days
         *   **Enhanced User Experience**: Dashboard provides meaningful metrics for capacity planning and team management overview
         *   **Quality Verified**: TypeScript compilation, ESLint checks, and React tests (42 tests) all pass successfully
-*   **`HomePage.tsx`, `AboutPage.tsx`, `ContactPage.tsx`**:
+*   **✅ `HomePage.tsx`** [COMPLETED]:
+    *   **✅ Semantic Styling** [COMPLETED]: Replace hardcoded color classes (e.g., `bg-white`, `text-gray-800`) with semantic Tailwind classes defined in `src/client/styles.css` (e.g., `bg-content-background`, `text-text-primary`), adhering to `CLAUDE.md` - "Design System & Semantic Color Variables".
+    *   **✅ Actions Taken**:
+        *   **Replaced Hardcoded Background Colors**: Updated all `bg-white` classes to `bg-content-background` across 4 section elements for consistent content container styling
+        *   **Standardized Heading Colors**: Updated all `text-gray-800` classes to `text-primary` for section headings (Welcome to Zentropy, Projects, Teams, Capacity Planning)
+        *   **Unified Body Text Colors**: Updated all `text-gray-600` classes to `text-primary` for paragraph text to maintain consistent text hierarchy
+        *   **Maintained Visual Hierarchy**: Preserved all existing layout, spacing, and semantic structure while adopting the semantic color system
+        *   **Design System Compliance**: All colors now use semantic variables from `src/client/styles.css` that can be changed in one place to update entire site theme
+        *   **TypeScript Verification**: Confirmed TypeScript compilation passes successfully after semantic styling updates
+*   **`AboutPage.tsx`, `ContactPage.tsx`**:
     *   **Semantic Styling**: Replace hardcoded color classes (e.g., `bg-white`, `text-gray-800`) with semantic Tailwind classes defined in `src/client/styles.css` (e.g., `bg-content-background`, `text-text-primary`), adhering to `CLAUDE.md` - "Design System & Semantic Color Variables".
 
 ---
