@@ -339,7 +339,7 @@ const TeamsPage: React.FC = () => {
 
 			{/* Toast */}
 			{toast && (
-				<div className="fixed top-5 right-5 z-[60] min-w-[300px] animate-[slideIn_0.3s_ease] rounded-md shadow-lg">
+				<div className="animate-slide-in fixed top-5 right-5 z-[60] min-w-[300px] rounded-md shadow-lg">
 					<div
 						className={`flex items-center justify-between gap-2 p-4 ${
 							toast.type === "success"

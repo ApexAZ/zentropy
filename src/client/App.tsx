@@ -181,7 +181,7 @@ function App(): React.JSX.Element {
 
 			{/* Toast Notification */}
 			{toast && (
-				<div className="fixed top-5 right-5 z-[1100] min-w-[300px] animate-[slideIn_0.3s_ease] rounded-md shadow-lg">
+				<div className="animate-slide-in fixed top-5 right-5 z-[1100] min-w-[300px] rounded-md shadow-lg">
 					<div
 						className={`flex items-center justify-between gap-2 p-4 ${
 							toast.type === "success"
@@ -200,13 +200,6 @@ function App(): React.JSX.Element {
 					</div>
 				</div>
 			)}
-
-			<style>{`
-				@keyframes slideIn {
-					from { opacity: 0; transform: translateX(100%); }
-					to { opacity: 1; transform: translateX(0); }
-				}
-			`}</style>
 		</div>
 	);
 }

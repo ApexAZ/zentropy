@@ -17,7 +17,8 @@ export default {
 		'hover:text-interactive-hover',
 		'focus:border-interactive',
 		'focus:shadow-interactive',
-		'focus:outline-none'
+		'focus:outline-none',
+		'animate-slide-in'
 	],
 	theme: {
 		extend: {
@@ -31,6 +32,15 @@ export default {
 			},
 			boxShadow: {
 				'interactive': '0 0 0 3px rgba(106, 139, 167, 0.2)', /* Focus ring using interactive color */
+			},
+			animation: {
+				'slide-in': 'slideIn 0.3s ease',
+			},
+			keyframes: {
+				slideIn: {
+					'from': { opacity: '0', transform: 'translateX(100%)' },
+					'to': { opacity: '1', transform: 'translateX(0)' }
+				}
 			}
 		},
 	},
