@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { logger } from "../utils/logger";
+import { AuthService } from "../services/AuthService";
 
 interface EmailVerificationStatusBannerProps {
 	userEmail: string;
@@ -20,23 +21,10 @@ const EmailVerificationStatusBanner: React.FC<EmailVerificationStatusBannerProps
 			setIsResending(true);
 			setResendMessage("");
 
-			const response = await fetch("/api/v1/auth/send-verification", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ email: userEmail })
-			});
-
-			const data = await response.json();
-
-			if (response.ok) {
-				setResendMessage("Verification email sent! Please check your inbox.");
-			} else {
-				setResendMessage(data.detail || "Failed to send verification email");
-			}
+			const result = await AuthService.sendEmailVerification(userEmail);
+			setResendMessage(result.message);
 		} catch (error) {
-			setResendMessage("Network error. Please try again.");
+			setResendMessage(error instanceof Error ? error.message : "Network error. Please try again.");
 			logger.error("Resend verification error", { error });
 		} finally {
 			setIsResending(false);

@@ -128,7 +128,7 @@ describe("EmailVerificationStatusBanner", () => {
 			await user.click(resendButton);
 
 			await waitFor(() => {
-				expect(screen.getByText("Network error. Please try again.")).toBeInTheDocument();
+				expect(screen.getByText("Network error")).toBeInTheDocument();
 			});
 		});
 	});
@@ -195,7 +195,7 @@ describe("EmailVerificationStatusBanner", () => {
 			await user.click(resendButton);
 
 			await waitFor(() => {
-				expect(screen.getByText("Verification email sent! Please check your inbox.")).toBeInTheDocument();
+				expect(screen.getByText("Email sent")).toBeInTheDocument();
 			});
 
 			// Banner should still be visible

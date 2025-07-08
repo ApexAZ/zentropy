@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
+import { UserService } from "../services/UserService";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -38,12 +39,7 @@ const ProfilePage: React.FC = () => {
 				setIsLoading(true);
 				setError("");
 
-				const response = await fetch("/api/v1/users/me");
-				if (!response.ok) {
-					throw new Error(`Failed to load profile: ${response.status}`);
-				}
-
-				const userData = (await response.json()) as User;
+				const userData = await UserService.getCurrentUser();
 				setUser(userData);
 				setProfileData({
 					first_name: userData.first_name,
@@ -75,12 +71,7 @@ const ProfilePage: React.FC = () => {
 			setIsLoading(true);
 			setError("");
 
-			const response = await fetch("/api/v1/users/me");
-			if (!response.ok) {
-				throw new Error(`Failed to load profile: ${response.status}`);
-			}
-
-			const userData = (await response.json()) as User;
+			const userData = await UserService.getCurrentUser();
 			setUser(userData);
 			setProfileData({
 				first_name: userData.first_name,
@@ -112,28 +103,9 @@ const ProfilePage: React.FC = () => {
 	};
 
 	const validateProfileForm = (): boolean => {
-		const errors: Record<string, string> = {};
-
-		if (!profileData.first_name.trim()) {
-			errors.first_name = "First name is required";
-		} else if (profileData.first_name.length > 100) {
-			errors.first_name = "First name must be less than 100 characters";
-		}
-
-		if (!profileData.last_name.trim()) {
-			errors.last_name = "Last name is required";
-		} else if (profileData.last_name.length > 100) {
-			errors.last_name = "Last name must be less than 100 characters";
-		}
-
-		if (!profileData.email.trim()) {
-			errors.email = "Email is required";
-		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
-			errors.email = "Please enter a valid email address";
-		}
-
-		setProfileErrors(errors);
-		return Object.keys(errors).length === 0;
+		const validation = UserService.validateProfile(profileData);
+		setProfileErrors(validation.errors);
+		return validation.isValid;
 	};
 
 	const handleProfileSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -144,20 +116,7 @@ const ProfilePage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch("/api/v1/users/me", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(profileData)
-			});
-
-			if (!response.ok) {
-				const errorData = (await response.json()) as { message?: string };
-				throw new Error(errorData.message ?? "Failed to update profile");
-			}
-
-			const updatedUser = (await response.json()) as User;
+			const updatedUser = await UserService.updateProfile(profileData);
 			setUser(updatedUser);
 			setIsEditingProfile(false);
 			setToast({
@@ -165,7 +124,6 @@ const ProfilePage: React.FC = () => {
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error updating profile:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to update profile",
 				type: "error"
@@ -194,28 +152,9 @@ const ProfilePage: React.FC = () => {
 	};
 
 	const validatePasswordForm = (): boolean => {
-		const errors: Record<string, string> = {};
-
-		if (!passwordData.current_password) {
-			errors.current_password = "Current password is required";
-		}
-
-		if (!passwordData.new_password) {
-			errors.new_password = "New password is required";
-		} else if (passwordData.new_password.length < 8) {
-			errors.new_password = "Password must be at least 8 characters";
-		} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(passwordData.new_password)) {
-			errors.new_password = "Password must contain uppercase, lowercase, number, and symbol";
-		}
-
-		if (!passwordData.confirm_new_password) {
-			errors.confirm_new_password = "Please confirm your new password";
-		} else if (passwordData.new_password !== passwordData.confirm_new_password) {
-			errors.confirm_new_password = "Passwords do not match";
-		}
-
-		setPasswordErrors(errors);
-		return Object.keys(errors).length === 0;
+		const validation = UserService.validatePasswordUpdate(passwordData);
+		setPasswordErrors(validation.errors);
+		return validation.isValid;
 	};
 
 	const handlePasswordSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -226,22 +165,7 @@ const ProfilePage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch("/api/v1/users/me/password", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					current_password: passwordData.current_password,
-					new_password: passwordData.new_password
-				})
-			});
-
-			if (!response.ok) {
-				const errorData = (await response.json()) as { message?: string };
-				throw new Error(errorData.message ?? "Failed to update password");
-			}
-
+			await UserService.updatePassword(passwordData);
 			setIsChangingPassword(false);
 			setPasswordData({
 				current_password: "",
@@ -253,7 +177,6 @@ const ProfilePage: React.FC = () => {
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error updating password:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to update password",
 				type: "error"

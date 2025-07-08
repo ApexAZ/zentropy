@@ -139,4 +139,25 @@ export class AuthService {
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 		return emailRegex.test(email);
 	}
+
+	/**
+	 * Send email verification
+	 */
+	static async sendEmailVerification(email: string): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/auth/send-verification", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({ email })
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.detail || "Failed to send verification email");
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Verification email sent! Please check your inbox." };
+	}
 }
