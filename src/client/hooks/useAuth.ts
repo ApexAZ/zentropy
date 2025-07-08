@@ -1,18 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
-
-interface AuthUser {
-	email: string;
-	name: string;
-	has_projects_access: boolean;
-	email_verified: boolean;
-}
-
-interface AuthState {
-	isAuthenticated: boolean;
-	user: AuthUser | null;
-	token: string | null;
-}
+import type { AuthUser, AuthState } from '../types';
 
 export const useAuth = () => {
 	const [authState, setAuthState] = useState<AuthState>({

@@ -1,37 +1,4 @@
-interface AuthUser {
-	email: string;
-	name: string;
-	has_projects_access: boolean;
-	email_verified: boolean;
-}
-
-interface SignInCredentials {
-	email: string;
-	password: string;
-	remember_me?: boolean;
-}
-
-interface SignUpData {
-	first_name: string;
-	last_name: string;
-	email: string;
-	organization: string;
-	password: string;
-	terms_agreement: boolean;
-	has_projects_access?: boolean;
-}
-
-interface AuthResponse {
-	access_token: string;
-	token_type: string;
-	user: {
-		first_name: string;
-		last_name: string;
-		email: string;
-		has_projects_access: boolean;
-		email_verified: boolean;
-	};
-}
+import type { AuthUser, SignInCredentials, SignUpData, AuthResponse, PasswordValidationResult } from '../types';
 
 export class AuthService {
 	/**
@@ -150,17 +117,7 @@ export class AuthService {
 	static validatePassword(
 		password: string,
 		confirmPassword?: string
-	): {
-		isValid: boolean;
-		requirements: {
-			length: boolean;
-			uppercase: boolean;
-			lowercase: boolean;
-			number: boolean;
-			symbol: boolean;
-			match: boolean;
-		};
-	} {
+	): PasswordValidationResult {
 		const requirements = {
 			length: password.length >= 8,
 			uppercase: /[A-Z]/.test(password),
@@ -187,4 +144,3 @@ export class AuthService {
 	}
 }
 
-export type { AuthUser, SignInCredentials, SignUpData };

@@ -1,56 +1,6 @@
 import React, { useState, useEffect } from "react";
-
-interface Team {
-	id: string;
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-	working_days: number[];
-	created_at: string;
-	updated_at: string;
-}
-
-interface TeamMember {
-	id: string;
-	email: string;
-	first_name: string;
-	last_name: string;
-	role: string;
-	team_role: "member" | "lead";
-}
-
-interface Sprint {
-	id: string;
-	name: string;
-	start_date: string;
-	end_date: string;
-	team_id: string;
-	status: "planned" | "active" | "completed";
-}
-
-interface TeamBasicData {
-	name: string;
-	description: string;
-	working_days: number[];
-}
-
-interface VelocityData {
-	baseline_velocity: number;
-	sprint_length: number;
-}
-
-interface AddMemberData {
-	email: string;
-	role: "member" | "lead";
-}
-
-interface CreateSprintData {
-	name: string;
-	start_date: string;
-	end_date: string;
-}
+import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberData, CreateSprintData } from '../types';
+import { formatDate, getDayName } from '../utils/formatters';
 
 // interface GenerateSprintsData {
 //   starting_sprint_number: number
@@ -387,18 +337,6 @@ const TeamConfigurationPage: React.FC = () => {
 		}));
 	};
 
-	const getDayName = (day: number): string => {
-		const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-		return names[day] || "Unknown";
-	};
-
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric"
-		});
-	};
 
 	if (isLoading) {
 		return (

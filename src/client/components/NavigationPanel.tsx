@@ -1,14 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { logger } from "../utils/logger";
+import type { AuthUser } from '../types';
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
-
-interface AuthUser {
-	email: string;
-	name: string;
-	has_projects_access: boolean;
-	email_verified: boolean;
-}
 
 interface Auth {
 	isAuthenticated: boolean;

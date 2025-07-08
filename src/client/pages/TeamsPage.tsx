@@ -3,7 +3,9 @@ import Button from "../components/atoms/Button";
 import Input from "../components/atoms/Input";
 import Card from "../components/atoms/Card";
 import { useTeams } from "../hooks/useTeams";
-import { TeamService, type Team, type CreateTeamData } from "../services/TeamService";
+import { TeamService } from "../services/TeamService";
+import type { Team, CreateTeamData } from '../types';
+import { formatDate, formatVelocity, formatSprintLength, formatWorkingDays } from '../utils/formatters';
 
 const TeamsPage: React.FC = () => {
 	// Use teams hook for all data management
@@ -126,10 +128,10 @@ const TeamsPage: React.FC = () => {
 		];
 
 		const data = [
-			{ label: "Velocity", value: TeamService.formatVelocity(team.velocity_baseline) },
-			{ label: "Sprint Length", value: TeamService.formatSprintLength(team.sprint_length_days) },
-			{ label: "Working Days", value: TeamService.formatWorkingDays(team.working_days_per_week) },
-			{ label: "Created", value: TeamService.formatDate(team.created_at) }
+			{ label: "Velocity", value: formatVelocity(team.velocity_baseline) },
+			{ label: "Sprint Length", value: formatSprintLength(team.sprint_length_days) },
+			{ label: "Working Days", value: formatWorkingDays(team.working_days_per_week) },
+			{ label: "Created", value: formatDate(team.created_at) }
 		];
 
 		return <Card key={team.id} title={team.name} description={team.description} actions={actions} data={data} />;

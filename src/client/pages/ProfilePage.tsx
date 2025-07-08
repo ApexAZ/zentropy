@@ -1,27 +1,6 @@
 import React, { useState, useEffect } from "react";
-
-interface User {
-	id: string;
-	username: string;
-	email: string;
-	first_name: string;
-	last_name: string;
-	role: string;
-	created_at: string;
-	updated_at: string;
-}
-
-interface ProfileUpdateData {
-	first_name: string;
-	last_name: string;
-	email: string;
-}
-
-interface PasswordUpdateData {
-	current_password: string;
-	new_password: string;
-	confirm_new_password: string;
-}
+import type { User, ProfileUpdateData, PasswordUpdateData } from '../types';
+import { formatDate, getRoleLabel, getRoleBadgeColor } from '../utils/formatters';
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -289,31 +268,6 @@ const ProfilePage: React.FC = () => {
 		}));
 	};
 
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric"
-		});
-	};
-
-	const getRoleLabel = (role: string): string => {
-		const labels = {
-			team_member: "Team Member",
-			team_lead: "Team Lead",
-			admin: "Administrator"
-		};
-		return labels[role as keyof typeof labels] ?? role;
-	};
-
-	const getRoleBadgeColor = (role: string): string => {
-		const colors = {
-			team_member: "bg-blue-100 text-blue-800",
-			team_lead: "bg-green-100 text-green-800",
-			admin: "bg-purple-100 text-purple-800"
-		};
-		return colors[role as keyof typeof colors] || "bg-gray-100 text-text-contrast";
-	};
 
 	if (isLoading) {
 		return (
@@ -495,7 +449,7 @@ const ProfilePage: React.FC = () => {
 
 							<div>
 								<div className="mb-1 block text-sm font-medium text-gray-500">Member Since</div>
-								<div className="text-gray-900">{formatDate(user.created_at)}</div>
+								<div className="text-gray-900">{user.created_at ? formatDate(user.created_at, "long") : "N/A"}</div>
 							</div>
 						</div>
 					)}
@@ -681,7 +635,7 @@ const ProfilePage: React.FC = () => {
 
 						<div>
 							<div className="mb-1 block text-sm font-medium text-gray-500">Last Updated</div>
-							<div className="text-gray-900">{formatDate(user.updated_at)}</div>
+							<div className="text-gray-900">{user.updated_at ? formatDate(user.updated_at, "long") : "N/A"}</div>
 						</div>
 					</div>
 				</div>

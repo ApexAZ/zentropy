@@ -1,46 +1,6 @@
 import React, { useState, useEffect } from "react";
-
-interface CalendarEntry {
-	id: string;
-	team_id: string;
-	user_id: string;
-	entry_type: "pto" | "holiday" | "sick" | "personal";
-	title: string;
-	start_date: string;
-	end_date: string;
-	description?: string;
-	all_day: boolean;
-	created_at: string;
-	updated_at: string;
-}
-
-interface Team {
-	id: string;
-	name: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-}
-
-interface User {
-	id: string;
-	username: string;
-	email: string;
-	first_name: string;
-	last_name: string;
-	role: string;
-}
-
-interface CreateCalendarEntryData {
-	team_id: string;
-	user_id: string;
-	entry_type: string;
-	title: string;
-	start_date: string;
-	end_date: string;
-	description?: string;
-	all_day?: boolean;
-}
+import type { CalendarEntry, Team, User, CreateCalendarEntryData } from '../types';
+import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from '../utils/formatters';
 
 const CalendarPage: React.FC = () => {
 	// State management
@@ -374,33 +334,6 @@ const CalendarPage: React.FC = () => {
 		}
 	};
 
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric"
-		});
-	};
-
-	const getEntryTypeLabel = (type: string): string => {
-		const labels = {
-			pto: "PTO / Vacation",
-			holiday: "Holiday",
-			sick: "Sick Leave",
-			personal: "Personal Time"
-		};
-		return labels[type as keyof typeof labels] ?? type;
-	};
-
-	const getEntryTypeColor = (type: string): string => {
-		const colors = {
-			pto: "bg-blue-100 text-blue-800",
-			holiday: "bg-green-100 text-green-800",
-			sick: "bg-red-100 text-red-800",
-			personal: "bg-purple-100 text-purple-800"
-		};
-		return colors[type as keyof typeof colors] ?? "bg-gray-100 text-text-contrast";
-	};
 
 	const getUserDisplayName = (userId: string): string => {
 		const user = users.find(u => u.id === userId);
@@ -412,19 +345,6 @@ const CalendarPage: React.FC = () => {
 		return team ? team.name : "Unknown Team";
 	};
 
-	const generateMonthOptions = (): { value: string; label: string }[] => {
-		const options = [];
-		const currentDate = new Date();
-
-		for (let i = -6; i <= 6; i++) {
-			const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
-			const value = date.toISOString().slice(0, 7);
-			const label = date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
-			options.push({ value, label });
-		}
-
-		return options;
-	};
 
 	if (isLoading) {
 		return (

@@ -1,23 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-interface Team {
-	id: string;
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-	created_at: string;
-	updated_at: string;
-}
-
-interface CreateTeamData {
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-}
+import type { Team, CreateTeamData } from '../types';
 
 // interface ValidationError {
 //   message: string

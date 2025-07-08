@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { TeamService, type Team, type CreateTeamData } from "../services/TeamService";
+import { TeamService } from "../services/TeamService";
+import type { Team, CreateTeamData } from '../types';
 
 export interface UseTeamsToast {
 	message: string;

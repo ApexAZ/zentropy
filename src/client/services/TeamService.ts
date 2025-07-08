@@ -1,30 +1,4 @@
-export interface Team {
-	id: string;
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-	created_at: string;
-	updated_at: string;
-}
-
-export interface CreateTeamData {
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-}
-
-export interface UpdateTeamData extends CreateTeamData {
-	id: string;
-}
-
-export interface TeamValidationResult {
-	isValid: boolean;
-	errors: Record<string, string>;
-}
+import type { Team, CreateTeamData, TeamValidationResult } from '../types';
 
 export class TeamService {
 	private static async handleResponse<T>(response: Response): Promise<T> {
@@ -124,35 +98,4 @@ export class TeamService {
 		};
 	}
 
-	/**
-	 * Format date for display
-	 */
-	static formatDate(dateString: string): string {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric"
-		});
-	}
-
-	/**
-	 * Format velocity for display
-	 */
-	static formatVelocity(velocity: number): string {
-		return velocity > 0 ? `${velocity} points` : "Not set";
-	}
-
-	/**
-	 * Format sprint length for display
-	 */
-	static formatSprintLength(days: number): string {
-		return `${days} days`;
-	}
-
-	/**
-	 * Format working days for display
-	 */
-	static formatWorkingDays(days: number): string {
-		return `${days} days/week`;
-	}
 }

@@ -1,22 +1,6 @@
 import React, { useState, useEffect } from "react";
-
-interface Team {
-	id: string;
-	name: string;
-	description?: string;
-	velocity_baseline: number;
-	sprint_length_days: number;
-	working_days_per_week: number;
-	created_at: string;
-	updated_at: string;
-}
-
-interface DashboardStats {
-	total_teams: number;
-	total_members: number;
-	active_sprints: number;
-	upcoming_pto: number;
-}
+import type { Team, DashboardStats } from '../types';
+import { formatDate, getVelocityStatus } from '../utils/formatters';
 
 const DashboardPage: React.FC = () => {
 	const [teams, setTeams] = useState<Team[]>([]);
@@ -62,26 +46,6 @@ const DashboardPage: React.FC = () => {
 		}
 	};
 
-	const formatDate = (dateString: string): string => {
-		return new Date(dateString).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric"
-		});
-	};
-
-	const getVelocityStatus = (velocity: number): { label: string; color: string } => {
-		if (velocity === 0) {
-			return { label: "Not Set", color: "text-text-primary" };
-		}
-		if (velocity < 20) {
-			return { label: "Low", color: "text-orange-600" };
-		}
-		if (velocity < 40) {
-			return { label: "Medium", color: "text-interactive" };
-		}
-		return { label: "High", color: "text-green-600" };
-	};
 
 	if (isLoading) {
 		return (
