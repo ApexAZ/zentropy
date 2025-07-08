@@ -14,27 +14,9 @@ export default defineConfig({
 		// Suppress React act() warnings in test environment
 		silent: false,
 		logHeapUsage: false,
-		// Memory management for small test suite
+		// Standard configuration for React component tests
 		pool: 'threads',
-		poolOptions: {
-			threads: {
-				singleThread: true,
-				isolate: false,
-			}
-		},
 		maxConcurrency: 1,
-		// Cleanup configuration to prevent memory leaks
-		teardownTimeout: 5000,
-		// Disable coverage to reduce memory usage
-		coverage: {
-			enabled: false
-		},
-		// Clear mocks and modules between tests
-		clearMocks: true,
-		mockReset: true,
-		restoreMocks: true,
-		// Use minimal reporter
-		reporters: ['default'],
 		// Environment variables for tests
 		env: {
 			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"
