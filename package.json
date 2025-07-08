@@ -6,7 +6,7 @@
 	"scripts": {
 		"// === CORE COMMANDS (Essential - Use These 95% of the Time) ===": "",
 		"dev": "node scripts/dev-startup.js",
-		"test": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py && npm run test:react",
+		"test": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py && npm run test:frontend",
 		"build": "cd src/client && vite build",
 		"lint": "npm run lint:python && npm run lint:typescript",
 		"fix": "npm run format && npm run lint",
@@ -18,7 +18,7 @@
 		"dev:client": "vite dev --port 5173",
 		"// === TESTING (Advanced) ===": "",
 		"test:python": "python3 -m pytest tests/test_startup.py tests/test_api_integration.py tests/test_role_system.py::TestRoleEnums tests/test_role_system.py::TestDatabaseRoleConstraints tests/test_role_system.py::TestRoleHierarchy tests/test_role_system.py::TestRoleSystemIntegration",
-		"test:react": "vitest run src/client/components/__tests__/",
+		"test:frontend": "vitest run src/client/components/__tests__/ src/client/services/__tests__/",
 		"test:roles": "python3 -m pytest tests/test_role_system.py::TestRoleEnums tests/test_role_system.py::TestRoleHierarchy tests/test_role_system.py::TestRoleSystemIntegration -v",
 		"test:pre-commit": "python3 -m pytest tests/test_startup.py -v && vitest run src/client/components/__tests__/NavigationPanel.test.tsx",
 		"// === QUALITY (Advanced) ===": "",

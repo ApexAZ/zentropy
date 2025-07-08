@@ -130,8 +130,8 @@ npm run fix
 # Run only Python tests
 npm run test:python
 
-# Run only React tests
-npm run test:react
+# Run only Frontend tests
+npm run test:frontend
 
 # Run React tests with coverage
 vitest run --coverage

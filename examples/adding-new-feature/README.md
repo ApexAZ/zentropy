@@ -901,7 +901,7 @@ npm test
 
 # Run specific test files
 npm run test:python -- tests/test_projects.py
-npm run test:react -- src/client/components/__tests__/ProjectCard.test.tsx
+npm run test:frontend -- src/client/components/__tests__/ProjectCard.test.tsx
 ```
 
 ## Key Patterns Demonstrated
