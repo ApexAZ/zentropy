@@ -20,11 +20,11 @@ describe("useFormValidation", () => {
 	// Mock validation function
 	const mockValidate = vi.fn((data: TestFormData) => {
 		const errors: Record<string, string> = {};
-		
+
 		if (!data.name || data.name.trim() === "") {
 			errors.name = "Name is required";
 		}
-		
+
 		if (!data.email || data.email.trim() === "") {
 			errors.email = "Email is required";
 		} else if (data.email && !data.email.includes("@")) {
@@ -39,7 +39,7 @@ describe("useFormValidation", () => {
 
 	describe("Form State Management", () => {
 		it("should initialize with correct initial state", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -54,7 +54,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should handle field value changes", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -69,7 +69,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should clear errors when field value changes", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -92,7 +92,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should mark fields as touched on blur", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -109,7 +109,7 @@ describe("useFormValidation", () => {
 
 	describe("Form Validation", () => {
 		it("should validate form and set errors", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -130,7 +130,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should validate individual fields", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -159,7 +159,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should handle email format validation", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues: {
 						name: "John", // Set valid name so email validation gets priority
@@ -200,7 +200,7 @@ describe("useFormValidation", () => {
 	describe("Form Submission", () => {
 		it("should handle successful form submission", async () => {
 			const mockOnSubmit = vi.fn();
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues: {
 						name: "John",
@@ -227,7 +227,7 @@ describe("useFormValidation", () => {
 
 		it("should prevent submission when form is invalid", async () => {
 			const mockOnSubmit = vi.fn();
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues, // Empty initial values
 					validate: mockValidate,
@@ -247,7 +247,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should mark all fields as touched on submission", async () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -268,7 +268,7 @@ describe("useFormValidation", () => {
 
 		it("should manage submitting state", async () => {
 			const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues: {
 						name: "John",
@@ -295,7 +295,7 @@ describe("useFormValidation", () => {
 
 	describe("Form Reset", () => {
 		it("should reset form to initial state", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -323,7 +323,7 @@ describe("useFormValidation", () => {
 
 	describe("Field Management", () => {
 		it("should set individual field values", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -338,7 +338,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should set individual field errors", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate
@@ -353,7 +353,7 @@ describe("useFormValidation", () => {
 		});
 
 		it("should set individual field touched state", () => {
-			const { result } = renderHook(() => 
+			const { result } = renderHook(() =>
 				useFormValidation({
 					initialValues,
 					validate: mockValidate

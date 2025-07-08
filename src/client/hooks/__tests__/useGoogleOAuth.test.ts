@@ -18,7 +18,7 @@ describe("useGoogleOAuth", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// Set up Google SDK mock that mimics real behavior
 		const mockGoogleSDK = {
 			accounts: {
@@ -69,7 +69,7 @@ describe("useGoogleOAuth", () => {
 			let credentialCallback: ((response: any) => void) | undefined;
 
 			// Mock Google SDK to capture the callback
-			const mockInitialize = vi.fn((config) => {
+			const mockInitialize = vi.fn(config => {
 				credentialCallback = config.callback;
 			});
 
@@ -113,7 +113,7 @@ describe("useGoogleOAuth", () => {
 		it("should handle empty credential response", async () => {
 			let credentialCallback: ((response: any) => void) | undefined;
 
-			const mockInitialize = vi.fn((config) => {
+			const mockInitialize = vi.fn(config => {
 				credentialCallback = config.callback;
 			});
 
@@ -175,7 +175,7 @@ describe("useGoogleOAuth", () => {
 		});
 
 		it("should allow error recovery with clearError", () => {
-			// Start with no Google SDK 
+			// Start with no Google SDK
 			delete (window as any).google;
 
 			const { result } = renderHook(() =>
@@ -225,7 +225,7 @@ describe("useGoogleOAuth", () => {
 		});
 
 		it("should handle OAuth popup dismissal", async () => {
-			const mockPrompt = vi.fn((callback) => {
+			const mockPrompt = vi.fn(callback => {
 				// Simulate user dismissing popup
 				callback({
 					isNotDisplayed: () => true,
@@ -317,15 +317,15 @@ describe("useGoogleOAuth", () => {
 			);
 
 			// Should always provide the expected interface
-			expect(result.current).toHaveProperty('isReady');
-			expect(result.current).toHaveProperty('isLoading');
-			expect(result.current).toHaveProperty('error');
-			expect(result.current).toHaveProperty('triggerOAuth');
-			expect(result.current).toHaveProperty('clearError');
+			expect(result.current).toHaveProperty("isReady");
+			expect(result.current).toHaveProperty("isLoading");
+			expect(result.current).toHaveProperty("error");
+			expect(result.current).toHaveProperty("triggerOAuth");
+			expect(result.current).toHaveProperty("clearError");
 
 			// Functions should be callable
-			expect(typeof result.current.triggerOAuth).toBe('function');
-			expect(typeof result.current.clearError).toBe('function');
+			expect(typeof result.current.triggerOAuth).toBe("function");
+			expect(typeof result.current.clearError).toBe("function");
 		});
 	});
 
