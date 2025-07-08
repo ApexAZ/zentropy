@@ -14,6 +14,17 @@ export default defineConfig({
 		// Suppress React act() warnings in test environment
 		silent: false,
 		logHeapUsage: false,
+		// Memory management for better performance
+		pool: "threads",
+		poolOptions: {
+			threads: {
+				singleThread: true,
+				maxThreads: 1,
+				minThreads: 1
+			}
+		},
+		// Run tests sequentially to avoid memory issues
+		maxConcurrency: 1,
 		// Environment variables for tests
 		env: {
 			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"

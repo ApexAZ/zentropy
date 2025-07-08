@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AuthService } from "../services/AuthService";
 import type { AuthUser, SignInCredentials, SignUpData } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
+import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
 
 type AuthMode = "signin" | "signup" | "method-selection";
@@ -52,63 +53,136 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		confirm: false
 	});
 
-	// Sign In Form
-	const [signInData, setSignInData] = useState<SignInFormData>({
-		email: "",
-		password: "",
-		remember_me: false
+	// Sign In Form with useFormValidation
+	const signInForm = useFormValidation<SignInFormData>({
+		initialValues: {
+			email: "",
+			password: "",
+			remember_me: false
+		},
+		validate: data => {
+			const errors: Record<string, string> = {};
+
+			if (!data.email.trim()) {
+				errors.email = "Email is required";
+			} else if (!AuthService.validateEmail(data.email)) {
+				errors.email = "Please enter a valid email address";
+			}
+
+			if (!data.password.trim()) {
+				errors.password = "Password is required";
+			}
+
+			return {
+				isValid: Object.keys(errors).length === 0,
+				errors
+			};
+		},
+		onSubmit: async values => {
+			const credentials: SignInCredentials = {
+				email: values.email,
+				password: values.password,
+				remember_me: values.remember_me
+			};
+
+			const { token, user } = await AuthService.signIn(credentials);
+			auth.login(token, user, values.remember_me);
+
+			setToast({ message: "Successfully signed in!", type: "success" });
+			setTimeout(() => {
+				onSuccess();
+				onClose();
+			}, 1000);
+		}
 	});
 
-	// Sign Up Form
-	const [signUpData, setSignUpData] = useState<SignUpFormData>({
-		first_name: "",
-		last_name: "",
-		email: "",
-		organization_id: "",
-		password: "",
-		confirm_password: "",
-		terms_agreement: false,
-		has_projects_access: true
+	// Sign Up Form with useFormValidation
+	const signUpForm = useFormValidation<SignUpFormData>({
+		initialValues: {
+			first_name: "",
+			last_name: "",
+			email: "",
+			organization_id: "",
+			password: "",
+			confirm_password: "",
+			terms_agreement: false,
+			has_projects_access: true
+		},
+		validate: data => {
+			const errors: Record<string, string> = {};
+
+			if (!data.first_name.trim()) {
+				errors.first_name = "First name is required";
+			}
+
+			if (!data.last_name.trim()) {
+				errors.last_name = "Last name is required";
+			}
+
+			if (!data.email.trim()) {
+				errors.email = "Email is required";
+			} else if (!AuthService.validateEmail(data.email)) {
+				errors.email = "Please enter a valid email address";
+			}
+
+			if (!data.password.trim()) {
+				errors.password = "Password is required";
+			} else {
+				const passwordValidation = AuthService.validatePassword(data.password, data.confirm_password);
+				if (!passwordValidation.isValid) {
+					errors.password = "Password does not meet requirements";
+				}
+			}
+
+			if (!data.confirm_password.trim()) {
+				errors.confirm_password = "Confirm password is required";
+			} else if (data.password !== data.confirm_password) {
+				errors.confirm_password = "Passwords do not match";
+			}
+
+			if (!data.terms_agreement) {
+				errors.terms_agreement = "You must agree to the terms";
+			}
+
+			return {
+				isValid: Object.keys(errors).length === 0,
+				errors
+			};
+		},
+		onSubmit: async values => {
+			const userData: SignUpData = {
+				first_name: values.first_name,
+				last_name: values.last_name,
+				email: values.email,
+				password: values.password,
+				terms_agreement: values.terms_agreement,
+				has_projects_access: values.has_projects_access,
+				...(values.organization_id && { organization_id: values.organization_id })
+			};
+
+			const { token, user } = await AuthService.signUp(userData);
+			auth.login(token, user, false);
+
+			setToast({ message: "Registration successful!", type: "success" });
+			setTimeout(() => {
+				onSuccess();
+				onClose();
+			}, 1000);
+		}
 	});
-
-	// Form validation errors
-	const [signInErrors, setSignInErrors] = useState<Record<string, string>>({});
-	const [signUpErrors, setSignUpErrors] = useState<Record<string, string>>({});
-
-	// Form validation logic
-	const validateSignInForm = (): boolean => {
-		const newErrors: Record<string, string> = {};
-
-		if (!signInData.email.trim()) newErrors.email = "Email is required";
-		if (!signInData.password.trim()) newErrors.password = "Password is required";
-
-		setSignInErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
-
-	const validateSignUpForm = (): boolean => {
-		const newErrors: Record<string, string> = {};
-
-		if (!signUpData.first_name.trim()) newErrors.first_name = "First name is required";
-		if (!signUpData.last_name.trim()) newErrors.last_name = "Last name is required";
-		if (!signUpData.email.trim()) newErrors.email = "Email is required";
-		// Organization is optional
-		if (!signUpData.password.trim()) newErrors.password = "Password is required";
-		if (!signUpData.confirm_password.trim()) newErrors.confirm_password = "Confirm password is required";
-
-		setSignUpErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
-
-	const setSignUpFieldError = (field: string, message: string) => {
-		setSignUpErrors(prev => ({ ...prev, [field]: message }));
-	};
 
 	// Google OAuth
 	const { isReady: isGoogleReady, triggerOAuth } = useGoogleOAuth({
 		onSuccess: handleGoogleSuccess,
 		onError: error => setToast({ message: error, type: "error" })
 	});
+
+	// Reset form helper function
+	const resetForms = useCallback(() => {
+		signInForm.resetForm();
+		signUpForm.resetForm();
+		setShowPasswords({ password: false, confirm: false });
+	}, [signInForm, signUpForm]);
 
 	// Auto-hide toast
 	useEffect(() => {
@@ -126,48 +200,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			resetForms();
 			setToast(null);
 		}
-	}, [isOpen, initialMode]);
+	}, [isOpen, initialMode, resetForms]);
 
-	const resetForms = () => {
-		setSignInData({ email: "", password: "", remember_me: false });
-		setSignUpData({
-			first_name: "",
-			last_name: "",
-			email: "",
-			organization_id: "",
-			password: "",
-			confirm_password: "",
-			terms_agreement: false,
-			has_projects_access: true
-		});
-		setSignInErrors({});
-		setSignUpErrors({});
-		setShowPasswords({ password: false, confirm: false });
-	};
 
 	const handleSignIn = async (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (!validateSignInForm()) return;
-
 		setIsLoading(true);
 		setToast(null);
 
 		try {
-			const credentials: SignInCredentials = {
-				email: signInData.email,
-				password: signInData.password,
-				remember_me: signInData.remember_me
-			};
-
-			const { token, user } = await AuthService.signIn(credentials);
-			auth.login(token, user, signInData.remember_me);
-
-			setToast({ message: "Successfully signed in!", type: "success" });
-			setTimeout(() => {
-				onSuccess();
-				onClose();
-			}, 1000);
+			await signInForm.handleSubmit(e);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Sign in failed";
 			setToast({ message, type: "error" });
@@ -177,45 +218,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	};
 
 	const handleSignUp = async (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (!validateSignUpForm()) return;
-
-		// Password matching validation is now handled by the password policy checklist
-
-		const passwordValidation = AuthService.validatePassword(signUpData.password, signUpData.confirm_password);
-		if (!passwordValidation.isValid) {
-			setSignUpFieldError("password", "Password does not meet requirements");
-			return;
-		}
-
-		if (!signUpData.terms_agreement) {
-			setSignUpFieldError("terms_agreement", "You must agree to the terms");
-			return;
-		}
-
 		setIsLoading(true);
 		setToast(null);
 
 		try {
-			const userData: SignUpData = {
-				first_name: signUpData.first_name,
-				last_name: signUpData.last_name,
-				email: signUpData.email,
-				password: signUpData.password,
-				terms_agreement: signUpData.terms_agreement,
-				has_projects_access: signUpData.has_projects_access,
-				...(signUpData.organization_id && { organization_id: signUpData.organization_id })
-			};
-
-			const { token, user } = await AuthService.signUp(userData);
-			auth.login(token, user, false);
-
-			setToast({ message: "Registration successful!", type: "success" });
-			setTimeout(() => {
-				onSuccess();
-				onClose();
-			}, 1000);
+			await signUpForm.handleSubmit(e);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Registration failed";
 			setToast({ message, type: "error" });
@@ -319,27 +326,33 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			<form onSubmit={handleSignIn} className="space-y-4">
 				<div>
 					<label className="text-text-primary mb-1 block text-sm font-medium">
-						Email <RequiredAsterisk isEmpty={!signInData.email.trim()} isRequired={true} />
+						Email <RequiredAsterisk isEmpty={!signInForm.values.email.trim()} isRequired={true} />
 					</label>
 					<input
 						type="email"
-						value={signInData.email}
-						onChange={e => setSignInData(prev => ({ ...prev, email: e.target.value }))}
+						name="email"
+						value={signInForm.values.email}
+						onChange={e => signInForm.handleChange("email", e.target.value)}
+						onBlur={() => signInForm.handleBlur("email")}
 						className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 						disabled={isLoading}
 					/>
-					{signInErrors.email && <p className="mt-1 text-sm text-red-500">{signInErrors.email}</p>}
+					{signInForm.touched.email && signInForm.errors.email && (
+						<p className="mt-1 text-sm text-red-500">{signInForm.errors.email}</p>
+					)}
 				</div>
 
 				<div>
 					<label className="text-text-primary mb-1 block text-sm font-medium">
-						Password <RequiredAsterisk isEmpty={!signInData.password.trim()} isRequired={true} />
+						Password <RequiredAsterisk isEmpty={!signInForm.values.password.trim()} isRequired={true} />
 					</label>
 					<div className="relative">
 						<input
 							type={showPasswords.password ? "text" : "password"}
-							value={signInData.password}
-							onChange={e => setSignInData(prev => ({ ...prev, password: e.target.value }))}
+							name="password"
+							value={signInForm.values.password}
+							onChange={e => signInForm.handleChange("password", e.target.value)}
+							onBlur={() => signInForm.handleBlur("password")}
 							className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 pr-10 focus:ring-1"
 							disabled={isLoading}
 						/>
@@ -351,15 +364,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 							{showPasswords.password ? "👁️" : "👁️‍🗨️"}
 						</button>
 					</div>
-					{signInErrors.password && <p className="mt-1 text-sm text-red-500">{signInErrors.password}</p>}
+					{signInForm.touched.password && signInForm.errors.password && (
+						<p className="mt-1 text-sm text-red-500">{signInForm.errors.password}</p>
+					)}
 				</div>
 
 				<div className="flex items-center">
 					<input
 						type="checkbox"
 						id="remember_me"
-						checked={signInData.remember_me}
-						onChange={e => setSignInData(prev => ({ ...prev, remember_me: e.target.checked }))}
+						checked={signInForm.values.remember_me}
+						onChange={e => signInForm.handleChange("remember_me", e.target.checked)}
 						className="mr-2"
 					/>
 					<label htmlFor="remember_me" className="text-text-primary text-sm">
@@ -369,10 +384,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 				<button
 					type="submit"
-					disabled={isLoading}
+					disabled={isLoading || signInForm.isSubmitting}
 					className="bg-interactive hover:bg-interactive-hover hover:text-text-primary w-full rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
 				>
-					{isLoading ? "Signing In..." : "Sign In"}
+					{isLoading || signInForm.isSubmitting ? "Signing In..." : "Sign In"}
 				</button>
 			</form>
 
@@ -388,7 +403,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	);
 
 	const renderSignUp = () => {
-		const passwordValidation = AuthService.validatePassword(signUpData.password, signUpData.confirm_password);
+		const passwordValidation = AuthService.validatePassword(signUpForm.values.password, signUpForm.values.confirm_password);
 
 		return (
 			<div className="space-y-6">
@@ -402,74 +417,86 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						<div>
 							<label className="text-text-primary mb-1 block text-sm font-medium">
 								First Name{" "}
-								<RequiredAsterisk isEmpty={!signUpData.first_name.trim()} isRequired={true} />
+								<RequiredAsterisk isEmpty={!signUpForm.values.first_name.trim()} isRequired={true} />
 							</label>
 							<input
 								type="text"
-								value={signUpData.first_name}
-								onChange={e => setSignUpData(prev => ({ ...prev, first_name: e.target.value }))}
+								name="first_name"
+								value={signUpForm.values.first_name}
+								onChange={e => signUpForm.handleChange("first_name", e.target.value)}
+								onBlur={() => signUpForm.handleBlur("first_name")}
 								className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 								disabled={isLoading}
 							/>
-							{signUpErrors.first_name && (
-								<p className="mt-1 text-sm text-red-500">{signUpErrors.first_name}</p>
+							{signUpForm.touched.first_name && signUpForm.errors.first_name && (
+								<p className="mt-1 text-sm text-red-500">{signUpForm.errors.first_name}</p>
 							)}
 						</div>
 
 						<div>
 							<label className="text-text-primary mb-1 block text-sm font-medium">
-								Last Name <RequiredAsterisk isEmpty={!signUpData.last_name.trim()} isRequired={true} />
+								Last Name <RequiredAsterisk isEmpty={!signUpForm.values.last_name.trim()} isRequired={true} />
 							</label>
 							<input
 								type="text"
-								value={signUpData.last_name}
-								onChange={e => setSignUpData(prev => ({ ...prev, last_name: e.target.value }))}
+								name="last_name"
+								value={signUpForm.values.last_name}
+								onChange={e => signUpForm.handleChange("last_name", e.target.value)}
+								onBlur={() => signUpForm.handleBlur("last_name")}
 								className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 								disabled={isLoading}
 							/>
-							{signUpErrors.last_name && (
-								<p className="mt-1 text-sm text-red-500">{signUpErrors.last_name}</p>
+							{signUpForm.touched.last_name && signUpForm.errors.last_name && (
+								<p className="mt-1 text-sm text-red-500">{signUpForm.errors.last_name}</p>
 							)}
 						</div>
 					</div>
 
 					<div>
 						<label className="text-text-primary mb-1 block text-sm font-medium">
-							Email <RequiredAsterisk isEmpty={!signUpData.email.trim()} isRequired={true} />
+							Email <RequiredAsterisk isEmpty={!signUpForm.values.email.trim()} isRequired={true} />
 						</label>
 						<input
 							type="email"
-							value={signUpData.email}
-							onChange={e => setSignUpData(prev => ({ ...prev, email: e.target.value }))}
+							name="email"
+							value={signUpForm.values.email}
+							onChange={e => signUpForm.handleChange("email", e.target.value)}
+							onBlur={() => signUpForm.handleBlur("email")}
 							className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 							disabled={isLoading}
 						/>
-						{signUpErrors.email && <p className="mt-1 text-sm text-red-500">{signUpErrors.email}</p>}
+						{signUpForm.touched.email && signUpForm.errors.email && (
+							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.email}</p>
+						)}
 					</div>
 
 					<div>
 						<label className="text-text-primary mb-1 block text-sm font-medium">Organization</label>
 						<input
 							type="text"
-							value={signUpData.organization_id}
-							onChange={e => setSignUpData(prev => ({ ...prev, organization_id: e.target.value }))}
+							name="organization_id"
+							value={signUpForm.values.organization_id}
+							onChange={e => signUpForm.handleChange("organization_id", e.target.value)}
+							onBlur={() => signUpForm.handleBlur("organization_id")}
 							className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
 							disabled={isLoading}
 						/>
-						{signUpErrors.organization_id && (
-							<p className="mt-1 text-sm text-red-500">{signUpErrors.organization_id}</p>
+						{signUpForm.touched.organization_id && signUpForm.errors.organization_id && (
+							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.organization_id}</p>
 						)}
 					</div>
 
 					<div>
 						<label className="text-text-primary mb-1 block text-sm font-medium">
-							Password <RequiredAsterisk isEmpty={!signUpData.password.trim()} isRequired={true} />
+							Password <RequiredAsterisk isEmpty={!signUpForm.values.password.trim()} isRequired={true} />
 						</label>
 						<div className="relative">
 							<input
 								type={showPasswords.password ? "text" : "password"}
-								value={signUpData.password}
-								onChange={e => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
+								name="password"
+								value={signUpForm.values.password}
+								onChange={e => signUpForm.handleChange("password", e.target.value)}
+								onBlur={() => signUpForm.handleBlur("password")}
 								className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 pr-10 focus:ring-1"
 								disabled={isLoading}
 							/>
@@ -481,7 +508,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								{showPasswords.password ? "👁️" : "👁️‍🗨️"}
 							</button>
 						</div>
-						{signUpData.password && (
+						{signUpForm.values.password && (
 							<div className="mt-2 space-y-1 text-xs">
 								<div
 									className={
@@ -527,19 +554,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								</div>
 							</div>
 						)}
-						{signUpErrors.password && <p className="mt-1 text-sm text-red-500">{signUpErrors.password}</p>}
+						{signUpForm.touched.password && signUpForm.errors.password && (
+							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.password}</p>
+						)}
 					</div>
 
 					<div>
 						<label className="text-text-primary mb-1 block text-sm font-medium">
 							Confirm Password{" "}
-							<RequiredAsterisk isEmpty={!signUpData.confirm_password.trim()} isRequired={true} />
+							<RequiredAsterisk isEmpty={!signUpForm.values.confirm_password.trim()} isRequired={true} />
 						</label>
 						<div className="relative">
 							<input
 								type={showPasswords.confirm ? "text" : "password"}
-								value={signUpData.confirm_password}
-								onChange={e => setSignUpData(prev => ({ ...prev, confirm_password: e.target.value }))}
+								name="confirm_password"
+								value={signUpForm.values.confirm_password}
+								onChange={e => signUpForm.handleChange("confirm_password", e.target.value)}
+								onBlur={() => signUpForm.handleBlur("confirm_password")}
 								className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 pr-10 focus:ring-1"
 								disabled={isLoading}
 							/>
@@ -551,31 +582,34 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								{showPasswords.confirm ? "👁️" : "👁️‍🗨️"}
 							</button>
 						</div>
+						{signUpForm.touched.confirm_password && signUpForm.errors.confirm_password && (
+							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.confirm_password}</p>
+						)}
 					</div>
 
 					<div className="flex items-start">
 						<input
 							type="checkbox"
 							id="terms_agreement"
-							checked={signUpData.terms_agreement}
-							onChange={e => setSignUpData(prev => ({ ...prev, terms_agreement: e.target.checked }))}
+							checked={signUpForm.values.terms_agreement}
+							onChange={e => signUpForm.handleChange("terms_agreement", e.target.checked)}
 							className="mt-1 mr-2"
 						/>
 						<label htmlFor="terms_agreement" className="text-text-primary text-sm">
 							I agree to the Terms of Service and Privacy Policy{" "}
-							<RequiredAsterisk isEmpty={!signUpData.terms_agreement} isRequired={true} />
+							<RequiredAsterisk isEmpty={!signUpForm.values.terms_agreement} isRequired={true} />
 						</label>
 					</div>
-					{signUpErrors.terms_agreement && (
-						<p className="text-sm text-red-500">{signUpErrors.terms_agreement}</p>
+					{signUpForm.touched.terms_agreement && signUpForm.errors.terms_agreement && (
+						<p className="text-sm text-red-500">{signUpForm.errors.terms_agreement}</p>
 					)}
 
 					<button
 						type="submit"
-						disabled={isLoading}
+						disabled={isLoading || signUpForm.isSubmitting}
 						className="bg-interactive hover:bg-interactive-hover hover:text-text-primary w-full rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
 					>
-						{isLoading ? "Creating Account..." : "Create Account"}
+						{isLoading || signUpForm.isSubmitting ? "Creating Account..." : "Create Account"}
 					</button>
 				</form>
 
