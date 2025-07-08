@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { logger } from '../utils/logger';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { logger } from "../utils/logger";
 
 interface EmailVerificationState {
 	isVerifying: boolean;
@@ -22,17 +22,15 @@ interface UseEmailVerificationReturn {
 
 /**
  * Custom hook for handling email verification from URL tokens
- * 
+ *
  * Automatically detects email verification tokens in the URL path,
  * makes API calls to verify the email, handles success/error states,
  * and provides callbacks for UI actions.
- * 
+ *
  * @param callbacks - Optional callbacks for handling verification results
  * @returns Object containing verification state and utility functions
  */
-export function useEmailVerification(
-	callbacks: EmailVerificationCallbacks = {}
-): UseEmailVerificationReturn {
+export function useEmailVerification(callbacks: EmailVerificationCallbacks = {}): UseEmailVerificationReturn {
 	const [state, setState] = useState<EmailVerificationState>({
 		isVerifying: false,
 		error: null,
@@ -52,97 +50,100 @@ export function useEmailVerification(
 		});
 	}, []);
 
-	const verifyEmailToken = useCallback(async (token: string) => {
-		logger.info('Email verification started', { token });
-		
-		setState(prev => ({
-			...prev,
-			isVerifying: true,
-			error: null,
-			token
-		}));
+	const verifyEmailToken = useCallback(
+		async (token: string) => {
+			logger.info("Email verification started", { token });
 
-		try {
-			const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
+			setState(prev => ({
+				...prev,
+				isVerifying: true,
+				error: null,
+				token
+			}));
+
+			try {
+				const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					}
+				});
+
+				logger.info("Verification response received", {
+					status: response.status,
+					ok: response.ok
+				});
+
+				// Clean URL immediately
+				window.history.pushState({}, "", "/");
+				onRedirectHome?.();
+
+				if (response.ok) {
+					// Success
+					logger.info("Email verification successful");
+					setState(prev => ({
+						...prev,
+						isVerifying: false,
+						success: true
+					}));
+
+					const successMessage = "Email verified successfully! Please sign in.";
+					onSuccess?.(successMessage);
+					onShowSignIn?.();
+				} else {
+					// API Error
+					const errorData = await response.json();
+					logger.warn("Email verification failed", { errorData });
+
+					const errorMessage = errorData.detail || "Email verification failed. Please try again.";
+					setState(prev => ({
+						...prev,
+						isVerifying: false,
+						error: errorMessage
+					}));
+
+					onError?.(errorMessage);
+					onShowSignIn?.();
 				}
-			});
+			} catch (error) {
+				// Network Error
+				logger.error("Network error during verification", { error });
 
-			logger.info('Verification response received', { 
-				status: response.status, 
-				ok: response.ok 
-			});
+				// Clean URL in case of network error
+				window.history.pushState({}, "", "/");
+				onRedirectHome?.();
 
-			// Clean URL immediately
-			window.history.pushState({}, '', '/');
-			onRedirectHome?.();
-
-			if (response.ok) {
-				// Success
-				logger.info('Email verification successful');
-				setState(prev => ({
-					...prev,
-					isVerifying: false,
-					success: true
-				}));
-				
-				const successMessage = 'Email verified successfully! Please sign in.';
-				onSuccess?.(successMessage);
-				onShowSignIn?.();
-			} else {
-				// API Error
-				const errorData = await response.json();
-				logger.warn('Email verification failed', { errorData });
-				
-				const errorMessage = errorData.detail || 'Email verification failed. Please try again.';
+				const errorMessage = "Network error during email verification. Please try again.";
 				setState(prev => ({
 					...prev,
 					isVerifying: false,
 					error: errorMessage
 				}));
-				
+
 				onError?.(errorMessage);
 				onShowSignIn?.();
 			}
-		} catch (error) {
-			// Network Error
-			logger.error('Network error during verification', { error });
-			
-			// Clean URL in case of network error
-			window.history.pushState({}, '', '/');
-			onRedirectHome?.();
-			
-			const errorMessage = 'Network error during email verification. Please try again.';
-			setState(prev => ({
-				...prev,
-				isVerifying: false,
-				error: errorMessage
-			}));
-			
-			onError?.(errorMessage);
-			onShowSignIn?.();
-		}
-	}, [onSuccess, onError, onRedirectHome, onShowSignIn]);
+		},
+		[onSuccess, onError, onRedirectHome, onShowSignIn]
+	);
 
 	// Auto-detect email verification tokens in URL
 	useEffect(() => {
-		logger.debug('Email verification useEffect running', { 
-			pathname: window.location.pathname 
+		logger.debug("Email verification useEffect running", {
+			pathname: window.location.pathname
 		});
-		
-		const pathSegments = window.location.pathname.split('/');
-		if (pathSegments[1] === 'verify-email' && pathSegments[2]) {
+
+		const pathSegments = window.location.pathname.split("/");
+		if (pathSegments[1] === "verify-email" && pathSegments[2]) {
 			const token = pathSegments[2];
 
 			// Check if we've already attempted verification for this token
 			if (verificationAttempted.current.has(token)) {
-				logger.debug('Skipping duplicate verification attempt', { token });
+				logger.debug("Skipping duplicate verification attempt", { token });
 				return;
 			}
 
-			logger.info('Email verification token detected', { token });
+			logger.info("Email verification token detected", { token });
 			verificationAttempted.current.add(token);
 			verifyEmailToken(token);
 		}

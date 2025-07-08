@@ -318,9 +318,30 @@ These recommendations align with the principles outlined in:
         *   **Better Separation of Concerns**: App.tsx now focuses on UI orchestration while hook handles verification business logic
         *   **Reusability**: Hook can be used by other components that need email verification functionality
         *   **Verified Quality**: TypeScript compilation and React tests (42 tests) pass successfully after refactoring
-*   **`DashboardPage.tsx`**:
-    *   **Incomplete Features**: Implement data fetching for `total_members`, `active_sprints`, and `upcoming_pto` to fulfill the dashboard's purpose.
-    *   **Consistent Button Usage**: Use the `Button` component for the "Create Team" button in the "Teams Overview" section for consistent styling and behavior.
+*   **✅ `DashboardPage.tsx`** [COMPLETED]:
+    *   **✅ Incomplete Features**: Implement data fetching for `total_members`, `active_sprints`, and `upcoming_pto` to fulfill the dashboard's purpose.
+    *   **✅ Consistent Button Usage**: Use the `Button` component for the "Create Team" button in the "Teams Overview" section for consistent styling and behavior.
+    *   **✅ Actions Taken**:
+        *   **Created DashboardService**: Developed comprehensive service following patterns from `src/client/services/README.md`:
+            *   **Comprehensive Statistics**: `getDashboardStats()` method aggregates data from multiple services (TeamService, CalendarService) to provide complete dashboard metrics
+            *   **Total Members Calculation**: Counts team members across all teams using concurrent API calls with error resilience (graceful degradation if individual team calls fail)
+            *   **Active Sprints Count**: Filters sprints by "active" status across all teams with concurrent processing
+            *   **Upcoming PTO Calculation**: Analyzes calendar entries for next 30 days, filtering for "pto" type entries with date range logic
+            *   **Error Handling**: Robust error handling with fallback values (returns 0 instead of failing) to ensure dashboard remains functional even if some data sources are unavailable
+            *   **Service Pattern Compliance**: Follows established patterns with static methods, consistent error handling, and proper type safety
+        *   **Refactored DashboardPage.tsx**: Updated to use service layer architecture:
+            *   **Service Integration**: Replaced direct `fetch("/api/v1/teams")` calls with `DashboardService.getDashboardStats()` and `DashboardService.getTeams()`
+            *   **Concurrent Data Loading**: Uses `Promise.all()` to fetch dashboard stats and teams data simultaneously for better performance
+            *   **Atomic Button Integration**: Replaced hardcoded "Create Team" button with atomic `Button` component (`variant="primary"`)
+            *   **Consistent UI**: Updated error state retry button to use `Button` component (`variant="secondary"`) for design system compliance
+            *   **Maintained Functionality**: Preserved all existing loading states, error handling, and UI behavior while improving data fetching
+        *   **Service Layer Architecture**: Added DashboardService to services index for clean imports following established patterns
+        *   **Real Data Implementation**: Dashboard now displays actual data instead of hardcoded zeros:
+            *   **Total Members**: Sum of all team members across all teams
+            *   **Active Sprints**: Count of sprints with "active" status from all teams
+            *   **Upcoming PTO**: Count of PTO calendar entries starting within next 30 days
+        *   **Enhanced User Experience**: Dashboard provides meaningful metrics for capacity planning and team management overview
+        *   **Quality Verified**: TypeScript compilation, ESLint checks, and React tests (42 tests) all pass successfully
 *   **`HomePage.tsx`, `AboutPage.tsx`, `ContactPage.tsx`**:
     *   **Semantic Styling**: Replace hardcoded color classes (e.g., `bg-white`, `text-gray-800`) with semantic Tailwind classes defined in `src/client/styles.css` (e.g., `bg-content-background`, `text-text-primary`), adhering to `CLAUDE.md` - "Design System & Semantic Color Variables".
 

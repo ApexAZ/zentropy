@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import type { Team, DashboardStats } from "../types";
 import { formatDate, getVelocityStatus } from "../utils/formatters";
+import { DashboardService } from "../services";
+import Button from "../components/atoms/Button";
 
 const DashboardPage: React.FC = () => {
 	const [teams, setTeams] = useState<Team[]>([]);
@@ -22,24 +24,15 @@ const DashboardPage: React.FC = () => {
 			setIsLoading(true);
 			setError("");
 
-			// Load teams and calculate stats
-			const teamsResponse = await fetch("/api/v1/teams");
-			if (!teamsResponse.ok) {
-				throw new Error("Failed to load dashboard data");
-			}
+			// Load dashboard stats and teams data concurrently
+			const [dashboardStats, teamsData] = await Promise.all([
+				DashboardService.getDashboardStats(),
+				DashboardService.getTeams()
+			]);
 
-			const teamsData = (await teamsResponse.json()) as Team[];
+			setStats(dashboardStats);
 			setTeams(teamsData);
-
-			// Calculate basic stats
-			setStats({
-				total_teams: teamsData.length,
-				total_members: 0, // Would need to fetch from API
-				active_sprints: 0, // Would need to implement sprint tracking
-				upcoming_pto: 0 // Would need to fetch from calendar API
-			});
 		} catch (err) {
-			// console.error('Error loading dashboard data:', err)
 			setError(err instanceof Error ? err.message : "Failed to load dashboard");
 		} finally {
 			setIsLoading(false);
@@ -76,12 +69,9 @@ const DashboardPage: React.FC = () => {
 					<div>
 						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Dashboard</h3>
 						<p className="text-text-primary mb-6">{error}</p>
-						<button
-							onClick={() => void loadDashboardData()}
-							className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
-						>
+						<Button variant="secondary" onClick={() => void loadDashboardData()}>
 							Retry
-						</button>
+						</Button>
 					</div>
 				</div>
 			</main>
@@ -203,9 +193,9 @@ const DashboardPage: React.FC = () => {
 				{teams.length === 0 ? (
 					<div className="text-text-primary p-8 text-center">
 						<p className="mb-4">No teams found. Create your first team to get started.</p>
-						<button className="inline-flex cursor-pointer items-center gap-2 rounded-md border-none bg-blue-500 px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 hover:bg-blue-600">
+						<Button variant="primary" onClick={() => console.log("Navigate to create team")}>
 							Create Team
-						</button>
+						</Button>
 					</div>
 				) : (
 					<div className="overflow-x-auto">

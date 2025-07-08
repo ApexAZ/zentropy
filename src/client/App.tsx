@@ -43,7 +43,6 @@ function App(): React.JSX.Element {
 		}
 	});
 
-
 	// Auto-hide toast after 5 seconds
 	useEffect(() => {
 		if (toast) {
