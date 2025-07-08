@@ -8,8 +8,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import os
 import secrets
-from google.auth.transport import requests
-from google.oauth2 import id_token
 
 from .database import get_db
 from .schemas import TokenData
@@ -90,7 +88,7 @@ def verify_token(
         payload = jwt.decode(
             credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]
         )
-        user_id: str = payload.get("sub")
+        user_id = payload.get("sub")
         if user_id is None:
             raise credentials_exception
         token_data = TokenData(user_id=UUID(user_id))
@@ -118,7 +116,7 @@ def get_current_active_user(
     current_user: database.User = Depends(get_current_user),
 ) -> database.User:
     """Get current active user"""
-    if not current_user.is_active:
+    if current_user.is_active is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
@@ -129,7 +127,7 @@ def require_projects_access(
     current_user: database.User = Depends(get_current_active_user),
 ) -> database.User:
     """Require Projects module access"""
-    if not current_user.has_projects_access:
+    if current_user.has_projects_access is False:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access to Projects module is required",
@@ -153,6 +151,7 @@ def validate_password_strength(
     password: str, user_info: Optional[Dict[str, Any]] = None
 ) -> bool:
     """Basic password validation"""
+    _ = user_info  # Reserved for future enhanced validation
     if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -171,63 +170,3 @@ def validate_password_strength(
         )
 
     return True
-
-
-# Google OAuth settings
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-
-
-def verify_google_token(token: str) -> Optional[Dict[str, Any]]:
-    """
-    Verify Google ID token and return user information.
-
-    Args:
-        token: Google ID token string
-
-    Returns:
-        Dictionary with user info if valid, None if invalid
-    """
-    try:
-        # Verify token without specifying client ID for development
-        # In production, always specify GOOGLE_CLIENT_ID
-        if GOOGLE_CLIENT_ID:
-            # Production verification with client ID
-            idinfo = id_token.verify_oauth2_token(
-                token, requests.Request(), GOOGLE_CLIENT_ID
-            )
-        else:
-            # Development verification without client ID (less secure)
-            idinfo = id_token.verify_oauth2_token(token, requests.Request())
-
-        # Verify the token is from Google
-        if idinfo.get("iss") not in [
-            "accounts.google.com",
-            "https://accounts.google.com",
-        ]:
-            return None
-
-        # Extract user information
-        user_info = {
-            "sub": idinfo.get("sub"),  # Google user ID
-            "email": idinfo.get("email"),
-            "given_name": idinfo.get("given_name"),
-            "family_name": idinfo.get("family_name"),
-            "email_verified": idinfo.get("email_verified", False),
-            "hd": idinfo.get("hd"),  # Hosted domain (Google Workspace organization)
-            "picture": idinfo.get("picture"),  # Profile picture URL
-            "iss": idinfo.get("iss"),
-            "aud": idinfo.get("aud"),
-        }
-
-        # Ensure email is verified
-        if not user_info.get("email_verified"):
-            return None
-
-        return user_info
-
-    except ValueError:
-        # Invalid token
-        return None
-    except Exception:
-        # Any other error (network, malformed token, etc.)
-        return None

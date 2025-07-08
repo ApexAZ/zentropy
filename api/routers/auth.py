@@ -22,12 +22,12 @@ from ..auth import (
     create_access_token,
     get_password_hash,
     validate_password_strength,
-    verify_google_token,
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from ..google_oauth import (
     process_google_oauth,
+    verify_google_token,
     GoogleOAuthError,
     GoogleTokenInvalidError,
     GoogleEmailUnverifiedError,
@@ -66,7 +66,7 @@ def login(
         )
 
     # Check if email is verified
-    if not user.email_verified:
+    if user.email_verified is False:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
@@ -76,7 +76,7 @@ def login(
         )
 
     # Update last login
-    user.last_login_at = datetime.utcnow()  # type: ignore
+    user.last_login_at = datetime.now(timezone.utc)
     db.commit()
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -103,7 +103,7 @@ def login_json(
         )
 
     # Check if email is verified
-    if not user.email_verified:
+    if user.email_verified is False:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
@@ -113,7 +113,7 @@ def login_json(
         )
 
     # Update last login
-    user.last_login_at = datetime.utcnow()  # type: ignore
+    user.last_login_at = datetime.now(timezone.utc)
     db.commit()
 
     # Create access token with remember_me handling
@@ -213,6 +213,7 @@ def logout(
     current_user: database.User = Depends(get_current_user),
 ) -> MessageResponse:
     """Logout user"""
+    _ = current_user  # Reserved for future server-side logout implementation
     # Note: JWT token handling is done client-side
     # Server-side logout could implement token blacklisting if needed
     return MessageResponse(message="Successfully logged out")
@@ -224,11 +225,16 @@ def google_login(
 ) -> LoginResponse:
     """Login or register user using Google OAuth"""
     # Verify Google token
-    google_user_info = verify_google_token(request.google_token)
-    if not google_user_info:
+    try:
+        google_user_info = verify_google_token(request.google_token)
+    except (
+        GoogleTokenInvalidError,
+        GoogleEmailUnverifiedError,
+        GoogleConfigurationError,
+    ) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token or unverified email",
+            detail=f"Google token verification failed: {str(e)}",
         )
 
     # Extract Google user information
@@ -245,7 +251,7 @@ def google_login(
 
     if existing_user:
         # Existing Google user - update last login and authenticate
-        existing_user.last_login_at = datetime.utcnow()  # type: ignore
+        existing_user.last_login_at = datetime.now(timezone.utc)
         db.commit()
         user = existing_user
     else:

@@ -45,7 +45,7 @@ class RateLimiter:
     """
 
     def __init__(self) -> None:
-        self.redis_client: Optional[redis.Redis] = None
+        self.redis_client: Optional[redis.Redis[str]] = None
         self._memory_store: Dict[str, List[datetime]] = {}
         self._setup_redis()
         self._load_config()
@@ -137,14 +137,14 @@ class RateLimiter:
         pipe.zcard(key)
 
         # Execute pipeline
-        results = pipe.execute()
-        current_requests = int(results[1])  # Type: ignore
+        results: List[Any] = pipe.execute()
+        current_requests = int(results[1]) if len(results) > 1 else 0
 
         if current_requests >= max_requests:
             # Calculate retry after time
             oldest_req = self.redis_client.zrange(key, 0, 0, withscores=True)
             if oldest_req:
-                oldest_ts = float(oldest_req[0][1])  # type: ignore
+                oldest_ts = float(oldest_req[0][1])
                 oldest_time = datetime.fromtimestamp(oldest_ts)
                 retry_delta = oldest_time + timedelta(seconds=window_seconds) - now
                 retry_after = int(retry_delta.total_seconds()) + 1
@@ -279,9 +279,9 @@ class RateLimiter:
                 current_requests = self.redis_client.zcard(key)
                 ttl = self.redis_client.ttl(key)
                 return {
-                    "current_requests": int(current_requests),  # type: ignore
+                    "current_requests": int(current_requests),
                     "max_requests": max_requests,
-                    "reset_in_seconds": int(ttl) if ttl > 0 else 0,  # type: ignore
+                    "reset_in_seconds": int(ttl) if ttl > 0 else 0,
                     "window_minutes": window_minutes,
                 }
             except redis.RedisError:

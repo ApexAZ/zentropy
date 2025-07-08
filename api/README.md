@@ -215,18 +215,23 @@ class ProjectResponse(BaseModel):
     team_id: str
     created_at: datetime
     
-# 2. Add model in database.py
+# 2. Add model in database.py (using SQLAlchemy 2.0 typed syntax)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Text, ForeignKey, DateTime
+import uuid
+from datetime import datetime
+
 class Project(Base):
     __tablename__ = "projects"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    description = Column(Text)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     
     # Relationships
-    team = relationship("Team", back_populates="projects")
+    team: Mapped["Team"] = relationship(back_populates="projects")
 
 # 3. Create router in routers/projects.py
 from fastapi import APIRouter, Depends

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..database import get_db, UserRole
 from ..schemas import UserResponse, UserUpdate, PasswordUpdate, MessageResponse
@@ -23,6 +23,7 @@ def get_users(
     current_user: database.User = Depends(get_current_active_user),
 ) -> List[database.User]:
     """Get all users"""
+    _ = current_user  # Reserved for future authorization implementation
     users = db.query(database.User).all()
     return users
 
@@ -42,8 +43,9 @@ def get_user(
     current_user: database.User = Depends(get_current_active_user),
 ) -> database.User:
     """Get user by ID"""
+    _ = current_user  # Reserved for future authorization implementation
     user = db.query(database.User).filter(database.User.id == user_id).first()
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
@@ -80,7 +82,7 @@ def update_current_user(
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
-    current_user.updated_at = datetime.utcnow()  # type: ignore
+    current_user.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(current_user)
 
@@ -102,7 +104,7 @@ def update_user(
         )
 
     user = db.query(database.User).filter(database.User.id == user_id).first()
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
@@ -130,7 +132,7 @@ def update_user(
     for field, value in update_data.items():
         setattr(user, field, value)
 
-    user.updated_at = datetime.utcnow()  # type: ignore
+    user.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(user)
 
@@ -181,8 +183,8 @@ def change_password(
 
     # Update password
     new_password_hash = get_password_hash(password_update.new_password)
-    current_user.password_hash = new_password_hash  # type: ignore
-    current_user.updated_at = datetime.utcnow()  # type: ignore
+    current_user.password_hash = new_password_hash
+    current_user.updated_at = datetime.now(timezone.utc)
 
     # Add to password history
     password_history_entry = database.PasswordHistory(
@@ -221,7 +223,7 @@ def delete_user(
         )
 
     user = db.query(database.User).filter(database.User.id == user_id).first()
-    if not user:
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )

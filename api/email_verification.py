@@ -30,8 +30,8 @@ def create_verification_token(db: Session, user_id: str) -> str:
     # Update user with verification token
     user = db.query(User).filter(User.id == user_id).first()
     if user:
-        user.email_verification_token = token  # type: ignore
-        user.email_verification_expires_at = expires_at  # type: ignore
+        user.email_verification_token = token
+        user.email_verification_expires_at = expires_at
         db.commit()
 
     return token
@@ -46,16 +46,14 @@ def verify_email_token(db: Session, token: str) -> Optional[User]:
         return None
 
     # Check if token is expired
-    if (
-        user.email_verification_expires_at
-        and user.email_verification_expires_at < datetime.now(timezone.utc)
-    ):
+    expires_at = user.email_verification_expires_at
+    if expires_at and expires_at < datetime.now(timezone.utc):
         return None
 
     # Mark email as verified and clear token
-    user.email_verified = True  # type: ignore
-    user.email_verification_token = None  # type: ignore
-    user.email_verification_expires_at = None  # type: ignore
+    user.email_verified = True
+    user.email_verification_token = None
+    user.email_verification_expires_at = None
     db.commit()
 
     return user
@@ -87,7 +85,7 @@ def resend_verification_email(db: Session, email: str) -> bool:
         return False
 
     # Don't resend if already verified
-    if user.email_verified:
+    if user.email_verified is True:
         return False
 
     # Generate new token

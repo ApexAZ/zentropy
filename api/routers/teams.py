@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..database import get_db, UserRole, TeamRole
 from ..schemas import (
@@ -10,6 +10,7 @@ from ..schemas import (
     TeamCreate,
     TeamUpdate,
     TeamWithMembers,
+    UserResponse,
     MessageResponse,
 )
 from ..auth import require_projects_access
@@ -24,6 +25,7 @@ def get_teams(
     current_user: database.User = Depends(require_projects_access),
 ) -> List[database.Team]:
     """Get all teams"""
+    _ = current_user  # Reserved for future authorization implementation
     teams = db.query(database.Team).all()
     return teams
 
@@ -65,6 +67,7 @@ def get_team(
     current_user: database.User = Depends(require_projects_access),
 ) -> TeamWithMembers:
     """Get team by ID with members"""
+    _ = current_user  # Reserved for future authorization implementation
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
     if not team:
         raise HTTPException(
@@ -80,16 +83,16 @@ def get_team(
     )
 
     team_with_members = TeamWithMembers(
-        id=team.id,  # type: ignore
-        name=team.name,  # type: ignore
-        description=team.description,  # type: ignore
-        velocity_baseline=team.velocity_baseline,  # type: ignore
-        sprint_length_days=team.sprint_length_days,  # type: ignore
-        working_days_per_week=team.working_days_per_week,  # type: ignore
-        created_by=team.created_by,  # type: ignore
-        created_at=team.created_at,  # type: ignore
-        updated_at=team.updated_at,  # type: ignore
-        members=members,  # type: ignore
+        id=team.id,
+        name=team.name,
+        description=team.description,
+        velocity_baseline=team.velocity_baseline,
+        sprint_length_days=team.sprint_length_days,
+        working_days_per_week=team.working_days_per_week,
+        created_by=team.created_by,
+        created_at=team.created_at,
+        updated_at=team.updated_at,
+        members=[UserResponse.model_validate(member) for member in members],
     )
 
     return team_with_members
@@ -120,7 +123,7 @@ def update_team(
         .first()
     )
 
-    if not membership and current_user.role != UserRole.ADMIN:
+    if membership is None and current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
         )
@@ -129,7 +132,7 @@ def update_team(
     for field, value in update_data.items():
         setattr(team, field, value)
 
-    team.updated_at = datetime.utcnow()  # type: ignore
+    team.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(team)
 
@@ -144,6 +147,7 @@ def add_team_member(
     current_user: database.User = Depends(require_projects_access),
 ) -> MessageResponse:
     """Add user to team"""
+    _ = current_user  # Reserved for future authorization implementation
     # Check if team exists
     team = db.query(database.Team).filter(database.Team.id == team_id).first()
     if not team:
@@ -192,6 +196,7 @@ def remove_team_member(
     current_user: database.User = Depends(require_projects_access),
 ) -> MessageResponse:
     """Remove user from team"""
+    _ = current_user  # Reserved for future authorization implementation
     membership = (
         db.query(database.TeamMembership)
         .filter(

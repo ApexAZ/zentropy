@@ -1,6 +1,5 @@
 from sqlalchemy import (
     create_engine,
-    Column,
     String,
     Boolean,
     DateTime,
@@ -10,18 +9,29 @@ from sqlalchemy import (
     text,
     Enum,
 )
-from sqlalchemy.orm import declarative_base, Session
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Session,
+    Mapped,
+    mapped_column,
+    relationship,
+    sessionmaker,
+)
 from typing import Generator, Optional, List, Any
-from sqlalchemy.sql.schema import Column as SqlColumn
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 from enum import Enum as PyEnum
+from typing import Type as TypingType
 
 load_dotenv()
+
+
+def get_enum_values(enum_class: TypingType[PyEnum]) -> List[str]:
+    """Helper function to get enum values for SQLAlchemy Enum columns"""
+    return [e.value for e in enum_class]
 
 
 # Role Enums for database validation
@@ -125,7 +135,10 @@ engine = create_engine(
     pool_recycle=3600,  # Recycle connections after 1 hour
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+
+class Base(DeclarativeBase):
+    pass
 
 
 def test_database_connection() -> bool:
@@ -149,66 +162,80 @@ def get_db() -> Generator[Session, None, None]:
 
 
 # Organization model
-class Organization(Base):  # type: ignore
+class Organization(Base):
     __tablename__ = "organizations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
 
     # Required fields
-    name = Column(String, nullable=False)  # Full legal name
+    name: Mapped[str] = mapped_column(String, nullable=False)  # Full legal name
 
     # Optional core fields
-    short_name = Column(String, nullable=True)  # Display name/abbreviation
-    domain = Column(
+    short_name: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # Display name/abbreviation
+    domain: Mapped[Optional[str]] = mapped_column(
         String, nullable=True, unique=True
     )  # For Google Workspace integration
-    website = Column(String, nullable=True)
-    industry: SqlColumn[IndustryType] = Column(
-        Enum(IndustryType, values_callable=lambda obj: [e.value for e in obj]),
+    website: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    industry: Mapped[Optional[IndustryType]] = mapped_column(
+        Enum(IndustryType, values_callable=get_enum_values),
         nullable=True,
     )
-    organization_type: SqlColumn[OrganizationType] = Column(
-        Enum(OrganizationType, values_callable=lambda obj: [e.value for e in obj]),
+    organization_type: Mapped[Optional[OrganizationType]] = mapped_column(
+        Enum(OrganizationType, values_callable=get_enum_values),
         nullable=True,
     )
 
     # Address information
-    headquarters_address = Column(String, nullable=True)
-    headquarters_city = Column(String, nullable=True)
-    headquarters_state = Column(String, nullable=True)
-    headquarters_country = Column(String, nullable=True)
-    headquarters_postal_code = Column(String, nullable=True)
+    headquarters_address: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    headquarters_city: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    headquarters_state: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    headquarters_country: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    headquarters_postal_code: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )
 
     # Contact information
-    main_phone = Column(String, nullable=True)
-    primary_contact_name = Column(String, nullable=True)
-    primary_contact_title = Column(String, nullable=True)
-    primary_contact_email = Column(String, nullable=True)
-    primary_contact_phone = Column(String, nullable=True)
+    main_phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    primary_contact_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    primary_contact_title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    primary_contact_email: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    primary_contact_phone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Business information
-    employee_count_range = Column(String, nullable=True)  # "1-10", "11-50", etc.
-    time_zone = Column(String, nullable=True)
-    founded_year = Column(Integer, nullable=True)
-    description = Column(Text, nullable=True)
+    employee_count_range: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # "1-10", "11-50", etc.
+    time_zone: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    founded_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Digital presence
-    logo_url = Column(String, nullable=True)
-    linkedin_url = Column(String, nullable=True)
-    twitter_url = Column(String, nullable=True)
+    logo_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    linkedin_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    twitter_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # System fields
-    is_active = Column(Boolean, default=True)
-    settings = Column(Text, nullable=True)  # JSON for org-level settings
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    settings: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # JSON for org-level settings
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
-    users = relationship("User", back_populates="organization_rel")
+    users: Mapped[List["User"]] = relationship(
+        "User", back_populates="organization_rel"
+    )
 
     @classmethod
     def create_from_google_domain(cls, domain: str, name: str) -> "Organization":
@@ -225,180 +252,251 @@ class Organization(Base):  # type: ignore
         cls, name: str, domain: Optional[str] = None
     ) -> List[Any]:
         """Find potential duplicate organizations."""
-        # This would be implemented with database queries
-        # For now, return empty list as placeholder
+        # TODO: Implement with database queries
+        # Parameters name and domain will be used in future implementation
+        _ = name, domain  # Acknowledge parameters for future use
         return []
 
 
 # User model
-class User(Base):  # type: ignore
+class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=True)  # Nullable for OAuth users
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    password_hash: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # Nullable for OAuth users
+    first_name: Mapped[str] = mapped_column(String, nullable=False)
+    last_name: Mapped[str] = mapped_column(String, nullable=False)
 
     # Organization relationship
-    organization_id = Column(
+    organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
     )
     # DEPRECATED: Keep for backward compatibility during migration
-    organization = Column(String, nullable=True)
-    role: SqlColumn[UserRole] = Column(
-        Enum(UserRole, values_callable=lambda obj: [e.value for e in obj]),
+    organization: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, values_callable=get_enum_values),
         nullable=False,
         default=UserRole.BASIC_USER,
     )
-    is_active = Column(Boolean, default=True)
-    has_projects_access = Column(Boolean, default=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    has_projects_access: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
     # OAuth fields
-    auth_provider: SqlColumn[AuthProvider] = Column(
-        Enum(AuthProvider, values_callable=lambda obj: [e.value for e in obj]),
+    auth_provider: Mapped[AuthProvider] = mapped_column(
+        Enum(AuthProvider, values_callable=get_enum_values),
         nullable=False,
         default=AuthProvider.LOCAL,
     )
-    google_id = Column(String, nullable=True, unique=True)
+    google_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True)
 
     # Registration tracking
-    registration_type: SqlColumn[RegistrationType] = Column(
-        Enum(RegistrationType, values_callable=lambda obj: [e.value for e in obj]),
+    registration_type: Mapped[RegistrationType] = mapped_column(
+        Enum(RegistrationType, values_callable=get_enum_values),
         nullable=False,
         default=RegistrationType.EMAIL,
     )
-    last_login_at = Column(DateTime, nullable=True)
-    terms_accepted_at = Column(DateTime, nullable=True)
-    terms_version = Column(String(20), nullable=True)
-    privacy_accepted_at = Column(DateTime, nullable=True)
-    privacy_version = Column(String(20), nullable=True)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    terms_accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    terms_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    privacy_accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    privacy_version: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # Email verification fields
-    email_verified = Column(Boolean, default=False, nullable=False)
-    email_verification_token = Column(String, nullable=True, unique=True)
-    email_verification_expires_at = Column(DateTime, nullable=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    email_verification_token: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, unique=True
+    )
+    email_verification_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
 
     # User preferences
     # Note: remember_me functionality handled via JWT token expiration
 
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
-    organization_rel = relationship("Organization", back_populates="users")
-    teams = relationship("Team", secondary="team_memberships", back_populates="members")
-    created_teams = relationship("Team", back_populates="creator")
-    calendar_entries = relationship("CalendarEntry", back_populates="user")
-    password_history = relationship("PasswordHistory", back_populates="user")
+    organization_rel: Mapped[Optional["Organization"]] = relationship(
+        "Organization", back_populates="users"
+    )
+    teams: Mapped[List["Team"]] = relationship(
+        "Team", secondary="team_memberships", back_populates="members"
+    )
+    created_teams: Mapped[List["Team"]] = relationship("Team", back_populates="creator")
+    calendar_entries: Mapped[List["CalendarEntry"]] = relationship(
+        "CalendarEntry", back_populates="user"
+    )
+    password_history: Mapped[List["PasswordHistory"]] = relationship(
+        "PasswordHistory", back_populates="user"
+    )
 
 
 # Team model
-class Team(Base):  # type: ignore
+class Team(Base):
     __tablename__ = "teams"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    velocity_baseline = Column(Integer, default=0)
-    sprint_length_days = Column(Integer, default=14)
-    working_days_per_week = Column(Integer, default=5)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    velocity_baseline: Mapped[int] = mapped_column(Integer, default=0)
+    sprint_length_days: Mapped[int] = mapped_column(Integer, default=14)
+    working_days_per_week: Mapped[int] = mapped_column(Integer, default=5)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
-    creator = relationship("User", back_populates="created_teams")
-    members = relationship("User", secondary="team_memberships", back_populates="teams")
-    calendar_entries = relationship("CalendarEntry", back_populates="team")
-    invitations = relationship("TeamInvitation", back_populates="team")
+    creator: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="created_teams"
+    )
+    members: Mapped[List["User"]] = relationship(
+        "User", secondary="team_memberships", back_populates="teams"
+    )
+    calendar_entries: Mapped[List["CalendarEntry"]] = relationship(
+        "CalendarEntry", back_populates="team"
+    )
+    invitations: Mapped[List["TeamInvitation"]] = relationship(
+        "TeamInvitation", back_populates="team"
+    )
 
 
 # Team membership association table
-class TeamMembership(Base):  # type: ignore
+class TeamMembership(Base):
     __tablename__ = "team_memberships"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    role: SqlColumn[TeamRole] = Column(
-        Enum(TeamRole, values_callable=lambda obj: [e.value for e in obj]),
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    role: Mapped[TeamRole] = mapped_column(
+        Enum(TeamRole, values_callable=get_enum_values),
         default=TeamRole.MEMBER,
     )
-    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
 
 # Calendar entry model
-class CalendarEntry(Base):  # type: ignore
+class CalendarEntry(Base):
     __tablename__ = "calendar_entries"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
-    title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
-    all_day = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    team_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    all_day: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
-    user = relationship("User", back_populates="calendar_entries")
-    team = relationship("Team", back_populates="calendar_entries")
+    user: Mapped["User"] = relationship("User", back_populates="calendar_entries")
+    team: Mapped[Optional["Team"]] = relationship(
+        "Team", back_populates="calendar_entries"
+    )
 
 
 # Team invitation model
-class TeamInvitation(Base):  # type: ignore
+class TeamInvitation(Base):
     __tablename__ = "team_invitations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
-    email = Column(String, nullable=False)
-    role: SqlColumn[TeamRole] = Column(
-        Enum(TeamRole, values_callable=lambda obj: [e.value for e in obj]),
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False
+    )
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[TeamRole] = mapped_column(
+        Enum(TeamRole, values_callable=get_enum_values),
         default=TeamRole.MEMBER,
     )
-    invited_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    status: SqlColumn[InvitationStatus] = Column(
-        Enum(InvitationStatus, values_callable=lambda obj: [e.value for e in obj]),
+    invited_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    status: Mapped[InvitationStatus] = mapped_column(
+        Enum(InvitationStatus, values_callable=get_enum_values),
         default=InvitationStatus.PENDING,
     )
-    expires_at = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
-    team = relationship("Team", back_populates="invitations")
-    inviter = relationship("User")
+    team: Mapped["Team"] = relationship("Team", back_populates="invitations")
+    inviter: Mapped["User"] = relationship("User")
 
 
 # Password history model
-class PasswordHistory(Base):  # type: ignore
+class PasswordHistory(Base):
     __tablename__ = "password_history"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
     # Relationships
-    user = relationship("User", back_populates="password_history")
+    user: Mapped["User"] = relationship("User", back_populates="password_history")
 
 
 # Session model removed - JWT authentication is used instead

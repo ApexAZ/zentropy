@@ -1,0 +1,57 @@
+{
+  "include": [
+    "api/"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "src/client/",
+    "tests/"
+  ],
+  "pythonVersion": "3.10",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImports": true,
+  "reportUnusedClass": true,
+  "reportUnusedFunction": true,
+  "reportUnusedVariable": true,
+  "reportDuplicateImport": true,
+  "reportOptionalOperand": true,
+  "reportOptionalMemberAccess": true,
+  "reportOptionalCall": true,
+  "reportOptionalIterable": true,
+  "reportOptionalContextManager": true,
+  "reportOptionalSubscript": true,
+  "reportPrivateImportUsage": true,
+  "reportConstantRedefinition": true,
+  "reportIncompatibleMethodOverride": true,
+  "reportIncompatibleVariableOverride": true,
+  "reportOverlappingOverloads": true,
+  "reportUninitializedInstanceVariable": false,
+  "reportCallInDefaultInitializer": false,
+  "reportUnnecessaryIsInstance": true,
+  "reportUnnecessaryCast": true,
+  "reportUnnecessaryComparison": true,
+  "reportUnnecessaryContains": true,
+  "reportAssertAlwaysTrue": true,
+  "reportSelfClsParameterName": true,
+  "reportImplicitStringConcatenation": false,
+  "reportUndefinedVariable": true,
+  "reportUnboundVariable": true,
+  "reportInvalidStubStatement": true,
+  "reportIncompleteStub": true,
+  "reportUnsupportedDunderAll": true,
+  "reportUnusedCoroutine": true,
+  "stubPath": ".",
+  "executionEnvironments": [
+    {
+      "root": "api",
+      "pythonVersion": "3.10",
+      "extraPaths": [
+        "."
+      ]
+    }
+  ]
+}

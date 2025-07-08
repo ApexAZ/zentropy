@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..database import get_db
 from ..schemas import (
@@ -114,7 +114,7 @@ def get_calendar_entry(
     # Check if user has access to this entry
     if entry.user_id != current_user.id:
         # Check if it's a team entry and user is a team member
-        if entry.team_id:
+        if getattr(entry, "team_id", None) is not None:
             membership = (
                 db.query(database.TeamMembership)
                 .filter(
@@ -180,7 +180,7 @@ def update_calendar_entry(
     for field, value in update_data.items():
         setattr(entry, field, value)
 
-    entry.updated_at = datetime.utcnow()  # type: ignore
+    entry.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(entry)
 

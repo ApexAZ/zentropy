@@ -171,8 +171,8 @@ def accept_invitation(
     db.add(membership)
 
     # Update invitation status
-    invitation.status = InvitationStatus.ACCEPTED  # type: ignore
-    invitation.updated_at = datetime.utcnow()  # type: ignore
+    invitation.status = InvitationStatus.ACCEPTED
+    invitation.updated_at = datetime.now(timezone.utc)
 
     db.commit()
 
@@ -202,8 +202,8 @@ def decline_invitation(
         )
 
     # Update invitation status
-    invitation.status = InvitationStatus.DECLINED  # type: ignore
-    invitation.updated_at = datetime.utcnow()  # type: ignore
+    invitation.status = InvitationStatus.DECLINED
+    invitation.updated_at = datetime.now(timezone.utc)
 
     db.commit()
 

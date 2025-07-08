@@ -1,7 +1,7 @@
 """Google OAuth authentication module for Zentropy."""
 
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Mapping
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
@@ -69,6 +69,8 @@ def check_rate_limit(
     Raises:
         GoogleRateLimitError: If rate limit is exceeded
     """
+    _ = max_requests  # Reserved for backward compatibility
+    _ = window_minutes  # Reserved for backward compatibility
     try:
         # Use new Redis-based rate limiter
         rate_limiter.check_rate_limit(identifier, RateLimitType.OAUTH)
@@ -79,7 +81,7 @@ def check_rate_limit(
         raise
 
 
-def verify_google_token(credential: str) -> Dict[str, Any]:
+def verify_google_token(credential: str) -> Mapping[str, Any]:
     """
     Verify Google OAuth JWT token and extract user information.
 
@@ -101,7 +103,9 @@ def verify_google_token(credential: str) -> Dict[str, Any]:
             )
 
         # Verify the token with Google
-        idinfo = id_token.verify_oauth2_token(credential, requests.Request(), client_id)
+        idinfo: Mapping[str, Any] = id_token.verify_token(
+            credential, requests.Request(), client_id
+        )
 
         # Verify the issuer
         if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
@@ -112,7 +116,7 @@ def verify_google_token(credential: str) -> Dict[str, Any]:
             raise GoogleEmailUnverifiedError("Email must be verified with Google")
 
         # Type assertion - idinfo is verified dict from Google
-        return idinfo  # type: ignore[no-any-return]
+        return idinfo
 
     except GoogleConfigurationError:
         raise  # Re-raise GoogleConfigurationError as-is
@@ -122,7 +126,7 @@ def verify_google_token(credential: str) -> Dict[str, Any]:
         raise GoogleTokenInvalidError(f"Token verification failed: {str(e)}")
 
 
-def get_or_create_google_user(db: Session, google_info: Dict[str, Any]) -> User:
+def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> User:
     """
     Get existing user or create new user from Google OAuth information.
 
