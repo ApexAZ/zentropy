@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 				<ul className="m-0 mr-4 flex list-none gap-6 p-0">
 					<li>
 						<button
-							className={`cursor-pointer text-base font-medium bg-transparent border-none transition-all duration-200 ${
+							className={`cursor-pointer border-none bg-transparent text-base font-medium transition-all duration-200 ${
 								currentPage === "about"
 									? "text-interactive border-interactive border-b"
 									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 					</li>
 					<li>
 						<button
-							className={`cursor-pointer text-base font-medium bg-transparent border-none transition-all duration-200 ${
+							className={`cursor-pointer border-none bg-transparent text-base font-medium transition-all duration-200 ${
 								currentPage === "contact"
 									? "text-interactive border-interactive border-b"
 									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
