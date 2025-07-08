@@ -20,15 +20,20 @@ We'll add a **Projects** feature that allows teams to:
 
 ## Implementation Steps
 
-### Step 1: Database Model
+### Step 1: Database Model (SQLAlchemy 2.0 Typed Syntax)
 
-Add the Project model to `api/database.py`:
+Add the Project model to `api/database.py` using the fully-typed SQLAlchemy 2.0 style. This is the standard for our project to ensure type safety with `mypy`.
 
 ```python
 # Add to existing imports
 from enum import Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Text, ForeignKey, DateTime, Date, CheckConstraint
+import uuid
+from datetime import datetime, date
+from typing import Optional, List
 
-# Add new enum
+# Add new enum for project status
 class ProjectStatus(str, Enum):
     PLANNING = "planning"
     ACTIVE = "active"
@@ -36,24 +41,24 @@ class ProjectStatus(str, Enum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
-# Add new model (add after existing models)
+# Add new model using fully-typed syntax
 class Project(Base):
     __tablename__ = "projects"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String(100), nullable=False)
-    description = Column(Text)
-    status = Column(Enum(ProjectStatus), default=ProjectStatus.PLANNING)
-    start_date = Column(Date)
-    end_date = Column(Date)
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[ProjectStatus] = mapped_column(default=ProjectStatus.PLANNING)
+    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    team_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("teams.id"))
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    team = relationship("Team", back_populates="projects")
-    creator = relationship("User", back_populates="created_projects")
+    team: Mapped["Team"] = relationship(back_populates="projects")
+    creator: Mapped["User"] = relationship(back_populates="created_projects")
     
     # Add validation
     __table_args__ = (
@@ -62,10 +67,10 @@ class Project(Base):
 
 # Update existing models to add back-references
 # In Team model, add:
-projects = relationship("Project", back_populates="team")
+# projects: Mapped[List["Project"]] = relationship(back_populates="team")
 
 # In User model, add:
-created_projects = relationship("Project", back_populates="creator")
+# created_projects: Mapped[List["Project"]] = relationship(back_populates="creator")
 ```
 
 ### Step 2: Pydantic Schemas

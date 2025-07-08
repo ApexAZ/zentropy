@@ -207,33 +207,33 @@ Frontend                  Backend
 
 ### Database Design Principles
 
-**Choice**: Relational Model + UUID Keys + Audit Trails
+**Choice**: Relational Model + SQLAlchemy 2.0 Typed ORM + UUID Keys
 
 **Observable Evidence:**
-- PostgreSQL with SQLAlchemy ORM
-- UUID primary keys for all tables
-- `created_at` and `updated_at` timestamps
-- Foreign key relationships with proper constraints
+- PostgreSQL with SQLAlchemy ORM using the **fully-typed 2.0 style**.
+- `Mapped` and `mapped_column` used for all model attributes, ensuring mypy compatibility.
+- UUID primary keys for all tables.
+- `created_at` and `updated_at` timestamps for audit trails.
+- Foreign key relationships with proper constraints.
 
 **Schema Patterns:**
-```sql
--- Standard table structure
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
-);
+The Python code is the source of truth. The ORM generates SQL similar to this:
+```python
+# In api/database.py
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .database import Base
+import uuid
 
--- Many-to-many with metadata
-CREATE TABLE team_memberships (
-    id UUID PRIMARY KEY,
-    team_id UUID REFERENCES teams(id),
-    user_id UUID REFERENCES users(id),
-    role team_role_enum NOT NULL,
-    created_at TIMESTAMP DEFAULT now()
-);
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    
+    # Relationships are also typed
+    teams: Mapped[List["Team"]] = relationship(back_populates="members")
 ```
+
 
 **Inferred Benefits:**
 - **Scalability**: UUIDs prevent ID conflicts in distributed systems
