@@ -192,7 +192,7 @@ const TeamsPage: React.FC = () => {
 				</div>
 			) : (
 				<div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-					{teams.map(renderTeamCard)}
+					{Array.isArray(teams) ? teams.map(renderTeamCard) : []}
 				</div>
 			)}
 

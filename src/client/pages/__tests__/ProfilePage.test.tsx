@@ -51,7 +51,7 @@ describe("ProfilePage", () => {
 
 		expect(screen.getByText("Test User")).toBeInTheDocument();
 		expect(screen.getByText("test@example.com")).toBeInTheDocument();
-		expect(screen.getByText("Team Member")).toBeInTheDocument();
+		expect(screen.getAllByText("Team Member")).toHaveLength(2); // Role label and badge
 		expect(screen.getByText("testuser")).toBeInTheDocument();
 		expect(screen.getByText("user-123")).toBeInTheDocument();
 	});
