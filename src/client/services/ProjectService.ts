@@ -204,20 +204,33 @@ export class ProjectService {
 	 * Get projects by organization ID
 	 *
 	 * @param organizationId - Organization UUID
-	 * @param filters - Optional additional filters
+	 * @param page - Page number for pagination
+	 * @param limit - Items per page for pagination
+	 * @param status - Optional status filter
 	 * @returns Projects belonging to the organization
 	 */
 	static async getByOrganization(
 		organizationId: string,
-		filters?: {
-			status?: "active" | "completed" | "archived";
-			visibility?: "team" | "organization";
-		}
+		page: number = 1,
+		limit: number = 50,
+		status?: "active" | "completed" | "archived"
 	): Promise<ProjectListResponse> {
-		return this.getAll({
-			organization_id: organizationId,
-			...filters
-		});
+		const filters: {
+			page: number;
+			limit: number;
+			status?: "active" | "completed" | "archived";
+			organization_id: string;
+		} = {
+			page,
+			limit,
+			organization_id: organizationId
+		};
+
+		if (status) {
+			filters.status = status;
+		}
+
+		return this.getAll(filters);
 	}
 
 	/**
@@ -294,6 +307,26 @@ export class ProjectService {
 	 */
 	static async reactivateProject(projectId: string): Promise<Project> {
 		return this.changeStatus(projectId, "active");
+	}
+
+	/**
+	 * Archive project (alias for archiveProject)
+	 *
+	 * @param projectId - Project UUID
+	 * @returns Updated project
+	 */
+	static async archive(projectId: string): Promise<Project> {
+		return this.archiveProject(projectId);
+	}
+
+	/**
+	 * Restore archived project (alias for reactivateProject)
+	 *
+	 * @param projectId - Project UUID
+	 * @returns Updated project
+	 */
+	static async restore(projectId: string): Promise<Project> {
+		return this.reactivateProject(projectId);
 	}
 
 	/**
