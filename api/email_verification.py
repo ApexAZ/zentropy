@@ -55,8 +55,12 @@ def verify_email_token(db: Session, token: str) -> Optional[User]:
 
     # Check if token is expired
     expires_at = user.email_verification_expires_at
-    if expires_at and expires_at < datetime.now(timezone.utc):
-        return None
+    if expires_at:
+        # Ensure both datetimes are timezone-aware for comparison
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(timezone.utc):
+            return None
 
     # Mark email as verified and clear token
     user.email_verified = True

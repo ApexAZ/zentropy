@@ -142,13 +142,98 @@ def reset_rate_limiter():
     for identifier in test_identifiers:
         for limit_type in RateLimitType:
             rate_limiter.reset_rate_limit(identifier, limit_type)
+
+
+@pytest.fixture(scope="function")
+def current_user(db) -> "User":
+    """
+    Creates and returns a test user for authenticated endpoints.
     
-    yield
+    This user can be used in tests that require authentication.
+    """
+    from api.database import User, UserRole, RegistrationType, AuthProvider
     
-    # Clean up after test as well
-    for identifier in test_identifiers:
-        for limit_type in RateLimitType:
-            rate_limiter.reset_rate_limit(identifier, limit_type)
+    user = User(
+        email="testuser@example.com",
+        first_name="Test",
+        last_name="User", 
+        password_hash="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBpUCFJ7p2Xxwm",  # "secret"
+        role=UserRole.BASIC_USER,
+        is_active=True,
+        email_verified=True,
+        has_projects_access=True,
+        registration_type=RegistrationType.EMAIL,
+        auth_provider=AuthProvider.LOCAL
+    )
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return user
+
+
+@pytest.fixture(scope="function")
+def admin_user(db) -> "User":
+    """
+    Creates and returns an admin test user for tests requiring admin permissions.
+    """
+    from api.database import User, UserRole, RegistrationType, AuthProvider
+    
+    user = User(
+        email="admin@example.com",
+        first_name="Admin",
+        last_name="User", 
+        password_hash="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBpUCFJ7p2Xxwm",  # "secret"
+        role=UserRole.ADMIN,
+        is_active=True,
+        email_verified=True,
+        has_projects_access=True,
+        registration_type=RegistrationType.EMAIL,
+        auth_provider=AuthProvider.LOCAL
+    )
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    return user
+
+
+@pytest.fixture(scope="function")
+def auth_headers(current_user) -> dict:
+    """
+    Creates authentication headers for API requests.
+    
+    Returns headers dict with Bearer token for the current_user.
+    """
+    from api.auth import create_access_token
+    
+    # Create JWT token for the test user (using UUID as subject)
+    token = create_access_token(data={"sub": str(current_user.id)})
+    
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+
+@pytest.fixture(scope="function")
+def admin_auth_headers(admin_user) -> dict:
+    """
+    Creates authentication headers for admin API requests.
+    
+    Returns headers dict with Bearer token for the admin_user.
+    """
+    from api.auth import create_access_token
+    
+    # Create JWT token for the admin user (using UUID as subject)
+    token = create_access_token(data={"sub": str(admin_user.id)})
+    
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
 
 # Utility functions for common test patterns
@@ -206,3 +291,37 @@ def create_test_team(db: Session, name: str = "Test Team", **kwargs):
     db.commit()
     db.refresh(team)
     return team
+
+
+def manually_verify_user_email(db: Session, email: str):
+    """
+    TEMPORARY TEST HELPER: Manually verify a user's email for testing purposes.
+    
+    This function directly sets email_verified=True and clears verification tokens
+    in the database to simulate successful email verification.
+    
+    ⚠️  TODO: When actual email sending is implemented, this helper should be removed
+    and tests should use real email verification tokens from the email service.
+    Tests should then verify emails by extracting tokens from sent emails and
+    calling the /api/v1/auth/verify-email/{token} endpoint.
+    
+    Args:
+        db: Database session
+        email: Email address of user to verify
+    
+    Returns:
+        bool: True if user was found and verified, False otherwise
+    """
+    from api.database import User
+    
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return False
+    
+    # Manually mark email as verified (simulates successful email verification)
+    user.email_verified = True
+    user.email_verification_token = None
+    user.email_verification_expires_at = None
+    
+    db.commit()
+    return True

@@ -10,12 +10,6 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 
-@pytest.fixture
-def client():
-    """Create test client for FastAPI app."""
-    return TestClient(app)
-
-
 class TestHealthAndCore:
     """Test core API functionality and health endpoints."""
     

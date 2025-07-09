@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     text,
     Enum,
+    CheckConstraint,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -17,7 +18,7 @@ from sqlalchemy.orm import (
     relationship,
     sessionmaker,
 )
-from typing import Generator, Optional, List
+from typing import Generator, Optional, List, Sequence
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime, timezone
@@ -113,6 +114,144 @@ class OrganizationType(PyEnum):
     GOVERNMENT = "government"
     COOPERATIVE = "cooperative"
     OTHER = "other"
+
+
+class OrganizationScope(PyEnum):
+    """
+    Organization scope types for just-in-time organization system.
+
+    Defines the collaboration level and user capacity for organizations:
+    - PERSONAL: Individual user workspace (max 1 user)
+    - SHARED: Team collaboration workspace (default, configurable user limit)
+    - ENTERPRISE: Large organization workspace (unlimited users)
+    """
+
+    PERSONAL = "personal"  # Individual user workspace, max 1 user
+    SHARED = "shared"  # Team collaboration workspace, configurable limit
+    ENTERPRISE = "enterprise"  # Large organization workspace, unlimited users
+
+    @classmethod
+    def get_default_max_users(cls, scope: "OrganizationScope") -> Optional[int]:
+        """
+        Get the default max_users value for a given scope.
+
+        Args:
+            scope: The organization scope
+
+        Returns:
+            int | None: Default max users (None = unlimited)
+        """
+        defaults = {
+            cls.PERSONAL: 1,
+            cls.SHARED: 50,  # Default reasonable limit for shared workspaces
+            cls.ENTERPRISE: None,  # Unlimited
+        }
+        return defaults.get(scope)
+
+    @classmethod
+    def validate_max_users(
+        cls, scope: "OrganizationScope", max_users: Optional[int]
+    ) -> bool:
+        """
+        Validate that max_users is appropriate for the given scope.
+
+        Args:
+            scope: The organization scope
+            max_users: The proposed max users value
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        if scope == cls.PERSONAL:
+            return max_users == 1
+        elif scope == cls.SHARED:
+            return max_users is None or max_users > 0
+        elif scope == cls.ENTERPRISE:
+            return max_users is None  # Enterprise should be unlimited
+        return False
+
+
+class ProjectVisibility(PyEnum):
+    """
+    Project visibility levels for access control in just-in-time organization system.
+
+    Defines who can access projects based on organization assignment:
+    - PERSONAL: Only accessible to project creator (no organization required)
+    - TEAM: Accessible to organization members (organization required)
+    - ORGANIZATION: Accessible to all organization members (organization required)
+    """
+
+    PERSONAL = "personal"  # Only creator can access, no organization required
+    TEAM = "team"  # Organization members can access, organization required
+    ORGANIZATION = "organization"  # All organization members, organization required
+
+    @classmethod
+    def requires_organization(cls, visibility: "ProjectVisibility") -> bool:
+        """
+        Check if visibility level requires organization assignment.
+
+        Args:
+            visibility: The project visibility level
+
+        Returns:
+            bool: True if organization is required, False otherwise
+        """
+        return visibility in [cls.TEAM, cls.ORGANIZATION]
+
+    @classmethod
+    def get_access_description(cls, visibility: "ProjectVisibility") -> str:
+        """
+        Get human-readable description of access level.
+
+        Args:
+            visibility: The project visibility level
+
+        Returns:
+            str: Description of who can access the project
+        """
+        descriptions = {
+            cls.PERSONAL: "Only accessible to project creator",
+            cls.TEAM: "Accessible to team members within organization",
+            cls.ORGANIZATION: "Accessible to all organization members",
+        }
+        return descriptions.get(visibility, "Unknown visibility level")
+
+
+class ProjectStatus(PyEnum):
+    """
+    Project status values for tracking project lifecycle.
+
+    Defines the current state of projects in the system:
+    - ACTIVE: Project is currently being worked on
+    - INACTIVE: Project is paused or not currently active
+    - ARCHIVED: Project is completed and archived
+    - COMPLETED: Project has been successfully completed
+    """
+
+    ACTIVE = "active"  # Currently being worked on
+    INACTIVE = "inactive"  # Paused or not currently active
+    ARCHIVED = "archived"  # Completed and archived
+    COMPLETED = "completed"  # Successfully completed
+
+    @classmethod
+    def get_active_statuses(cls) -> List["ProjectStatus"]:
+        """
+        Get list of statuses considered "active" for filtering.
+
+        Returns:
+            List[ProjectStatus]: Statuses that indicate active projects
+        """
+        return [cls.ACTIVE]
+
+    @classmethod
+    def get_inactive_statuses(cls) -> List["ProjectStatus"]:
+        """
+        Get list of statuses considered "inactive" for filtering.
+
+        Returns:
+            List[ProjectStatus]: Statuses that indicate inactive projects
+        """
+        return [cls.INACTIVE, cls.ARCHIVED, cls.COMPLETED]
 
 
 # Database URL from environment
@@ -218,6 +357,25 @@ class Organization(Base):
     linkedin_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     twitter_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    # Just-in-time organization system fields
+    scope: Mapped[OrganizationScope] = mapped_column(
+        Enum(OrganizationScope, values_callable=get_enum_values),
+        nullable=False,
+        default=OrganizationScope.SHARED,
+        doc="Organization scope defining collaboration level and user capacity",
+    )
+    max_users: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Maximum number of users allowed in this organization (None = unlimited)",
+    )
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=True,
+        doc="ID of the user who created this organization",
+    )
+
     # System fields
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     settings: Mapped[Optional[str]] = mapped_column(
@@ -232,10 +390,90 @@ class Organization(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    # Database constraints for business rules
+    __table_args__ = (
+        CheckConstraint(
+            "max_users IS NULL OR max_users > 0", name="positive_max_users"
+        ),
+        CheckConstraint(
+            "(scope = 'personal' AND max_users = 1) OR scope != 'personal'",
+            name="personal_scope_single_user",
+        ),
+        CheckConstraint(
+            "(scope = 'enterprise' AND max_users IS NULL) OR scope != 'enterprise'",
+            name="enterprise_scope_unlimited",
+        ),
+    )
+
     # Relationships
     users: Mapped[List["User"]] = relationship(
-        "User", back_populates="organization_rel"
+        "User", back_populates="organization_rel", foreign_keys="User.organization_id"
     )
+    creator_rel: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[created_by], post_update=True, viewonly=True
+    )
+
+    def validate_scope_and_max_users(self) -> list[str]:
+        """
+        Validate that scope and max_users are consistent.
+
+        Returns:
+            list[str]: List of validation errors, empty if valid
+        """
+        errors = []
+
+        if not OrganizationScope.validate_max_users(self.scope, self.max_users):
+            if self.scope == OrganizationScope.PERSONAL:
+                errors.append("Personal organizations must have exactly 1 max user")
+            elif self.scope == OrganizationScope.ENTERPRISE:
+                errors.append(
+                    "Enterprise organizations must have unlimited users "
+                    "(max_users = None)"
+                )
+            elif self.scope == OrganizationScope.SHARED:
+                if self.max_users is not None and self.max_users <= 0:
+                    errors.append(
+                        "Shared organizations must have a positive max_users value"
+                    )
+
+        return errors
+
+    def can_add_user(self, db_session) -> bool:
+        """
+        Check if organization can accommodate another user.
+
+        Args:
+            db_session: Database session to query current user count
+
+        Returns:
+            bool: True if user can be added, False otherwise
+        """
+        if self.max_users is None:
+            return True  # Unlimited
+
+        current_user_count = (
+            db_session.query(User)
+            .filter(User.organization_id == self.id, User.is_active is True)
+            .count()
+        )
+
+        return current_user_count < self.max_users
+
+    def get_user_count(self, db_session) -> int:
+        """
+        Get the current number of active users in this organization.
+
+        Args:
+            db_session: Database session to query user count
+
+        Returns:
+            int: Number of active users
+        """
+        return (
+            db_session.query(User)
+            .filter(User.organization_id == self.id, User.is_active is True)
+            .count()
+        )
 
     @classmethod
     def create_from_google_domain(cls, domain: str, name: str) -> "Organization":
@@ -245,6 +483,77 @@ class Organization(Base):
             domain=domain,
             website=f"https://{domain}",
             short_name=domain.split(".")[0].title(),
+        )
+
+    @classmethod
+    def create_personal_workspace(
+        cls, user_id: uuid.UUID, user_name: str
+    ) -> "Organization":
+        """
+        Create a personal workspace for an individual user.
+
+        Args:
+            user_id: ID of the user creating the workspace
+            user_name: Name of the user for workspace naming
+
+        Returns:
+            Organization: Personal workspace organization
+        """
+        return cls(
+            name=f"{user_name}'s Personal Workspace",
+            scope=OrganizationScope.PERSONAL,
+            max_users=1,
+            created_by=user_id,
+        )
+
+    @classmethod
+    def create_shared_workspace(
+        cls, name: str, user_id: uuid.UUID, max_users: Optional[int] = None
+    ) -> "Organization":
+        """
+        Create a shared workspace for team collaboration.
+
+        Args:
+            name: Name of the organization
+            user_id: ID of the user creating the workspace
+            max_users: Maximum number of users (None for default)
+
+        Returns:
+            Organization: Shared workspace organization
+        """
+        if max_users is None:
+            max_users = OrganizationScope.get_default_max_users(
+                OrganizationScope.SHARED
+            )
+
+        return cls(
+            name=name,
+            scope=OrganizationScope.SHARED,
+            max_users=max_users,
+            created_by=user_id,
+        )
+
+    @classmethod
+    def create_enterprise_workspace(
+        cls, name: str, user_id: uuid.UUID, domain: Optional[str] = None
+    ) -> "Organization":
+        """
+        Create an enterprise workspace for large organizations.
+
+        Args:
+            name: Name of the organization
+            user_id: ID of the user creating the workspace
+            domain: Optional domain for the organization
+
+        Returns:
+            Organization: Enterprise workspace organization
+        """
+        return cls(
+            name=name,
+            domain=domain,
+            scope=OrganizationScope.ENTERPRISE,
+            max_users=None,  # Unlimited
+            created_by=user_id,
         )
 
     @classmethod
@@ -331,9 +640,13 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
 
-    # Organization relationship
+    # Organization relationship - supports just-in-time organization assignment
     organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id"),
+        nullable=True,
+        doc="Organization ID - nullable to support just-in-time "
+        "organization assignment during project creation",
     )
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, values_callable=get_enum_values),
@@ -391,7 +704,7 @@ class User(Base):
 
     # Relationships
     organization_rel: Mapped[Optional["Organization"]] = relationship(
-        "Organization", back_populates="users"
+        "Organization", back_populates="users", foreign_keys=[organization_id]
     )
     teams: Mapped[List["Team"]] = relationship(
         "Team", secondary="team_memberships", back_populates="members"
@@ -403,6 +716,60 @@ class User(Base):
     password_history: Mapped[List["PasswordHistory"]] = relationship(
         "PasswordHistory", back_populates="user"
     )
+
+    def is_organization_assigned(self) -> bool:
+        """
+        Check if user has been assigned to an organization.
+
+        In the just-in-time organization system, users start without
+        an organization and get assigned to one during project creation.
+
+        Returns:
+            bool: True if user has an organization, False otherwise
+        """
+        return self.organization_id is not None
+
+    def can_create_personal_projects(self) -> bool:
+        """
+        Check if user can create personal projects.
+
+        Users without organization assignment can always create personal projects.
+        Users with organization assignment should use organization project workflows.
+
+        Returns:
+            bool: True if user can create personal projects
+        """
+        return self.is_active and self.has_projects_access
+
+    def get_organization_status(self) -> str:
+        """
+        Get user's organization assignment status for display purposes.
+
+        Returns:
+            str: Status description for UI display
+        """
+        if not self.is_organization_assigned():
+            return "No organization - can create personal projects or join teams"
+        else:
+            return f"Member of organization {self.organization_id}"
+
+    def assign_to_organization(self, organization_id: uuid.UUID) -> None:
+        """
+        Assign user to an organization (just-in-time assignment).
+
+        This method is called during project creation when a user
+        chooses to create a team project that requires organization membership.
+
+        Args:
+            organization_id: UUID of the organization to assign user to
+        """
+        if self.is_organization_assigned():
+            raise ValueError(
+                f"User {self.email} is already assigned to organization "
+                f"{self.organization_id}"
+            )
+
+        self.organization_id = organization_id
 
 
 # Team model
@@ -557,3 +924,369 @@ class PasswordHistory(Base):
 
 
 # Session model removed - JWT authentication is used instead
+
+
+# Project model
+class Project(Base):
+    """
+    Project model for managing projects in the just-in-time organization system.
+
+    Projects can be created with or without organizations, supporting the
+    just-in-time organization assignment workflow where organization
+    assignment is deferred until collaboration is needed.
+    """
+
+    __tablename__ = "projects"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+
+    # Required fields
+    name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Organization relationship - supports just-in-time organization assignment
+    organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id"),
+        nullable=True,
+        index=True,
+        doc="Organization ID - nullable to support personal projects and "
+        "just-in-time organization assignment",
+    )
+
+    # Creator relationship - required for all projects
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+        doc="ID of the user who created this project",
+    )
+
+    # Project visibility and access control
+    visibility: Mapped[ProjectVisibility] = mapped_column(
+        Enum(ProjectVisibility, values_callable=get_enum_values),
+        nullable=False,
+        default=ProjectVisibility.PERSONAL,
+        doc="Project visibility level determining access control",
+    )
+
+    # Project status and lifecycle
+    status: Mapped[ProjectStatus] = mapped_column(
+        Enum(ProjectStatus, values_callable=get_enum_values),
+        nullable=False,
+        default=ProjectStatus.ACTIVE,
+        doc="Current project status in lifecycle",
+    )
+
+    # System fields
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    settings: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, doc="JSON settings for project configuration"
+    )
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    # Database constraints for business rules
+    __table_args__ = (
+        CheckConstraint(
+            "(visibility = 'personal' AND organization_id IS NULL) OR "
+            "(visibility IN ('team', 'organization') AND organization_id IS NOT NULL)",
+            name="project_visibility_organization_constraint",
+        ),
+    )
+
+    # Relationships
+    organization_rel: Mapped[Optional["Organization"]] = relationship(
+        "Organization",
+        foreign_keys=[organization_id],
+        doc="Organization this project belongs to (None for personal projects)",
+    )
+    creator_rel: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[created_by],
+        doc="User who created this project",
+    )
+
+    def validate_visibility_constraints(self) -> List[str]:
+        """
+        Validate that visibility and organization settings are consistent.
+
+        Returns:
+            List[str]: List of validation errors, empty if valid
+        """
+        errors = []
+
+        if self.visibility == ProjectVisibility.PERSONAL:
+            if self.organization_id is not None:
+                errors.append("Personal projects cannot be assigned to an organization")
+        elif self.visibility in [
+            ProjectVisibility.TEAM,
+            ProjectVisibility.ORGANIZATION,
+        ]:
+            if self.organization_id is None:
+                errors.append(
+                    f"{self.visibility.value.title()} projects must be assigned "
+                    "to an organization"
+                )
+
+        return errors
+
+    def can_be_accessed_by(self, user: "User") -> bool:
+        """
+        Check if a user can access this project based on visibility rules.
+
+        Args:
+            user: User to check access for
+
+        Returns:
+            bool: True if user can access project, False otherwise
+        """
+        # Creator can always access their projects
+        if self.created_by == user.id:
+            return True
+
+        # Personal projects are only accessible to creator
+        if self.visibility == ProjectVisibility.PERSONAL:
+            return False
+
+        # Team and organization projects require organization membership
+        if self.visibility in [ProjectVisibility.TEAM, ProjectVisibility.ORGANIZATION]:
+            if self.organization_id is None:
+                return False  # Invalid state - should not happen
+
+            # User must be in the same organization
+            return user.organization_id == self.organization_id
+
+        return False
+
+    def get_visibility_description(self) -> str:
+        """
+        Get human-readable description of project visibility.
+
+        Returns:
+            str: Description of project access level
+        """
+        return ProjectVisibility.get_access_description(self.visibility)
+
+    def is_personal_project(self) -> bool:
+        """
+        Check if this is a personal project.
+
+        Returns:
+            bool: True if personal project, False otherwise
+        """
+        return (
+            self.visibility == ProjectVisibility.PERSONAL
+            and self.organization_id is None
+        )
+
+    def is_organization_project(self) -> bool:
+        """
+        Check if this is an organization project.
+
+        Returns:
+            bool: True if organization project, False otherwise
+        """
+        return (
+            self.visibility in [ProjectVisibility.TEAM, ProjectVisibility.ORGANIZATION]
+            and self.organization_id is not None
+        )
+
+    def can_be_converted_to_team_project(self, organization_id: uuid.UUID) -> bool:
+        """
+        Check if personal project can be converted to team project.
+
+        Args:
+            organization_id: Organization to convert project to
+
+        Returns:
+            bool: True if conversion is possible, False otherwise
+        """
+        # Check if project is personal and active
+        # organization_id parameter is for future validation logic
+        return self.is_personal_project() and self.status == ProjectStatus.ACTIVE
+
+    @classmethod
+    def create_personal_project(
+        cls, name: str, creator_id: uuid.UUID, description: Optional[str] = None
+    ) -> "Project":
+        """
+        Create a personal project for individual use.
+
+        Args:
+            name: Project name
+            creator_id: ID of user creating the project
+            description: Optional project description
+
+        Returns:
+            Project: Personal project instance
+        """
+        return cls(
+            name=name,
+            description=description,
+            created_by=creator_id,
+            organization_id=None,
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+        )
+
+    @classmethod
+    def create_team_project(
+        cls,
+        name: str,
+        creator_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        description: Optional[str] = None,
+    ) -> "Project":
+        """
+        Create a team project within an organization.
+
+        Args:
+            name: Project name
+            creator_id: ID of user creating the project
+            organization_id: ID of organization the project belongs to
+            description: Optional project description
+
+        Returns:
+            Project: Team project instance
+        """
+        return cls(
+            name=name,
+            description=description,
+            created_by=creator_id,
+            organization_id=organization_id,
+            visibility=ProjectVisibility.TEAM,
+            status=ProjectStatus.ACTIVE,
+        )
+
+    @classmethod
+    def create_organization_project(
+        cls,
+        name: str,
+        creator_id: uuid.UUID,
+        organization_id: uuid.UUID,
+        description: Optional[str] = None,
+    ) -> "Project":
+        """
+        Create an organization-wide project.
+
+        Args:
+            name: Project name
+            creator_id: ID of user creating the project
+            organization_id: ID of organization the project belongs to
+            description: Optional project description
+
+        Returns:
+            Project: Organization project instance
+        """
+        return cls(
+            name=name,
+            description=description,
+            created_by=creator_id,
+            organization_id=organization_id,
+            visibility=ProjectVisibility.ORGANIZATION,
+            status=ProjectStatus.ACTIVE,
+        )
+
+    @classmethod
+    def find_projects_for_user(
+        cls, db: Session, user_id: uuid.UUID, include_personal: bool = True
+    ) -> Sequence["Project"]:
+        """
+        Find all projects accessible to a user.
+
+        Args:
+            db: Database session
+            user_id: ID of user to find projects for
+            include_personal: Whether to include personal projects
+
+        Returns:
+            List[Project]: List of accessible projects
+        """
+        query = db.query(cls)
+        conditions = []
+
+        # Always include projects created by the user
+        conditions.append(cls.created_by == user_id)
+
+        # Include organization projects if user has organization
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.organization_id:
+            conditions.append(
+                (cls.organization_id == user.organization_id)
+                & (
+                    cls.visibility.in_(
+                        [
+                            ProjectVisibility.TEAM,
+                            ProjectVisibility.ORGANIZATION,
+                        ]
+                    )
+                )
+            )
+
+        # Filter by conditions
+        if conditions:
+            from sqlalchemy import or_
+
+            query = query.filter(or_(*conditions))
+
+        # Filter out personal projects if requested
+        if not include_personal:
+            query = query.filter(cls.visibility != ProjectVisibility.PERSONAL)
+
+        return query.filter(cls.is_active.is_(True)).all()
+
+    @classmethod
+    def find_organization_projects(
+        cls, db: Session, organization_id: uuid.UUID
+    ) -> Sequence["Project"]:
+        """
+        Find all projects belonging to an organization.
+
+        Args:
+            db: Database session
+            organization_id: ID of organization to find projects for
+
+        Returns:
+            List[Project]: List of organization projects
+        """
+        return (
+            db.query(cls)
+            .filter(cls.organization_id == organization_id)
+            .filter(cls.is_active.is_(True))
+            .all()
+        )
+
+    @classmethod
+    def find_personal_projects(
+        cls, db: Session, user_id: uuid.UUID
+    ) -> Sequence["Project"]:
+        """
+        Find all personal projects for a user.
+
+        Args:
+            db: Database session
+            user_id: ID of user to find personal projects for
+
+        Returns:
+            List[Project]: List of personal projects
+        """
+        return (
+            db.query(cls)
+            .filter(cls.created_by == user_id)
+            .filter(cls.visibility == ProjectVisibility.PERSONAL)
+            .filter(cls.is_active.is_(True))
+            .all()
+        )

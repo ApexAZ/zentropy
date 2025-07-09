@@ -9,7 +9,15 @@ import time
 
 from .database import engine, Base, test_database_connection
 from .schemas import HealthResponse, MessageResponse
-from .routers import users, teams, calendar_entries, invitations, auth
+from .routers import (
+    users,
+    teams,
+    calendar_entries,
+    invitations,
+    auth,
+    organizations,
+    projects,
+)
 
 # Wait for database with retry logic
 max_retries = 30
@@ -71,6 +79,8 @@ app.include_router(
 app.include_router(
     invitations.router, prefix="/api/v1/invitations", tags=["invitations"]
 )
+app.include_router(organizations.router)  # Already has prefix
+app.include_router(projects.router)  # Already has prefix
 
 # Serve React static files
 if os.path.exists("dist/public"):

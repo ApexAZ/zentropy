@@ -2,7 +2,14 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
-from .database import UserRole, TeamRole, InvitationStatus, RegistrationType
+from .database import (
+    UserRole,
+    TeamRole,
+    InvitationStatus,
+    RegistrationType,
+    ProjectVisibility,
+    ProjectStatus,
+)
 
 
 # User schemas
@@ -42,12 +49,18 @@ class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-# Organization schema for user responses
+# Organization schemas
 class OrganizationResponse(BaseModel):
     id: UUID
     name: str
     short_name: Optional[str] = None
     domain: Optional[str] = None
+    description: Optional[str] = None
+    scope: str  # OrganizationScope enum value
+    max_users: Optional[int] = None
+    created_by: Optional[UUID] = None
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -70,6 +83,7 @@ class PasswordUpdate(BaseModel):
 # Google OAuth schemas
 class GoogleLoginRequest(BaseModel):
     google_token: str
+    organization: Optional[str] = "Optional Company"
 
 
 class GoogleOAuthRequest(BaseModel):
@@ -205,3 +219,41 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+# Project schemas
+class ProjectBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    visibility: ProjectVisibility = ProjectVisibility.PERSONAL
+    status: ProjectStatus = ProjectStatus.ACTIVE
+
+
+class ProjectCreate(ProjectBase):
+    organization_id: Optional[UUID] = None
+
+
+class ProjectUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    visibility: Optional[ProjectVisibility] = None
+    status: Optional[ProjectStatus] = None
+    organization_id: Optional[UUID] = None
+
+
+class ProjectResponse(ProjectBase):
+    id: UUID
+    created_by: UUID
+    organization_id: Optional[UUID] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProjectListResponse(BaseModel):
+    projects: List[ProjectResponse]
+    total: int
+    page: int = 1
+    limit: int = 50

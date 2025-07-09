@@ -191,3 +191,104 @@ export interface PasswordValidationResult {
 		match: boolean;
 	};
 }
+
+// Organization types
+export interface Organization {
+	id: string;
+	name: string;
+	short_name?: string;
+	domain?: string;
+	description?: string;
+	scope: "personal" | "shared" | "enterprise";
+	max_users?: number;
+	created_by?: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CreateOrganizationData {
+	name: string;
+	domain?: string;
+	scope?: "personal" | "shared" | "enterprise";
+	max_users?: number;
+	description?: string;
+}
+
+export interface UpdateOrganizationData {
+	name?: string;
+	domain?: string;
+	scope?: "personal" | "shared" | "enterprise";
+	max_users?: number;
+	description?: string;
+}
+
+export interface DomainCheckResult {
+	domain_found: boolean;
+	domain: string;
+	organization?: Organization;
+	suggestions: {
+		action: "join" | "create" | "personal";
+		can_join: boolean;
+		can_create: boolean;
+		suggested_name?: string;
+		message: string;
+	};
+}
+
+export interface JoinOrganizationResult {
+	message: string;
+	status: string;
+	organization_id: string;
+}
+
+export interface OrganizationListResponse {
+	organizations: Organization[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
+// Project types
+export interface Project {
+	id: string;
+	name: string;
+	description?: string;
+	visibility: "personal" | "team" | "organization";
+	status: "active" | "completed" | "archived";
+	organization_id?: string;
+	created_by: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CreateProjectData {
+	name: string;
+	description?: string;
+	visibility: "personal" | "team" | "organization";
+	organization_id?: string;
+}
+
+export interface UpdateProjectData {
+	name?: string;
+	description?: string;
+	visibility?: "personal" | "team" | "organization";
+	status?: "active" | "completed" | "archived";
+	organization_id?: string;
+}
+
+export interface ProjectListResponse {
+	projects: Project[];
+	total: number;
+	page?: number;
+	limit?: number;
+}
+
+export interface ProjectValidationResult {
+	isValid: boolean;
+	errors: Record<string, string>;
+}
+
+export interface OrganizationValidationResult {
+	isValid: boolean;
+	errors: Record<string, string>;
+}

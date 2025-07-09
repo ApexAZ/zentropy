@@ -19,7 +19,7 @@ from api.main import app
 from api.database import UserRole, TeamRole, InvitationStatus
 from api.database import User, Team, TeamMembership, TeamInvitation
 from api.schemas import UserCreate, TeamCreate, TeamInvitationCreate
-from tests.conftest import create_test_user, create_test_team
+from tests.conftest import create_test_user, create_test_team, manually_verify_user_email
 
 
 class TestRoleEnums:
@@ -187,7 +187,7 @@ class TestDatabaseRoleConstraints:
 class TestRoleBasedAPIAccess:
     """Test role-based access control in API endpoints."""
     
-    def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
+    def create_test_user(self, client, db, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
             "email": email,
@@ -206,6 +206,10 @@ class TestRoleBasedAPIAccess:
             print(f"Registration failed: {response.status_code}, {response.text}")
         assert response.status_code in [200, 201]  # API returns 200, not 201
         
+        # TODO: Remove this when actual email sending is implemented
+        # Manually verify email for testing (bypasses email verification requirement)
+        manually_verify_user_email(db, email)
+        
         # Login to get token
         login_data = {"email": email, "password": "TestPassword123"}
         response = client.post("/api/v1/auth/login-json", json=login_data)
@@ -214,9 +218,9 @@ class TestRoleBasedAPIAccess:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
-    def test_basic_user_team_creation(self, client):
+    def test_basic_user_team_creation(self, client, db):
         """Test that basic users can create teams and become admin."""
-        headers = self.create_test_user(client, role=UserRole.BASIC_USER)
+        headers = self.create_test_user(client, db, role=UserRole.BASIC_USER)
         
         team_data = {
             "name": "Test Team",
@@ -236,17 +240,17 @@ class TestRoleBasedAPIAccess:
         assert len(members) == 1
         # Note: The actual role checking would need the API to return role info
     
-    def test_admin_user_permissions(self, client):
+    def test_admin_user_permissions(self, client, db):
         """Test that admin users have elevated permissions."""
-        headers = self.create_test_user(client, role=UserRole.ADMIN)
+        headers = self.create_test_user(client, db, role=UserRole.ADMIN)
         
         # Admin users should be able to access user management endpoints
         response = client.get("/api/v1/users", headers=headers)
         assert response.status_code == 200
     
-    def test_stakeholder_read_only_access(self, client):
+    def test_stakeholder_read_only_access(self, client, db):
         """Test that stakeholder role has read-only access."""
-        headers = self.create_test_user(client, role=UserRole.STAKEHOLDER)
+        headers = self.create_test_user(client, db, role=UserRole.STAKEHOLDER)
         
         # Stakeholders should be able to view teams (when implemented)
         # This test would need actual stakeholder endpoints
@@ -258,10 +262,10 @@ class TestRoleBasedAPIAccess:
 class TestRoleAssignmentWorkflows:
     """Test role assignment and promotion workflows."""
     
-    def test_team_member_role_assignment(self, client):
+    def test_team_member_role_assignment(self, client, db):
         """Test assigning roles to team members."""
         # Create team admin
-        admin_headers = self.create_test_user(client, "admin@example.com", UserRole.BASIC_USER)
+        admin_headers = self.create_test_user(client, db, "admin@example.com", UserRole.BASIC_USER)
         
         # Create team
         team_data = {"name": "Test Team", "description": "Test Description"}
@@ -285,7 +289,7 @@ class TestRoleAssignmentWorkflows:
         #                       json=invitation_data, headers=admin_headers)
         # assert response.status_code == 201
     
-    def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
+    def create_test_user(self, client, db, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
             "email": email,
@@ -300,6 +304,10 @@ class TestRoleAssignmentWorkflows:
         
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code in [200, 201]  # API returns 200, not 201
+        
+        # TODO: Remove this when actual email sending is implemented
+        # Manually verify email for testing (bypasses email verification requirement)
+        manually_verify_user_email(db, email)
         
         login_data = {"email": email, "password": "TestPassword123"}
         response = client.post("/api/v1/auth/login-json", json=login_data)

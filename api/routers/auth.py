@@ -222,6 +222,54 @@ def logout(
     return MessageResponse(message="Successfully logged out")
 
 
+@router.post("/check-organization-by-email")
+def check_organization_by_email(request: dict, db: Session = Depends(get_db)) -> dict:
+    """
+    Check if the email domain matches any organization and return organization details.
+
+    This endpoint helps autopopulate organization fields during registration
+    by checking the email domain against existing organizations.
+    """
+    email = request.get("email", "").lower().strip()
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
+        )
+
+    # Extract domain from email
+    try:
+        domain = email.split("@")[1]
+    except IndexError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format"
+        )
+
+    # Check if organization exists with this domain
+    organization = (
+        db.query(database.Organization)
+        .filter(database.Organization.domain == domain)
+        .first()
+    )
+
+    if organization:
+        return {
+            "organization_found": True,
+            "organization_id": str(organization.id),
+            "organization_name": organization.name,
+            "organization_domain": organization.domain,
+            "organization_short_name": organization.short_name,
+        }
+    else:
+        return {
+            "organization_found": False,
+            "organization_id": None,
+            "organization_name": None,
+            "organization_domain": domain,
+            "organization_short_name": None,
+        }
+
+
 @router.post("/google-login", response_model=LoginResponse)
 def google_login(
     request: GoogleLoginRequest, http_request: Request, db: Session = Depends(get_db)
@@ -344,6 +392,17 @@ def google_login(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
 
+    # Load organization name for response
+    organization_name = None
+    if user.organization_id:
+        organization = (
+            db.query(database.Organization)
+            .filter(database.Organization.id == user.organization_id)
+            .first()
+        )
+        if organization:
+            organization_name = organization.name
+
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
@@ -352,6 +411,7 @@ def google_login(
             "first_name": user.first_name,
             "last_name": user.last_name,
             "organization_id": user.organization_id,
+            "organization": organization_name,
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,

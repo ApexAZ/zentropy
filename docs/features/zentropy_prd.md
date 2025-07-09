@@ -87,7 +87,8 @@ Zentropy - Product Management Platform has successfully implemented the **authen
 - ❌ **Stakeholder** (`stakeholder`): Read-only access to authorized teams and projects for visibility and reporting
 
 **🔐 ROLE ASSIGNMENT WORKFLOW:**
-- ✅ **Registration Default**: New users get `basic_user` role (principle of least privilege)
+- ✅ **Registration Default**: New users get `basic_user` role with `organization_id = null` (principle of least privilege)
+- ✅ **Organization Assignment**: Deferred to project creation time - users start without organization
 - ✅ **Team Creation**: Basic users creating teams automatically become `admin` for that team  
 - ✅ **Team Membership**: `member` role granted through team invitation system
 - ✅ **Role Inheritance**: Users can have different roles across multiple teams via team_memberships table
@@ -270,14 +271,61 @@ DELETE /api/projects/:id/stakeholders/:userId // Remove stakeholder access from 
 - ❌ Cross-project coordination not implemented
 - ❌ Product roadmap integration not implemented
 
+**🏢 ORGANIZATION MANAGEMENT STRATEGY - JUST-IN-TIME APPROACH:**
+
+**📋 DESIGN PRINCIPLE:**
+Organization creation and association will be handled at the point of project creation, not during user registration. This provides a frictionless registration experience while naturally organizing users when they actually need collaborative features.
+
+**🔄 ORGANIZATION WORKFLOW:**
+1. **User Registration**: No organization assignment - users start with `organization_id = null`
+2. **Project Creation Decision Point**: When creating first project, user chooses:
+   - **Personal Project**: Individual workspace, no organization required
+   - **Team Project**: Triggers organization creation/joining workflow
+3. **Organization Assignment**: Users join/create organizations only when collaboration is needed
+
+**🎯 PROJECT CREATION FLOWS:**
+
+**Individual User Flow:**
+```
+User Creates Project → "Personal" or "Team" Project? 
+├── Personal Project → No organization, individual workspace
+└── Team Project → Organization required → Create/Join Organization
+```
+
+**Team Collaboration Flow:**
+```
+Team Project Selected → Organization Check:
+├── Email Domain Match → "Join [Company Name]?" → Pending approval
+├── No Match + Business Domain → "Create [Company] Organization?" → Becomes admin
+└── Personal Email → "Create Team Workspace?" → Becomes admin
+```
+
+**📊 ORGANIZATION TYPES:**
+- **Personal Workspace**: Single-user organization (scope: "personal")
+- **Team Organization**: Multi-user organization (scope: "shared")
+- **Company Organization**: Domain-verified organization (scope: "enterprise")
+
+**🔧 IMPLEMENTATION REQUIREMENTS:**
+- Organization model with `scope` field (personal/shared/enterprise)
+- Domain-based organization matching during project creation
+- Automatic organization creation for first-time team projects
+- User approval workflow for joining existing organizations
+- Migration path from personal to team organizations
+
 **📝 PLACEHOLDER ENDPOINTS:**
 ```typescript
 // ❌ ALL RETURN 501 NOT IMPLEMENTED:
-POST /api/projects          // Create project workflow
+POST /api/projects          // Create project workflow (includes organization logic)
 POST /api/projects/templates // Auto-generate from templates
 POST /api/sprints           // Create sprint/iteration
 POST /api/sprints/generate  // Auto-generate sprints
 GET  /api/roadmap          // Product roadmap view
+
+// 🆕 ORGANIZATION ENDPOINTS (PLANNED):
+POST /api/organizations/check-domain  // Check email domain for org matching
+POST /api/organizations               // Create organization during project creation
+POST /api/organizations/:id/join      // Join existing organization
+PUT  /api/organizations/:id/approve   // Approve pending member requests
 ```
 
 ### **4.4 Project Timeline & Milestone Management - 🔄 PARTIALLY IMPLEMENTED**
@@ -541,11 +589,12 @@ Project Capacity = Sum(Team Capacities) × Project Allocation Factor
 ## **📝 RECOMMENDATIONS**
 
 ### **🎯 IMMEDIATE PRIORITIES (Next 2-4 weeks):**
-1. **Enhanced Role System Implementation** - Add Project Administrator, Project Lead, and Team Administrator roles with granular permissions
-2. **Sprint Management Implementation** - Complete the missing sprint functionality for project workflow  
-3. **Project-Level Management** - Create project entities with role-based assignment and oversight capabilities
-4. **Capacity Planning API** - Integrate existing working days calculator with API endpoints
-5. **User Search & Team Management** - Add user search functionality for team member management
+1. **Just-in-Time Organization System** - Implement organization creation/assignment at project creation time rather than registration
+2. **Project Creation Workflow** - Build project creation interface with personal/team decision point and organization handling
+3. **Organization Domain Matching** - Implement email domain checking and automatic organization suggestions
+4. **Enhanced Role System Implementation** - Add Project Administrator, Project Lead, and Team Administrator roles with granular permissions
+5. **Sprint Management Implementation** - Complete the missing sprint functionality for project workflow  
+6. **Capacity Planning API** - Integrate existing working days calculator with API endpoints
 
 ### **🔄 MEDIUM-TERM GOALS (1-2 months):**
 1. **Advanced Analytics Dashboard** - Project performance metrics and reporting

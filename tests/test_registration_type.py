@@ -82,7 +82,6 @@ class TestEmailRegistrationWithType:
             "password": "Password123!",
             "first_name": "Email",
             "last_name": "User",
-            "organization": "Email Org",
             "terms_agreement": True
         }
 
@@ -102,7 +101,6 @@ class TestEmailRegistrationWithType:
                 "password": "Password123!",
                 "first_name": "User", 
                 "last_name": "One",
-                "organization": "Org1",
                 "terms_agreement": True
             },
             {
@@ -110,7 +108,6 @@ class TestEmailRegistrationWithType:
                 "password": "Password123!",
                 "first_name": "User",
                 "last_name": "Two", 
-                "organization": "Org2",
                 "terms_agreement": True
             }
         ]
@@ -163,8 +160,7 @@ class TestGoogleOAuthRegistrationWithType:
                 "user_data": {
                     "email": "oauth1@example.com",
                     "first_name": "OAuth1", 
-                    "last_name": "User1",
-                    "organization": "OAuth Org1"
+                    "last_name": "User1"
                 }
             },
             {
@@ -172,8 +168,7 @@ class TestGoogleOAuthRegistrationWithType:
                 "user_data": {
                     "email": "oauth2@example.com",
                     "first_name": "OAuth2",
-                    "last_name": "User2", 
-                    "organization": "OAuth Org2"
+                    "last_name": "User2"
                 }
             }
         ]
@@ -211,7 +206,6 @@ class TestRegistrationTypeInResponses:
             "password": "Password123!",
             "first_name": "Response",
             "last_name": "User",
-            "organization": "Response Org",
             "terms_agreement": True
         }
 
@@ -233,7 +227,6 @@ class TestRegistrationTypeInResponses:
                 "email": "oauth-response@example.com",
                 "first_name": "OAuth",
                 "last_name": "Response",
-                "organization": "OAuth Org",
                 "has_projects_access": True,
                 "email_verified": True,
                 "registration_type": "google_oauth"  # Should be included in response
@@ -261,7 +254,6 @@ class TestRegistrationTypeImmutable:
             "password": "Password123!",
             "first_name": "Immutable",
             "last_name": "User",
-            "organization": "Immutable Org",
             "terms_agreement": True
         }
 

@@ -1,0 +1,604 @@
+"""
+Tests for User Registration without Organization (Just-in-Time Organization System)
+
+These tests verify that users can register without being assigned to an organization,
+supporting the just-in-time organization system where organization assignment is
+deferred until project creation time.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from unittest.mock import patch
+
+from api.database import User, RegistrationType, AuthProvider
+from api.schemas import UserCreate, GoogleOAuthRequest
+
+
+class TestUserRegistrationWithoutOrganization:
+    """Test user registration without organization assignment."""
+    
+    def test_user_registration_without_organization_id(self, client, db):
+        """Test that users can register without providing organization_id."""
+        user_data = {
+            "email": "no-org@example.com",
+            "password": "Password123!",
+            "first_name": "NoOrg",
+            "last_name": "User",
+            "terms_agreement": True
+            # Note: No organization_id provided
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+
+        # Verify user was created without organization
+        user = db.query(User).filter(User.email == "no-org@example.com").first()
+        assert user is not None
+        assert user.organization_id is None
+        assert user.registration_type == RegistrationType.EMAIL
+        assert user.auth_provider == AuthProvider.LOCAL
+    
+    def test_user_registration_with_explicit_null_organization_id(self, client, db):
+        """Test that users can register with explicit null organization_id."""
+        user_data = {
+            "email": "explicit-null@example.com",
+            "password": "Password123!",
+            "first_name": "ExplicitNull",
+            "last_name": "User",
+            "organization_id": None,
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+
+        # Verify user was created without organization
+        user = db.query(User).filter(User.email == "explicit-null@example.com").first()
+        assert user is not None
+        assert user.organization_id is None
+    
+    def test_multiple_users_registration_without_organization(self, client, db):
+        """Test that multiple users can register without organizations."""
+        users_data = [
+            {
+                "email": "user1@example.com",
+                "password": "Password123!",
+                "first_name": "User",
+                "last_name": "One",
+                "terms_agreement": True
+            },
+            {
+                "email": "user2@example.com",
+                "password": "Password123!",
+                "first_name": "User",
+                "last_name": "Two",
+                "terms_agreement": True
+            },
+            {
+                "email": "user3@example.com",
+                "password": "Password123!",
+                "first_name": "User",
+                "last_name": "Three",
+                "terms_agreement": True
+            }
+        ]
+
+        for user_data in users_data:
+            response = client.post("/api/v1/auth/register", json=user_data)
+            assert response.status_code == 201
+
+        # Verify all users were created without organizations
+        emails = [user["email"] for user in users_data]
+        users = db.query(User).filter(User.email.in_(emails)).all()
+        assert len(users) == 3
+        
+        for user in users:
+            assert user.organization_id is None
+            assert user.registration_type == RegistrationType.EMAIL
+    
+    def test_user_response_includes_null_organization_id(self, client):
+        """Test that API response correctly shows null organization_id."""
+        user_data = {
+            "email": "response-null@example.com",
+            "password": "Password123!",
+            "first_name": "ResponseNull",
+            "last_name": "User",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+        
+        user_response = response.json()
+        assert user_response["organization_id"] is None
+        assert user_response["email"] == "response-null@example.com"
+        assert user_response["first_name"] == "ResponseNull"
+        assert user_response["last_name"] == "User"
+
+
+class TestGoogleOAuthRegistrationWithoutOrganization:
+    """Test Google OAuth registration without organization assignment."""
+    
+    @patch('api.google_oauth.verify_google_token')
+    def test_google_oauth_registration_without_organization(self, mock_verify_token, client, db):
+        """Test that Google OAuth users can register without organization."""
+        # Mock Google token verification to return valid user info
+        mock_verify_token.return_value = {
+            "email": "oauth-no-org@example.com",
+            "given_name": "OAuthNoOrg",
+            "family_name": "User",
+            "sub": "google-oauth-no-org-123",
+            "email_verified": True
+        }
+
+        oauth_data = {
+            "credential": "mock-google-jwt-token"
+        }
+
+        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        assert response.status_code == 200
+
+        # Verify user was created without organization
+        user = db.query(User).filter(User.email == "oauth-no-org@example.com").first()
+        assert user is not None
+        assert user.organization_id is None
+        assert user.registration_type == RegistrationType.GOOGLE_OAUTH
+        assert user.auth_provider == AuthProvider.GOOGLE
+    
+    @patch('api.google_oauth.verify_google_token')
+    def test_google_oauth_response_shows_null_organization(self, mock_verify_token, client):
+        """Test that Google OAuth response correctly shows null organization_id."""
+        mock_verify_token.return_value = {
+            "email": "oauth-response-null@example.com",
+            "given_name": "OAuthResponseNull",
+            "family_name": "User",
+            "sub": "google-oauth-response-null-123",
+            "email_verified": True
+        }
+
+        oauth_data = {
+            "credential": "mock-google-jwt-token"
+        }
+
+        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        assert response.status_code == 200
+        
+        login_response = response.json()
+        # The user object in the response should show null organization
+        user_data = login_response["user"]
+        assert user_data["organization_id"] is None
+
+
+class TestUserCreateSchemaValidation:
+    """Test UserCreate schema validation for organization-less registration."""
+    
+    def test_user_create_schema_allows_missing_organization_id(self):
+        """Test that UserCreate schema validates without organization_id."""
+        # This should not raise any validation errors
+        user_create = UserCreate(
+            email="schema-test@example.com",
+            password="Password123!",
+            first_name="Schema",
+            last_name="Test",
+            terms_agreement=True
+            # No organization_id provided
+        )
+        
+        assert user_create.email == "schema-test@example.com"
+        assert user_create.organization_id is None
+    
+    def test_user_create_schema_allows_explicit_null_organization_id(self):
+        """Test that UserCreate schema validates with explicit null organization_id."""
+        user_create = UserCreate(
+            email="schema-null@example.com",
+            password="Password123!",
+            first_name="SchemaNulL",
+            last_name="Test",
+            organization_id=None,
+            terms_agreement=True
+        )
+        
+        assert user_create.email == "schema-null@example.com"
+        assert user_create.organization_id is None
+    
+    def test_user_create_schema_default_values(self):
+        """Test that UserCreate schema has correct default values."""
+        user_create = UserCreate(
+            email="defaults@example.com",
+            password="Password123!",
+            first_name="Defaults",
+            last_name="Test",
+            terms_agreement=True
+        )
+        
+        # Verify default values from UserBase
+        assert user_create.organization_id is None
+        assert user_create.role.value == "basic_user"  # Default from UserRole.BASIC_USER
+        assert user_create.has_projects_access is True
+
+
+class TestUserDatabaseConstraints:
+    """Test database constraints for users without organizations."""
+    
+    def test_user_model_allows_null_organization_id(self, db):
+        """Test that User model allows null organization_id in database."""
+        user = User(
+            email="db-constraint@example.com",
+            first_name="DbConstraint",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,  # Explicitly null
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        # This should not raise any database constraint errors
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.organization_id is None
+        assert user.email == "db-constraint@example.com"
+    
+    def test_user_organization_relationship_with_null_organization(self, db):
+        """Test that User.organization_rel relationship works with null organization_id."""
+        user = User(
+            email="relationship-null@example.com",
+            first_name="RelationshipNull",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # organization_rel should be None when organization_id is None
+        assert user.organization_rel is None
+    
+    def test_multiple_users_with_null_organizations(self, db):
+        """Test that multiple users can have null organization_id."""
+        users = []
+        for i in range(5):
+            user = User(
+                email=f"multi-null-{i}@example.com",
+                first_name=f"MultiNull{i}",
+                last_name="Test",
+                password_hash="hashed_password",
+                organization_id=None,
+                registration_type=RegistrationType.EMAIL,
+                auth_provider=AuthProvider.LOCAL
+            )
+            users.append(user)
+            db.add(user)
+        
+        db.commit()
+        
+        # Verify all users were created successfully with null organizations
+        for user in users:
+            db.refresh(user)
+            assert user.organization_id is None
+            assert user.organization_rel is None
+
+
+class TestUserQueryingWithNullOrganizations:
+    """Test querying users with null organizations."""
+    
+    def test_query_users_without_organization(self, db):
+        """Test querying for users who don't have an organization assigned."""
+        import uuid
+        
+        # Create users with and without organizations
+        user_with_org = User(
+            email="with-org@example.com",
+            first_name="WithOrg",
+            last_name="User",
+            password_hash="hashed_password",
+            organization_id=uuid.UUID("11111111-1111-1111-1111-111111111111"),  # Some UUID
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        user_without_org = User(
+            email="without-org@example.com",
+            first_name="WithoutOrg",
+            last_name="User",
+            password_hash="hashed_password",
+            organization_id=None,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user_with_org)
+        db.add(user_without_org)
+        db.commit()
+        
+        # Query for users without organization
+        users_without_org = db.query(User).filter(User.organization_id.is_(None)).all()
+        
+        # Should find the user without organization
+        assert len(users_without_org) >= 1
+        found_user = next((u for u in users_without_org if u.email == "without-org@example.com"), None)
+        assert found_user is not None
+        assert found_user.organization_id is None
+    
+    def test_count_users_without_organization(self, db):
+        """Test counting users who don't have an organization assigned."""
+        # Create several users without organizations
+        for i in range(3):
+            user = User(
+                email=f"count-test-{i}@example.com",
+                first_name=f"CountTest{i}",
+                last_name="User",
+                password_hash="hashed_password",
+                organization_id=None,
+                registration_type=RegistrationType.EMAIL,
+                auth_provider=AuthProvider.LOCAL
+            )
+            db.add(user)
+        
+        db.commit()
+        
+        # Count users without organization
+        count = db.query(User).filter(User.organization_id.is_(None)).count()
+        
+        # Should be at least 3 (the ones we just created)
+        assert count >= 3
+
+
+class TestJustInTimeOrganizationReadiness:
+    """Test that the system is ready for just-in-time organization assignment."""
+    
+    def test_user_can_be_updated_with_organization_later(self, client, db):
+        """Test that users created without organization can be assigned to one later."""
+        # First, register user without organization
+        user_data = {
+            "email": "later-org@example.com",
+            "password": "Password123!",
+            "first_name": "LaterOrg",
+            "last_name": "User",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+
+        # Verify user starts without organization
+        user = db.query(User).filter(User.email == "later-org@example.com").first()
+        assert user is not None
+        assert user.organization_id is None
+        
+        # TODO: In future phases, this will test organization assignment during project creation
+        # For now, we just verify the user can be updated in the database
+        import uuid
+        test_org_id = uuid.uuid4()
+        user.organization_id = test_org_id
+        db.commit()
+        db.refresh(user)
+        
+        assert user.organization_id == test_org_id
+    
+    def test_registration_flow_supports_frictionless_signup(self, client):
+        """Test that registration requires minimal information (no organization)."""
+        # Minimal registration data - just what's required for frictionless signup
+        minimal_user_data = {
+            "email": "frictionless@example.com",
+            "password": "Password123!",
+            "first_name": "Frictionless",
+            "last_name": "User",
+            "terms_agreement": True
+            # No organization, role, or other optional fields
+        }
+
+        response = client.post("/api/v1/auth/register", json=minimal_user_data)
+        assert response.status_code == 201
+        
+        user_response = response.json()
+        assert user_response["email"] == "frictionless@example.com"
+        assert user_response["organization_id"] is None
+        assert user_response["has_projects_access"] is True  # Should default to True
+
+
+class TestUserOrganizationUtilityMethods:
+    """Test utility methods for organization management on User model."""
+    
+    def test_is_organization_assigned_with_no_organization(self, db):
+        """Test is_organization_assigned returns False for users without organization."""
+        user = User(
+            email="no-org-util@example.com",
+            first_name="NoOrgUtil",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.is_organization_assigned() is False
+    
+    def test_is_organization_assigned_with_organization(self, db):
+        """Test is_organization_assigned returns True for users with organization."""
+        import uuid
+        
+        user = User(
+            email="with-org-util@example.com",
+            first_name="WithOrgUtil",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=uuid.uuid4(),
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.is_organization_assigned() is True
+    
+    def test_can_create_personal_projects_active_user(self, db):
+        """Test can_create_personal_projects for active user with projects access."""
+        user = User(
+            email="personal-projects@example.com",
+            first_name="PersonalProjects",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            is_active=True,
+            has_projects_access=True,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.can_create_personal_projects() is True
+    
+    def test_can_create_personal_projects_inactive_user(self, db):
+        """Test can_create_personal_projects for inactive user."""
+        user = User(
+            email="inactive-projects@example.com",
+            first_name="InactiveProjects",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            is_active=False,
+            has_projects_access=True,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.can_create_personal_projects() is False
+    
+    def test_can_create_personal_projects_no_access(self, db):
+        """Test can_create_personal_projects for user without projects access."""
+        user = User(
+            email="no-access-projects@example.com",
+            first_name="NoAccessProjects",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            is_active=True,
+            has_projects_access=False,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        assert user.can_create_personal_projects() is False
+    
+    def test_get_organization_status_no_organization(self, db):
+        """Test get_organization_status for user without organization."""
+        user = User(
+            email="status-no-org@example.com",
+            first_name="StatusNoOrg",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        status = user.get_organization_status()
+        assert "No organization" in status
+        assert "personal projects" in status
+    
+    def test_get_organization_status_with_organization(self, db):
+        """Test get_organization_status for user with organization."""
+        import uuid
+        org_id = uuid.uuid4()
+        
+        user = User(
+            email="status-with-org@example.com",
+            first_name="StatusWithOrg",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=org_id,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        status = user.get_organization_status()
+        assert "Member of organization" in status
+        assert str(org_id) in status
+    
+    def test_assign_to_organization_success(self, db):
+        """Test successful organization assignment."""
+        import uuid
+        
+        user = User(
+            email="assign-org@example.com",
+            first_name="AssignOrg",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=None,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Initially no organization
+        assert user.is_organization_assigned() is False
+        
+        # Assign to organization
+        new_org_id = uuid.uuid4()
+        user.assign_to_organization(new_org_id)
+        
+        assert user.organization_id == new_org_id
+        assert user.is_organization_assigned() is True
+    
+    def test_assign_to_organization_already_assigned_fails(self, db):
+        """Test that assigning organization to user who already has one fails."""
+        import uuid
+        
+        existing_org_id = uuid.uuid4()
+        user = User(
+            email="already-assigned@example.com",
+            first_name="AlreadyAssigned",
+            last_name="Test",
+            password_hash="hashed_password",
+            organization_id=existing_org_id,
+            registration_type=RegistrationType.EMAIL,
+            auth_provider=AuthProvider.LOCAL
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Try to assign to different organization
+        new_org_id = uuid.uuid4()
+        
+        with pytest.raises(ValueError, match="already assigned to organization"):
+            user.assign_to_organization(new_org_id)
+        
+        # Organization should remain unchanged
+        assert user.organization_id == existing_org_id
