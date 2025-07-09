@@ -6,9 +6,9 @@
 
 Our testing strategy is built on a simple, powerful idea: **write meaningful tests that prevent real bugs.** We favor clarity and effectiveness over dogma.
 
--   **TDD is Mandatory**: Write tests before you write code. Follow the Red-Green-Refactor cycle.
--   **Focus on Behavior**: Test what the user experiences and what the code *does*, not its internal implementation details.
--   **Zero-Tolerance for Lint**: All code must pass static analysis checks (`npm run quality`) before it is considered complete.
+- **TDD is Mandatory**: Write tests, then write the code, run the test, then refactor the code for robustness
+- **Focus on Behavior**: Test what the user experiences and what the code _does_, not its internal implementation details.
+- **Zero-Tolerance for Lint**: All code must pass static analysis checks (`npm run quality`) before it is considered complete.
 
 ## 2. The Core Testing Workflow
 
@@ -16,15 +16,15 @@ This is the practical, step-by-step guide for adding new, tested features.
 
 ### Step 1: What Are You Building?
 
--   **A new API endpoint?** -> Write a **Backend Integration Test**.
--   **A new UI component or page?** -> Write a **Frontend Workflow Test**.
+- **A new API endpoint?** -> Write a **Backend Integration Test**.
+- **A new UI component or page?** -> Write a **Frontend Workflow Test**.
 
 ### Step 2: Writing a Backend Test (API Endpoints)
 
 1.  **Create the Test File**: e.g., `tests/test_your_feature.py`.
 2.  **Write the Test Function**:
-    -   Use a descriptive name: `test_create_widget_as_authorized_user()`.
-    -   **Crucially, add the `client` and `db` fixtures to the function signature.** This automatically enables the isolated test database.
+    - Use a descriptive name: `test_create_widget_as_authorized_user()`.
+    - **Crucially, add the `client` and `db` fixtures to the function signature.** This automatically enables the isolated test database.
 3.  **Follow the Arrange-Act-Assert Pattern**:
 
     ```python
@@ -73,37 +73,41 @@ Our frontend testing uses a **Hybrid Approach**: we test business logic separate
 
 To ensure a clean, isolated database for your Python tests, explicitly request the `client` and `db` fixtures in your test functions.
 
--   **What it is**: A system in `tests/conftest.py` that provides an isolated, in-memory SQLite database for each test function.
--   **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
--   **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
+- **What it is**: A system in `tests/conftest.py` that provides an isolated, in-memory SQLite database for each test function.
+- **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
+- **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
 
 ## 4. Static Analysis & Code Quality: The Linter is the Law
 
 We enforce a strict, consistent, and automated approach to code quality. The linter and formatter are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors. These checks are run automatically by pre-commit hooks.
 
 ### Philosophy: Zero Tolerance
--   **If the linter fails, your code is not ready.** No exceptions.
--   **Automate Everything**: We use tools to format and fix issues automatically. Use `npm run fix` before every commit.
--   **Consistency is Key**: All code, regardless of author, must look and feel the same.
+
+- **If the linter fails, your code is not ready.** No exceptions.
+- **Automate Everything**: We use tools to format and fix issues automatically. Use `npm run fix` before every commit.
+- **Consistency is Key**: All code, regardless of author, must look and feel the same.
 
 ### Our Tooling
--   **Formatting**: **Prettier** for TypeScript/React and **Black** for Python. These are opinionated formatters that handle all stylistic choices.
-    -   *Your job is to write the code, their job is to format it.*
-    -   **Configuration**: `.prettierrc`, `.prettierignore`, `pyproject.toml` (for Black).
--   **Linting**: **ESLint** for TypeScript/React and **Flake8** for Python. These tools catch potential bugs, enforce best practices, and prevent unsafe patterns.
-    -   **Configuration**: `eslint.config.js` is the source of truth for all frontend linting rules.
--   **Type Checking**: **TypeScript (tsc)** for the frontend and **pyright** for the backend. This is our first line of defense against runtime errors.
-    -   **Configuration**: `tsconfig.json`, `pyrightconfig.json`.
+
+- **Formatting**: **Prettier** for TypeScript/React and **Black** for Python. These are opinionated formatters that handle all stylistic choices.
+    - _Your job is to write the code, their job is to format it._
+    - **Configuration**: `.prettierrc`, `.prettierignore`, `pyproject.toml` (for Black).
+- **Linting**: **ESLint** for TypeScript/React and **Flake8** for Python. These tools catch potential bugs, enforce best practices, and prevent unsafe patterns.
+    - **Configuration**: `eslint.config.js` is the source of truth for all frontend linting rules.
+- **Type Checking**: **TypeScript (tsc)** for the frontend and **pyright** for the backend. This is our first line of defense against runtime errors.
+    - **Configuration**: `tsconfig.json`, `pyrightconfig.json`.
 
 ### Key ESLint/TypeScript Guidelines
+
 While the full configuration is in `eslint.config.js`, these are the most important principles we enforce:
 
--   **No `any`**: The `any` type is forbidden. If you need an escape hatch, use `unknown` and perform type-safe validation.
--   **No Unsafe Operations**: Rules like `@typescript-eslint/no-unsafe-assignment` and `@typescript-eslint/no-unsafe-call` are enabled to prevent runtime type errors.
--   **Strict Type Checking**: All `strict` flags in `tsconfig.json` are enabled. This includes `noImplicitReturns` and `noUncheckedIndexedAccess`.
--   **Explicit Return Types**: Functions must have explicit return types to ensure clarity and prevent bugs.
+- **No `any`**: The `any` type is forbidden. If you need an escape hatch, use `unknown` and perform type-safe validation.
+- **No Unsafe Operations**: Rules like `@typescript-eslint/no-unsafe-assignment` and `@typescript-eslint/no-unsafe-call` are enabled to prevent runtime type errors.
+- **Strict Type Checking**: All `strict` flags in `tsconfig.json` are enabled. This includes `noImplicitReturns` and `noUncheckedIndexedAccess`.
+- **Explicit Return Types**: Functions must have explicit return types to ensure clarity and prevent bugs.
 
 ### How to Comply
+
 1.  **Install the Recommended VS Code Extensions**: `dbaeumer.vscode-eslint` and `ms-python.black-formatter`. This will give you real-time feedback.
 2.  **Run `npm run fix` Often**: This command will automatically format your code with Prettier/Black and fix any auto-fixable ESLint errors.
 3.  **Run `npm run quality` Before Committing**: This is the same check the CI pipeline runs. If it passes on your machine, it will pass in the pipeline.

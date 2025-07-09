@@ -833,6 +833,15 @@ These recommendations align with the principles outlined in:
         *   **Component Usage Analysis**: Identified that `OAuthProviders.tsx` component is not currently used in application code but preserved as it's documented in architecture and has comprehensive test coverage
         *   **Quality Verification**: All changes pass TypeScript compilation and maintain code functionality
         *   **Codebase Impact**: Eliminated 3 instances of dead code while preserving all functional components and intentionally unused but documented features
-*   **Error Handling Consistency**:
+*   **✅ Error Handling Consistency** [COMPLETED]:
     *   **Issue**: While generally good, ensure all `fetch` calls (especially those currently direct) have consistent `try...catch` blocks and user-friendly error message handling, aligning with `src/client/services/README.md` - "Error Handling".
+    *   **✅ Actions Taken**:
+        *   **Migrated TeamConfigurationPage to TeamService**: Replaced 5 direct fetch calls with service layer methods (getTeam, updateTeamBasicInfo, updateTeamVelocity, addTeamMember, removeTeamMember, createSprint)
+        *   **Migrated CalendarPage to CalendarService/TeamService**: Replaced 6 direct fetch calls with service layer methods (getInitializationData, getCalendarEntries, createCalendarEntry, updateCalendarEntry, deleteCalendarEntry, getTeamUsers)
+        *   **Consistent Error Handling**: All migrated functions now follow Three-Layer Error Architecture from service documentation with proper try/catch blocks and user-friendly toast notifications
+        *   **Preserved Appropriate Fetch Calls**: 3 fetch calls remain outside service layer with valid architectural reasons:
+            *   `logger.ts` - External logging infrastructure (not business logic)
+            *   `useAuth.ts` - Core authentication operations (prevents circular dependencies)
+            *   `useEmailVerification.ts` - Self-contained authentication flow
+        *   **Quality Verification**: TypeScript compilation passes successfully, maintaining type safety and consistent error handling patterns
 

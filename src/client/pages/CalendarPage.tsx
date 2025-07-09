@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { CalendarEntry, Team, User, CreateCalendarEntryData } from "../types";
 import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from "../utils/formatters";
+import { CalendarService, TeamService } from "../services";
 
 const CalendarPage: React.FC = () => {
 	// State management
@@ -42,21 +43,7 @@ const CalendarPage: React.FC = () => {
 				setIsLoading(true);
 				setError("");
 
-				// Load teams and users in parallel
-				const [teamsResponse, usersResponse] = await Promise.all([
-					fetch("/api/v1/teams"),
-					fetch("/api/v1/users")
-				]);
-
-				if (!teamsResponse.ok || !usersResponse.ok) {
-					throw new Error("Failed to load initial data");
-				}
-
-				const [teamsData, usersData] = await Promise.all([
-					teamsResponse.json() as Promise<Team[]>,
-					usersResponse.json() as Promise<User[]>
-				]);
-
+				const { teams: teamsData, users: usersData } = await CalendarService.getInitializationData();
 				setTeams(teamsData);
 				setUsers(usersData);
 			} catch (err) {
@@ -73,24 +60,19 @@ const CalendarPage: React.FC = () => {
 	useEffect(() => {
 		const loadCalendarEntries = async () => {
 			try {
-				const params = new URLSearchParams();
+				const filters: { team_id?: string; month?: string; year?: string } = {};
 				if (selectedTeam) {
-					params.append("team_id", selectedTeam);
+					filters.team_id = selectedTeam;
 				}
 				if (selectedMonth) {
 					const [year, month] = selectedMonth.split("-");
 					if (year && month) {
-						params.append("month", month);
-						params.append("year", year);
+						filters.month = month;
+						filters.year = year;
 					}
 				}
 
-				const response = await fetch(`/api/v1/calendar_entries?${params.toString()}`);
-				if (!response.ok) {
-					throw new Error(`Failed to load entries: ${response.status}`);
-				}
-
-				const data = (await response.json()) as CalendarEntry[];
+				const data = await CalendarService.getCalendarEntries(filters);
 				setEntries(data);
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
@@ -103,24 +85,19 @@ const CalendarPage: React.FC = () => {
 	// Refresh entries function for post-operation updates
 	const refreshEntries = async (): Promise<void> => {
 		try {
-			const params = new URLSearchParams();
+			const filters: { team_id?: string; month?: string; year?: string } = {};
 			if (selectedTeam) {
-				params.append("team_id", selectedTeam);
+				filters.team_id = selectedTeam;
 			}
 			if (selectedMonth) {
 				const [year, month] = selectedMonth.split("-");
 				if (year && month) {
-					params.append("month", month);
-					params.append("year", year);
+					filters.month = month;
+					filters.year = year;
 				}
 			}
 
-			const response = await fetch(`/api/v1/calendar_entries?${params.toString()}`);
-			if (!response.ok) {
-				throw new Error(`Failed to load entries: ${response.status}`);
-			}
-
-			const data = (await response.json()) as CalendarEntry[];
+			const data = await CalendarService.getCalendarEntries(filters);
 			setEntries(data);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
@@ -133,18 +110,7 @@ const CalendarPage: React.FC = () => {
 			setIsLoading(true);
 			setError("");
 
-			// Load teams and users in parallel
-			const [teamsResponse, usersResponse] = await Promise.all([fetch("/api/v1/teams"), fetch("/api/v1/users")]);
-
-			if (!teamsResponse.ok || !usersResponse.ok) {
-				throw new Error("Failed to load initial data");
-			}
-
-			const [teamsData, usersData] = await Promise.all([
-				teamsResponse.json() as Promise<Team[]>,
-				usersResponse.json() as Promise<User[]>
-			]);
-
+			const { teams: teamsData, users: usersData } = await CalendarService.getInitializationData();
 			setTeams(teamsData);
 			setUsers(usersData);
 		} catch (err) {
@@ -175,11 +141,8 @@ const CalendarPage: React.FC = () => {
 
 	const loadTeamUsers = async (teamId: string): Promise<void> => {
 		try {
-			const response = await fetch(`/api/v1/teams/${teamId}/users`);
-			if (response.ok) {
-				const users = (await response.json()) as User[];
-				setTeamUsers(users);
-			}
+			const users = await TeamService.getTeamUsers(teamId);
+			setTeamUsers(users);
 		} catch {
 			// Error loading team users - handle silently
 		}
@@ -271,20 +234,10 @@ const CalendarPage: React.FC = () => {
 		}
 
 		try {
-			const method = isEditing ? "PUT" : "POST";
-			const url = isEditing ? `/api/v1/calendar_entries/${currentEntry?.id}` : "/api/v1/calendar_entries";
-
-			const response = await fetch(url, {
-				method,
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(formData)
-			});
-
-			if (!response.ok) {
-				const errorData = (await response.json()) as { message?: string };
-				throw new Error(errorData.message ?? "Failed to save calendar entry");
+			if (isEditing && currentEntry) {
+				await CalendarService.updateCalendarEntry(currentEntry.id, formData);
+			} else {
+				await CalendarService.createCalendarEntry(formData);
 			}
 
 			setToast({
@@ -295,7 +248,6 @@ const CalendarPage: React.FC = () => {
 			closeModals();
 			await refreshEntries();
 		} catch (err) {
-			// console.error('Error saving calendar entry:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to save calendar entry",
 				type: "error"
@@ -309,14 +261,7 @@ const CalendarPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/calendar_entries/${currentEntry.id}`, {
-				method: "DELETE"
-			});
-
-			if (!response.ok) {
-				const errorData = (await response.json()) as { message?: string };
-				throw new Error(errorData.message ?? "Failed to delete calendar entry");
-			}
+			await CalendarService.deleteCalendarEntry(currentEntry.id);
 
 			setToast({
 				message: "Calendar entry deleted successfully!",
@@ -326,7 +271,6 @@ const CalendarPage: React.FC = () => {
 			closeModals();
 			await refreshEntries();
 		} catch (err) {
-			// console.error('Error deleting calendar entry:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to delete calendar entry",
 				type: "error"

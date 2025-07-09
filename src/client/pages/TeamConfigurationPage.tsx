@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberData, CreateSprintData } from "../types";
 import { formatDate, getDayName } from "../utils/formatters";
+import { TeamService } from "../services";
 
 // interface GenerateSprintsData {
 //   starting_sprint_number: number
@@ -71,19 +72,11 @@ const TeamConfigurationPage: React.FC = () => {
 			// Load team data - assuming we have a team ID (could come from URL params)
 			const teamId = "1"; // This would typically come from route params
 
-			const [teamResponse, membersResponse, sprintsResponse] = await Promise.all([
-				fetch(`/api/v1/teams/${teamId}`),
-				fetch(`/api/v1/teams/${teamId}/members`),
-				fetch(`/api/v1/teams/${teamId}/sprints`)
+			const [teamData, membersData, sprintsData] = await Promise.all([
+				TeamService.getTeam(teamId),
+				TeamService.getTeamMembers(teamId).catch(() => []), // Graceful fallback for empty data
+				TeamService.getTeamSprints(teamId).catch(() => []) // Graceful fallback for empty data
 			]);
-
-			if (!teamResponse.ok) {
-				throw new Error("Failed to load team configuration");
-			}
-
-			const teamData = (await teamResponse.json()) as Team;
-			const membersData = membersResponse.ok ? ((await membersResponse.json()) as TeamMember[]) : [];
-			const sprintsData = sprintsResponse.ok ? ((await sprintsResponse.json()) as Sprint[]) : [];
 
 			setTeam(teamData);
 			setTeamMembers(membersData);
@@ -100,7 +93,6 @@ const TeamConfigurationPage: React.FC = () => {
 				sprint_length: Math.ceil(teamData.sprint_length_days / 7)
 			});
 		} catch (err) {
-			// console.error('Error loading team configuration:', err)
 			setError(err instanceof Error ? err.message : "Failed to load team configuration");
 		} finally {
 			setIsLoading(false);
@@ -115,31 +107,13 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/teams/${team.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					name: teamBasicData.name,
-					description: teamBasicData.description,
-					working_days: teamBasicData.working_days,
-					working_days_per_week: teamBasicData.working_days.length
-				})
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to update team information");
-			}
-
-			const updatedTeam = (await response.json()) as Team;
+			const updatedTeam = await TeamService.updateTeamBasicInfo(team.id, teamBasicData);
 			setTeam(updatedTeam);
 			setToast({
 				message: "Team information updated successfully!",
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error updating team:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to update team information",
 				type: "error"
@@ -155,29 +129,13 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/teams/${team.id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					velocity_baseline: velocityData.baseline_velocity,
-					sprint_length_days: velocityData.sprint_length * 7
-				})
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to update velocity settings");
-			}
-
-			const updatedTeam = (await response.json()) as Team;
+			const updatedTeam = await TeamService.updateTeamVelocity(team.id, velocityData);
 			setTeam(updatedTeam);
 			setToast({
 				message: "Velocity settings updated successfully!",
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error updating velocity:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to update velocity settings",
 				type: "error"
@@ -205,20 +163,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/teams/${team.id}/members`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(addMemberData)
-			});
-
-			if (!response.ok) {
-				const errorData = (await response.json()) as { message?: string };
-				throw new Error(errorData.message ?? "Failed to add team member");
-			}
-
-			const newMember = (await response.json()) as TeamMember;
+			const newMember = await TeamService.addTeamMember(team.id, addMemberData);
 			setTeamMembers([...teamMembers, newMember]);
 			setShowAddMemberModal(false);
 			setAddMemberData({ email: "", role: "member" });
@@ -228,7 +173,6 @@ const TeamConfigurationPage: React.FC = () => {
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error adding member:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to add team member",
 				type: "error"
@@ -242,21 +186,13 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/teams/${team.id}/members/${memberId}`, {
-				method: "DELETE"
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to remove team member");
-			}
-
+			await TeamService.removeTeamMember(team.id, memberId);
 			setTeamMembers(teamMembers.filter(member => member.id !== memberId));
 			setToast({
 				message: "Team member removed successfully!",
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error removing member:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to remove team member",
 				type: "error"
@@ -295,22 +231,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
-			const response = await fetch(`/api/v1/teams/${team.id}/sprints`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					...createSprintData,
-					team_id: team.id
-				})
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to create sprint");
-			}
-
-			const newSprint = (await response.json()) as Sprint;
+			const newSprint = await TeamService.createSprint(team.id, createSprintData);
 			setSprints([...sprints, newSprint]);
 			setShowCreateSprintModal(false);
 			setCreateSprintData({ name: "", start_date: "", end_date: "" });
@@ -320,7 +241,6 @@ const TeamConfigurationPage: React.FC = () => {
 				type: "success"
 			});
 		} catch (err) {
-			// console.error('Error creating sprint:', err)
 			setToast({
 				message: err instanceof Error ? err.message : "Failed to create sprint",
 				type: "error"
