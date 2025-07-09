@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
@@ -39,8 +39,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Organization schema for user responses
@@ -50,8 +49,7 @@ class OrganizationResponse(BaseModel):
     short_name: Optional[str] = None
     domain: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserWithOrganizationResponse(UserResponse):
@@ -105,8 +103,7 @@ class TeamResponse(TeamBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TeamWithMembers(TeamResponse):
@@ -142,8 +139,7 @@ class CalendarEntryResponse(CalendarEntryBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Team invitation schemas
@@ -166,8 +162,7 @@ class TeamInvitationResponse(TeamInvitationBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Authentication schemas

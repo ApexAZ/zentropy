@@ -293,7 +293,7 @@ import { OAuthProviders } from './OAuthProviders';
 
 ### Semantic Color System
 
-All components use semantic color classes that map to CSS variables:
+All components use semantic color classes defined in `tailwind.config.js` as the single source of truth:
 
 ```css
 /* Semantic classes used throughout components */
@@ -304,6 +304,12 @@ All components use semantic color classes that map to CSS variables:
 .text-primary         /* Main text color */
 .text-contrast        /* High contrast text */
 ```
+
+**Color Management:**
+- All semantic colors are defined in `tailwind.config.js` under `theme.extend.colors`
+- Includes both base colors (interactive, layout-background, etc.) and semantic state colors (error, success, warning, neutral)
+- To modify colors, update the values in `tailwind.config.js` - this is the canonical source
+- The `styles.css` file contains spacing and radius variables only, not colors
 
 ### Consistent Spacing
 
