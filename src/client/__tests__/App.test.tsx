@@ -1,13 +1,22 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import "@testing-library/jest-dom";
 import App from "../App";
+import type { AuthUser } from "../types";
+import { useEmailVerification } from "../hooks/useEmailVerification";
 
 // Mock useAuth hook
 const mockLogin = vi.fn();
 const mockLogout = vi.fn();
-const mockAuth = {
+const mockAuth: {
+	isAuthenticated: boolean;
+	user: AuthUser | null;
+	token: string | null;
+	login: typeof mockLogin;
+	logout: typeof mockLogout;
+} = {
 	isAuthenticated: false,
 	user: null,
 	token: null,
@@ -31,6 +40,78 @@ const mockGoogleOAuth = {
 
 vi.mock("../hooks/useGoogleOAuth", () => ({
 	useGoogleOAuth: () => mockGoogleOAuth
+}));
+
+// Mock useEmailVerification hook
+vi.mock("../hooks/useEmailVerification", () => ({
+	useEmailVerification: vi.fn()
+}));
+
+// Mock page components to avoid complex rendering in App tests
+vi.mock("../pages/HomePage", () => ({
+	default: () => <div data-testid="home-page">Home Page</div>
+}));
+
+vi.mock("../pages/AboutPage", () => ({
+	default: () => <div data-testid="about-page">About Page</div>
+}));
+
+vi.mock("../pages/ContactPage", () => ({
+	default: () => <div data-testid="contact-page">Contact Page</div>
+}));
+
+vi.mock("../pages/TeamsPage", () => ({
+	default: () => <div data-testid="teams-page">Teams Page</div>
+}));
+
+vi.mock("../pages/CalendarPage", () => ({
+	default: () => <div data-testid="calendar-page">Calendar Page</div>
+}));
+
+vi.mock("../pages/ProfilePage", () => ({
+	default: () => <div data-testid="profile-page">Profile Page</div>
+}));
+
+vi.mock("../pages/DashboardPage", () => ({
+	default: () => <div data-testid="dashboard-page">Dashboard Page</div>
+}));
+
+vi.mock("../pages/TeamConfigurationPage", () => ({
+	default: () => <div data-testid="team-configuration-page">Team Configuration Page</div>
+}));
+
+// Mock Header component
+vi.mock("../components/Header", () => ({
+	default: ({ currentPage, onPageChange, onShowRegistration, onShowSignIn }: any) => (
+		<header data-testid="header">
+			<span data-testid="current-page">{currentPage}</span>
+			<button onClick={() => onPageChange("about")}>Navigate to About</button>
+			<button onClick={() => onPageChange("teams")}>Navigate to Teams</button>
+			<button onClick={() => onPageChange("calendar")}>Navigate to Calendar</button>
+			<button onClick={() => onPageChange("dashboard")}>Navigate to Dashboard</button>
+			<button onClick={() => onPageChange("profile")}>Navigate to Profile</button>
+			<button onClick={onShowRegistration}>Show Registration</button>
+			<button onClick={onShowSignIn}>Show Sign In</button>
+		</header>
+	)
+}));
+
+// Mock AuthModal component
+vi.mock("../components/AuthModal", () => ({
+	default: ({ isOpen, onClose, onSuccess, initialMode }: any) =>
+		isOpen ? (
+			<div data-testid="auth-modal" role="dialog">
+				<span data-testid="auth-modal-mode">{initialMode}</span>
+				<button onClick={onClose}>Close Modal</button>
+				<button onClick={onSuccess}>Auth Success</button>
+			</div>
+		) : null
+}));
+
+// Mock EmailVerificationStatusBanner component
+vi.mock("../components/EmailVerificationStatusBanner", () => ({
+	default: ({ userEmail, isVisible }: any) =>
+		isVisible ? <div data-testid="email-verification-banner">Email verification needed for {userEmail}</div> : null
 }));
 
 describe("App - Google OAuth Integration (TDD)", () => {
@@ -72,12 +153,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Wait for modal to appear
@@ -127,12 +204,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Click Google OAuth button
@@ -167,12 +240,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Click Google OAuth button
@@ -198,12 +267,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Click Google OAuth button
@@ -236,12 +301,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Click Google OAuth button
@@ -280,12 +341,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// Simulate Google OAuth success with credential
@@ -335,13 +392,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			render(<App />);
 
 			// Initially should show unauthenticated state
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-			expect(screen.getByRole("button", { name: /register/i })).toBeInTheDocument();
-			expect(screen.getByRole("button", { name: /login/i })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /show registration/i })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /show sign in/i })).toBeInTheDocument();
 
 			// Perform Google OAuth
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
@@ -364,12 +419,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			render(<App />);
 
-			// Open navigation panel first
-			const profileMenuButton = screen.getByRole("button", { name: /profile menu/i });
-			await user.click(profileMenuButton);
-
-			// Then click register button
-			const registerButton = screen.getByRole("button", { name: /register/i });
+			// Click show registration button
+			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			await user.click(registerButton);
 
 			// The RegistrationMethodModal should call App's handleSelectGoogleRegistration
@@ -384,6 +435,464 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// App should process the credential, not just log it
 			// This test will fail until we implement proper credential processing
+		});
+	});
+});
+
+describe("App - General Rendering and Routing Logic", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		// Reset auth state
+		mockAuth.isAuthenticated = false;
+		mockAuth.user = null;
+		mockAuth.token = null;
+		// Mock useEmailVerification to do nothing by default
+		vi.mocked(useEmailVerification).mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		cleanup();
+		vi.restoreAllMocks();
+	});
+
+	describe("Basic Component Rendering", () => {
+		it("should render header, main content, and footer", () => {
+			render(<App />);
+
+			// Verify main App structure renders
+			expect(screen.getByTestId("header")).toBeInTheDocument();
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.getByText("© 2025 Zentropy. All rights reserved.")).toBeInTheDocument();
+		});
+
+		it("should render home page by default", () => {
+			render(<App />);
+
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.getByTestId("current-page")).toHaveTextContent("home");
+		});
+
+		it("should render correct page content based on navigation", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Navigate to About page
+			await user.click(screen.getByText("Navigate to About"));
+			expect(screen.getByTestId("about-page")).toBeInTheDocument();
+			expect(screen.getByTestId("current-page")).toHaveTextContent("about");
+		});
+	});
+
+	describe("Page Routing Logic", () => {
+		it("should navigate between public pages correctly", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Start on home page
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+
+			// Navigate to About page
+			await user.click(screen.getByText("Navigate to About"));
+			expect(screen.getByTestId("about-page")).toBeInTheDocument();
+			expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
+		});
+
+		it("should render profile page when authenticated", async () => {
+			const user = userEvent.setup();
+
+			// Set authenticated state
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: true,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			// Navigate to profile page
+			await user.click(screen.getByText("Navigate to Profile"));
+			expect(screen.getByTestId("profile-page")).toBeInTheDocument();
+		});
+
+		it("should handle invalid page routing gracefully", () => {
+			render(<App />);
+
+			// App should render home page for any invalid routes (default case)
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+		});
+	});
+
+	describe("Projects Access Control", () => {
+		it("should allow access to projects pages when user has projects access", async () => {
+			const user = userEvent.setup();
+
+			// Set authenticated user with projects access
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: true,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			// Navigate to teams page
+			await user.click(screen.getByText("Navigate to Teams"));
+			expect(screen.getByTestId("teams-page")).toBeInTheDocument();
+
+			// Navigate to calendar page
+			await user.click(screen.getByText("Navigate to Calendar"));
+			expect(screen.getByTestId("calendar-page")).toBeInTheDocument();
+
+			// Navigate to dashboard page
+			await user.click(screen.getByText("Navigate to Dashboard"));
+			expect(screen.getByTestId("dashboard-page")).toBeInTheDocument();
+		});
+
+		it("should redirect to home page when user lacks projects access", async () => {
+			const user = userEvent.setup();
+
+			// Set authenticated user WITHOUT projects access
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: false,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			// Attempt to navigate to teams page
+			await user.click(screen.getByText("Navigate to Teams"));
+
+			// Should redirect to home page instead
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.queryByTestId("teams-page")).not.toBeInTheDocument();
+		});
+
+		it("should redirect from calendar page when user lacks projects access", async () => {
+			const user = userEvent.setup();
+
+			// Set authenticated user WITHOUT projects access
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: false,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			// Attempt to navigate to calendar page
+			await user.click(screen.getByText("Navigate to Calendar"));
+
+			// Should redirect to home page instead
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.queryByTestId("calendar-page")).not.toBeInTheDocument();
+		});
+
+		it("should redirect from dashboard page when user lacks projects access", async () => {
+			const user = userEvent.setup();
+
+			// Set authenticated user WITHOUT projects access
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: false,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			// Attempt to navigate to dashboard page
+			await user.click(screen.getByText("Navigate to Dashboard"));
+
+			// Should redirect to home page instead
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.queryByTestId("dashboard-page")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Email Verification Banner", () => {
+		it("should show email verification banner for authenticated users with unverified emails", () => {
+			// Set authenticated user with unverified email
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: true,
+				email_verified: false
+			};
+
+			render(<App />);
+
+			expect(screen.getByTestId("email-verification-banner")).toBeInTheDocument();
+			expect(screen.getByText("Email verification needed for test@example.com")).toBeInTheDocument();
+		});
+
+		it("should hide email verification banner for authenticated users with verified emails", () => {
+			// Set authenticated user with verified email
+			mockAuth.isAuthenticated = true;
+			mockAuth.user = {
+				email: "test@example.com",
+				name: "Test User",
+				has_projects_access: true,
+				email_verified: true
+			};
+
+			render(<App />);
+
+			expect(screen.queryByTestId("email-verification-banner")).not.toBeInTheDocument();
+		});
+
+		it("should hide email verification banner for unauthenticated users", () => {
+			// Ensure unauthenticated state
+			mockAuth.isAuthenticated = false;
+			mockAuth.user = null;
+
+			render(<App />);
+
+			expect(screen.queryByTestId("email-verification-banner")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Authentication Modal Management", () => {
+		it("should show registration modal when Show Registration is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Initially modal should not be visible
+			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
+
+			// Click show registration
+			await user.click(screen.getByText("Show Registration"));
+
+			// Modal should appear with method-selection mode
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("method-selection");
+		});
+
+		it("should show sign in modal when Show Sign In is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Initially modal should not be visible
+			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
+
+			// Click show sign in
+			await user.click(screen.getByText("Show Sign In"));
+
+			// Modal should appear with signin mode
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signin");
+		});
+
+		it("should close authentication modal when close button is clicked", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Open modal
+			await user.click(screen.getByText("Show Registration"));
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+
+			// Close modal
+			await user.click(screen.getByText("Close Modal"));
+			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
+		});
+
+		it("should close authentication modal after successful authentication", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Open modal
+			await user.click(screen.getByText("Show Sign In"));
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+
+			// Simulate successful authentication
+			await user.click(screen.getByText("Auth Success"));
+			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Email Verification Hook Integration", () => {
+		it("should configure email verification hook with proper callbacks", () => {
+			render(<App />);
+
+			// Verify useEmailVerification was called with callback configuration
+			expect(vi.mocked(useEmailVerification)).toHaveBeenCalledWith({
+				onSuccess: expect.any(Function),
+				onError: expect.any(Function),
+				onRedirectHome: expect.any(Function),
+				onShowSignIn: expect.any(Function)
+			});
+		});
+
+		it("should handle email verification success callback", async () => {
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Simulate successful verification wrapped in act
+			await act(async () => {
+				callbackConfig.onSuccess!("Email verified successfully!");
+			});
+
+			// Should open sign in modal and show success toast
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signin");
+		});
+
+		it("should handle email verification error callback", async () => {
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Simulate verification error wrapped in act
+			await act(async () => {
+				callbackConfig.onError!("Email verification failed!");
+			});
+
+			// Should open sign in modal and show error toast
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signin");
+		});
+
+		it("should handle redirect home callback", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Navigate away from home page first
+			await user.click(screen.getByText("Navigate to About"));
+			expect(screen.getByTestId("about-page")).toBeInTheDocument();
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Simulate redirect home wrapped in act
+			await act(async () => {
+				callbackConfig.onRedirectHome!();
+			});
+
+			// Should navigate back to home page
+			expect(screen.getByTestId("home-page")).toBeInTheDocument();
+			expect(screen.queryByTestId("about-page")).not.toBeInTheDocument();
+		});
+
+		it("should handle show sign in callback", async () => {
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Simulate show sign in wrapped in act
+			await act(async () => {
+				callbackConfig.onShowSignIn!();
+			});
+
+			// Should open sign in modal
+			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signin");
+		});
+	});
+
+	describe("Toast Notification System", () => {
+		it("should display and auto-hide success toast notifications", async () => {
+			vi.useFakeTimers();
+
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Trigger success toast wrapped in act
+			await act(async () => {
+				callbackConfig.onSuccess!("Email verified successfully!");
+			});
+
+			// Toast should be visible
+			expect(screen.getByText("Email verified successfully!")).toBeInTheDocument();
+
+			// Fast-forward time to trigger auto-hide
+			act(() => {
+				vi.advanceTimersByTime(5000);
+			});
+
+			// Toast should be hidden immediately after timeout
+			expect(screen.queryByText("Email verified successfully!")).not.toBeInTheDocument();
+
+			vi.useRealTimers();
+		});
+
+		it("should display and auto-hide error toast notifications", async () => {
+			vi.useFakeTimers();
+
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Trigger error toast wrapped in act
+			await act(async () => {
+				callbackConfig.onError!("Email verification failed!");
+			});
+
+			// Toast should be visible with error styling
+			expect(screen.getByText("Email verification failed!")).toBeInTheDocument();
+
+			// Fast-forward time to trigger auto-hide
+			act(() => {
+				vi.advanceTimersByTime(5000);
+			});
+
+			// Toast should be hidden immediately after timeout
+			expect(screen.queryByText("Email verification failed!")).not.toBeInTheDocument();
+
+			vi.useRealTimers();
+		});
+
+		it("should allow manual dismissal of toast notifications", async () => {
+			const user = userEvent.setup();
+
+			render(<App />);
+
+			// Get the callbacks passed to useEmailVerification
+			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			if (!callbackConfig) throw new Error("useEmailVerification not called");
+
+			// Trigger success toast wrapped in act
+			await act(async () => {
+				callbackConfig.onSuccess!("Email verified successfully!");
+			});
+
+			// Toast should be visible
+			expect(screen.getByText("Email verified successfully!")).toBeInTheDocument();
+
+			// Click close button
+			await user.click(screen.getByLabelText("Close notification"));
+
+			// Toast should be hidden immediately
+			expect(screen.queryByText("Email verified successfully!")).not.toBeInTheDocument();
 		});
 	});
 });

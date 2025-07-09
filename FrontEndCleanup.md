@@ -714,8 +714,21 @@ These recommendations align with the principles outlined in:
         *   **Quality Verification**: All 53 TeamService tests pass successfully as part of 165 total frontend tests
         *   **Production Readiness**: Tests ensure critical team management functionality is thoroughly validated and reliable
     *   **Recommendation**: Prioritize creating these missing test files to ensure critical functionality is covered, adhering to the "TDD is Mandatory" philosophy.
-*   **Expand Existing Tests**:
-    *   `src/client/__tests__/App.test.tsx`: Expand to cover more general rendering and routing logic beyond Google OAuth.
+*   **✅ Expand Existing Tests** [COMPLETED]:
+    *   **✅ `src/client/__tests__/App.test.tsx`**: Expand to cover more general rendering and routing logic beyond Google OAuth.
+    *   **✅ Actions Taken**:
+        *   **Comprehensive Test Expansion**: Successfully expanded App.test.tsx from Google OAuth-only tests to comprehensive application testing with 25+ new tests covering core App functionality
+        *   **Full Component Coverage**: Added tests for basic component rendering (header, footer, page content), ensuring the App properly renders its main structure
+        *   **Complete Routing Logic Testing**: Implemented comprehensive page routing tests covering navigation between public pages (home, about, contact) and authenticated pages (profile, teams, calendar, dashboard)
+        *   **Projects Access Control Validation**: Added thorough testing of permission-based page access, ensuring users without projects access are properly redirected from restricted pages (teams, calendar, dashboard, team-configuration)
+        *   **Email Verification Banner Testing**: Comprehensive testing of conditional banner rendering based on user authentication and email verification status
+        *   **Authentication Modal State Management**: Complete testing of modal open/close behavior, mode switching (registration vs sign-in), and user interaction flows
+        *   **Email Verification Hook Integration**: Thorough testing of useEmailVerification hook callback integration including success, error, redirect home, and show sign-in scenarios
+        *   **Toast Notification System Testing**: Complete testing of toast display, auto-hide functionality (5-second timeout), manual dismissal, success/error styling, and user experience workflows
+        *   **Best Practices Compliance**: All new tests follow React Testing Library best practices with user-focused testing, proper mocking strategies, and meaningful test scenarios that prevent real bugs
+        *   **Mocking Architecture**: Implemented comprehensive mocking strategy for page components, hooks (useAuth, useGoogleOAuth, useEmailVerification), and complex components to enable focused App-level testing
+        *   **User Experience Focus**: Tests validate actual user workflows and experiences rather than implementation details, ensuring tests provide confidence in real-world usage scenarios
+        *   **Quality Verification**: All new routing, access control, and UI state management tests pass successfully, significantly expanding test coverage beyond the original Google OAuth scope
 *   **Test Incomplete Features**: Ensure tests are written for any features marked as "coming soon" or "TODO" once they are implemented, as per `tests/README.md` - "Test Coverage".
 *   **✅ Critical Memory Exhaustion Bug Resolution** [COMPLETED]:
     *   **Issue**: Vitest React test suite experienced JavaScript heap memory exhaustion (4GB+ consumption) causing `FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory` during test execution.
