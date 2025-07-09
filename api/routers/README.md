@@ -12,7 +12,7 @@ api/routers/
 ├── calendar_entries.py  # Calendar/task management
 ├── invitations.py       # Team invitation system
 ├── teams.py            # Team management
-├── users.py            # User profile management
+└── projects.py         # Project management
 └── README.md           # This documentation
 ```
 
@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
+from datetime import datetime, timezone # Added datetime, timezone
 
 from ..database import get_db
 from ..schemas import ResponseModel, CreateModel
@@ -118,7 +119,7 @@ async def update_resource(
     for field, value in updates.dict(exclude_unset=True).items():
         setattr(resource, field, value)
     
-    resource.updated_at = datetime.utcnow()
+    resource.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(resource)
     return resource
@@ -249,6 +250,20 @@ if not validate_password_strength(password, user_data):
 ### Authentication Router
 
 ```python
+from pydantic import BaseModel
+from typing import Optional
+from fastapi import Request # Added Request import
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse # Assuming UserResponse is defined elsewhere
+
 @router.post("/register", response_model=AuthResponse, status_code=201)
 @rate_limit(max_requests=5, window_seconds=3600)
 async def register(
@@ -289,11 +304,11 @@ async def register(
     # Generate tokens
     access_token = create_access_token({"sub": db_user.email})
     
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": db_user
-    }
+    return AuthResponse( # Return AuthResponse instance
+        access_token=access_token,
+        token_type="bearer",
+        user=db_user
+    )
 ```
 
 ### Teams Router

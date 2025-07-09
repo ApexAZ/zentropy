@@ -22,10 +22,10 @@ class TestRateLimiter:
     def test_rate_limit_config_loading(self):
         """Test rate limit configuration loading."""
         with patch.dict("os.environ", {
-            "RATE_LIMIT_ENABLED": "true"
-            "RATE_LIMIT_AUTH_REQUESTS": "10"
-            "RATE_LIMIT_AUTH_WINDOW_MINUTES": "5"
-            "RATE_LIMIT_OAUTH_REQUESTS": "25"
+            "RATE_LIMIT_ENABLED": "true",
+            "RATE_LIMIT_AUTH_REQUESTS": "10",
+            "RATE_LIMIT_AUTH_WINDOW_MINUTES": "5",
+            "RATE_LIMIT_OAUTH_REQUESTS": "25",
             "RATE_LIMIT_OAUTH_WINDOW_MINUTES": "2"
         }):
             rate_limiter = RateLimiter()
@@ -204,7 +204,7 @@ class TestClientIPExtraction:
         """Test that X-Forwarded-For takes priority over X-Real-IP."""
         request = Mock(spec=Request)
         request.headers = {
-            "X-Forwarded-For": "203.0.113.30"
+            "X-Forwarded-For": "203.0.113.30",
             "X-Real-IP": "203.0.113.40"
         }
         request.client = Mock()
@@ -245,8 +245,8 @@ class TestRedisIntegration:
         mock_redis_class.return_value = mock_redis_instance
         
         with patch.dict("os.environ", {
-            "REDIS_HOST": "localhost"
-            "REDIS_PORT": "6379"
+            "REDIS_HOST": "localhost",
+            "REDIS_PORT": "6379",
             "REDIS_DB": "0"
         }):
             rate_limiter = RateLimiter()

@@ -44,10 +44,10 @@ class TestGoogleOAuthEndpoint:
         """Test Google login creates new user when user doesn't exist."""
         # Mock Google token verification response
         mock_google_user_info = {
-            "sub": "google_123456789"
-            "email": "newuser@gmail.com"
-            "given_name": "New"
-            "family_name": "User"
+            "sub": "google_123456789",
+            "email": "newuser@gmail.com",
+            "given_name": "New",
+            "family_name": "User",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
@@ -56,7 +56,7 @@ class TestGoogleOAuthEndpoint:
         response = client.post(
             "/api/v1/auth/google-login", 
             json={
-                "google_token": "valid_google_token"
+                "google_token": "valid_google_token",
                 "organization": "Test Company"
             }
         )
@@ -77,12 +77,12 @@ class TestGoogleOAuthEndpoint:
         """Test Google login authenticates existing Google user."""
         # Create existing Google user in the test database
         existing_user = User(
-            email="existing@gmail.com"
-            first_name="Existing"
-            last_name="User"
+            email="existing@gmail.com",
+            first_name="Existing",
+            last_name="User",
             
-            auth_provider=AuthProvider.GOOGLE
-            google_id="google_existing_123"
+            auth_provider=AuthProvider.GOOGLE,
+            google_id="google_existing_123",
             password_hash=None
         )
         db.add(existing_user)
@@ -91,17 +91,17 @@ class TestGoogleOAuthEndpoint:
         
         # Mock Google token verification
         mock_google_user_info = {
-            "sub": "google_existing_123"
+            "sub": "google_existing_123",
             "email": "existing@gmail.com", 
-            "given_name": "Existing"
-            "family_name": "User"
+            "given_name": "Existing",
+            "family_name": "User",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Should authenticate existing user
         response = client.post(
-            "/api/v1/auth/google-login"
+            "/api/v1/auth/google-login",
             json={"google_token": "valid_google_token"}
         )
         
@@ -120,7 +120,7 @@ class TestGoogleOAuthEndpoint:
         
         # Should reject invalid token
         response = client.post(
-            "/api/v1/auth/google-login"
+            "/api/v1/auth/google-login",
             json={"google_token": "invalid_google_token"}
         )
         
@@ -145,9 +145,9 @@ class TestGoogleOAuthEndpoint:
         
         # Should reject unverified email (verify_google_token raises exception)
         response = client.post(
-            "/api/v1/auth/google-login"
+            "/api/v1/auth/google-login",
             json={
-                "google_token": "valid_token_unverified_email"
+                "google_token": "valid_token_unverified_email",
                 "organization": "Test Company"
             }
         )
@@ -161,12 +161,12 @@ class TestGoogleOAuthEndpoint:
         """Test that Google login cannot hijack existing local accounts."""
         # Create existing local user in the test database
         local_user = User(
-            email="shared@example.com"
-            first_name="Local"
-            last_name="User"
+            email="shared@example.com",
+            first_name="Local",
+            last_name="User",
             
-            auth_provider=AuthProvider.LOCAL
-            password_hash="$2b$12$hashed_password"
+            auth_provider=AuthProvider.LOCAL,
+            password_hash="$2b$12$hashed_password",
             google_id=None
         )
         db.add(local_user)
@@ -175,17 +175,17 @@ class TestGoogleOAuthEndpoint:
         
         # Mock Google user with same email but different Google ID
         mock_google_user_info = {
-            "sub": "google_different_id"
+            "sub": "google_different_id",
             "email": "shared@example.com",  # Same email as local user
-            "given_name": "Google"
-            "family_name": "User"
+            "given_name": "Google",
+            "family_name": "User",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Should prevent email hijacking - reject OAuth for existing local account
         response = client.post(
-            "/api/v1/auth/google-login"
+            "/api/v1/auth/google-login",
             json={"google_token": "valid_google_token"}
         )
         
@@ -203,12 +203,12 @@ class TestGoogleTokenVerification:
         """Test Google token verification with valid token."""
         # Mock Google's verification response
         mock_verify_token.return_value = {
-            "sub": "google_123456789"
-            "email": "test@gmail.com"
-            "given_name": "Test"
-            "family_name": "User"
-            "email_verified": True
-            "iss": "https://accounts.google.com"
+            "sub": "google_123456789",
+            "email": "test@gmail.com",
+            "given_name": "Test",
+            "family_name": "User",
+            "email_verified": True,
+            "iss": "https://accounts.google.com",
             "aud": "test_client_id"
         }
         
@@ -288,13 +288,13 @@ class TestGoogleOAuthSchemas:
             from api.schemas import LoginResponse
             
             google_response = LoginResponse(
-                access_token="jwt_token_here"
-                token_type="bearer"
+                access_token="jwt_token_here",
+                token_type="bearer",
                 user={
-                    "email": "google@example.com"
-                    "first_name": "Google"
-                    "last_name": "User"
-                    "organization": "Google Inc"
+                    "email": "google@example.com",
+                    "first_name": "Google",
+                    "last_name": "User",
+                    "organization": "Google Inc",
                     "has_projects_access": True
                 }
             )

@@ -77,13 +77,14 @@ To ensure a clean, isolated database for your Python tests, explicitly request t
 - **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
 - **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
 
-## 4. Static Analysis & Code Quality: The Linter is the Law
+## 4. Static Analysis & Code Quality: The Pipeline is the Law
 
-We enforce a strict, consistent, and automated approach to code quality. The linter and formatter are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors. These checks are run automatically by pre-commit hooks.
+We enforce a strict, consistent, and automated approach to code quality. The linters, type checkers, and test runners are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors and warnings. These checks are run automatically by pre-commit hooks.
 
-### Philosophy: Zero Tolerance
+### Philosophy: Zero Tolerance for Errors and Warnings
 
-- **If the linter fails, your code is not ready.** No exceptions.
+- **If the quality pipeline (`npm run quality`) fails, your code is not ready.** No exceptions. This includes any linting errors, type-checking failures, test failures, or **any warnings** (such as deprecation notices).
+- **The build will fail on warnings.** We have configured our tooling (e.g., `pytest.ini`) to treat warnings as errors, ensuring that potential issues are addressed proactively.
 - **Automate Everything**: We use tools to format and fix issues automatically. Use `npm run fix` before every commit.
 - **Consistency is Key**: All code, regardless of author, must look and feel the same.
 

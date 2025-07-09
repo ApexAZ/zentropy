@@ -270,54 +270,7 @@ POST   /api/v1/teams/{id}/members/{user_id}    # Nested resources
 
 ## Testing Architecture
 
-### Auto-Isolation Testing System
-
-**Choice**: Automatic Database Isolation + TDD Support
-
-**Observable Evidence:**
-- `tests/conftest.py` implements auto-isolation system
-- Detection algorithms for database-dependent tests
-- In-memory SQLite for test isolation
-- Separate test suites for Python and React
-
-**Revolutionary Pattern:**
-```python
-# Automatic detection and isolation
-@pytest.fixture(scope="function", autouse=True)
-def auto_isolation(request):
-    if should_apply_isolation(request):
-        # Automatically provides isolated database
-        # No developer intervention required
-        setup_test_isolation()
-```
-
-**Inferred Benefits:**
-- **Developer Experience**: Zero-configuration test isolation
-- **Reliability**: No database pollution between tests
-- **Performance**: Fast in-memory database for tests
-- **Scalability**: Supports parallel test execution
-- **Quality**: TDD-friendly environment
-
-### Testing Strategy
-
-**Choice**: User-Focused Testing + Multiple Layers
-
-**Observable Evidence:**
-- React Testing Library for user behavior testing
-- pytest for API integration testing
-- Mock strategies for external services
-- High test coverage (194 tests)
-
-**Testing Pyramid:**
-```
-┌─────────────────┐
-│   E2E Tests     │  ← Few, Critical User Journeys
-├─────────────────┤
-│ Integration     │  ← API + Database + UI Integration  
-├─────────────────┤
-│   Unit Tests    │  ← Many, Fast, Isolated Functions
-└─────────────────┘
-```
+Zentropy employs a robust testing architecture focusing on user behavior and test isolation. For detailed information on our testing philosophy, the auto-isolation system, and testing strategies, refer to `tests/README.md` and `GEMINI.md`.
 
 ## Performance Architecture
 
@@ -404,31 +357,7 @@ async def get_teams(
 
 ## Development Workflow
 
-### Developer Experience Focus
-
-**Choice**: Simplified Commands + Quality Automation
-
-**Observable Evidence:**
-- 5 core npm commands for 95% of tasks
-- Pre-commit hooks for quality enforcement
-- Automatic code formatting and linting
-- Comprehensive documentation
-
-**Workflow Design:**
-```bash
-# Essential developer commands
-npm run dev     # Start everything
-npm test        # Run all tests  
-npm run build   # Production build
-npm run lint    # Check code quality
-npm run fix     # Auto-fix issues
-```
-
-**Inferred Benefits:**
-- **Onboarding**: New developers productive in minutes
-- **Quality**: Automated quality enforcement
-- **Consistency**: Standardized development practices
-- **Productivity**: Minimal cognitive overhead
+For details on the development workflow, including core commands and quality automation, refer to the main `README.md`.
 
 ## Scalability Considerations
 
@@ -448,26 +377,7 @@ npm run fix     # Auto-fix issues
 
 ## Deployment Architecture
 
-### Containerized Development
-
-**Choice**: Docker + Development Containers
-
-**Observable Evidence:**
-- Docker Compose for PostgreSQL
-- Development environment automation
-- Port standardization (3000, 5173, 5432)
-
-**Infrastructure Pattern:**
-```yaml
-# Inferred from setup scripts
-services:
-  database:
-    postgres:5432
-  api:
-    uvicorn:3000  
-  frontend:
-    vite:5173
-```
+Zentropy utilizes containerized development with Docker and Docker Compose for consistent environments. For detailed setup and deployment instructions, refer to the main `README.md`.
 
 ## Key Architectural Strengths
 

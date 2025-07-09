@@ -73,18 +73,18 @@ class TestDatabaseRoleConstraints:
     def test_user_role_assignment(self, db, client):
         """Test assigning different user roles."""
         test_roles = [
-            UserRole.PROJECT_ADMINISTRATOR
-            UserRole.PROJECT_LEAD
-            UserRole.STAKEHOLDER
+            UserRole.PROJECT_ADMINISTRATOR,
+            UserRole.PROJECT_LEAD,
+            UserRole.STAKEHOLDER,
             UserRole.ADMIN
         ]
         
         for role in test_roles:
             user = User(
-                email=f"test_{role.value}@example.com"
-                password_hash="hashed_password"
-                first_name="Test"
-                last_name="User"
+                email=f"test_{role.value}@example.com",
+                password_hash="hashed_password",
+                first_name="Test",
+                last_name="User",
                 
                 role=role
             )
@@ -97,22 +97,22 @@ class TestDatabaseRoleConstraints:
         """Test that team memberships get member role by default."""
         # Create user and team first
         user = User(
-            email="test@example.com"
-            password_hash="hashed_password"
-            first_name="Test"
+            email="test@example.com",
+            password_hash="hashed_password",
+            first_name="Test",
             last_name="User"
             
         )
         team = Team(
-            name="Test Team"
-            description="Test Description"
+            name="Test Team",
+            description="Test Description",
             created_by=user.id
         )
         db.add_all([user, team])
         db.commit()
         
         membership = TeamMembership(
-            team_id=team.id
+            team_id=team.id,
             user_id=user.id
         )
         db.add(membership)
@@ -124,15 +124,15 @@ class TestDatabaseRoleConstraints:
         """Test assigning different team roles."""
         # Create user and team
         user = User(
-            email="test@example.com"
-            password_hash="hashed_password"
-            first_name="Test"
+            email="test@example.com",
+            password_hash="hashed_password",
+            first_name="Test",
             last_name="User"
             
         )
         team = Team(
-            name="Test Team"
-            description="Test Description"
+            name="Test Team",
+            description="Test Description",
             created_by=user.id
         )
         db.add_all([user, team])
@@ -142,8 +142,8 @@ class TestDatabaseRoleConstraints:
         
         for i, role in enumerate(test_roles):
             membership = TeamMembership(
-                team_id=team.id
-                user_id=user.id
+                team_id=team.id,
+                user_id=user.id,
                 role=role
             )
             db.add(membership)
@@ -156,15 +156,15 @@ class TestDatabaseRoleConstraints:
         """Test team invitation role and status defaults."""
         # Create user and team
         user = User(
-            email="test@example.com"
-            password_hash="hashed_password"
-            first_name="Test"
+            email="test@example.com",
+            password_hash="hashed_password",
+            first_name="Test",
             last_name="User"
             
         )
         team = Team(
-            name="Test Team"
-            description="Test Description"
+            name="Test Team",
+            description="Test Description",
             created_by=user.id
         )
         db.add_all([user, team])
@@ -172,9 +172,9 @@ class TestDatabaseRoleConstraints:
         
         from datetime import datetime, timedelta
         invitation = TeamInvitation(
-            team_id=team.id
-            email="invite@example.com"
-            invited_by=user.id
+            team_id=team.id,
+            email="invite@example.com",
+            invited_by=user.id,
             expires_at=datetime.utcnow() + timedelta(days=7)
         )
         db.add(invitation)
@@ -190,23 +190,25 @@ class TestRoleBasedAPIAccess:
     def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
-            "email": email
-            "password": "TestPassword123"
-            "first_name": "Test"
-            "last_name": "User"
-            "organization": "Test Org"
-            "role": role.value
+            "email": email,
+            "password": "TestPassword123",
+            "first_name": "Test",
+            "last_name": "User",
+            "organization": "Test Org",
+            "role": role.value,
+            "terms_agreement": True,
+            "has_projects_access": True
         }
         
         # Register user
-        response = client.post("/api/auth/register", json=user_data)
+        response = client.post("/api/v1/auth/register", json=user_data)
         if response.status_code not in [200, 201]:
             print(f"Registration failed: {response.status_code}, {response.text}")
         assert response.status_code in [200, 201]  # API returns 200, not 201
         
         # Login to get token
         login_data = {"email": email, "password": "TestPassword123"}
-        response = client.post("/api/auth/login-json", json=login_data)
+        response = client.post("/api/v1/auth/login-json", json=login_data)
         assert response.status_code == 200
         
         token = response.json()["access_token"]
@@ -217,17 +219,17 @@ class TestRoleBasedAPIAccess:
         headers = self.create_test_user(client, role=UserRole.BASIC_USER)
         
         team_data = {
-            "name": "Test Team"
+            "name": "Test Team",
             "description": "A test team"
         }
         
-        response = client.post("/api/teams", json=team_data, headers=headers)
+        response = client.post("/api/v1/teams", json=team_data, headers=headers)
         assert response.status_code == 201
         
         team_id = response.json()["id"]
         
         # Check that user became admin of the team
-        response = client.get(f"/api/teams/{team_id}/members", headers=headers)
+        response = client.get(f"/api/v1/teams/{team_id}/members", headers=headers)
         assert response.status_code == 200
         
         members = response.json()
@@ -239,7 +241,7 @@ class TestRoleBasedAPIAccess:
         headers = self.create_test_user(client, role=UserRole.ADMIN)
         
         # Admin users should be able to access user management endpoints
-        response = client.get("/api/users", headers=headers)
+        response = client.get("/api/v1/users", headers=headers)
         assert response.status_code == 200
     
     def test_stakeholder_read_only_access(self, client):
@@ -249,7 +251,7 @@ class TestRoleBasedAPIAccess:
         # Stakeholders should be able to view teams (when implemented)
         # This test would need actual stakeholder endpoints
         # For now, test that they can access their profile
-        response = client.get("/api/users/me", headers=headers)
+        response = client.get("/api/v1/users/me", headers=headers)
         assert response.status_code == 200
 
 
@@ -263,7 +265,7 @@ class TestRoleAssignmentWorkflows:
         
         # Create team
         team_data = {"name": "Test Team", "description": "Test Description"}
-        response = client.post("/api/teams", json=team_data, headers=admin_headers)
+        response = client.post("/api/v1/teams", json=team_data, headers=admin_headers)
         assert response.status_code == 201
         team_id = response.json()["id"]
         
@@ -274,31 +276,33 @@ class TestRoleAssignmentWorkflows:
         # This would require implementing the invitation endpoints with role specification
         # For now, verify that the invitation system supports role specification
         invitation_data = {
-            "email": "newmember@example.com"
+            "email": "newmember@example.com",
             "role": TeamRole.LEAD.value
         }
         
         # This endpoint would need to be implemented to test role assignment
-        # response = client.post(f"/api/teams/{team_id}/invitations", 
+        # response = client.post(f"/api/v1/teams/{team_id}/invitations", 
         #                       json=invitation_data, headers=admin_headers)
         # assert response.status_code == 201
     
     def create_test_user(self, client, email="test@example.com", role=UserRole.BASIC_USER):
         """Helper to create and authenticate a test user."""
         user_data = {
-            "email": email
-            "password": "TestPassword123"
-            "first_name": "Test"
-            "last_name": "User"
-            "organization": "Test Org"
-            "role": role.value
+            "email": email,
+            "password": "TestPassword123",
+            "first_name": "Test",
+            "last_name": "User",
+            "organization": "Test Org",
+            "role": role.value,
+            "terms_agreement": True,
+            "has_projects_access": True
         }
         
-        response = client.post("/api/auth/register", json=user_data)
+        response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code in [200, 201]  # API returns 200, not 201
         
         login_data = {"email": email, "password": "TestPassword123"}
-        response = client.post("/api/auth/login-json", json=login_data)
+        response = client.post("/api/v1/auth/login-json", json=login_data)
         assert response.status_code == 200
         
         token = response.json()["access_token"]
@@ -312,11 +316,11 @@ class TestRoleHierarchy:
         """Test that user roles have correct hierarchy."""
         # Define expected hierarchy (higher number = more permissions)
         hierarchy = {
-            UserRole.BASIC_USER: 1
-            UserRole.STAKEHOLDER: 2
-            UserRole.TEAM_LEAD: 3
-            UserRole.PROJECT_LEAD: 4
-            UserRole.PROJECT_ADMINISTRATOR: 5
+            UserRole.BASIC_USER: 1,
+            UserRole.STAKEHOLDER: 2,
+            UserRole.TEAM_LEAD: 3,
+            UserRole.PROJECT_LEAD: 4,
+            UserRole.PROJECT_ADMINISTRATOR: 5,
             UserRole.ADMIN: 6
         }
         
@@ -330,8 +334,8 @@ class TestRoleHierarchy:
     def test_team_role_hierarchy(self, client):
         """Test that team roles have correct hierarchy."""
         hierarchy = {
-            TeamRole.MEMBER: 1
-            TeamRole.LEAD: 2
+            TeamRole.MEMBER: 1,
+            TeamRole.LEAD: 2,
             TeamRole.TEAM_ADMIN: 3
         }
         
@@ -347,10 +351,10 @@ class TestRoleSystemIntegration:
         # Test UserRole
         for role in UserRole:
             user = User(
-                email=f"test_{role.value}@example.com"
-                password_hash="hashed_password"
-                first_name="Test"
-                last_name="User"
+                email=f"test_{role.value}@example.com",
+                password_hash="hashed_password",
+                first_name="Test",
+                last_name="User",
                 
                 role=role
             )
@@ -370,12 +374,12 @@ class TestRoleSystemIntegration:
         
         # Test UserCreate with enum role
         user_data = {
-            "email": "test@example.com"
-            "first_name": "Test"
-            "last_name": "User"
-            "organization": "Test Org"
-            "password": "TestPassword123"
-            "role": UserRole.PROJECT_ADMINISTRATOR
+            "email": "test@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "organization": "Test Org",
+            "password": "TestPassword123",
+            "role": UserRole.PROJECT_ADMINISTRATOR,
             "terms_agreement": True
         }
         user = UserCreate(**user_data)
@@ -383,9 +387,9 @@ class TestRoleSystemIntegration:
         
         # Test TeamInvitationCreate with enum role
         invitation_data = {
-            "email": "invite@example.com"
-            "role": TeamRole.TEAM_ADMIN
-            "team_id": uuid4()
+            "email": "invite@example.com",
+            "role": TeamRole.TEAM_ADMIN,
+            "team_id": uuid4(),
             "invited_by": uuid4()
         }
         invitation = TeamInvitationCreate(**invitation_data)

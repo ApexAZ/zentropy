@@ -15,8 +15,7 @@ api/
 ├── email_verification.py   # Email verification system
 ├── rate_limiter.py         # Redis-based rate limiting
 ├── schemas.py              # Pydantic models for API validation
-├── dependencies.py         # Dependency injection functions
-├── config.py              # Configuration management
+
 └── routers/               # API endpoint modules
     ├── auth.py
     ├── calendar_entries.py
@@ -117,26 +116,25 @@ Token-based email verification system:
 
 ## API Patterns
 
-### Consistent Response Format
+### Consistent Response Handling
 
-All API responses follow this structure:
+FastAPI leverages Pydantic for consistent response handling.
 
-```python
-# Success response
+- **Successful Responses**: For successful operations, FastAPI automatically serializes the Pydantic `response_model` (or the returned Python object) directly into the JSON response body. There is no wrapper object like `status` or `data` unless explicitly defined in the schema.
+
+- **Error Responses**: Errors are typically handled using FastAPI's `HTTPException`. These exceptions return a JSON response with a `detail` field containing the error message, and an appropriate HTTP status code.
+
+```json
+// Example successful response (based on a Pydantic model)
 {
-    "status": "success",
-    "data": { ... },
-    "message": "Operation completed"
+    "id": "some-uuid",
+    "name": "Example Item",
+    "description": "This is an example."
 }
 
-# Error response
+// Example error response (from HTTPException)
 {
-    "status": "error",
-    "error": {
-        "code": "VALIDATION_ERROR",
-        "message": "Invalid input",
-        "details": { ... }
-    }
+    "detail": "Item not found"
 }
 ```
 
@@ -214,6 +212,7 @@ class ProjectResponse(BaseModel):
     description: Optional[str]
     team_id: str
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
     
 # 2. Add model in database.py (using SQLAlchemy 2.0 typed syntax)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -234,11 +233,12 @@ class Project(Base):
     team: Mapped["Team"] = relationship(back_populates="projects")
 
 # 3. Create router in routers/projects.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime, timezone
 
-from ..database import get_db, Project
+from ..database import get_db, Project, Team, TeamMember, User # Added User, Team, TeamMember
 from ..auth import get_current_user
 from ..schemas import ProjectCreate, ProjectResponse
 
@@ -256,16 +256,19 @@ async def create_project(
         Team.id == project.team_id,
         Team.members.any(user_id=current_user.id)
     ).first()
-    
+
     if not team:
-        raise PermissionError("No access to this team")
-    
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No access to this team"
+        )
+
     # Create project
-    db_project = Project(**project.dict())
+    db_project = Project(**project.dict(), created_at=datetime.now(timezone.utc)) # Changed datetime.utcnow
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
-    
+
     return db_project
 
 @router.get("/", response_model=List[ProjectResponse])
@@ -278,10 +281,10 @@ async def list_projects(
     query = db.query(Project).join(Team).join(TeamMember).filter(
         TeamMember.user_id == current_user.id
     )
-    
+
     if team_id:
         query = query.filter(Project.team_id == team_id)
-    
+
     return query.all()
 
 # 4. Register router in main.py
@@ -307,9 +310,9 @@ def test_create_project(client, test_user, test_team):
         },
         headers={"Authorization": f"Bearer {test_user.token}"}
     )
-    
-    assert response.status_code == 200
-    assert response.json()["data"]["name"] == "New Project"
+
+    assert response.status_code == 201 # Changed to 201 Created
+    assert response.json()["name"] == "New Project" # Removed ["data"]
 ```
 
 ## Performance Considerations

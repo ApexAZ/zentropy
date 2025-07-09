@@ -8,9 +8,7 @@ import pytest
 from sqlalchemy.orm import Session
 from unittest.mock import patch
 
-from api.database import User, AuthProvider
-from api.routers.auth import google_login
-from api.schemas import GoogleLoginRequest
+from api.database import User, AuthProvider, Organization
 from tests.conftest import create_test_user
 
 
@@ -23,12 +21,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing local user
         local_user = User(
-            email="victim@example.com"
-            first_name="Victim"
-            last_name="User"
+            email="victim@example.com",
+            first_name="Victim",
+            last_name="User",
             
-            auth_provider=AuthProvider.LOCAL
-            password_hash="$2b$12$secure_hashed_password"
+            auth_provider=AuthProvider.LOCAL,
+            password_hash="$2b$12$secure_hashed_password",
             google_id=None
         )
         db.add(local_user)
@@ -48,38 +46,41 @@ class TestCriticalOAuthSecurity:
         mock_google_user_info = {
             "sub": "attacker_google_id_12345",  # Different Google ID
             "email": "victim@example.com",      # Same email as victim
-            "given_name": "Attacker"
-            "family_name": "Hacker"
+            "given_name": "Attacker",
+            "family_name": "Hacker",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
-        # Step 4: Create Google login request
-        request = GoogleLoginRequest(
-            google_token="attacker_token"
-            
-        )
+        # Step 4: Create Google login request will be made via HTTP POST
         
         # Step 5: Attempt OAuth login - MUST fail with security error
         print(f"🔥 Attempting OAuth hijack attack...")
         
-        try:
-            result = google_login(request, db)
-            # If we get here, the security check FAILED - this is a critical vulnerability
-            pytest.fail(
-                f"🚨 CRITICAL SECURITY VULNERABILITY: OAuth hijacking succeeded! "
-                f"Attacker was able to login as {result.user['email']} using Google OAuth. "
-                f"This should have been blocked by email collision detection."
-            )
-        except Exception as e:
-            # Security check should raise HTTPException with 400 status
-            if "Email already registered with different authentication method" in str(e):
+        response = client.post("/api/v1/auth/google-login", json={
+            "google_token": "attacker_token"
+        })
+        
+        # Should fail with security error
+        if response.status_code == 400:
+            error_data = response.json()
+            if "Email already registered with different authentication method" in error_data.get("detail", ""):
                 print(f"✅ SECURITY PASSED: OAuth hijacking correctly blocked")
-                print(f"✅ Security error: {str(e)}")
-                # This is the expected behavior
+                print(f"✅ Security error: {error_data['detail']}")
                 assert True
             else:
-                pytest.fail(f"🚨 UNEXPECTED ERROR: {str(e)}")
+                pytest.fail(f"🚨 UNEXPECTED ERROR: {error_data}")
+        else:
+            # If we get here, the security check FAILED - this is a critical vulnerability
+            if response.status_code == 200:
+                result = response.json()
+                pytest.fail(
+                    f"🚨 CRITICAL SECURITY VULNERABILITY: OAuth hijacking succeeded! "
+                    f"Attacker was able to login as {result['user']['email']} using Google OAuth. "
+                    f"This should have been blocked by email collision detection."
+                )
+            else:
+                pytest.fail(f"🚨 UNEXPECTED ERROR: Status {response.status_code}, Response: {response.json()}")
         
         # Step 6: Verify original user is unchanged
         final_user_check = db.query(User).filter(User.email == "victim@example.com").first()
@@ -95,12 +96,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing local user
         local_user = User(
-            email="local@company.com"
-            first_name="Local"
-            last_name="User"
+            email="local@company.com",
+            first_name="Local",
+            last_name="User",
             
-            auth_provider=AuthProvider.LOCAL
-            password_hash="$2b$12$secure_password"
+            auth_provider=AuthProvider.LOCAL,
+            password_hash="$2b$12$secure_password",
             google_id=None
         )
         db.add(local_user)
@@ -108,27 +109,28 @@ class TestCriticalOAuthSecurity:
         
         # Step 2: Mock Google user with DIFFERENT email
         mock_google_user_info = {
-            "sub": "google_user_12345"
+            "sub": "google_user_12345",
             "email": "googleuser@gmail.com",  # Different email - should succeed
-            "given_name": "Google"
-            "family_name": "User"
+            "given_name": "Google",
+            "family_name": "User",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
-        # Step 3: Create Google login request
-        request = GoogleLoginRequest(
-            google_token="valid_google_token"
-            
-        )
+        # Step 3: Create Google login request will be made via HTTP POST
         
         # Step 4: OAuth login should succeed (different email)
-        result = google_login(request, db)
+        response = client.post("/api/v1/auth/google-login", json={
+            "google_token": "valid_google_token"
+        })
+        
+        assert response.status_code == 200
+        result = response.json()
         
         # Step 5: Verify Google user was created successfully
-        assert result.access_token is not None
-        assert result.user["email"] == "googleuser@gmail.com"
-        assert result.user["first_name"] == "Google"
+        assert result["access_token"] is not None
+        assert result["user"]["email"] == "googleuser@gmail.com"
+        assert result["user"]["first_name"] == "Google"
         
         # Step 6: Verify both users exist in database
         users = db.query(User).all()
@@ -149,12 +151,12 @@ class TestCriticalOAuthSecurity:
         
         # Step 1: Create existing Google user
         google_user = User(
-            email="existing@gmail.com"
-            first_name="Existing"
-            last_name="GoogleUser"
+            email="existing@gmail.com",
+            first_name="Existing",
+            last_name="GoogleUser",
             
-            auth_provider=AuthProvider.GOOGLE
-            google_id="google_existing_123"
+            auth_provider=AuthProvider.GOOGLE,
+            google_id="google_existing_123",
             password_hash=None
         )
         db.add(google_user)
@@ -164,19 +166,23 @@ class TestCriticalOAuthSecurity:
         mock_google_user_info = {
             "sub": "google_existing_123",  # Same Google ID
             "email": "existing@gmail.com", # Same email
-            "given_name": "Existing"
-            "family_name": "GoogleUser"
+            "given_name": "Existing",
+            "family_name": "GoogleUser",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Step 3: OAuth login should succeed (existing Google user)
-        request = GoogleLoginRequest(google_token="existing_user_token")
-        result = google_login(request, db)
+        response = client.post("/api/v1/auth/google-login", json={
+            "google_token": "existing_user_token"
+        })
+        
+        assert response.status_code == 200
+        result = response.json()
         
         # Step 4: Verify successful authentication
-        assert result.access_token is not None
-        assert result.user["email"] == "existing@gmail.com"
+        assert result["access_token"] is not None
+        assert result["user"]["email"] == "existing@gmail.com"
         
         # Step 5: Verify only one user exists (no duplicates)
         users = db.query(User).filter(User.email == "existing@gmail.com").all()
@@ -191,27 +197,34 @@ class TestCriticalOAuthSecurity:
         
         # Mock Google Workspace user (has 'hd' field)
         mock_google_user_info = {
-            "sub": "workspace_user_123"
-            "email": "employee@acmecorp.com"
-            "given_name": "Employee"
-            "family_name": "Worker"
-            "email_verified": True
+            "sub": "workspace_user_123",
+            "email": "employee@acmecorp.com",
+            "given_name": "Employee",
+            "family_name": "Worker",
+            "email_verified": True,
             "hd": "acmecorp.com"  # Google Workspace hosted domain
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # OAuth login without specifying organization
-        request = GoogleLoginRequest(google_token="workspace_token")
-        result = google_login(request, db)
+        response = client.post("/api/v1/auth/google-login", json={
+            "google_token": "workspace_token"
+        })
         
-        # Should use hosted domain as organization
-        assert result.user["organization"] == "Acmecorp.Com"
+        assert response.status_code == 200
+        result = response.json()
         
-        # Verify in database
+        # Should have organization_id
+        assert result["user"]["organization_id"] is not None
+        
+        # Verify in database - get organization by ID
         user = db.query(User).filter(User.email == "employee@acmecorp.com").first()
-        assert user.organization == "Acmecorp.Com"
+        assert user.organization_id is not None
+        organization = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        assert organization is not None
+        assert organization.name == "Acmecorp.Com"
         
-        print(f"✅ Google Workspace organization extracted: {user.organization}")
+        print(f"✅ Google Workspace organization extracted: {organization.name}")
     
     @patch('api.routers.auth.verify_google_token')
     def test_gmail_user_organization_fallback(self, mock_verify_google_token, db, client):
@@ -219,20 +232,31 @@ class TestCriticalOAuthSecurity:
         
         # Mock regular Gmail user (no 'hd' field)
         mock_google_user_info = {
-            "sub": "gmail_user_123"
-            "email": "user@gmail.com"
-            "given_name": "Gmail"
-            "family_name": "User"
-            "email_verified": True
+            "sub": "gmail_user_123",
+            "email": "user@gmail.com",
+            "given_name": "Gmail",
+            "family_name": "User",
+            "email_verified": True,
             "hd": None  # No hosted domain
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
         # OAuth login without specifying organization
-        request = GoogleLoginRequest(google_token="gmail_token")
-        result = google_login(request, db)
+        response = client.post("/api/v1/auth/google-login", json={
+            "google_token": "gmail_token"
+        })
         
-        # Should use email domain as organization fallback
-        assert result.user["organization"] == "Gmail.Com"
+        assert response.status_code == 200
+        result = response.json()
         
-        print(f"✅ Gmail user organization fallback: {result.user['organization']}")
+        # Should have organization_id
+        assert result["user"]["organization_id"] is not None
+        
+        # Verify in database - get organization by ID
+        user = db.query(User).filter(User.email == "user@gmail.com").first()
+        assert user.organization_id is not None
+        organization = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        assert organization is not None
+        assert organization.name == "Gmail.Com"
+        
+        print(f"✅ Gmail user organization fallback: {organization.name}")

@@ -29,10 +29,10 @@ class TestEmailVerificationDatabase:
         """Test that User model has email verification fields."""
         # This test will fail initially - we need to add these fields
         user = User(
-            email="test@example.com"
-            first_name="Test"
-            last_name="User"
-            password_hash="hashed_password"
+            email="test@example.com",
+            first_name="Test",
+            last_name="User",
+            password_hash="hashed_password",
             email_verified=False,  # Should exist
             email_verification_token="test-token",  # Should exist
             email_verification_expires_at=datetime.utcnow() + timedelta(hours=24)  # Should exist
@@ -55,16 +55,16 @@ class TestEmailVerificationEndpoints:
         # Use random email to avoid conflicts with existing users
         random_id = random.randint(1000, 9999)
         user_data = {
-            "email": f"newuser{random_id}@example.com"
-            "password": "SecurePass123!"
-            "first_name": "New"
-            "last_name": "User"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": f"newuser{random_id}@example.com",
+            "password": "SecurePass123!",
+            "first_name": "New",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
-        response = client.post("/api/auth/register", json=user_data)
+        response = client.post("/api/v1/auth/register", json=user_data)
         
         # Should succeed but user should be unverified
         assert response.status_code == 201
@@ -75,7 +75,7 @@ class TestEmailVerificationEndpoints:
     def test_send_verification_email_endpoint(self, client: TestClient):
         """Test endpoint to resend verification email."""
         # This endpoint doesn't exist yet - test will fail
-        response = client.post("/api/auth/send-verification", json={"email": "test@example.com"})
+        response = client.post("/api/v1/auth/send-verification", json={"email": "test@example.com"})
         
         assert response.status_code == 200
         data = response.json()
@@ -87,17 +87,17 @@ class TestEmailVerificationEndpoints:
         # First, register a user to get a verification token
         random_id = random.randint(1000, 9999)
         user_data = {
-            "email": f"verify{random_id}@example.com"
-            "password": "SecurePass123!"
-            "first_name": "Verify"
-            "last_name": "User"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": f"verify{random_id}@example.com",
+            "password": "SecurePass123!",
+            "first_name": "Verify",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
         # Register user (this creates a verification token)
-        register_response = client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
         # Get the verification token from database
@@ -109,7 +109,7 @@ class TestEmailVerificationEndpoints:
         token = user.email_verification_token
         
         # Now verify the email using the token
-        response = client.post(f"/api/auth/verify-email/{token}")
+        response = client.post(f"/api/v1/auth/verify-email/{token}")
         
         assert response.status_code == 200
         data = response.json()
@@ -118,7 +118,7 @@ class TestEmailVerificationEndpoints:
         
     def test_verify_email_invalid_token(self, client: TestClient):
         """Test email verification with invalid token."""
-        response = client.post("/api/auth/verify-email/invalid-token")
+        response = client.post("/api/v1/auth/verify-email/invalid-token")
         
         assert response.status_code == 400
         data = response.json()
@@ -127,7 +127,7 @@ class TestEmailVerificationEndpoints:
         
     def test_verify_email_expired_token(self, client: TestClient):
         """Test email verification with expired token."""
-        response = client.post("/api/auth/verify-email/expired-token")
+        response = client.post("/api/v1/auth/verify-email/expired-token")
         
         assert response.status_code == 400
         data = response.json()
@@ -144,20 +144,20 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"flowtest{random_id}@example.com"
         user_data = {
-            "email": email
-            "password": "SecurePass123!"
-            "first_name": "Flow"
-            "last_name": "Test"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Flow",
+            "last_name": "Test",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
-        register_response = client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
         # 2. Resend verification email
-        send_response = client.post("/api/auth/send-verification", json={"email": email})
+        send_response = client.post("/api/v1/auth/send-verification", json={"email": email})
         assert send_response.status_code == 200
         
         # 3. In real implementation, we'd get token from email
@@ -169,21 +169,21 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"unverified{random_id}@example.com"
         user_data = {
-            "email": email
-            "password": "SecurePass123!"
-            "first_name": "Unverified"
-            "last_name": "User"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Unverified",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
-        register_response = client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
         # Try to login with unverified account - should fail
-        login_response = client.post("/api/auth/login-json", json={
-            "email": email
+        login_response = client.post("/api/v1/auth/login-json", json={
+            "email": email,
             "password": "SecurePass123!"
         })
         
@@ -199,16 +199,16 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"verified{random_id}@example.com"
         user_data = {
-            "email": email
-            "password": "SecurePass123!"
-            "first_name": "Verified"
-            "last_name": "User"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Verified",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
-        register_response = client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
         # Get verification token from database
@@ -219,12 +219,12 @@ class TestEmailVerificationFlow:
         token = user.email_verification_token
         
         # Verify email
-        verify_response = client.post(f"/api/auth/verify-email/{token}")
+        verify_response = client.post(f"/api/v1/auth/verify-email/{token}")
         assert verify_response.status_code == 200
         
         # Now login should succeed
-        login_response = client.post("/api/auth/login-json", json={
-            "email": email
+        login_response = client.post("/api/v1/auth/login-json", json={
+            "email": email,
             "password": "SecurePass123!"
         })
         
@@ -240,21 +240,21 @@ class TestEmailVerificationFlow:
         random_id = random.randint(1000, 9999)
         email = f"unverified_oauth{random_id}@example.com"
         user_data = {
-            "email": email
-            "password": "SecurePass123!"
-            "first_name": "Unverified"
-            "last_name": "User"
-            "organization": "Test Org"
-            "terms_agreement": True
+            "email": email,
+            "password": "SecurePass123!",
+            "first_name": "Unverified",
+            "last_name": "User",
+            "organization": "Test Org",
+            "terms_agreement": True,
             "has_projects_access": True
         }
         
-        register_response = client.post("/api/auth/register", json=user_data)
+        register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
         # Try to login with form data (OAuth endpoint) - should also fail
-        login_response = client.post("/api/auth/login", data={
-            "username": email
+        login_response = client.post("/api/v1/auth/login", data={
+            "username": email,
             "password": "SecurePass123!"
         })
         

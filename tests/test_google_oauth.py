@@ -19,21 +19,21 @@ class TestGoogleOAuthEndpoint:
     def mock_google_token(self):
         """Mock Google JWT token for testing"""
         return {
-            "iss": "https://accounts.google.com"
-            "sub": "1234567890"
-            "email": "test.user@gmail.com"
-            "email_verified": True
-            "given_name": "Test"
-            "family_name": "User"
-            "picture": "https://example.com/photo.jpg"
-            "iat": 1234567890
+            "iss": "https://accounts.google.com",
+            "sub": "1234567890",
+            "email": "test.user@gmail.com",
+            "email_verified": True,
+            "given_name": "Test",
+            "family_name": "User",
+            "picture": "https://example.com/photo.jpg",
+            "iat": 1234567890,
             "exp": 1234567890 + 3600
         }
 
     def test_google_oauth_endpoint_exists(self, client):
         """Test that Google OAuth endpoint exists and accepts POST requests"""
         # This test will FAIL initially - endpoint not implemented yet
-        response = client.post("/api/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/google-oauth", json={
             "credential": "mock-jwt-token"
         })
         
@@ -44,7 +44,7 @@ class TestGoogleOAuthEndpoint:
     def test_google_oauth_requires_credential(self, client):
         """Test that Google OAuth endpoint requires credential parameter"""
         # This test will FAIL initially - validation not implemented
-        response = client.post("/api/auth/google-oauth", json={})
+        response = client.post("/api/v1/auth/google-oauth", json={})
         
         assert response.status_code == 422  # Validation error
         error_data = response.json()
@@ -56,7 +56,7 @@ class TestGoogleOAuthEndpoint:
         # This test will FAIL initially - Google OAuth flow not implemented
         mock_verify.return_value = mock_google_token
         
-        response = client.post("/api/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/google-oauth", json={
             "credential": "valid-jwt-token"
         })
         
@@ -79,7 +79,7 @@ class TestGoogleOAuthEndpoint:
         from api.google_oauth import GoogleTokenInvalidError
         mock_verify.side_effect = GoogleTokenInvalidError("Invalid token")
         
-        response = client.post("/api/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/google-oauth", json={
             "credential": "invalid-jwt-token"
         })
         
@@ -94,13 +94,13 @@ class TestGoogleOAuthEndpoint:
         mock_verify.return_value = mock_google_token
         
         # First registration
-        response1 = client.post("/api/auth/google-oauth", json={
+        response1 = client.post("/api/v1/auth/google-oauth", json={
             "credential": "valid-jwt-token"
         })
         assert response1.status_code == 200
         
         # Second attempt should login existing user
-        response2 = client.post("/api/auth/google-oauth", json={
+        response2 = client.post("/api/v1/auth/google-oauth", json={
             "credential": "valid-jwt-token"
         })
         assert response2.status_code == 200
@@ -115,7 +115,7 @@ class TestGoogleOAuthEndpoint:
         from api.google_oauth import GoogleEmailUnverifiedError
         mock_verify.side_effect = GoogleEmailUnverifiedError("Email must be verified with Google")
         
-        response = client.post("/api/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/google-oauth", json={
             "credential": "unverified-token"
         })
         
@@ -127,7 +127,7 @@ class TestGoogleOAuthEndpoint:
         """Test Google OAuth when environment configuration is missing"""
         # This test will FAIL initially - environment validation not implemented
         with patch.dict('os.environ', {}, clear=True):
-            response = client.post("/api/auth/google-oauth", json={
+            response = client.post("/api/v1/auth/google-oauth", json={
                 "credential": "any-token"
             })
             
@@ -144,7 +144,7 @@ class TestGoogleOAuthEndpoint:
         with patch('api.google_oauth.get_or_create_google_user') as mock_create:
             mock_create.side_effect = Exception("Database connection failed")
             
-            response = client.post("/api/auth/google-oauth", json={
+            response = client.post("/api/v1/auth/google-oauth", json={
                 "credential": "valid-jwt-token"
             })
             
@@ -158,7 +158,7 @@ class TestGoogleOAuthEndpoint:
         # This test will FAIL initially - projects access logic not implemented
         mock_verify.return_value = mock_google_token
         
-        response = client.post("/api/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/google-oauth", json={
             "credential": "valid-jwt-token"
         })
         
@@ -192,7 +192,7 @@ class TestGoogleOAuthEndpoint:
             token["email"] = f"user{i}@gmail.com"
             mock_verify.return_value = token
             
-            response = client.post("/api/auth/google-oauth", json={
+            response = client.post("/api/v1/auth/google-oauth", json={
                 "credential": f"token-{i}"
             })
             responses.append(response)

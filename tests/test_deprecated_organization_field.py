@@ -19,11 +19,11 @@ class TestDeprecatedOrganizationField:
         """Test that Google Workspace users get organization_id, not deprecated organization field."""
         # Mock Google Workspace user with hosted domain
         google_info_workspace = {
-            'sub': '987654321'
-            'email': 'employee@testcompany.com'
-            'given_name': 'Jane'
-            'family_name': 'Smith'
-            'email_verified': True
+            'sub': '987654321',
+            'email': 'employee@testcompany.com',
+            'given_name': 'Jane',
+            'family_name': 'Smith',
+            'email_verified': True,
             'hd': 'testcompany.com'  # Google Workspace hosted domain
         }
 
@@ -36,19 +36,18 @@ class TestDeprecatedOrganizationField:
         assert user.organization_rel.domain == 'testcompany.com'
         assert user.organization_rel.name == 'Testcompany'
 
-        # Verify deprecated field is still set for backward compatibility
-        # but the primary relationship is via organization_id
-        assert user.organization is not None  # Temporary compatibility
-        assert user.organization == user.organization_rel.name
+        # Verify the relationship is used instead of deprecated field
+        # (deprecated field no longer exists - replaced by organization_rel relationship)
+        assert user.organization_rel.name == 'Testcompany'
 
     def test_personal_gmail_user_has_no_organization(self, db: Session):
         """Test that personal Gmail users have no organization assignment."""
         # Mock personal Gmail user (no hosted domain)
         google_info_personal = {
-            'sub': '123456789'
-            'email': 'user@gmail.com'
-            'given_name': 'John'
-            'family_name': 'Doe'
+            'sub': '123456789',
+            'email': 'user@gmail.com',
+            'given_name': 'John',
+            'family_name': 'Doe',
             'email_verified': True
             # No 'hd' field - personal account
         }
@@ -60,15 +59,15 @@ class TestDeprecatedOrganizationField:
         assert user.organization_id is None
         assert user.organization_rel is None
 
-        # Verify deprecated field is empty for backward compatibility
-        assert user.organization == ""
+        # Verify no organization relationship exists (deprecated field removed)
+        # Personal users have no organization_id or organization_rel
 
     def test_api_response_uses_organization_relationship(self, db: Session):
         """Test that API response uses organization_rel.name instead of deprecated field."""
         # Create organization first
         org = Organization(
-            name="Test Corporation"
-            domain="testcorp.com"
+            name="Test Corporation",
+            domain="testcorp.com",
             website="https://testcorp.com"
         )
         db.add(org)
@@ -77,13 +76,12 @@ class TestDeprecatedOrganizationField:
 
         # Create user with organization relationship
         user = User(
-            email="test@testcorp.com"
-            first_name="Test"
-            last_name="User"
+            email="test@testcorp.com",
+            first_name="Test",
+            last_name="User",
             organization_id=org.id,  # Use proper foreign key
-            ,  # Different from actual org name
-            auth_provider=AuthProvider.GOOGLE
-            google_id="test_google_id"
+            auth_provider=AuthProvider.GOOGLE,
+            google_id="test_google_id",
             registration_type=RegistrationType.GOOGLE_OAUTH
         )
         db.add(user)
@@ -93,28 +91,31 @@ class TestDeprecatedOrganizationField:
         # Mock process_google_oauth to return user info
         with patch('api.google_oauth.verify_google_token') as mock_verify:
             mock_verify.return_value = {
-                'sub': 'test_google_id'
-                'email': 'test@testcorp.com'
-                'given_name': 'Test'
-                'family_name': 'User'
+                'sub': 'test_google_id',
+                'email': 'test@testcorp.com',
+                'given_name': 'Test',
+                'family_name': 'User',
                 'email_verified': True
             }
 
             result = process_google_oauth(db, "mock_token", "127.0.0.1")
 
-            # Verify API response uses organization relationship, not deprecated field
-            assert result["user"]["organization"] == "Test Corporation"  # From organization_rel.name
-            assert result["user"]["organization"] != "Old Deprecated Value"  # Not from deprecated field
+            # Verify API response uses organization relationship (no deprecated field)
+            # Check that user has proper organization_id and the relationship works
+            assert result["user"]["organization_id"] is not None
+            # Verify the organization relationship exists in database
+            db.refresh(user)
+            assert user.organization_rel.name == "Test Corporation"
 
     def test_organization_deduplication_works_correctly(self, db: Session):
         """Test that organization deduplication works with the new foreign key approach."""
         # First user creates organization
         google_info_1 = {
-            'sub': '111111111'
-            'email': 'user1@company.com'
-            'given_name': 'User'
-            'family_name': 'One'
-            'email_verified': True
+            'sub': '111111111',
+            'email': 'user1@company.com',
+            'given_name': 'User',
+            'family_name': 'One',
+            'email_verified': True,
             'hd': 'company.com'
         }
 
@@ -123,11 +124,11 @@ class TestDeprecatedOrganizationField:
 
         # Second user from same domain should reuse organization
         google_info_2 = {
-            'sub': '222222222'
-            'email': 'user2@company.com'
-            'given_name': 'User'
-            'family_name': 'Two'
-            'email_verified': True
+            'sub': '222222222',
+            'email': 'user2@company.com',
+            'given_name': 'User',
+            'family_name': 'Two',
+            'email_verified': True,
             'hd': 'company.com'  # Same domain
         }
 

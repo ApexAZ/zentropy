@@ -90,7 +90,7 @@ We use a combination of industry-standard tools to analyze and format the code:
 Before committing any code, please run the full quality pipeline to ensure your changes meet our standards.
 
 ```bash
-# Run all linting, formatting, and type-checking
+# Run all linting, formatting, type-checking, and ensure no warnings are present
 npm run quality
 ```
 

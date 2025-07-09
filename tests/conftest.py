@@ -84,7 +84,7 @@ def client(test_db_engine) -> TestClient:
     The client automatically uses the isolated test database.
     Example:
         def test_register_endpoint(client):
-            response = client.post("/api/auth/register", json=user_data)
+            response = client.post("/api/v1/auth/register", json=user_data)
             assert response.status_code == 201
     """
     from sqlalchemy.orm import sessionmaker

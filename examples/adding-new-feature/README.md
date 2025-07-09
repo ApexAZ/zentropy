@@ -121,8 +121,7 @@ class ProjectResponse(ProjectBase):
     creator: Optional[UserResponse] = None
     team: Optional[TeamResponse] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 ```
 
 ### Step 3: API Router
