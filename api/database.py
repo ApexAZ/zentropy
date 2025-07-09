@@ -17,7 +17,7 @@ from sqlalchemy.orm import (
     relationship,
     sessionmaker,
 )
-from typing import Generator, Optional, List, Any
+from typing import Generator, Optional, List
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime, timezone
@@ -249,13 +249,72 @@ class Organization(Base):
 
     @classmethod
     def find_potential_duplicates(
-        cls, name: str, domain: Optional[str] = None
-    ) -> List[Any]:
-        """Find potential duplicate organizations."""
-        # TODO: Implement with database queries
-        # Parameters name and domain will be used in future implementation
-        _ = name, domain  # Acknowledge parameters for future use
-        return []
+        cls, db: Session, name: str, domain: Optional[str] = None
+    ) -> List:
+        """
+        Find potential duplicate organizations based on name and domain.
+
+        Args:
+            db: Database session
+            name: Organization name to search for
+            domain: Optional domain to search for
+
+        Returns:
+            List of Organization objects that might be duplicates
+        """
+        from sqlalchemy import func, or_
+
+        query = db.query(cls)
+        conditions = []
+
+        # Search for exact name match (case-insensitive)
+        conditions.append(func.lower(cls.name) == func.lower(name))
+
+        # Search for similar names (fuzzy matching)
+        # Remove common business suffixes for comparison
+        business_suffixes = [
+            "Inc.",
+            "LLC",
+            "Corp.",
+            "Corporation",
+            "Limited",
+            "Ltd.",
+            "Company",
+            "Co.",
+        ]
+        clean_name = name.strip()
+        for suffix in business_suffixes:
+            clean_name = clean_name.replace(suffix, "").strip()
+
+        if clean_name != name:
+            conditions.append(func.lower(cls.name).like(f"%{clean_name.lower()}%"))
+
+        # Search for organizations with similar short names
+        if hasattr(cls, "short_name") and cls.short_name:
+            conditions.append(func.lower(cls.short_name) == func.lower(name))
+
+        # If domain is provided, search for domain matches
+        if domain:
+            conditions.append(cls.domain == domain)
+
+            # Also search for organizations where the domain might be in website
+            conditions.append(func.lower(cls.website).like(f"%{domain.lower()}%"))
+
+            # Extract potential organization name from domain
+            domain_parts = domain.split(".")
+            if len(domain_parts) > 1:
+                domain_name = (
+                    domain_parts[0].replace("-", " ").replace("_", " ").title()
+                )
+                conditions.append(func.lower(cls.name).like(f"%{domain_name.lower()}%"))
+
+        # Combine conditions with OR logic
+        if conditions:
+            result = query.filter(or_(*conditions)).all()
+        else:
+            result = []
+
+        return result
 
 
 # User model
