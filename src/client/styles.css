@@ -1,13 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-	/* Semantic color variables - change colors here to update entire site */
-	--color-layout-background: #F0F0F0;     /* Cool light gray - page backgrounds, borders, sections */
-	--color-content-background: #FFFFFF;    /* White - form containers, input fields */
-	--color-interactive: #6A8BA7;           /* Steel blue - buttons, links, focus states */
-	--color-interactive-hover: #B8D4F0;     /* Pastel blue - hover feedback */
-	--color-text-primary: #4A4A4A;          /* Dark gray - headings, body text, labels */
-	--color-text-contrast: #000000;         /* Black - high contrast when needed */
 	
 	/* Semantic spacing scale - consistent spacing across the app */
 	--space-1: 0.25rem;  /* 4px */

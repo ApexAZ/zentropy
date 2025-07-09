@@ -26,7 +26,7 @@ const RequiredAsterisk: React.FC<RequiredAsteriskProps> = ({ isEmpty, isRequired
 		return null;
 	}
 
-	return <span className="ml-1 text-red-500">*</span>;
+	return <span className="text-error ml-1">*</span>;
 };
 
 export default RequiredAsterisk;

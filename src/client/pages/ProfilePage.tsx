@@ -467,8 +467,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.length
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ At least 8 characters
@@ -476,8 +476,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.uppercase
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ One uppercase letter
@@ -485,8 +485,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.lowercase
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ One lowercase letter
@@ -494,8 +494,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.number
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ One number
@@ -503,8 +503,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.symbol
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ One special character
@@ -512,8 +512,8 @@ const ProfilePage: React.FC = () => {
 													<div
 														className={
 															validation.requirements.match
-																? "text-green-600"
-																: "text-red-500"
+																? "text-success"
+																: "text-error"
 														}
 													>
 														✓ Passwords match

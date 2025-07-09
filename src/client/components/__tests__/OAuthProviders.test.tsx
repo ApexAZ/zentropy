@@ -1,11 +1,10 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import OAuthProviders from "../OAuthProviders";
 import { useGoogleOAuth } from "../../hooks/useGoogleOAuth";
-import type { GoogleCredentialResponse } from "../../types/global";
 
 // Mock the useGoogleOAuth hook
 vi.mock("../../hooks/useGoogleOAuth", () => ({

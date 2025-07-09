@@ -18,7 +18,20 @@ export default {
 		'focus:border-interactive',
 		'focus:shadow-interactive',
 		'focus:outline-none',
-		'animate-slide-in'
+		'animate-slide-in',
+		// New semantic state colors
+		'text-error',
+		'bg-error-background',
+		'border-error-border',
+		'text-success',
+		'bg-success-background',
+		'border-success-border',
+		'text-warning',
+		'bg-warning-background',
+		'border-warning-border',
+		'text-neutral',
+		'bg-neutral-background',
+		'border-neutral-border'
 	],
 	theme: {
 		extend: {
@@ -29,6 +42,20 @@ export default {
 				'interactive-hover': '#B8D4F0',      /* Pastel blue - hover feedback */
 				'text-primary': '#4A4A4A',           /* Dark gray - headings, body text, labels */
 				'text-contrast': '#000000',          /* Black - high contrast when needed */
+				
+				/* Semantic state colors */
+				'error': '#DC2626',                  /* Red - error text, required asterisks, failed validation */
+				'error-background': '#FEF2F2',       /* Light red - error message backgrounds */
+				'error-border': '#FECACA',           /* Red border - error containers */
+				'success': '#16A34A',                /* Green - success text, valid states */
+				'success-background': '#F0FDF4',     /* Light green - success message backgrounds */
+				'success-border': '#BBF7D0',         /* Green border - success containers */
+				'warning': '#D97706',                /* Orange/yellow - warning text */
+				'warning-background': '#FFFBEB',     /* Light yellow - warning backgrounds */
+				'warning-border': '#FED7AA',         /* Yellow border - warning containers */
+				'neutral': '#6B7280',                /* Gray - loading states, disabled elements */
+				'neutral-background': '#F9FAFB',     /* Light gray - subtle backgrounds */
+				'neutral-border': '#D1D5DB',         /* Gray border - neutral containers, loading spinners */
 			},
 			boxShadow: {
 				'interactive': '0 0 0 3px rgba(106, 139, 167, 0.2)', /* Focus ring using interactive color */

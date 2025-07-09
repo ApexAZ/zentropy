@@ -171,7 +171,7 @@ class Logger {
 					return payload.sub || payload.user_id || null;
 				}
 			}
-		} catch (error) {
+		} catch {
 			// Ignore errors when parsing token
 		}
 		return null;

@@ -15,7 +15,7 @@ describe("RequiredAsterisk", () => {
 
 			const asterisk = screen.getByText("*");
 			expect(asterisk).toBeInTheDocument();
-			expect(asterisk).toHaveClass("text-red-500");
+			expect(asterisk).toHaveClass("text-error");
 			expect(asterisk).toHaveClass("ml-1");
 		});
 
@@ -43,7 +43,7 @@ describe("RequiredAsterisk", () => {
 			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
-			expect(asterisk).toHaveClass("text-red-500");
+			expect(asterisk).toHaveClass("text-error");
 			expect(asterisk).toHaveClass("ml-1");
 		});
 
@@ -51,8 +51,8 @@ describe("RequiredAsterisk", () => {
 			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
-			// Should use red color for required field indicators
-			expect(asterisk.className).toContain("text-red-500");
+			// Should use semantic error color for required field indicators
+			expect(asterisk.className).toContain("text-error");
 			// Should have proper spacing
 			expect(asterisk.className).toContain("ml-1");
 		});

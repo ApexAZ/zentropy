@@ -10,7 +10,19 @@ describe("Semantic Color Validation", () => {
 		"interactive",
 		"interactive-hover",
 		"text-primary",
-		"text-contrast"
+		"text-contrast",
+		"error",
+		"error-background",
+		"error-border",
+		"success",
+		"success-background",
+		"success-border",
+		"warning",
+		"warning-background",
+		"warning-border",
+		"neutral",
+		"neutral-background",
+		"neutral-border"
 	];
 
 	// Define hardcoded color patterns that should be avoided
@@ -196,27 +208,39 @@ describe("Semantic Color Validation", () => {
 	});
 
 	it("should have all semantic color classes available", () => {
-		// This test ensures our semantic classes are defined in the system
-		const stylesPath = path.join(process.cwd(), "src/client/styles.css");
+		// This test ensures our semantic classes are defined in the Tailwind config
+		const configPath = path.join(process.cwd(), "tailwind.config.js");
 
-		if (!fs.existsSync(stylesPath)) {
-			expect.fail("styles.css file not found");
+		if (!fs.existsSync(configPath)) {
+			expect.fail("tailwind.config.js file not found");
 		}
 
-		const stylesContent = readFileContent(stylesPath);
+		const configContent = readFileContent(configPath);
 
-		// Check that semantic color variables are defined
-		const expectedVariables = [
-			"--color-layout-background",
-			"--color-content-background",
-			"--color-interactive",
-			"--color-interactive-hover",
-			"--color-text-primary",
-			"--color-text-contrast"
+		// Check that semantic color variables are defined in Tailwind config
+		const expectedColors = [
+			"'layout-background':",
+			"'content-background':",
+			"'interactive':",
+			"'interactive-hover':",
+			"'text-primary':",
+			"'text-contrast':",
+			"'error':",
+			"'error-background':",
+			"'error-border':",
+			"'success':",
+			"'success-background':",
+			"'success-border':",
+			"'warning':",
+			"'warning-background':",
+			"'warning-border':",
+			"'neutral':",
+			"'neutral-background':",
+			"'neutral-border':"
 		];
 
-		expectedVariables.forEach(variable => {
-			expect(stylesContent).toContain(variable);
+		expectedColors.forEach(color => {
+			expect(configContent).toContain(color);
 		});
 	});
 

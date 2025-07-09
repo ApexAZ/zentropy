@@ -56,7 +56,7 @@ const OAuthProviders: React.FC<OAuthProvidersProps> = ({ onGoogleSignIn, disable
 					>
 						{isLoading ? (
 							/* Loading Spinner */
-							<div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+							<div className="border-neutral-border border-t-interactive h-6 w-6 animate-spin rounded-full border-2" />
 						) : (
 							/* Google "G" Logo */
 							<svg width="24" height="24" viewBox="0 0 24 24" fill="none">

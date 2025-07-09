@@ -337,7 +337,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						disabled={isLoading}
 					/>
 					{signInForm.touched.email && signInForm.errors.email && (
-						<p className="mt-1 text-sm text-red-500">{signInForm.errors.email}</p>
+						<p className="text-error mt-1 text-sm">{signInForm.errors.email}</p>
 					)}
 				</div>
 
@@ -364,7 +364,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						</button>
 					</div>
 					{signInForm.touched.password && signInForm.errors.password && (
-						<p className="mt-1 text-sm text-red-500">{signInForm.errors.password}</p>
+						<p className="text-error mt-1 text-sm">{signInForm.errors.password}</p>
 					)}
 				</div>
 
@@ -431,7 +431,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								disabled={isLoading}
 							/>
 							{signUpForm.touched.first_name && signUpForm.errors.first_name && (
-								<p className="mt-1 text-sm text-red-500">{signUpForm.errors.first_name}</p>
+								<p className="text-error mt-1 text-sm">{signUpForm.errors.first_name}</p>
 							)}
 						</div>
 
@@ -450,7 +450,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								disabled={isLoading}
 							/>
 							{signUpForm.touched.last_name && signUpForm.errors.last_name && (
-								<p className="mt-1 text-sm text-red-500">{signUpForm.errors.last_name}</p>
+								<p className="text-error mt-1 text-sm">{signUpForm.errors.last_name}</p>
 							)}
 						</div>
 					</div>
@@ -469,7 +469,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 							disabled={isLoading}
 						/>
 						{signUpForm.touched.email && signUpForm.errors.email && (
-							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.email}</p>
+							<p className="text-error mt-1 text-sm">{signUpForm.errors.email}</p>
 						)}
 					</div>
 
@@ -485,7 +485,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 							disabled={isLoading}
 						/>
 						{signUpForm.touched.organization_id && signUpForm.errors.organization_id && (
-							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.organization_id}</p>
+							<p className="text-error mt-1 text-sm">{signUpForm.errors.organization_id}</p>
 						)}
 					</div>
 
@@ -513,52 +513,36 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						</div>
 						{signUpForm.values.password && (
 							<div className="mt-2 space-y-1 text-xs">
-								<div
-									className={
-										passwordValidation.requirements.length ? "text-green-600" : "text-red-500"
-									}
-								>
+								<div className={passwordValidation.requirements.length ? "text-success" : "text-error"}>
 									✓ At least 8 characters
 								</div>
 								<div
 									className={
-										passwordValidation.requirements.uppercase ? "text-green-600" : "text-red-500"
+										passwordValidation.requirements.uppercase ? "text-success" : "text-error"
 									}
 								>
 									✓ One uppercase letter
 								</div>
 								<div
 									className={
-										passwordValidation.requirements.lowercase ? "text-green-600" : "text-red-500"
+										passwordValidation.requirements.lowercase ? "text-success" : "text-error"
 									}
 								>
 									✓ One lowercase letter
 								</div>
-								<div
-									className={
-										passwordValidation.requirements.number ? "text-green-600" : "text-red-500"
-									}
-								>
+								<div className={passwordValidation.requirements.number ? "text-success" : "text-error"}>
 									✓ One number
 								</div>
-								<div
-									className={
-										passwordValidation.requirements.symbol ? "text-green-600" : "text-red-500"
-									}
-								>
+								<div className={passwordValidation.requirements.symbol ? "text-success" : "text-error"}>
 									✓ One special character
 								</div>
-								<div
-									className={
-										passwordValidation.requirements.match ? "text-green-600" : "text-red-500"
-									}
-								>
+								<div className={passwordValidation.requirements.match ? "text-success" : "text-error"}>
 									✓ Passwords match
 								</div>
 							</div>
 						)}
 						{signUpForm.touched.password && signUpForm.errors.password && (
-							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.password}</p>
+							<p className="text-error mt-1 text-sm">{signUpForm.errors.password}</p>
 						)}
 					</div>
 
@@ -586,7 +570,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 							</button>
 						</div>
 						{signUpForm.touched.confirm_password && signUpForm.errors.confirm_password && (
-							<p className="mt-1 text-sm text-red-500">{signUpForm.errors.confirm_password}</p>
+							<p className="text-error mt-1 text-sm">{signUpForm.errors.confirm_password}</p>
 						)}
 					</div>
 
@@ -604,7 +588,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						</label>
 					</div>
 					{signUpForm.touched.terms_agreement && signUpForm.errors.terms_agreement && (
-						<p className="text-sm text-red-500">{signUpForm.errors.terms_agreement}</p>
+						<p className="text-error text-sm">{signUpForm.errors.terms_agreement}</p>
 					)}
 
 					<button

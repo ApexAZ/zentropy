@@ -36,17 +36,17 @@ const EmailVerificationStatusBanner: React.FC<EmailVerificationStatusBannerProps
 	};
 
 	return (
-		<div className="border-b border-l-4 border-yellow-200 border-l-yellow-400 bg-yellow-50 p-4">
+		<div className="border-warning-border border-l-warning bg-warning-background border-b border-l-4 p-4">
 			<div className="mx-auto flex max-w-[3840px] items-start justify-between">
 				<div className="flex">
 					<div className="ml-3 flex-1">
-						<p className="text-sm text-yellow-800">
+						<p className="text-warning text-sm">
 							<span className="font-medium">Email verification required.</span> Please check your email
 							and click the verification link to complete your account setup.
 						</p>
 						{resendMessage && (
 							<p
-								className={`mt-2 text-sm ${resendMessage.includes("sent") ? "text-green-800" : "text-red-800"}`}
+								className={`mt-2 text-sm ${resendMessage.includes("sent") ? "text-success" : "text-error"}`}
 							>
 								{resendMessage}
 							</p>
@@ -65,7 +65,7 @@ const EmailVerificationStatusBanner: React.FC<EmailVerificationStatusBannerProps
 				<div className="ml-4 flex flex-shrink-0">
 					<button
 						onClick={handleDismiss}
-						className="inline-flex rounded-md bg-yellow-50 text-yellow-400 hover:text-yellow-600 focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-yellow-50 focus:outline-none"
+						className="bg-warning-background text-warning hover:text-warning focus:ring-warning focus:ring-offset-warning-background inline-flex rounded-md focus:ring-2 focus:ring-offset-2 focus:outline-none"
 					>
 						<span className="sr-only">Dismiss</span>
 						<svg

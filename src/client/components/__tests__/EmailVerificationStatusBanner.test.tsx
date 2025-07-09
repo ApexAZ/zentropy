@@ -160,7 +160,7 @@ describe("EmailVerificationStatusBanner", () => {
 
 			await waitFor(() => {
 				const successMessage = screen.getByText("Verification email sent! Please check your inbox.");
-				expect(successMessage).toHaveClass("text-green-800");
+				expect(successMessage).toHaveClass("text-success");
 			});
 		});
 
@@ -175,7 +175,7 @@ describe("EmailVerificationStatusBanner", () => {
 
 			await waitFor(() => {
 				const errorMessage = screen.getByText("Failed to send verification email");
-				expect(errorMessage).toHaveClass("text-red-800");
+				expect(errorMessage).toHaveClass("text-error");
 			});
 		});
 	});
