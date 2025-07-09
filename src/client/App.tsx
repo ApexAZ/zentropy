@@ -53,7 +53,7 @@ function App(): React.JSX.Element {
 	}, [toast]);
 
 	const handleShowRegistration = (): void => {
-		setAuthModalMode("method-selection");
+		setAuthModalMode("signup");
 		setShowAuthModal(true);
 	};
 

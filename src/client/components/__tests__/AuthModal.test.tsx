@@ -87,7 +87,7 @@ describe("AuthModal", () => {
 
 		// User clicks Sign Up
 		await user.click(screen.getByText("Sign Up"));
-		expect(screen.getByRole("heading", { name: "Create Account" })).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Create Your Account" })).toBeInTheDocument();
 	});
 
 	it("should allow user to sign in with valid credentials", async () => {

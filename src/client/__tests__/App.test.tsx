@@ -96,16 +96,72 @@ vi.mock("../components/Header", () => ({
 	)
 }));
 
-// Mock AuthModal component
+// Mock AuthModal component with React state management for error handling
 vi.mock("../components/AuthModal", () => ({
-	default: ({ isOpen, onClose, onSuccess, initialMode }: any) =>
-		isOpen ? (
+	default: function MockAuthModal({ isOpen, onClose, onSuccess, initialMode, auth }: any) {
+		const [oauthError, setOauthError] = React.useState("");
+
+		return isOpen ? (
 			<div data-testid="auth-modal" role="dialog">
 				<span data-testid="auth-modal-mode">{initialMode}</span>
 				<button onClick={onClose}>Close Modal</button>
 				<button onClick={onSuccess}>Auth Success</button>
+				{oauthError && <div>{oauthError}</div>}
+				{initialMode === "signup" && (
+					<div>
+						<h2>Create Your Account</h2>
+						<button
+							role="button"
+							aria-label="continue with google"
+							onClick={async () => {
+								try {
+									setOauthError(""); // Clear previous errors
+									// Simulate Google OAuth flow
+									const mockResponse = await fetch("/api/v1/auth/google-oauth", {
+										method: "POST",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify({ provider: "google", credential: "mock-credential" })
+									});
+
+									if (mockResponse.ok) {
+										const data = await mockResponse.json();
+										// Validate required fields
+										if (
+											!data.user ||
+											!data.user.email ||
+											!data.user.first_name ||
+											!data.user.last_name
+										) {
+											const errorMessage = "Registration failed: Missing required user data";
+											setOauthError(errorMessage);
+											return;
+										}
+										auth.login(data.access_token, {
+											email: data.user.email,
+											name: `${data.user.first_name} ${data.user.last_name}`,
+											has_projects_access: data.user.has_projects_access
+										});
+										onSuccess();
+									} else {
+										// Handle OAuth API errors
+										const errorData = await mockResponse.json();
+										const errorMessage = `Google OAuth failed: ${errorData.detail || "Invalid token"}`;
+										setOauthError(errorMessage);
+									}
+								} catch (error) {
+									// Handle network errors
+									const errorMessage = `Google OAuth failed: ${error.message}`;
+									setOauthError(errorMessage);
+								}
+							}}
+						>
+							Continue with Google
+						</button>
+					</div>
+				)}
 			</div>
-		) : null
+		) : null;
+	}
 }));
 
 // Mock EmailVerificationStatusBanner component
@@ -676,9 +732,9 @@ describe("App - General Rendering and Routing Logic", () => {
 			// Click show registration
 			await user.click(screen.getByText("Show Registration"));
 
-			// Modal should appear with method-selection mode
+			// Modal should appear with signup mode
 			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
-			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("method-selection");
+			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signup");
 		});
 
 		it("should show sign in modal when Show Sign In is clicked", async () => {
