@@ -174,12 +174,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		onError: error => setToast({ message: error, type: "error" })
 	});
 
-	// Reset form helper function
+	// Reset form helper function - stable reference to avoid infinite loops
 	const resetForms = useCallback(() => {
 		signInForm.resetForm();
 		signUpForm.resetForm();
 		setShowPasswords({ password: false, confirm: false });
-	}, [signInForm, signUpForm]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Remove form dependencies to prevent infinite loop
 
 	// Auto-hide toast
 	useEffect(() => {
@@ -197,7 +198,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			resetForms();
 			setToast(null);
 		}
-	}, [isOpen, initialMode, resetForms]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isOpen, initialMode]); // Remove resetForms from dependencies to prevent infinite loop
 
 	const handleSignIn = async (e: React.FormEvent) => {
 		setIsLoading(true);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Header from "./components/Header";
 import AuthModal from "./components/AuthModal";
 import EmailVerificationStatusBanner from "./components/EmailVerificationStatusBanner";
@@ -22,25 +22,34 @@ function App(): React.JSX.Element {
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 	const auth = useAuth();
 
-	// Email verification hook with callbacks for UI actions
+	// Create stable callback references to prevent infinite re-renders
+	const handleVerificationSuccess = useCallback((message: string) => {
+		setToast({ message, type: "success" });
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
+	}, []);
+
+	const handleVerificationError = useCallback((message: string) => {
+		setToast({ message, type: "error" });
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
+	}, []);
+
+	const handleRedirectHome = useCallback(() => {
+		setCurrentPage("home");
+	}, []);
+
+	const handleShowSignIn = useCallback(() => {
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
+	}, []);
+
+	// Email verification hook with stable callbacks
 	useEmailVerification({
-		onSuccess: (message: string) => {
-			setToast({ message, type: "success" });
-			setAuthModalMode("signin");
-			setShowAuthModal(true);
-		},
-		onError: (message: string) => {
-			setToast({ message, type: "error" });
-			setAuthModalMode("signin");
-			setShowAuthModal(true);
-		},
-		onRedirectHome: () => {
-			setCurrentPage("home");
-		},
-		onShowSignIn: () => {
-			setAuthModalMode("signin");
-			setShowAuthModal(true);
-		}
+		onSuccess: handleVerificationSuccess,
+		onError: handleVerificationError,
+		onRedirectHome: handleRedirectHome,
+		onShowSignIn: handleShowSignIn
 	});
 
 	// Auto-hide toast after 5 seconds
@@ -54,11 +63,6 @@ function App(): React.JSX.Element {
 
 	const handleShowRegistration = (): void => {
 		setAuthModalMode("signup");
-		setShowAuthModal(true);
-	};
-
-	const handleShowSignIn = (): void => {
-		setAuthModalMode("signin");
 		setShowAuthModal(true);
 	};
 

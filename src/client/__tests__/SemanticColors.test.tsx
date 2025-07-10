@@ -208,35 +208,35 @@ describe("Semantic Color Validation", () => {
 	});
 
 	it("should have all semantic color classes available", () => {
-		// This test ensures our semantic classes are defined in the Tailwind config
-		const configPath = path.join(process.cwd(), "tailwind.config.js");
+		// This test ensures our semantic classes are defined in the Tailwind v4 CSS config
+		const configPath = path.join(process.cwd(), "src/client/styles.css");
 
 		if (!fs.existsSync(configPath)) {
-			expect.fail("tailwind.config.js file not found");
+			expect.fail("styles.css file not found");
 		}
 
 		const configContent = readFileContent(configPath);
 
-		// Check that semantic color variables are defined in Tailwind config
+		// Check that semantic color variables are defined in Tailwind v4 CSS config
 		const expectedColors = [
-			"'layout-background':",
-			"'content-background':",
-			"'interactive':",
-			"'interactive-hover':",
-			"'text-primary':",
-			"'text-contrast':",
-			"'error':",
-			"'error-background':",
-			"'error-border':",
-			"'success':",
-			"'success-background':",
-			"'success-border':",
-			"'warning':",
-			"'warning-background':",
-			"'warning-border':",
-			"'neutral':",
-			"'neutral-background':",
-			"'neutral-border':"
+			"--color-layout-background:",
+			"--color-content-background:",
+			"--color-interactive:",
+			"--color-interactive-hover:",
+			"--color-text-primary:",
+			"--color-text-contrast:",
+			"--color-error:",
+			"--color-error-background:",
+			"--color-error-border:",
+			"--color-success:",
+			"--color-success-background:",
+			"--color-success-border:",
+			"--color-warning:",
+			"--color-warning-background:",
+			"--color-warning-border:",
+			"--color-neutral:",
+			"--color-neutral-background:",
+			"--color-neutral-border:"
 		];
 
 		expectedColors.forEach(color => {

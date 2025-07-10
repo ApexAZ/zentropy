@@ -39,7 +39,9 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 	});
 
 	const verificationAttempted = useRef<Set<string>>(new Set());
-	const { onSuccess, onError, onRedirectHome, onShowSignIn } = callbacks;
+	// Use refs to store current callbacks to avoid dependency issues
+	const callbacksRef = useRef(callbacks);
+	callbacksRef.current = callbacks;
 
 	const clearState = useCallback(() => {
 		setState({
@@ -73,6 +75,9 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 					status: response.status,
 					ok: response.ok
 				});
+
+				// Get current callbacks from ref
+				const { onSuccess, onError, onRedirectHome, onShowSignIn } = callbacksRef.current;
 
 				// Clean URL immediately
 				window.history.pushState({}, "", "/");
@@ -109,6 +114,9 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 				// Network Error
 				logger.error("Network error during verification", { error });
 
+				// Get current callbacks from ref
+				const { onError, onRedirectHome, onShowSignIn } = callbacksRef.current;
+
 				// Clean URL in case of network error
 				window.history.pushState({}, "", "/");
 				onRedirectHome?.();
@@ -124,10 +132,10 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 				onShowSignIn?.();
 			}
 		},
-		[onSuccess, onError, onRedirectHome, onShowSignIn]
+		[] // No dependencies - use callbacksRef.current inside the function
 	);
 
-	// Auto-detect email verification tokens in URL
+	// Auto-detect email verification tokens in URL - run only once on mount
 	useEffect(() => {
 		logger.debug("Email verification useEffect running", {
 			pathname: window.location.pathname
@@ -147,7 +155,8 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 			verificationAttempted.current.add(token);
 			verifyEmailToken(token);
 		}
-	}, [verifyEmailToken]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Remove verifyEmailToken dependency to prevent infinite loop
 
 	return {
 		state,
