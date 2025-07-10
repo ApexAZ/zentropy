@@ -56,8 +56,7 @@ class TestGoogleOAuthEndpoint:
         response = client.post(
             "/api/v1/auth/google-login", 
             json={
-                "google_token": "valid_google_token",
-                "organization": "Test Company"
+                "google_token": "valid_google_token"
             }
         )
         
@@ -69,7 +68,9 @@ class TestGoogleOAuthEndpoint:
         assert response_data["user"]["email"] == "newuser@gmail.com"
         assert response_data["user"]["first_name"] == "New"
         assert response_data["user"]["last_name"] == "User"
-        assert response_data["user"]["organization"] == "Test Company"
+        # In the just-in-time system, organization is created from email domain
+        # Gmail users get an organization named after their domain
+        assert response_data["user"]["organization_id"] is not None
         assert response_data["user"]["has_projects_access"] is True
     
     @patch('api.routers.auth.verify_google_token')  

@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from api.main import app
-from api.database import User
+from api.database import User, RegistrationType
 
 # Note: Using isolated test database fixtures from conftest.py
 # This ensures tests don't pollute the main database
@@ -57,7 +57,7 @@ class TestRememberMeBackend:
                 email="test@example.com",
                 first_name="Test",
                 last_name="User",
-                
+                registration_type=RegistrationType.EMAIL,
                 email_verified=True,
                 is_active=True
             )
@@ -93,7 +93,7 @@ class TestRememberMeBackend:
                 email="test@example.com",
                 first_name="Test",
                 last_name="User", 
-                
+                registration_type=RegistrationType.EMAIL,
                 email_verified=True,
                 is_active=True
             )
@@ -129,7 +129,7 @@ class TestRememberMeBackend:
                 email="test@example.com",
                 first_name="Test",
                 last_name="User",
-                
+                registration_type=RegistrationType.EMAIL,
                 email_verified=True,
                 is_active=True
             )

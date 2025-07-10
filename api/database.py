@@ -371,7 +371,7 @@ class Organization(Base):
     )
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
+        ForeignKey("users.id", use_alter=True, name="fk_organization_created_by"),
         nullable=True,
         doc="ID of the user who created this organization",
     )
@@ -453,7 +453,7 @@ class Organization(Base):
 
         current_user_count = (
             db_session.query(User)
-            .filter(User.organization_id == self.id, User.is_active is True)
+            .filter(User.organization_id == self.id, User.is_active.is_(True))
             .count()
         )
 
@@ -471,7 +471,7 @@ class Organization(Base):
         """
         return (
             db_session.query(User)
-            .filter(User.organization_id == self.id, User.is_active is True)
+            .filter(User.organization_id == self.id, User.is_active.is_(True))
             .count()
         )
 

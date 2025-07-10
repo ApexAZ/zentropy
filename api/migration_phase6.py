@@ -13,11 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
 
-# Add the parent directory to the path to import from the api module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import after path modification
-from api.database import User, Organization, Project  # noqa: E402
+from api.database import User, Organization, Project
 
 # Get database URL from environment
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./zentropy.db")

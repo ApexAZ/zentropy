@@ -8,6 +8,7 @@ project creation time, including domain checking and organization management.
 
 import pytest
 import uuid
+from uuid import UUID
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from unittest.mock import patch
@@ -587,7 +588,7 @@ class TestOrganizationAPIIntegration:
     """Test organization API integration scenarios."""
     
     def test_organization_creation_and_user_assignment_workflow(self, client, auth_headers, db, current_user):
-        """Test complete workflow of creating organization and assigning user."""
+        """Test complete workflow of creating organization and verifying user assignment."""
         # Step 1: Create organization
         org_data = {
             "name": "Integration Test Org",
@@ -605,18 +606,17 @@ class TestOrganizationAPIIntegration:
         assert response.status_code == 201
         org_id = response.json()["id"]
         
-        # Step 2: Join organization
+        # Step 2: Verify user was automatically assigned to the organization they created
+        db.refresh(current_user)
+        assert current_user.organization_id == UUID(org_id)
+        
+        # Step 3: Test that the user cannot join the organization they're already a member of
         response = client.post(
             f"/api/v1/organizations/{org_id}/join",
             headers=auth_headers
         )
-        assert response.status_code == 200
-        
-        # Step 3: Verify user assignment
-        db.refresh(current_user)
-        # Note: In real implementation, this might require approval workflow
-        # For now, we just verify the join request was approved (auto-join)
-        assert response.json()["status"] == "approved"
+        assert response.status_code == 400
+        assert "already a member" in response.json()["detail"]
     
     def test_organization_domain_checking_to_creation_workflow(self, client, auth_headers):
         """Test workflow from domain checking to organization creation."""

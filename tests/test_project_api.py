@@ -232,7 +232,7 @@ class TestProjectJustInTimeOrganizationWorkflow:
             }
             
             org_response = client.post(
-                "/api/v1/organizations",
+                "/api/v1/organizations/",
                 json=org_data,
                 headers=auth_headers
             )

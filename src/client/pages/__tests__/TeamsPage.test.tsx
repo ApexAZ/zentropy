@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TeamsPage from "../TeamsPage";
 
@@ -18,15 +18,19 @@ describe("TeamsPage", () => {
 		});
 	});
 
-	it("renders teams page with main elements", () => {
-		render(<TeamsPage />);
+	it("renders teams page with main elements", async () => {
+		await act(async () => {
+			render(<TeamsPage />);
+		});
 
 		expect(screen.getByText("Team Management")).toBeInTheDocument();
 		expect(screen.getByText("Create New Team")).toBeInTheDocument();
 	});
 
-	it("displays loading state initially", () => {
-		render(<TeamsPage />);
+	it("displays loading state initially", async () => {
+		await act(async () => {
+			render(<TeamsPage />);
+		});
 
 		expect(screen.getByText("Loading teams...")).toBeInTheDocument();
 	});

@@ -256,6 +256,10 @@ async def create_organization(
     db.commit()
     db.refresh(db_organization)
 
+    # Automatically assign the creator to the organization
+    current_user.organization_id = db_organization.id
+    db.commit()
+
     return OrganizationResponse.model_validate(db_organization)
 
 

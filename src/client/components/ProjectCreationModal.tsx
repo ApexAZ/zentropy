@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useProject } from "../hooks/useProject";
 import { useOrganization } from "../hooks/useOrganization";
 import { useFormValidation } from "../hooks/useFormValidation";
@@ -43,6 +43,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 	const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(preselectedOrganization);
 	const [showOrganizationSelector, setShowOrganizationSelector] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const dialogRef = useRef<HTMLDivElement>(null);
 
 	// Project form validation
 	const projectForm = useFormValidation<ProjectFormData>({
@@ -113,6 +114,13 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isOpen, preselectedOrganization]);
+
+	// Focus dialog when opened
+	useEffect(() => {
+		if (isOpen && dialogRef.current) {
+			dialogRef.current.focus();
+		}
+	}, [isOpen]);
 
 	// Handle keyboard navigation
 	const handleKeyDown = useCallback(
@@ -218,14 +226,16 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 			onClick={handleBackdropClick}
-			onKeyDown={handleKeyDown}
 		>
 			<div
+				ref={dialogRef}
 				className="bg-content-background max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg shadow-xl"
 				role="dialog"
 				aria-labelledby="project-creation-title"
 				aria-describedby="project-creation-description"
 				data-organization={selectedOrganization?.id}
+				onKeyDown={handleKeyDown}
+				tabIndex={-1}
 			>
 				<div className="p-6">
 					{/* Header */}
@@ -253,7 +263,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
 								projectToast.type === "success"
 									? "bg-green-100 text-green-800"
-									: "bg-red-100 text-red-800"
+									: "bg-error-background text-error"
 							}`}
 						>
 							<span>{projectToast.message}</span>
@@ -272,7 +282,7 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
 								organizationToast.type === "success"
 									? "bg-green-100 text-green-800"
-									: "bg-red-100 text-red-800"
+									: "bg-error-background text-error"
 							}`}
 						>
 							<span>{organizationToast.message}</span>

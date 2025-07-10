@@ -358,7 +358,9 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 					{orgToast && (
 						<div
 							className={`mx-4 mt-4 rounded-lg p-3 ${
-								orgToast.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+								orgToast.type === "success"
+									? "bg-success-background text-success"
+									: "bg-error-background text-error"
 							}`}
 						>
 							<div className="flex items-center justify-between">
@@ -379,7 +381,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 							className={`mx-4 mt-4 rounded-lg p-3 ${
 								projectToast.type === "success"
 									? "bg-green-100 text-green-800"
-									: "bg-red-100 text-red-800"
+									: "bg-error-background text-error"
 							}`}
 						>
 							<div className="flex items-center justify-between">
@@ -397,7 +399,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
 					{/* Error Messages */}
 					{orgError && (
-						<div className="mx-4 mt-4 rounded-lg bg-red-100 p-3 text-red-800">
+						<div className="bg-error-background text-error mx-4 mt-4 rounded-lg p-3">
 							<div className="flex items-center justify-between">
 								<span className="text-sm">{orgError}</span>
 								<button
@@ -412,7 +414,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 					)}
 
 					{projectError && (
-						<div className="mx-4 mt-4 rounded-lg bg-red-100 p-3 text-red-800">
+						<div className="bg-error-background text-error mx-4 mt-4 rounded-lg p-3">
 							<div className="flex items-center justify-between">
 								<span className="text-sm">{projectError}</span>
 								<button

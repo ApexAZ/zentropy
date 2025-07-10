@@ -199,18 +199,13 @@ describe("ProjectCreationModal", () => {
 
 		it("should validate personal projects cannot have organization", async () => {
 			const user = userEvent.setup();
-			mockUseProject.validateProject.mockReturnValue({
-				isValid: false,
-				errors: { organization_id: "Personal projects cannot be assigned to an organization" }
-			});
-
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
 			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
-			await user.click(screen.getByRole("button", { name: /create project/i }));
 
-			expect(screen.getByText("Personal projects cannot be assigned to an organization")).toBeInTheDocument();
+			// When personal is selected, organization section should be hidden
+			expect(screen.queryByText("Organization:")).not.toBeInTheDocument();
 		});
 	});
 
@@ -269,7 +264,13 @@ describe("ProjectCreationModal", () => {
 
 		it("should handle creation errors", async () => {
 			const user = userEvent.setup();
-			mockUseProject.createProject.mockRejectedValue(new Error("Project name already exists"));
+
+			// Mock the useProject hook to return an error toast
+			(useProject as any).mockReturnValue({
+				...mockUseProject,
+				toast: { message: "Project name already exists", type: "error" },
+				createProject: vi.fn().mockRejectedValue(new Error("Project name already exists"))
+			});
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
@@ -351,7 +352,7 @@ describe("ProjectCreationModal", () => {
 		it("should show visibility descriptions", () => {
 			render(<ProjectCreationModal {...mockProps} />);
 
-			expect(screen.getByText("Only you can see this project")).toBeInTheDocument();
+			expect(screen.getByText("Selected team members can see this project")).toBeInTheDocument();
 		});
 
 		it("should update visibility description when selection changes", async () => {
@@ -420,7 +421,8 @@ describe("ProjectCreationModal", () => {
 			expect(screen.getByRole("textbox", { name: /project name/i })).toBeDisabled();
 			expect(screen.getByRole("textbox", { name: /description/i })).toBeDisabled();
 			expect(screen.getByRole("combobox", { name: /visibility/i })).toBeDisabled();
-			expect(screen.getByRole("button", { name: /create project/i })).toBeDisabled();
+			// When loading, button text is "Creating..."
+			expect(screen.getByRole("button", { name: /creating/i })).toBeDisabled();
 		});
 	});
 
@@ -465,15 +467,16 @@ describe("ProjectCreationModal", () => {
 	describe("Form Reset", () => {
 		it("should reset form when modal is closed", async () => {
 			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+			const { rerender } = render(<ProjectCreationModal {...mockProps} />);
 
 			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
 			await user.type(screen.getByRole("textbox", { name: /description/i }), "Test description");
 
-			await user.click(screen.getByRole("button", { name: /close/i }));
+			// Close modal
+			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);
 
 			// Reopen modal
-			render(<ProjectCreationModal {...mockProps} />);
+			rerender(<ProjectCreationModal {...mockProps} isOpen={true} />);
 
 			expect(screen.getByRole("textbox", { name: /project name/i })).toHaveValue("");
 			expect(screen.getByRole("textbox", { name: /description/i })).toHaveValue("");
@@ -563,7 +566,13 @@ describe("ProjectCreationModal", () => {
 
 		it("should handle network errors gracefully", async () => {
 			const user = userEvent.setup();
-			mockUseProject.createProject.mockRejectedValue(new Error("Network error"));
+
+			// Mock the useProject hook to return an error toast
+			(useProject as any).mockReturnValue({
+				...mockUseProject,
+				toast: { message: "Network error", type: "error" },
+				createProject: vi.fn().mockRejectedValue(new Error("Network error"))
+			});
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 

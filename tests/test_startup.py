@@ -4,13 +4,6 @@ Runs as part of pre-commit hook to catch common issues early.
 """
 
 import pytest
-import sys
-import os
-
-# Add the project root to Python path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
-
 def test_python_module_imports():
     """Test that core Python modules can be imported without errors"""
     try:

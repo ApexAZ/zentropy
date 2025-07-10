@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useOrganization } from "../hooks/useOrganization";
 import { useFormValidation } from "../hooks/useFormValidation";
 import type { Organization, CreateOrganizationData, DomainCheckResult } from "../types";
@@ -45,6 +45,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 	const [domainCheckLoading, setDomainCheckLoading] = useState(false);
 	const [domainCheckError, setDomainCheckError] = useState<string>("");
 	const [searchTerm, setSearchTerm] = useState("");
+	const dialogRef = useRef<HTMLDivElement>(null);
 
 	// Extract domain from email
 	const extractDomain = (email: string): string => {
@@ -134,6 +135,13 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 		}
 	}, [isOpen, loadOrganizations]);
 
+	// Focus dialog when opened
+	useEffect(() => {
+		if (isOpen && dialogRef.current) {
+			dialogRef.current.focus();
+		}
+	}, [isOpen]);
+
 	// Handle keyboard navigation
 	const handleKeyDown = useCallback(
 		(event: React.KeyboardEvent) => {
@@ -212,14 +220,16 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 			onClick={handleBackdropClick}
-			onKeyDown={handleKeyDown}
 			data-testid="modal-backdrop"
 		>
 			<div
+				ref={dialogRef}
 				className="bg-content-background max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg shadow-xl"
 				role="dialog"
 				aria-labelledby="org-selector-title"
 				aria-describedby="org-selector-description"
+				onKeyDown={handleKeyDown}
+				tabIndex={-1}
 			>
 				<div className="p-6">
 					{/* Header */}
@@ -245,7 +255,9 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 					{toast && (
 						<div
 							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
-								toast.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+								toast.type === "success"
+									? "bg-success-background text-success"
+									: "bg-error-background text-error"
 							}`}
 						>
 							<span>{toast.message}</span>
@@ -261,7 +273,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 
 					{/* Error Display */}
 					{error && (
-						<div className="mb-4 rounded-lg bg-red-100 p-3 text-red-800">
+						<div className="bg-error-background text-error mb-4 rounded-lg p-3">
 							<p>{error}</p>
 							<button onClick={handleRetry} className="mt-2 text-sm underline" aria-label="Retry">
 								Retry
@@ -275,7 +287,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 					)}
 
 					{domainCheckError && (
-						<div className="mb-4 rounded-lg bg-red-100 p-3 text-red-800">
+						<div className="bg-error-background text-error mb-4 rounded-lg p-3">
 							<p>{domainCheckError}</p>
 							<button onClick={handleRetry} className="mt-2 text-sm underline" aria-label="Retry">
 								Retry
@@ -284,13 +296,13 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 					)}
 
 					{domainCheckResult?.domain_found && domainCheckResult.organization && (
-						<div className="mb-6 rounded-lg bg-blue-50 p-4">
-							<h3 className="font-semibold text-blue-900">
+						<div className="bg-neutral-background mb-6 rounded-lg p-4">
+							<h3 className="text-text-contrast font-semibold">
 								Organization Found for {domainCheckResult.domain}
 							</h3>
 							<div className="mt-2">
 								<p className="text-blue-800">{domainCheckResult.organization.name}</p>
-								<p className="text-sm text-blue-700">{domainCheckResult.suggestions.message}</p>
+								<p className="text-text-primary text-sm">{domainCheckResult.suggestions.message}</p>
 							</div>
 							{domainCheckResult.suggestions.can_join && (
 								<button
@@ -436,7 +448,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 													className="bg-interactive hover:bg-interactive-hover rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
 													aria-label="Create Personal Project"
 												>
-													Select
+													Create Personal Project
 												</button>
 											</div>
 										</div>
@@ -470,7 +482,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 														className="bg-interactive hover:bg-interactive-hover rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
 														aria-label={`Select ${org.name}`}
 													>
-														Select
+														Select {org.name}
 													</button>
 												</div>
 											</div>
@@ -499,7 +511,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 													className="border-interactive text-interactive hover:bg-interactive rounded-lg border px-4 py-2 transition-colors hover:text-white disabled:opacity-50"
 													aria-label="Create New Organization"
 												>
-													Create
+													Create New Organization
 												</button>
 											</div>
 										</div>

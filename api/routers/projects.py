@@ -74,9 +74,20 @@ def validate_project_organization_constraints(
                 detail="Organization not found",
             )
 
-        # Check if user can create projects in this organization
-        # For now, allow if user is assigned to organization or is admin
-        if (
+        # Just-in-time organization assignment: if user is not assigned to any
+        # organization, automatically assign them to this organization
+        if current_user.organization_id is None:
+            # Check if organization can accommodate another user
+            if not organization.can_add_user(db):
+                raise HTTPException(
+                    status_code=http_status.HTTP_400_BAD_REQUEST,
+                    detail="Organization has reached its maximum user capacity",
+                )
+            # Automatically assign user to organization
+            current_user.organization_id = organization_id
+            db.commit()
+        # Check if user is now a member of the organization or is admin
+        elif (
             current_user.organization_id != organization_id
             and current_user.role != UserRole.ADMIN
         ):

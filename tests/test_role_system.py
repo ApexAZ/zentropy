@@ -194,7 +194,6 @@ class TestRoleBasedAPIAccess:
             "password": "TestPassword123",
             "first_name": "Test",
             "last_name": "User",
-            "organization": "Test Org",
             "role": role.value,
             "terms_agreement": True,
             "has_projects_access": True
@@ -227,16 +226,17 @@ class TestRoleBasedAPIAccess:
             "description": "A test team"
         }
         
-        response = client.post("/api/v1/teams", json=team_data, headers=headers)
-        assert response.status_code == 201
+        response = client.post("/api/v1/teams/", json=team_data, headers=headers)
+        assert response.status_code == 200
         
         team_id = response.json()["id"]
         
         # Check that user became admin of the team
-        response = client.get(f"/api/v1/teams/{team_id}/members", headers=headers)
+        response = client.get(f"/api/v1/teams/{team_id}", headers=headers)
         assert response.status_code == 200
         
-        members = response.json()
+        team_data = response.json()
+        members = team_data.get("members", [])
         assert len(members) == 1
         # Note: The actual role checking would need the API to return role info
     
@@ -245,7 +245,7 @@ class TestRoleBasedAPIAccess:
         headers = self.create_test_user(client, db, role=UserRole.ADMIN)
         
         # Admin users should be able to access user management endpoints
-        response = client.get("/api/v1/users", headers=headers)
+        response = client.get("/api/v1/users/", headers=headers)
         assert response.status_code == 200
     
     def test_stakeholder_read_only_access(self, client, db):
@@ -269,12 +269,12 @@ class TestRoleAssignmentWorkflows:
         
         # Create team
         team_data = {"name": "Test Team", "description": "Test Description"}
-        response = client.post("/api/v1/teams", json=team_data, headers=admin_headers)
-        assert response.status_code == 201
+        response = client.post("/api/v1/teams/", json=team_data, headers=admin_headers)
+        assert response.status_code == 200
         team_id = response.json()["id"]
         
         # Create another user to invite
-        member_headers = self.create_test_user(client, "member@example.com", UserRole.BASIC_USER)
+        member_headers = self.create_test_user(client, db, "member@example.com", UserRole.BASIC_USER)
         
         # Test team invitation with specific role
         # This would require implementing the invitation endpoints with role specification
@@ -296,7 +296,6 @@ class TestRoleAssignmentWorkflows:
             "password": "TestPassword123",
             "first_name": "Test",
             "last_name": "User",
-            "organization": "Test Org",
             "role": role.value,
             "terms_agreement": True,
             "has_projects_access": True

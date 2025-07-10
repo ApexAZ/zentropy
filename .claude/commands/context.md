@@ -1,5 +1,10 @@
 echo
+
+Strict quality first attitude.  
+Never try to run npm run dev; ask the user to do it if it's needed.
+
 Read the following documents and make sure you understand the standards:
+
 CLAUDE.md
 README.md
 tests/README.md

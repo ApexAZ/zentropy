@@ -69,6 +69,55 @@ Our frontend testing uses a **Hybrid Approach**: we test business logic separate
     });
     ```
 
+### Step 4: Frontend API Mocking: Robustness is Mandatory
+
+When testing frontend components that fetch data, it is critical to create mocks that are robust and resilient to changes in component implementation, such as the double-render behavior of React's StrictMode.
+
+**The Problem: Fragile Mocks**
+
+A common but fragile pattern is to chain `.mockResolvedValueOnce()` for each expected API call.
+
+```typescript
+// ❌ FRAGILE: This test can easily break
+it('does something with fetched data', async () => {
+  mockFetch
+    .mockResolvedValueOnce(...) // for /api/teams
+    .mockResolvedValueOnce(...) // for /api/users
+    .mockResolvedValueOnce(...) // for /api/entries
+  
+  render(<MyComponent />);
+  // ...
+});
+```
+
+This test is brittle because it assumes a precise number and order of API calls. If React's StrictMode causes a `useEffect` to run twice, the mock queue will be exhausted prematurely, leading to `undefined` responses and crashes.
+
+**The Solution: Robust Mocks with `mockImplementation`**
+
+The mandatory pattern for this project is to use `.mockImplementation()`. This creates a stateful mock that responds based on the URL, regardless of how many times it is called.
+
+```typescript
+// ✅ ROBUST: This test is resilient
+it('does something with fetched data', async () => {
+  mockFetch.mockImplementation((url) => {
+    if (url.includes('/api/v1/teams')) {
+      return Promise.resolve({ ok: true, json: async () => mockTeams });
+    }
+    if (url.includes('/api/v1/users')) {
+      return Promise.resolve({ ok: true, json: async () => mockUsers });
+    }
+    if (url.includes('/api/v1/calendar_entries')) {
+      return Promise.resolve({ ok: true, json: async () => [] });
+    }
+    return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
+  });
+
+  render(<MyComponent />);
+  // ...
+});
+```
+This approach is more declarative and far less likely to break, making our test suite more reliable and easier to maintain.
+
 ## 3. The Backend Test Isolation System
 
 To ensure a clean, isolated database for your Python tests, explicitly request the `client` and `db` fixtures in your test functions.

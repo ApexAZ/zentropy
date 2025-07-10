@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import "@testing-library/jest-dom";
 import ProfilePage from "../ProfilePage";
 
 // Mock fetch globally
@@ -29,15 +30,34 @@ describe("ProfilePage", () => {
 		});
 	});
 
-	it("renders profile page with main elements", () => {
-		render(<ProfilePage />);
+	it("renders profile page with main elements", async () => {
+		await act(async () => {
+			render(<ProfilePage />);
+		});
 
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
 		expect(screen.getByText("Manage your account information and security settings")).toBeInTheDocument();
 	});
 
-	it("displays loading state initially", () => {
-		render(<ProfilePage />);
+	it("displays loading state initially", async () => {
+		// Add a delay to the mock to see loading state
+		mockFetch.mockImplementationOnce(
+			() =>
+				new Promise(resolve =>
+					setTimeout(
+						() =>
+							resolve({
+								ok: true,
+								json: async () => mockUser
+							}),
+						100
+					)
+				)
+		);
+
+		await act(async () => {
+			render(<ProfilePage />);
+		});
 
 		expect(screen.getByText("Loading profile...")).toBeInTheDocument();
 	});
@@ -79,7 +99,7 @@ describe("ProfilePage", () => {
 		render(<ProfilePage />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Administrator")).toBeInTheDocument();
+			expect(screen.getAllByText("Administrator")).toHaveLength(2); // Role label and badge
 		});
 	});
 
@@ -507,48 +527,73 @@ describe("ProfilePage", () => {
 	it("auto-dismisses toast after 5 seconds", async () => {
 		vi.useFakeTimers();
 
-		const user = userEvent.setup();
+		try {
+			// Mock initial profile load
+			mockFetch.mockImplementation((url: string, options?: any) => {
+				if (url.includes("/api/v1/users/me") && !options?.method) {
+					return Promise.resolve({
+						ok: true,
+						json: async () => mockUser
+					});
+				}
+				if (url.includes("/api/v1/users/profile") && options?.method === "PUT") {
+					return Promise.resolve({
+						ok: true,
+						json: async () => mockUser
+					});
+				}
+				return Promise.reject(new Error(`Unhandled API call: ${url}`));
+			});
 
-		// Mock successful profile update
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockUser
-		});
+			const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+			render(<ProfilePage />);
 
-		render(<ProfilePage />);
+			// Wait for component to load
+			await waitFor(() => {
+				expect(screen.getByText("Edit Profile")).toBeInTheDocument();
+			});
 
-		await waitFor(() => {
-			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
-		});
+			// Open edit form and submit
+			await user.click(screen.getByText("Edit Profile"));
+			await user.click(screen.getByText("Save Changes"));
 
-		// Open edit form and submit to trigger success toast
-		await user.click(screen.getByText("Edit Profile"));
-		await user.click(screen.getByText("Save Changes"));
+			// Wait for success toast
+			await waitFor(() => {
+				expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
+			});
 
-		await waitFor(() => {
-			expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
-		});
+			// Advance timers by 5 seconds
+			act(() => {
+				vi.advanceTimersByTime(5000);
+			});
 
-		// Fast-forward 5 seconds
-		vi.advanceTimersByTime(5000);
-
-		await waitFor(() => {
+			// Toast should be dismissed
 			expect(screen.queryByText("Profile updated successfully!")).not.toBeInTheDocument();
-		});
-
-		vi.useRealTimers();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("allows manual dismissal of toast", async () => {
-		const user = userEvent.setup();
-
-		// Mock failed profile update to trigger error toast
-		mockFetch.mockResolvedValueOnce({
-			ok: false,
-			status: 400,
-			json: async () => ({ message: "Update failed" })
+		// Mock initial profile load and failed update
+		mockFetch.mockImplementation((url: string, options?: any) => {
+			if (url.includes("/api/v1/users/me") && !options?.method) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => mockUser
+				});
+			}
+			if (url.includes("/api/v1/users/profile") && options?.method === "PUT") {
+				return Promise.resolve({
+					ok: false,
+					status: 400,
+					json: async () => ({ message: "Update failed" })
+				});
+			}
+			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
+		const user = userEvent.setup();
 		render(<ProfilePage />);
 
 		await waitFor(() => {
@@ -563,25 +608,35 @@ describe("ProfilePage", () => {
 			expect(screen.getByText("Update failed")).toBeInTheDocument();
 		});
 
-		// Click dismiss button
-		const dismissButton = screen.getByText("×");
+		// Find and click dismiss button
+		const dismissButton = screen.getByRole("button", { name: /close notification/i });
 		await user.click(dismissButton);
 
-		expect(screen.queryByText("Update failed")).not.toBeInTheDocument();
+		await waitFor(() => {
+			expect(screen.queryByText("Update failed")).not.toBeInTheDocument();
+		});
 	});
 
 	it("retries loading profile when retry button is clicked", async () => {
-		const user = userEvent.setup();
+		let callCount = 0;
 
-		// First call fails
-		mockFetch.mockRejectedValueOnce(new Error("Network error"));
-
-		// Second call succeeds
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => mockUser
+		// Mock first call to fail, second to succeed
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/v1/users/me")) {
+				callCount++;
+				if (callCount === 1) {
+					return Promise.reject(new Error("Network error"));
+				} else {
+					return Promise.resolve({
+						ok: true,
+						json: async () => mockUser
+					});
+				}
+			}
+			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
+		const user = userEvent.setup();
 		render(<ProfilePage />);
 
 		await waitFor(() => {

@@ -236,7 +236,6 @@ describe("AuthService", () => {
 			});
 		});
 
-
 		it("should reject unsupported OAuth providers", async () => {
 			await expect(AuthService.oauthSignIn("facebook" as any, mockCredential)).rejects.toThrow(
 				"Only Google OAuth is currently supported"

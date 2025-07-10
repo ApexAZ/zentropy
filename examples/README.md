@@ -149,6 +149,12 @@ All examples demonstrate:
 - Input validation and sanitization
 - Rate limiting where appropriate
 
+### 💡 Pro Tip: Robust API Mocking in Tests
+
+When writing frontend tests, always use a robust mocking strategy for API calls. Instead of chaining multiple `.mockResolvedValueOnce()`, use `.mockImplementation()` to create a resilient mock that can handle multiple calls without breaking.
+
+For a detailed guide and examples, see the **Frontend API Mocking** section in the main [Testing & Quality Handbook](../tests/README.md).
+
 ## Example Usage Snippets
 
 ### Quick Reference for Common Tasks

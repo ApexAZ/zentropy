@@ -12,9 +12,6 @@ import argparse
 import logging
 from datetime import datetime
 
-# Add the parent directory to the path to import from the api module
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from api.migration_phase6 import Phase6Migration, DATABASE_URL
 
 
