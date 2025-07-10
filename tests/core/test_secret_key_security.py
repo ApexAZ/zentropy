@@ -8,6 +8,17 @@ import importlib
 import sys
 
 
+# Store original module reference to restore after tests
+_original_auth_module = None
+
+
+def setup_function():
+    """Store original auth module before each test"""
+    global _original_auth_module
+    if 'api.auth' in sys.modules:
+        _original_auth_module = sys.modules['api.auth']
+
+
 def test_production_secret_key_validation():
     """Test that production environment requires explicit SECRET_KEY"""
     # Remove auth module if already imported to test fresh import
@@ -74,6 +85,14 @@ def test_development_with_explicit_secret_key():
 
 
 def teardown_function():
-    """Clean up module imports after each test"""
+    """Clean up module imports after each test and restore original state"""
+    global _original_auth_module
+    
+    # Remove any modified auth module
     if 'api.auth' in sys.modules:
         del sys.modules['api.auth']
+    
+    # Restore original auth module if it existed
+    if _original_auth_module is not None:
+        sys.modules['api.auth'] = _original_auth_module
+        _original_auth_module = None

@@ -100,6 +100,9 @@ def client(test_db_engine) -> TestClient:
         finally:
             test_session.close()
     
+    # Store original override if exists
+    original_override = app.dependency_overrides.get(get_db)
+    
     # Override the database dependency
     app.dependency_overrides[get_db] = override_get_db
     
@@ -107,8 +110,11 @@ def client(test_db_engine) -> TestClient:
     
     yield test_client
     
-    # Cleanup: Remove dependency override
-    app.dependency_overrides.clear()
+    # Cleanup: Restore original override or remove if none existed
+    if original_override is not None:
+        app.dependency_overrides[get_db] = original_override
+    else:
+        app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture(scope="function")

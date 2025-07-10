@@ -118,6 +118,10 @@ it('does something with fetched data', async () => {
 ```
 This approach is more declarative and far less likely to break, making our test suite more reliable and easier to maintain.
 
+**Mock Consolidation**
+
+For complex test files like `App.test.tsx`, mocks are consolidated at the top of the file for better organization and reusability. This includes creating helper functions to manage mock state. While Vitest's hoisting behavior prevents the use of a central `__mocks__` directory, this in-file consolidation provides similar benefits.
+
 ### Step 5: Backend Test Directory Structure
 
 To improve organization and maintainability, the `tests/` directory mirrors the structure of the `api/` directory. This makes it easy to locate tests related to specific parts of the application.
@@ -126,7 +130,9 @@ To improve organization and maintainability, the `tests/` directory mirrors the 
 -   `tests/services/`: Tests for service-layer logic (e.g., `google_oauth.py`).
 -   `tests/models/`: Tests for SQLAlchemy models and database logic.
 -   `tests/auth/`: Tests related to authentication, roles, and permissions.
+-   `tests/oauth/`: Tests related to OAuth integrations.
 -   `tests/core/`: Core application tests, such as startup and integration checks.
+-   `tests/functional/`: Functional tests that cover user workflows.
 
 When adding new tests, place them in the corresponding subdirectory.
 

@@ -370,6 +370,7 @@ export function MyComponent({
 3. **Accessibility**: Include ARIA labels and keyboard support
 4. **Composition**: Build with smaller components when possible
 5. **Testing**: Write user-focused tests
+6. **TSDoc Comments**: Add TSDoc comments to all component props to improve developer experience by providing inline documentation.
 
 ### Test Template
 

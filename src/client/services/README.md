@@ -708,7 +708,7 @@ Provide client-side validation before API calls
 Include authentication headers in all authenticated requests
 
 ### 6. **Testing**
-Write comprehensive tests for all service methods
+Write comprehensive tests for all service methods. Each service should have a corresponding test file in `src/client/services/__tests__/` that mocks `fetch` calls and tests the service's logic in isolation.
 
 ### 7. **Documentation**
 Document all public methods with JSDoc comments
