@@ -3,10 +3,15 @@ import React from "react";
 type ButtonVariant = "primary" | "secondary" | "danger" | "icon";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	/** Visual style variant of the button */
 	variant?: ButtonVariant;
+	/** When true, shows loading text and disables interaction */
 	isLoading?: boolean;
+	/** Text to display when button is in loading state */
 	loadingText?: string;
+	/** When true, button expands to fill container width */
 	fullWidth?: boolean;
+	/** Button content - text, icons, or other React elements */
 	children: React.ReactNode;
 }
 

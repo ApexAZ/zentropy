@@ -21,7 +21,7 @@ This is the practical, step-by-step guide for adding new, tested features.
 
 ### Step 2: Writing a Backend Test (API Endpoints)
 
-1.  **Create the Test File**: e.g., `tests/test_your_feature.py`.
+1.  **Create the Test File**: Place your test file in a subdirectory that mirrors the `api/` structure. For example, a test for an endpoint in `api/routers/your_feature.py` should be placed in `tests/routers/test_your_feature.py`.
 2.  **Write the Test Function**:
     - Use a descriptive name: `test_create_widget_as_authorized_user()`.
     - **Crucially, add the `client` and `db` fixtures to the function signature.** This automatically enables the isolated test database.
@@ -117,6 +117,18 @@ it('does something with fetched data', async () => {
 });
 ```
 This approach is more declarative and far less likely to break, making our test suite more reliable and easier to maintain.
+
+### Step 5: Backend Test Directory Structure
+
+To improve organization and maintainability, the `tests/` directory mirrors the structure of the `api/` directory. This makes it easy to locate tests related to specific parts of the application.
+
+-   `tests/routers/`: Tests for API endpoints in `api/routers/`.
+-   `tests/services/`: Tests for service-layer logic (e.g., `google_oauth.py`).
+-   `tests/models/`: Tests for SQLAlchemy models and database logic.
+-   `tests/auth/`: Tests related to authentication, roles, and permissions.
+-   `tests/core/`: Core application tests, such as startup and integration checks.
+
+When adding new tests, place them in the corresponding subdirectory.
 
 ## 3. The Backend Test Isolation System
 

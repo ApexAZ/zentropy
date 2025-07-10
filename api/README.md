@@ -298,7 +298,7 @@ app.include_router(projects.router)
 Write tests for all API endpoints:
 
 ```python
-# tests/test_projects.py
+# tests/routers/test_projects_router.py
 def test_create_project(client, test_user, test_team):
     """Test project creation."""
     response = client.post(

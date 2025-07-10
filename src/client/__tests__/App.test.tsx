@@ -5,11 +5,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import App from "../App";
 import type { AuthUser } from "../types";
-import { useEmailVerification } from "../hooks/useEmailVerification";
 
-// Mock useAuth hook
+// ================================
+// CONSOLIDATED MOCK IMPLEMENTATIONS
+// ================================
+// This section centralizes all mock definitions to improve maintainability and reusability
+
+// Auth Mock Objects and Helpers
 const mockLogin = vi.fn();
 const mockLogout = vi.fn();
+
 const mockAuth: {
 	isAuthenticated: boolean;
 	user: AuthUser | null;
@@ -24,11 +29,28 @@ const mockAuth: {
 	logout: mockLogout
 };
 
-vi.mock("../hooks/useAuth", () => ({
-	useAuth: () => mockAuth
-}));
+// Helper functions for auth state management
+const resetAuthMock = (): void => {
+	mockAuth.isAuthenticated = false;
+	mockAuth.user = null;
+	mockAuth.token = null;
+	mockLogin.mockClear();
+	mockLogout.mockClear();
+};
 
-// Mock useGoogleOAuth hook with callback support
+const setAuthenticatedUser = (user: AuthUser, token = "mock-token"): void => {
+	mockAuth.isAuthenticated = true;
+	mockAuth.user = user;
+	mockAuth.token = token;
+};
+
+const setUnauthenticatedState = (): void => {
+	mockAuth.isAuthenticated = false;
+	mockAuth.user = null;
+	mockAuth.token = null;
+};
+
+// Google OAuth Mock Objects and Helpers
 const mockTriggerOAuth = vi.fn();
 
 const mockGoogleOAuth = {
@@ -38,16 +60,37 @@ const mockGoogleOAuth = {
 	triggerOAuth: mockTriggerOAuth
 };
 
+// Email Verification Mock Objects and Helpers
+const mockUseEmailVerification = vi.fn();
+
+const resetEmailVerificationMock = (): void => {
+	mockUseEmailVerification.mockClear();
+};
+
+const setEmailVerificationDefault = (): void => {
+	mockUseEmailVerification.mockImplementation(() => {});
+};
+
+// ================================
+// VI.MOCK DECLARATIONS
+// ================================
+
+// Mock useAuth hook
+vi.mock("../hooks/useAuth", () => ({
+	useAuth: () => mockAuth
+}));
+
+// Mock useGoogleOAuth hook
 vi.mock("../hooks/useGoogleOAuth", () => ({
 	useGoogleOAuth: () => mockGoogleOAuth
 }));
 
 // Mock useEmailVerification hook
 vi.mock("../hooks/useEmailVerification", () => ({
-	useEmailVerification: vi.fn()
+	useEmailVerification: mockUseEmailVerification
 }));
 
-// Mock page components to avoid complex rendering in App tests
+// Mock page components
 vi.mock("../pages/HomePage", () => ({
 	default: () => <div data-testid="home-page">Home Page</div>
 }));
@@ -96,7 +139,7 @@ vi.mock("../components/Header", () => ({
 	)
 }));
 
-// Mock AuthModal component with React state management for error handling
+// Mock AuthModal component with OAuth simulation
 vi.mock("../components/AuthModal", () => ({
 	default: function MockAuthModal({ isOpen, onClose, onSuccess, initialMode, auth }: any) {
 		const [oauthError, setOauthError] = React.useState("");
@@ -148,7 +191,7 @@ vi.mock("../components/AuthModal", () => ({
 										const errorMessage = `Google OAuth failed: ${errorData.detail || "Invalid token"}`;
 										setOauthError(errorMessage);
 									}
-								} catch (error) {
+								} catch (error: any) {
 									// Handle network errors
 									const errorMessage = `Google OAuth failed: ${error.message}`;
 									setOauthError(errorMessage);
@@ -173,10 +216,8 @@ vi.mock("../components/EmailVerificationStatusBanner", () => ({
 describe("App - Google OAuth Integration (TDD)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset auth state
-		mockAuth.isAuthenticated = false;
-		mockAuth.user = null;
-		mockAuth.token = null;
+		// Reset auth state using centralized helper
+		resetAuthMock();
 	});
 
 	afterEach(() => {
@@ -498,12 +539,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 describe("App - General Rendering and Routing Logic", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset auth state
-		mockAuth.isAuthenticated = false;
-		mockAuth.user = null;
-		mockAuth.token = null;
-		// Mock useEmailVerification to do nothing by default
-		vi.mocked(useEmailVerification).mockImplementation(() => {});
+		// Reset auth state using centralized helper
+		resetAuthMock();
+		// Reset email verification mock using centralized helper
+		resetEmailVerificationMock();
+		setEmailVerificationDefault();
 	});
 
 	afterEach(() => {
@@ -558,14 +598,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		it("should render profile page when authenticated", async () => {
 			const user = userEvent.setup();
 
-			// Set authenticated state
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated state using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: true,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -586,14 +625,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		it("should allow access to projects pages when user has projects access", async () => {
 			const user = userEvent.setup();
 
-			// Set authenticated user with projects access
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user with projects access using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: true,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -613,14 +651,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		it("should redirect to home page when user lacks projects access", async () => {
 			const user = userEvent.setup();
 
-			// Set authenticated user WITHOUT projects access
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user WITHOUT projects access using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: false,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -635,14 +672,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		it("should redirect from calendar page when user lacks projects access", async () => {
 			const user = userEvent.setup();
 
-			// Set authenticated user WITHOUT projects access
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user WITHOUT projects access using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: false,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -657,14 +693,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		it("should redirect from dashboard page when user lacks projects access", async () => {
 			const user = userEvent.setup();
 
-			// Set authenticated user WITHOUT projects access
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user WITHOUT projects access using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: false,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -679,14 +714,13 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Email Verification Banner", () => {
 		it("should show email verification banner for authenticated users with unverified emails", () => {
-			// Set authenticated user with unverified email
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user with unverified email using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: true,
 				email_verified: false
-			};
+			});
 
 			render(<App />);
 
@@ -695,14 +729,13 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should hide email verification banner for authenticated users with verified emails", () => {
-			// Set authenticated user with verified email
-			mockAuth.isAuthenticated = true;
-			mockAuth.user = {
+			// Set authenticated user with verified email using centralized helper
+			setAuthenticatedUser({
 				email: "test@example.com",
 				name: "Test User",
 				has_projects_access: true,
 				email_verified: true
-			};
+			});
 
 			render(<App />);
 
@@ -710,9 +743,8 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should hide email verification banner for unauthenticated users", () => {
-			// Ensure unauthenticated state
-			mockAuth.isAuthenticated = false;
-			mockAuth.user = null;
+			// Ensure unauthenticated state using centralized helper
+			setUnauthenticatedState();
 
 			render(<App />);
 
@@ -787,7 +819,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Verify useEmailVerification was called with callback configuration
-			expect(vi.mocked(useEmailVerification)).toHaveBeenCalledWith({
+			expect(mockUseEmailVerification).toHaveBeenCalledWith({
 				onSuccess: expect.any(Function),
 				onError: expect.any(Function),
 				onRedirectHome: expect.any(Function),
@@ -799,7 +831,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Simulate successful verification wrapped in act
@@ -816,7 +848,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Simulate verification error wrapped in act
@@ -839,7 +871,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			expect(screen.getByTestId("about-page")).toBeInTheDocument();
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Simulate redirect home wrapped in act
@@ -856,7 +888,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Simulate show sign in wrapped in act
@@ -877,7 +909,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Trigger success toast wrapped in act
@@ -905,7 +937,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Trigger error toast wrapped in act
@@ -933,7 +965,7 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Get the callbacks passed to useEmailVerification
-			const callbackConfig = vi.mocked(useEmailVerification).mock.calls[0]?.[0];
+			const callbackConfig = mockUseEmailVerification.mock.calls[0]?.[0];
 			if (!callbackConfig) throw new Error("useEmailVerification not called");
 
 			// Trigger success toast wrapped in act

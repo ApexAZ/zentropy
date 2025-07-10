@@ -1,22 +1,33 @@
 import React from "react";
 
 interface CardAction {
+	/** Accessible label for the action button */
 	label: string;
+	/** Function called when action button is clicked */
 	onClick: () => void;
+	/** Icon character or emoji to display in the action button */
 	icon: string;
 }
 
 interface CardDataItem {
+	/** Display label for the data field */
 	label: string;
+	/** Value to display - can be text or React components */
 	value: string | React.ReactNode;
 }
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+	/** Optional card header title */
 	title?: string | undefined;
+	/** Optional subtitle text displayed below title */
 	description?: string | undefined;
+	/** Optional array of action buttons displayed in header */
 	actions?: CardAction[];
+	/** Optional array of key-value pairs to display as structured data */
 	data?: CardDataItem[];
+	/** Optional footer content displayed at bottom of card */
 	footer?: React.ReactNode;
+	/** Main card content */
 	children?: React.ReactNode;
 }
 

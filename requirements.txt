@@ -19,4 +19,5 @@ flake8==7.1.1
 # Note: pyright (type checker) is installed via npm devDependencies, not pip
 pytest==8.3.4
 pytest-asyncio==0.24.0
+pytest-cov==6.2.1
 httpx==0.28.1

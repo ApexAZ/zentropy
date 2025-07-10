@@ -8,16 +8,26 @@ import RequiredAsterisk from "./RequiredAsterisk";
 type AuthMode = "signin" | "signup" | "method-selection";
 
 interface AuthModalProps {
+	/** Controls modal visibility */
 	isOpen: boolean;
+	/** Called when user closes modal or clicks outside */
 	onClose: () => void;
+	/** Called when authentication succeeds */
 	onSuccess: () => void;
+	/** Authentication state and methods from useAuth hook */
 	auth: {
+		/** Current authentication status */
 		isAuthenticated: boolean;
+		/** Currently authenticated user data, null if not authenticated */
 		user: AuthUser | null;
+		/** JWT authentication token, null if not authenticated */
 		token: string | null;
+		/** Function to log in user with token and user data */
 		login: (token: string, user: AuthUser, rememberMe?: boolean) => void;
+		/** Function to log out current user */
 		logout: () => Promise<void>;
 	};
+	/** Initial authentication mode to display when modal opens */
 	initialMode?: AuthMode;
 }
 

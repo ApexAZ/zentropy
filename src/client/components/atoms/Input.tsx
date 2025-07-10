@@ -2,17 +2,26 @@ import React from "react";
 import RequiredAsterisk from "../RequiredAsterisk";
 
 interface Option {
+	/** The value to submit when this option is selected */
 	value: string | number;
+	/** Display text for this option */
 	label: string;
 }
 
 interface BaseInputProps {
+	/** Field label displayed above the input */
 	label: string;
+	/** Error message to display below input when validation fails */
 	error?: string | undefined;
+	/** Helper text displayed below input to guide user input */
 	helper?: string | undefined;
+	/** When true, displays required asterisk and adds validation */
 	required?: boolean;
+	/** When true, renders as textarea instead of single-line input */
 	multiline?: boolean;
+	/** Array of options for select dropdown - when provided, renders select element */
 	options?: Option[];
+	/** Additional CSS classes to apply to the input element */
 	className?: string;
 }
 

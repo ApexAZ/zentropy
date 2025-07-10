@@ -39,7 +39,9 @@ export default defineConfig({
 					lines: 80,
 					statements: 80
 				}
-			}
+			},
+			all: true,
+			skipFull: false
 		}
 	}
 });

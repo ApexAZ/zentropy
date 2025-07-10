@@ -5,17 +5,26 @@ import type { AuthUser } from "../types";
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 interface Auth {
+	/** Current authentication status */
 	isAuthenticated: boolean;
+	/** Currently authenticated user data, null if not authenticated */
 	user: AuthUser | null;
+	/** JWT authentication token, null if not authenticated */
 	token: string | null;
+	/** Function to log in user with token and user data */
 	login: (token: string, user: AuthUser) => void;
+	/** Function to log out current user */
 	logout: () => Promise<void>;
 }
 
 interface NavigationPanelProps {
+	/** Called when user navigates to a different page */
 	onPageChange: (page: Page) => void;
+	/** Called when user wants to show registration modal */
 	onShowRegistration: () => void;
+	/** Called when user wants to show sign-in modal */
 	onShowSignIn: () => void;
+	/** Authentication state and methods from useAuth hook */
 	auth: Auth;
 }
 
