@@ -162,7 +162,12 @@ This project includes extensive documentation to help you understand the archite
 - **[Architecture Deep Dive](./docs/architecture/README.md)**: A comprehensive analysis of the system architecture, technology stack, and design patterns.
 - **[Database Schema](./docs/database-erd.md)**: The complete Entity Relationship Diagram (ERD) and data model details.
 - **[Testing Guide](./tests/README.md)**: An in-depth look at our testing infrastructure and how to write tests.
+- **[API Module](./api/README.md)**: Documentation for the backend FastAPI application.
+- **[API Routers](./api/routers/README.md)**: RESTful endpoint documentation with authentication and validation patterns.
+- **[UI Components](./src/client/components/README.md)**: A guide to the reusable React components.
+- **[React Hooks](./src/client/hooks/README.md)**: Custom hooks for state management, API interactions, and business logic.
+- **[Service Layer](./src/client/services/README.md)**: Frontend services that bridge React components with backend APIs.
+- **[Examples Overview](./examples/README.md)**: Complete working examples of extending the Zentropy application.
 - **[Adding New Features](./examples/adding-new-feature/README.md)**: A step-by-step guide to adding a new CRUD feature from the database to the UI.
 - **[Creating UI Components](./examples/ui-component/README.md)**: Learn how to build reusable components that follow our design system.
-- **[API Module](./api/README.md)**: Documentation for the backend FastAPI application.
-- **[UI Components](./src/client/components/README.md)**: A guide to the reusable React components.
+- **[Performance Testing](./performance/README.md)**: Performance testing tools and configurations for load testing and optimization.

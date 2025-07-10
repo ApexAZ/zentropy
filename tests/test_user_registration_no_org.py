@@ -186,21 +186,22 @@ class TestUserCreateSchemaValidation:
         )
         
         assert user_create.email == "schema-test@example.com"
-        assert user_create.organization_id is None
+        # organization_id is not part of the schema anymore (just-in-time organization system)
+        assert not hasattr(user_create, 'organization_id')
     
     def test_user_create_schema_allows_explicit_null_organization_id(self):
-        """Test that UserCreate schema validates with explicit null organization_id."""
+        """Test that UserCreate schema validates without organization_id (just-in-time system)."""
         user_create = UserCreate(
             email="schema-null@example.com",
             password="Password123!",
             first_name="SchemaNulL",
             last_name="Test",
-            organization_id=None,
             terms_agreement=True
         )
         
         assert user_create.email == "schema-null@example.com"
-        assert user_create.organization_id is None
+        # organization_id is not part of the schema anymore (just-in-time organization system)
+        assert not hasattr(user_create, 'organization_id')
     
     def test_user_create_schema_default_values(self):
         """Test that UserCreate schema has correct default values."""
@@ -213,7 +214,8 @@ class TestUserCreateSchemaValidation:
         )
         
         # Verify default values from UserBase
-        assert user_create.organization_id is None
+        # organization_id is not part of the schema anymore (just-in-time organization system)
+        assert not hasattr(user_create, 'organization_id')
         assert user_create.role.value == "basic_user"  # Default from UserRole.BASIC_USER
         assert user_create.has_projects_access is True
 

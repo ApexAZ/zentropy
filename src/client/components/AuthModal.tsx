@@ -31,7 +31,6 @@ interface SignUpFormData {
 	first_name: string;
 	last_name: string;
 	email: string;
-	organization_id: string;
 	password: string;
 	confirm_password: string;
 	terms_agreement: boolean;
@@ -102,7 +101,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			first_name: "",
 			last_name: "",
 			email: "",
-			organization_id: "",
 			password: "",
 			confirm_password: "",
 			terms_agreement: false,
@@ -156,8 +154,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				email: values.email,
 				password: values.password,
 				terms_agreement: values.terms_agreement,
-				has_projects_access: values.has_projects_access,
-				...(values.organization_id && { organization_id: values.organization_id })
+				has_projects_access: values.has_projects_access
 			};
 
 			const { token, user } = await AuthService.signUp(userData);
@@ -470,22 +467,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 						/>
 						{signUpForm.touched.email && signUpForm.errors.email && (
 							<p className="text-error mt-1 text-sm">{signUpForm.errors.email}</p>
-						)}
-					</div>
-
-					<div>
-						<label className="text-text-primary mb-1 block text-sm font-medium">Organization</label>
-						<input
-							type="text"
-							name="organization_id"
-							value={signUpForm.values.organization_id}
-							onChange={e => signUpForm.handleChange("organization_id", e.target.value)}
-							onBlur={() => signUpForm.handleBlur("organization_id")}
-							className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
-							disabled={isLoading}
-						/>
-						{signUpForm.touched.organization_id && signUpForm.errors.organization_id && (
-							<p className="text-error mt-1 text-sm">{signUpForm.errors.organization_id}</p>
 						)}
 					</div>
 

@@ -181,7 +181,7 @@ def register(
         password_hash=hashed_password,
         first_name=user_create.first_name,
         last_name=user_create.last_name,
-        organization_id=user_create.organization_id,
+        organization_id=None,  # Just-in-time organization assignment
         role=user_create.role,
         has_projects_access=user_create.has_projects_access,
         registration_type=database.RegistrationType.EMAIL,  # Set registration type
@@ -220,54 +220,6 @@ def logout(
     # Note: JWT token handling is done client-side
     # Server-side logout could implement token blacklisting if needed
     return MessageResponse(message="Successfully logged out")
-
-
-@router.post("/check-organization-by-email")
-def check_organization_by_email(request: dict, db: Session = Depends(get_db)) -> dict:
-    """
-    Check if the email domain matches any organization and return organization details.
-
-    This endpoint helps autopopulate organization fields during registration
-    by checking the email domain against existing organizations.
-    """
-    email = request.get("email", "").lower().strip()
-
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
-        )
-
-    # Extract domain from email
-    try:
-        domain = email.split("@")[1]
-    except IndexError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format"
-        )
-
-    # Check if organization exists with this domain
-    organization = (
-        db.query(database.Organization)
-        .filter(database.Organization.domain == domain)
-        .first()
-    )
-
-    if organization:
-        return {
-            "organization_found": True,
-            "organization_id": str(organization.id),
-            "organization_name": organization.name,
-            "organization_domain": organization.domain,
-            "organization_short_name": organization.short_name,
-        }
-    else:
-        return {
-            "organization_found": False,
-            "organization_id": None,
-            "organization_name": None,
-            "organization_domain": domain,
-            "organization_short_name": None,
-        }
 
 
 @router.post("/google-login", response_model=LoginResponse)

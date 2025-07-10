@@ -17,7 +17,6 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    organization_id: Optional[UUID] = None
     role: UserRole = UserRole.BASIC_USER
     has_projects_access: bool = True
 
@@ -39,6 +38,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: UUID
+    organization_id: Optional[UUID] = None  # Include for just-in-time org status
     is_active: bool
     email_verified: bool
     registration_type: RegistrationType

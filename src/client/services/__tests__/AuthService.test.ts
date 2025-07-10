@@ -236,25 +236,6 @@ describe("AuthService", () => {
 			});
 		});
 
-		it("should include organization_id when provided", async () => {
-			vi.mocked(fetch).mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
-			} as Response);
-
-			await AuthService.oauthSignIn("google", mockCredential, "org-456");
-
-			expect(fetch).toHaveBeenCalledWith("/api/v1/auth/google-oauth", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					credential: mockCredential,
-					organization_id: "org-456"
-				})
-			});
-		});
 
 		it("should reject unsupported OAuth providers", async () => {
 			await expect(AuthService.oauthSignIn("facebook" as any, mockCredential)).rejects.toThrow(

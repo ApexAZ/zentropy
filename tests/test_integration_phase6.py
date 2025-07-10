@@ -32,15 +32,7 @@ class TestRegistrationWithOrganizationDiscovery:
         db.commit()
         db.refresh(org)
 
-        # Check domain before registration
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "user@acme.com"})
-        assert domain_check.status_code == 200
-        domain_data = domain_check.json()
-        assert domain_data["organization_found"] is True
-        assert domain_data["organization_name"] == "Acme Corp"
-
-        # Register user without organization assignment
+        # Register user (just-in-time organization system - no domain checking during registration)
         user_data = {
             "email": "user@acme.com",
             "password": "SecurePass123!",
@@ -57,15 +49,8 @@ class TestRegistrationWithOrganizationDiscovery:
         assert user.organization_id is None  # Just-in-time assignment
 
     def test_registration_with_no_matching_organization(self, client: TestClient, db: Session):
-        """Test user registration when no organization exists for domain."""
-        # Check domain with no matching organization
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "user@newcompany.com"})
-        assert domain_check.status_code == 200
-        domain_data = domain_check.json()
-        assert domain_data["organization_found"] is False
-
-        # Register user
+        """Test user registration when no organization exists for domain (just-in-time system)."""
+        # Register user (just-in-time organization system - no domain checking during registration)
         user_data = {
             "email": "user@newcompany.com",
             "password": "SecurePass123!",
@@ -98,19 +83,19 @@ class TestRegistrationWithOrganizationDiscovery:
             db.add(org)
         db.commit()
 
-        # Test domain check performance
+        # Test organization lookup performance via organization API (just-in-time system)
         import time
         start_time = time.time()
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "user@company5.com"})
+        org_check = client.get("/api/v1/organizations/check-domain", 
+                              params={"email": "user@company5.com"})
         end_time = time.time()
         
-        assert domain_check.status_code == 200
+        assert org_check.status_code == 200
         assert (end_time - start_time) < 1.0  # Should be fast
         
-        domain_data = domain_check.json()
-        assert domain_data["organization_found"] is True
-        assert domain_data["organization_name"] == "Company 5"
+        org_data = org_check.json()
+        assert org_data["domain_found"] is True
+        assert org_data["organization"]["name"] == "Company 5"
 
     @patch('api.google_oauth.verify_google_token')
     def test_google_oauth_registration_with_organization_discovery(self, mock_verify_token, client: TestClient, db: Session):
@@ -301,12 +286,12 @@ class TestProjectCreationWithOrganizationWorkflow:
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Step 3: Check organization discovery
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "user@discovery.com"})
+        # Step 3: Check organization discovery (via organization API)
+        domain_check = client.get("/api/v1/organizations/check-domain", 
+                                 params={"email": "user@discovery.com"})
         assert domain_check.status_code == 200
         domain_data = domain_check.json()
-        assert domain_data["organization_found"] is True
+        assert domain_data["domain_found"] is True
 
         # Step 4: Join organization
         join_response = client.post(f"/api/v1/organizations/{org.id}/join", headers=headers)
@@ -360,12 +345,11 @@ class TestCompleteUserWorkflows:
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Step 3: Check organization (none should exist)
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "individual@freelance.com"})
-        assert domain_check.status_code == 200
-        domain_data = domain_check.json()
-        assert domain_data["organization_found"] is False
+        # Step 3: Verify user has no organization (just-in-time organization system)
+        user_response = client.get("/api/v1/users/me", headers=headers)
+        assert user_response.status_code == 200
+        user_data = user_response.json()
+        assert user_data["organization_id"] is None
 
         # Step 4: Create personal projects
         projects = []
@@ -434,12 +418,12 @@ class TestCompleteUserWorkflows:
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Step 4: Organization discovery
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "member@teamcorp.com"})
+        # Step 4: Organization discovery (via organization API)
+        domain_check = client.get("/api/v1/organizations/check-domain", 
+                                 params={"email": "member@teamcorp.com"})
         assert domain_check.status_code == 200
         domain_data = domain_check.json()
-        assert domain_data["organization_found"] is True
+        assert domain_data["domain_found"] is True
 
         # Step 5: Join organization
         join_response = client.post(f"/api/v1/organizations/{org.id}/join", headers=headers)
@@ -533,13 +517,13 @@ class TestCompleteUserWorkflows:
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Check organization by domain
-        domain_check = client.post("/api/v1/auth/check-organization-by-email", 
-                                 json={"email": "user@maincorp.com"})
+        # Check organization by domain (via organization API)
+        domain_check = client.get("/api/v1/organizations/check-domain", 
+                                 params={"email": "user@maincorp.com"})
         assert domain_check.status_code == 200
         domain_data = domain_check.json()
-        assert domain_data["organization_found"] is True
-        assert domain_data["organization_name"] == "Main Corp"
+        assert domain_data["domain_found"] is True
+        assert domain_data["organization"]["name"] == "Main Corp"
 
         # Join first organization
         join_response = client.post(f"/api/v1/organizations/{org1.id}/join", headers=headers)
