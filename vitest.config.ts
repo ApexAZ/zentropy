@@ -20,6 +20,26 @@ export default defineConfig({
 		// Environment variables for tests
 		env: {
 			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"
+		},
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'html', 'clover', 'json'],
+			reportsDirectory: './coverage',
+			exclude: [
+				'node_modules/',
+				'src/test-setup.ts',
+				'**/*.d.ts',
+				'**/*.config.{js,ts}',
+				'**/dist/**'
+			],
+			thresholds: {
+				global: {
+					branches: 80,
+					functions: 80,
+					lines: 80,
+					statements: 80
+				}
+			}
 		}
 	}
 });
