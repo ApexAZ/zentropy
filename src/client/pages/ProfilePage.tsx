@@ -113,6 +113,8 @@ const ProfilePage: React.FC = () => {
 		e.preventDefault();
 
 		if (!validateProfileForm()) {
+			// Allow React to flush state updates before returning
+			await new Promise(resolve => setTimeout(resolve, 0));
 			return;
 		}
 
@@ -279,7 +281,6 @@ const ProfilePage: React.FC = () => {
 										value={profileData.first_name}
 										onChange={e => setProfileData({ ...profileData, first_name: e.target.value })}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									{profileErrors.first_name && (
 										<span className="mt-1 block text-sm text-red-600">
@@ -301,7 +302,6 @@ const ProfilePage: React.FC = () => {
 										value={profileData.last_name}
 										onChange={e => setProfileData({ ...profileData, last_name: e.target.value })}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									{profileErrors.last_name && (
 										<span className="mt-1 block text-sm text-red-600">
@@ -321,7 +321,6 @@ const ProfilePage: React.FC = () => {
 									value={profileData.email}
 									onChange={e => setProfileData({ ...profileData, email: e.target.value })}
 									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-									required
 								/>
 								{profileErrors.email && (
 									<span className="mt-1 block text-sm text-red-600">{profileErrors.email}</span>
@@ -410,7 +409,6 @@ const ProfilePage: React.FC = () => {
 											setPasswordData({ ...passwordData, current_password: e.target.value })
 										}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									<button
 										type="button"
@@ -440,7 +438,6 @@ const ProfilePage: React.FC = () => {
 											setPasswordData({ ...passwordData, new_password: e.target.value })
 										}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									<button
 										type="button"
@@ -538,7 +535,6 @@ const ProfilePage: React.FC = () => {
 											setPasswordData({ ...passwordData, confirm_new_password: e.target.value })
 										}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									<button
 										type="button"

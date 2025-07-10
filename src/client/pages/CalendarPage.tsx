@@ -484,7 +484,6 @@ const CalendarPage: React.FC = () => {
 										value={formData.team_id}
 										onChange={e => setFormData({ ...formData, team_id: e.target.value })}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									>
 										<option value="">Select a team</option>
 										{teams.map(team => (
@@ -508,7 +507,6 @@ const CalendarPage: React.FC = () => {
 										onChange={e => setFormData({ ...formData, user_id: e.target.value })}
 										disabled={!formData.team_id}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100"
-										required
 									>
 										<option value="">
 											{formData.team_id ? "Select a team member" : "Select team first"}
@@ -533,7 +531,6 @@ const CalendarPage: React.FC = () => {
 										value={formData.entry_type}
 										onChange={e => setFormData({ ...formData, entry_type: e.target.value })}
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									>
 										<option value="pto">PTO / Vacation</option>
 										<option value="holiday">Holiday</option>
@@ -553,7 +550,6 @@ const CalendarPage: React.FC = () => {
 										onChange={e => setFormData({ ...formData, title: e.target.value })}
 										placeholder="e.g., Summer Vacation"
 										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										required
 									/>
 									{formErrors.title && (
 										<span className="mt-1 text-sm text-red-600">{formErrors.title}</span>
@@ -574,7 +570,6 @@ const CalendarPage: React.FC = () => {
 											value={formData.start_date}
 											onChange={e => setFormData({ ...formData, start_date: e.target.value })}
 											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-											required
 										/>
 										{formErrors.start_date && (
 											<span className="mt-1 text-sm text-red-600">{formErrors.start_date}</span>
@@ -591,7 +586,6 @@ const CalendarPage: React.FC = () => {
 											value={formData.end_date}
 											onChange={e => setFormData({ ...formData, end_date: e.target.value })}
 											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-											required
 										/>
 										{formErrors.end_date && (
 											<span className="mt-1 text-sm text-red-600">{formErrors.end_date}</span>

@@ -156,7 +156,9 @@ describe("CalendarPage", () => {
 	it("validates form fields when creating entry", async () => {
 		const user = userEvent.setup();
 
-		render(<CalendarPage />);
+		await act(async () => {
+			render(<CalendarPage />);
+		});
 
 		await waitFor(() => {
 			expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
@@ -170,20 +172,22 @@ describe("CalendarPage", () => {
 			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
 		});
 
+		// Verify that form is empty initially
+		const teamSelect = screen.getByLabelText("Team *") as HTMLSelectElement;
+		const titleInput = screen.getByLabelText("Title *") as HTMLInputElement;
+		expect(teamSelect.value).toBe("");
+		expect(titleInput.value).toBe("");
+
 		// Try to submit empty form - this should trigger validation
 		const submitButton = screen.getByText("Add Entry");
 		await user.click(submitButton);
 
-		// The CalendarPage component shows validation errors for:
-		// team_id, user_id, title, start_date, end_date
-		await waitFor(() => {
-			expect(screen.getByText("Please select a team")).toBeInTheDocument();
-		});
-
-		// Also check for title validation
-		await waitFor(() => {
-			expect(screen.getByText("Title is required")).toBeInTheDocument();
-		});
+		// Check immediately after form submission for validation errors
+		// The validation should happen synchronously when form is submitted
+		expect(screen.getByText("Please select a team")).toBeInTheDocument();
+		expect(screen.getByText("Title is required")).toBeInTheDocument();
+		expect(screen.getByText("Start date is required")).toBeInTheDocument();
+		expect(screen.getByText("End date is required")).toBeInTheDocument();
 	});
 
 	it("validates date range when creating entry", async () => {
@@ -200,6 +204,11 @@ describe("CalendarPage", () => {
 		// Open create modal
 		await user.click(screen.getByText("Add Calendar Entry"));
 
+		// Wait for modal form to be ready
+		await waitFor(() => {
+			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
+		});
+
 		// Fill form with invalid date range (end before start)
 		await user.type(screen.getByLabelText("Title *"), "Test Entry");
 		await user.type(screen.getByLabelText("Start Date *"), "2025-07-20");
@@ -208,9 +217,7 @@ describe("CalendarPage", () => {
 		const submitButton = screen.getByText("Add Entry");
 		await user.click(submitButton);
 
-		await waitFor(() => {
-			expect(screen.getByText("End date must be after start date")).toBeInTheDocument();
-		});
+		expect(screen.getByText("End date must be after start date")).toBeInTheDocument();
 	});
 
 	it("successfully creates new calendar entry", async () => {
@@ -218,6 +225,10 @@ describe("CalendarPage", () => {
 
 		// Mock successful creation with robust implementation
 		mockFetch.mockImplementation((url: string, options?: any) => {
+			if (url.includes("/api/v1/teams") && url.includes("/users")) {
+				// Handle team users endpoint: /api/v1/teams/{teamId}/users
+				return Promise.resolve({ ok: true, json: async () => mockUsers });
+			}
 			if (url.includes("/api/v1/teams")) {
 				return Promise.resolve({ ok: true, json: async () => mockTeams });
 			}
@@ -252,7 +263,15 @@ describe("CalendarPage", () => {
 		// Open create modal
 		await user.click(screen.getByText("Add Calendar Entry"));
 
-		// Fill form with valid data
+		// Fill form with valid data including team and user selection
+		await user.selectOptions(screen.getByLabelText("Team *"), "team1");
+
+		// Wait for team users to load
+		await waitFor(() => {
+			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		});
+
+		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
 		await user.type(screen.getByLabelText("Title *"), "New Entry");
 		await user.type(screen.getByLabelText("Description"), "Test description");
 		await user.type(screen.getByLabelText("Start Date *"), "2025-07-15");
@@ -266,8 +285,10 @@ describe("CalendarPage", () => {
 			expect(screen.getByText("Calendar entry created successfully!")).toBeInTheDocument();
 		});
 
-		// Modal should close
-		expect(screen.queryByText("Add Calendar Entry")).not.toBeInTheDocument();
+		// Modal should close after successful submission
+		await waitFor(() => {
+			expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
+		});
 	});
 
 	it("handles API errors when creating entry", async () => {
@@ -275,6 +296,10 @@ describe("CalendarPage", () => {
 
 		// Mock API error with robust implementation
 		mockFetch.mockImplementation((url: string, options?: any) => {
+			if (url.includes("/api/v1/teams") && url.includes("/users")) {
+				// Handle team users endpoint: /api/v1/teams/{teamId}/users
+				return Promise.resolve({ ok: true, json: async () => mockUsers });
+			}
 			if (url.includes("/api/v1/teams")) {
 				return Promise.resolve({ ok: true, json: async () => mockTeams });
 			}
@@ -298,8 +323,18 @@ describe("CalendarPage", () => {
 			render(<CalendarPage />);
 		});
 
-		// Open create modal and fill form
+		// Open create modal and fill form with valid data
 		await user.click(screen.getByText("Add Calendar Entry"));
+
+		// Fill form with valid team and user selection
+		await user.selectOptions(screen.getByLabelText("Team *"), "team1");
+
+		// Wait for team users to load
+		await waitFor(() => {
+			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		});
+
+		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
 		await user.type(screen.getByLabelText("Title *"), "Test Entry");
 		await user.type(screen.getByLabelText("Start Date *"), "2025-07-15");
 		await user.type(screen.getByLabelText("End Date *"), "2025-07-15");
@@ -307,6 +342,7 @@ describe("CalendarPage", () => {
 		const submitButton = screen.getByText("Add Entry");
 		await user.click(submitButton);
 
+		// API errors are shown in toast notifications, not inline text
 		await waitFor(() => {
 			expect(screen.getByText("Invalid data provided")).toBeInTheDocument();
 		});
@@ -564,14 +600,21 @@ describe("CalendarPage", () => {
 			render(<CalendarPage />);
 		});
 
-		// Open create modal
-		await user.click(screen.getByText("Add Calendar Entry"));
-		expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
+		// Open create modal using the specific button (not the modal header)
+		await user.click(screen.getByRole("button", { name: "Add Calendar Entry" }));
+
+		// Wait for modal to be open
+		await waitFor(() => {
+			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
+		});
 
 		// Click cancel
 		await user.click(screen.getByText("Cancel"));
 
-		expect(screen.queryByText("Add Calendar Entry")).not.toBeInTheDocument();
+		// Modal should close - check that form fields are no longer visible
+		await waitFor(() => {
+			expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
+		});
 	});
 
 	it("displays empty state when no entries", async () => {
@@ -599,15 +642,18 @@ describe("CalendarPage", () => {
 	});
 
 	it("handles network errors gracefully", async () => {
-		// Mock network error for initialization data
-		mockFetch.mockRejectedValueOnce(new Error("Network error"));
+		// Mock network error for all initialization calls
+		mockFetch.mockRejectedValue(new Error("Network error"));
 
 		await act(async () => {
 			render(<CalendarPage />);
 		});
 
+		// Network errors during initialization show error state with "Unable to Load Calendar" and the specific error message
 		await waitFor(() => {
-			expect(screen.getByText("Error loading calendar entries. Please try again.")).toBeInTheDocument();
+			expect(screen.getByText("Unable to Load Calendar")).toBeInTheDocument();
 		});
+
+		expect(screen.getByText("Network error")).toBeInTheDocument();
 	});
 });
