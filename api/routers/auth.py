@@ -434,6 +434,9 @@ def google_oauth_register(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Google OAuth failed: {str(e)}",
         )
+    except HTTPException:
+        # Re-raise HTTPExceptions (like our 409 security error) as-is
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

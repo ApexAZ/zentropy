@@ -238,6 +238,21 @@ class DetailedErrorResponse(BaseModel):
     error_type: str
 
 
+# Account linking schemas
+class LinkGoogleAccountRequest(BaseModel):
+    google_credential: str
+
+
+class UnlinkGoogleAccountRequest(BaseModel):
+    password: str
+
+
+class AccountSecurityResponse(BaseModel):
+    email_auth_linked: bool
+    google_auth_linked: bool
+    google_email: Optional[str] = None
+
+
 # Project schemas
 class ProjectBase(BaseModel):
     name: str

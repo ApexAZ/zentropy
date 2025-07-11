@@ -4,13 +4,27 @@ from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
 
-from ..database import get_db, UserRole
-from ..schemas import UserResponse, UserUpdate, PasswordUpdate, MessageResponse
+from ..database import get_db, UserRole, AuthProvider
+from ..schemas import (
+    UserResponse,
+    UserUpdate,
+    PasswordUpdate,
+    MessageResponse,
+    LinkGoogleAccountRequest,
+    UnlinkGoogleAccountRequest,
+    AccountSecurityResponse,
+)
 from ..auth import (
     get_current_active_user,
     get_password_hash,
     verify_password,
     validate_password_strength,
+)
+from ..google_oauth import (
+    verify_google_token,
+    GoogleOAuthError,
+    GoogleTokenInvalidError,
+    GoogleEmailUnverifiedError,
 )
 from .. import database
 
@@ -252,3 +266,133 @@ def delete_user(
     db.commit()
 
     return MessageResponse(message="User deleted successfully")
+
+
+@router.get("/me/security", response_model=AccountSecurityResponse)
+def get_account_security(
+    current_user: database.User = Depends(get_current_active_user),
+) -> AccountSecurityResponse:
+    """Get current user's account security status"""
+    return AccountSecurityResponse(
+        email_auth_linked=current_user.password_hash is not None,
+        google_auth_linked=current_user.google_id is not None,
+        google_email=current_user.email if current_user.google_id else None,
+    )
+
+
+@router.post("/me/link-google", response_model=MessageResponse)
+def link_google_account(
+    request: LinkGoogleAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Link Google account to current user account"""
+    try:
+        # Verify Google token and extract user info
+        google_info = verify_google_token(request.google_credential)
+        google_email = google_info.get("email")
+        google_id = google_info.get("sub")
+
+        if not google_email or not google_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Google token - missing email or ID",
+            )
+
+        # Security: Verify email matches current user
+        if google_email.lower() != current_user.email.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google email must match your account email",
+            )
+
+        # Check if Google ID is already linked to another account
+        existing_google_user = (
+            db.query(database.User)
+            .filter(
+                database.User.google_id == google_id,
+                database.User.id != current_user.id,
+            )
+            .first()
+        )
+
+        if existing_google_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This Google account is already linked to another user",
+            )
+
+        # Check if user already has Google linked
+        if current_user.google_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google account is already linked to your account",
+            )
+
+        # Link Google account
+        current_user.google_id = google_id
+        current_user.auth_provider = AuthProvider.HYBRID
+        current_user.updated_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        return MessageResponse(message="Google account linked successfully")
+
+    except (GoogleOAuthError, GoogleTokenInvalidError, GoogleEmailUnverifiedError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Google OAuth error: {str(e)}",
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to link Google account",
+        )
+
+
+@router.post("/me/unlink-google", response_model=MessageResponse)
+def unlink_google_account(
+    request: UnlinkGoogleAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Unlink Google account from current user account"""
+    # Security: Verify user has Google account linked
+    if not current_user.google_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No Google account is linked to your account",
+        )
+
+    # Security: Require password verification to prevent lockout
+    if not current_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot unlink Google account: no password set. "
+            "Set a password first.",
+        )
+
+    if not verify_password(request.password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password"
+        )
+
+    try:
+        # Unlink Google account
+        current_user.google_id = None
+        current_user.auth_provider = AuthProvider.LOCAL
+        current_user.updated_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        return MessageResponse(message="Google account unlinked successfully")
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unlink Google account",
+        )

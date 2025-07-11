@@ -69,6 +69,7 @@ class AuthProvider(PyEnum):
 
     LOCAL = "local"
     GOOGLE = "google"
+    HYBRID = "hybrid"  # Supports both email/password and Google OAuth
 
 
 class RegistrationType(PyEnum):

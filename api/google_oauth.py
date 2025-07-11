@@ -6,6 +6,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
+from fastapi import HTTPException
 from .database import User, UserRole, AuthProvider, RegistrationType, Organization
 from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from .rate_limiter import rate_limiter, RateLimitType
@@ -178,7 +179,28 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
         # Check if user already exists
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
-            return existing_user
+            # Allow login for GOOGLE and HYBRID auth providers
+            if existing_user.auth_provider in [
+                AuthProvider.GOOGLE,
+                AuthProvider.HYBRID,
+            ]:
+                # Update last login and ensure Google ID is set
+                existing_user.last_login_at = datetime.now(timezone.utc)
+                if not existing_user.google_id:
+                    existing_user.google_id = google_info.get("sub")
+                db.commit()
+                return existing_user
+            else:
+                # Security: Prevent account takeover - email registered with
+                # LOCAL provider only
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "This email is already registered with a "
+                        "different authentication method.",
+                        "error_type": "email_different_provider",
+                    },
+                )
 
         # Handle organization assignment for Google Workspace users
         organization_id = None
@@ -215,6 +237,10 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
 
         return new_user
 
+    except HTTPException:
+        # Re-raise HTTPExceptions (like our 409 security error) as-is
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise GoogleOAuthError(f"User creation failed: {str(e)}")
