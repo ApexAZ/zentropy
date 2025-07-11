@@ -145,7 +145,7 @@ class RateLimiter:
             oldest_req = self.redis_client.zrange(key, 0, 0, withscores=True)
             if oldest_req:
                 oldest_ts = float(oldest_req[0][1])
-                oldest_time = datetime.fromtimestamp(oldest_ts)
+                oldest_time = datetime.fromtimestamp(oldest_ts, tz=timezone.utc)
                 retry_delta = oldest_time + timedelta(seconds=window_seconds) - now
                 retry_after = int(retry_delta.total_seconds()) + 1
             else:

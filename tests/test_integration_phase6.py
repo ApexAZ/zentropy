@@ -321,7 +321,7 @@ class TestProjectCreationWithOrganizationWorkflow:
 class TestCompleteUserWorkflows:
     """Test complete user workflows from registration to project management."""
 
-    def test_complete_individual_user_workflow(self, client: TestClient, db: Session):
+    def test_complete_individual_user_workflow(self, client: TestClient, db: Session, test_rate_limits):
         """Test complete workflow for individual user (no organization)."""
         # Step 1: Register
         user_data = {
@@ -381,7 +381,7 @@ class TestCompleteUserWorkflows:
         assert user is not None
         assert user.organization_id is None
 
-    def test_complete_team_user_workflow(self, client: TestClient, db: Session):
+    def test_complete_team_user_workflow(self, client: TestClient, db: Session, test_rate_limits):
         """Test complete workflow for team user with organization."""
         # Step 1: Create organization
         org = Organization(
@@ -471,7 +471,7 @@ class TestCompleteUserWorkflows:
         assert user is not None
         assert user.organization_id == org.id
 
-    def test_user_workflow_with_multiple_organizations(self, client: TestClient, db: Session):
+    def test_user_workflow_with_multiple_organizations(self, client: TestClient, db: Session, test_rate_limits):
         """Test user workflow with multiple organization options."""
         # Create multiple organizations with different domains
         org1 = Organization(

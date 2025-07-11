@@ -355,7 +355,7 @@ class TestUserQueryingWithNullOrganizations:
 class TestJustInTimeOrganizationReadiness:
     """Test that the system is ready for just-in-time organization assignment."""
     
-    def test_user_can_be_updated_with_organization_later(self, client, db):
+    def test_user_can_be_updated_with_organization_later(self, client, db, test_rate_limits):
         """Test that users created without organization can be assigned to one later."""
         # First, register user without organization
         user_data = {
@@ -384,7 +384,7 @@ class TestJustInTimeOrganizationReadiness:
         
         assert user.organization_id == test_org_id
     
-    def test_registration_flow_supports_frictionless_signup(self, client):
+    def test_registration_flow_supports_frictionless_signup(self, client, test_rate_limits):
         """Test that registration requires minimal information (no organization)."""
         # Minimal registration data - just what's required for frictionless signup
         minimal_user_data = {

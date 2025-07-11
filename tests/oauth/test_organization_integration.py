@@ -234,7 +234,7 @@ class TestOrganizationDeduplication:
         assert len(all_orgs) == 1
     
     @patch('api.routers.auth.verify_google_token')
-    def test_organization_name_normalization(self, mock_verify_google_token, db, client):
+    def test_organization_name_normalization(self, mock_verify_google_token, db, client, test_rate_limits):
         """Test that organization names are normalized consistently."""
         # This test documents the requirement for name normalization
         # Implementation will determine exact normalization rules
@@ -267,7 +267,7 @@ class TestOrganizationFieldPopulation:
     """Test automatic population of organization fields."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_workspace_organization_fields(self, mock_verify_google_token, db, client):
+    def test_google_workspace_organization_fields(self, mock_verify_google_token, db, client, test_rate_limits):
         """Test that Google Workspace organizations get properly populated fields."""
         mock_google_user_info = {
             "sub": "fields_test",

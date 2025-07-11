@@ -217,7 +217,7 @@ class TestRoleBasedAPIAccess:
         token = response.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
     
-    def test_basic_user_team_creation(self, client, db):
+    def test_basic_user_team_creation(self, client, db, test_rate_limits):
         """Test that basic users can create teams and become admin."""
         headers = self.create_test_user(client, db, role=UserRole.BASIC_USER)
         
@@ -240,7 +240,7 @@ class TestRoleBasedAPIAccess:
         assert len(members) == 1
         # Note: The actual role checking would need the API to return role info
     
-    def test_admin_user_permissions(self, client, db):
+    def test_admin_user_permissions(self, client, db, test_rate_limits):
         """Test that admin users have elevated permissions."""
         headers = self.create_test_user(client, db, role=UserRole.ADMIN)
         
@@ -248,7 +248,7 @@ class TestRoleBasedAPIAccess:
         response = client.get("/api/v1/users/", headers=headers)
         assert response.status_code == 200
     
-    def test_stakeholder_read_only_access(self, client, db):
+    def test_stakeholder_read_only_access(self, client, db, test_rate_limits):
         """Test that stakeholder role has read-only access."""
         headers = self.create_test_user(client, db, role=UserRole.STAKEHOLDER)
         
@@ -262,7 +262,7 @@ class TestRoleBasedAPIAccess:
 class TestRoleAssignmentWorkflows:
     """Test role assignment and promotion workflows."""
     
-    def test_team_member_role_assignment(self, client, db):
+    def test_team_member_role_assignment(self, client, db, test_rate_limits):
         """Test assigning roles to team members."""
         # Create team admin
         admin_headers = self.create_test_user(client, db, "admin@example.com", UserRole.BASIC_USER)

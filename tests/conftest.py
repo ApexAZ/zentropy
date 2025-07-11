@@ -4,6 +4,7 @@ Test Configuration and Fixtures - Simplified and Clear
 This file provides straightforward test fixtures that any developer can understand:
 - Isolated test database setup
 - Test client fixtures
+- Email testing with Mailpit cleanup
 - No magic, no auto-detection
 - Explicit dependencies
 """
@@ -12,6 +13,8 @@ from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
+import httpx
+import os
 
 from api.main import app
 from api.database import Base, get_db
@@ -61,310 +64,270 @@ def db(test_db_engine) -> Generator[Session, None, None]:
             db.add(user)
             db.commit()
     """
-    TestingSessionLocal = sessionmaker(
-        autocommit=False,
-        autoflush=False, 
-        bind=test_db_engine
-    )
+    SessionLocal = sessionmaker(bind=test_db_engine)
+    session = SessionLocal()
     
-    session = TestingSessionLocal()
     try:
         yield session
     finally:
-        # Clean up session without rollback for shared database file
         session.close()
 
 
 @pytest.fixture(scope="function")
-def client(test_db_engine) -> TestClient:
+def client(test_db_engine) -> Generator[TestClient, None, None]:
     """
-    Provides a test client with isolated database.
+    Provides a FastAPI test client with isolated database.
     
-    Use this fixture when your test needs to make API calls.
-    The client automatically uses the isolated test database.
+    Use this fixture when testing API endpoints.
     Example:
-        def test_register_endpoint(client):
-            response = client.post("/api/v1/auth/register", json=user_data)
+        def test_register_user(client):
+            response = client.post("/api/v1/auth/register", json={...})
             assert response.status_code == 201
     """
-    from sqlalchemy.orm import sessionmaker
-    
-    # Create a session factory that uses the same engine as the test
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_db_engine)
-    
     def override_get_db():
-        """Override database dependency with test database sessions from same engine."""
-        test_session = TestingSessionLocal()
+        SessionLocal = sessionmaker(bind=test_db_engine)
+        session = SessionLocal()
         try:
-            yield test_session
+            yield session
         finally:
-            test_session.close()
-    
-    # Store original override if exists
-    original_override = app.dependency_overrides.get(get_db)
-    
-    # Override the database dependency
+            session.close()
+
+    # Override database dependency for testing
     app.dependency_overrides[get_db] = override_get_db
     
-    test_client = TestClient(app)
-    
-    yield test_client
-    
-    # Cleanup: Restore original override or remove if none existed
-    if original_override is not None:
-        app.dependency_overrides[get_db] = original_override
-    else:
-        app.dependency_overrides.pop(get_db, None)
+    try:
+        yield TestClient(app)
+    finally:
+        # Clear overrides after test
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture(scope="function")
-def api_client() -> TestClient:
+def clean_mailpit():
     """
-    Provides a simple test client without database isolation.
+    Ensures Mailpit is clean before and after each test.
     
-    Use this fixture for tests that don't need database access,
-    like testing API validation or error handling.
+    NOTE: Most tests don't need this fixture since auto_clean_mailpit 
+    handles cleanup automatically. Only use this if you need to ensure
+    Mailpit is clean BEFORE your test starts.
+    
     Example:
-        def test_health_endpoint(api_client):
-            response = api_client.get("/health")
-            assert response.status_code == 200
+        def test_email_count_verification(client, clean_mailpit):
+            # Test starts with guaranteed clean mailpit
+            # Useful for tests that count emails or verify specific states
     """
-    return TestClient(app)
+    # Clean before test
+    try:
+        httpx.delete("http://localhost:8025/api/v1/messages", timeout=5.0)
+    except Exception:
+        pass  # Mailpit might not be running
+    
+    yield
+    
+    # Clean after test
+    try:
+        httpx.delete("http://localhost:8025/api/v1/messages", timeout=5.0)
+    except Exception:
+        pass  # Mailpit might not be running
 
 
 @pytest.fixture(scope="function", autouse=True)
-def reset_rate_limiter():
+def auto_clean_mailpit():
     """
-    Automatically reset rate limiter state between tests.
+    Automatically cleans Mailpit after each test.
     
-    This prevents rate limiting from affecting subsequent tests
-    when running the test suite.
+    This fixture runs automatically for all tests to prevent email accumulation.
+    Individual tests can still use clean_mailpit for pre-test cleanup if needed.
     """
-    from api.rate_limiter import rate_limiter, RateLimitType
+    yield
     
-    # Reset all rate limit types for common test identifiers
-    test_identifiers = ["127.0.0.1", "testclient", "unknown"]
-    
-    for identifier in test_identifiers:
-        for limit_type in RateLimitType:
-            rate_limiter.reset_rate_limit(identifier, limit_type)
+    # Clean after every test to prevent accumulation
+    try:
+        httpx.delete("http://localhost:8025/api/v1/messages", timeout=5.0)
+    except Exception:
+        pass  # Mailpit might not be running
 
 
 @pytest.fixture(scope="function")
-def current_user(db) -> "User":
+def mailpit_disabled():
     """
-    Creates and returns a test user for authenticated endpoints.
+    Disables email sending for tests that don't need it.
     
-    This user can be used in tests that require authentication.
+    Use this fixture to speed up tests that don't require email functionality.
+    Example:
+        def test_user_model(db, mailpit_disabled):
+            # Test database operations without sending emails
     """
-    from api.database import User, UserRole, RegistrationType, AuthProvider
+    original_value = os.environ.get("EMAIL_ENABLED")
+    os.environ["EMAIL_ENABLED"] = "false"
     
-    user = User(
-        email="testuser@example.com",
-        first_name="Test",
-        last_name="User", 
-        password_hash="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBpUCFJ7p2Xxwm",  # "secret"
-        role=UserRole.BASIC_USER,
-        is_active=True,
-        email_verified=True,
-        has_projects_access=True,
-        registration_type=RegistrationType.EMAIL,
-        auth_provider=AuthProvider.LOCAL
-    )
+    yield
     
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    return user
+    # Restore original value
+    if original_value is not None:
+        os.environ["EMAIL_ENABLED"] = original_value
+    else:
+        os.environ.pop("EMAIL_ENABLED", None)
 
 
 @pytest.fixture(scope="function")
-def admin_user(db) -> "User":
+def test_rate_limits():
     """
-    Creates and returns an admin test user for tests requiring admin permissions.
+    Configures realistic but generous rate limits for testing.
+    
+    This preserves rate limiting logic while allowing legitimate test scenarios
+    to run without interference. The limits are still realistic enough to catch
+    actual rate limiting bugs if they occur.
+    
+    Use this for integration tests that make multiple API calls.
     """
-    from api.database import User, UserRole, RegistrationType, AuthProvider
+    original_values = {}
     
-    user = User(
-        email="admin@example.com",
-        first_name="Admin",
-        last_name="User", 
-        password_hash="$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBpUCFJ7p2Xxwm",  # "secret"
-        role=UserRole.ADMIN,
-        is_active=True,
-        email_verified=True,
-        has_projects_access=True,
-        registration_type=RegistrationType.EMAIL,
-        auth_provider=AuthProvider.LOCAL
-    )
-    
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    return user
-
-
-@pytest.fixture(scope="function")
-def user_with_known_password(db) -> "User":
-    """
-    Creates and returns a test user with a known password for password-related testing.
-    
-    Password: "secret123"
-    This fixture is specifically designed for tests that need to verify current passwords,
-    change passwords, or test password-related functionality.
-    """
-    from api.auth import get_password_hash
-    from api.database import User, UserRole, RegistrationType, AuthProvider
-    
-    known_password = "secret123"
-    
-    user = User(
-        email="passwordtest@example.com",
-        first_name="Password",
-        last_name="TestUser", 
-        password_hash=get_password_hash(known_password),
-        role=UserRole.BASIC_USER,
-        is_active=True,
-        email_verified=True,
-        has_projects_access=True,
-        registration_type=RegistrationType.EMAIL,
-        auth_provider=AuthProvider.LOCAL
-    )
-    
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # Attach the known password for easy access in tests
-    user.known_password = known_password
-    
-    return user
-
-
-@pytest.fixture(scope="function")
-def auth_headers(current_user) -> dict:
-    """
-    Creates authentication headers for API requests.
-    
-    Returns headers dict with Bearer token for the current_user.
-    """
-    from api.auth import create_access_token
-    
-    # Create JWT token for the test user (using UUID as subject)
-    token = create_access_token(data={"sub": str(current_user.id)})
-    
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
+    # Test-friendly limits: generous enough for tests, realistic enough to catch bugs
+    test_config = {
+        "RATE_LIMIT_AUTH_REQUESTS": "50",      # vs prod: 5 requests  
+        "RATE_LIMIT_AUTH_WINDOW_MINUTES": "1", # vs prod: 15 minutes
+        "RATE_LIMIT_OAUTH_REQUESTS": "100",    # vs prod: 20 requests
+        "RATE_LIMIT_OAUTH_WINDOW_MINUTES": "1", # vs prod: 1 minute  
+        "RATE_LIMIT_API_REQUESTS": "500",      # vs prod: 100 requests
+        "RATE_LIMIT_API_WINDOW_MINUTES": "1",  # vs prod: 1 minute
+        "RATE_LIMIT_EMAIL_REQUESTS": "25",     # vs prod: 3 requests
+        "RATE_LIMIT_EMAIL_WINDOW_MINUTES": "1" # vs prod: 5 minutes
     }
+    
+    for key, value in test_config.items():
+        original_values[key] = os.environ.get(key)
+        os.environ[key] = value
+    
+    # Clear any existing rate limiting state to ensure test isolation
+    try:
+        from api.rate_limiter import rate_limiter
+        # Clear Redis and memory stores for clean test state
+        if hasattr(rate_limiter, 'redis_client') and rate_limiter.redis_client:
+            # Clear any test-related rate limit keys
+            rate_limiter.redis_client.flushdb()
+        if hasattr(rate_limiter, '_memory_store'):
+            rate_limiter._memory_store.clear()
+    except Exception:
+        pass  # Rate limiter might not be initialized yet
+    
+    yield
+    
+    # Restore original values
+    for key, original_value in original_values.items():
+        if original_value is not None:
+            os.environ[key] = original_value
+        else:
+            os.environ.pop(key, None)
 
 
-@pytest.fixture(scope="function")
-def admin_auth_headers(admin_user) -> dict:
-    """
-    Creates authentication headers for admin API requests.
+def create_test_user(db, **kwargs):
+    """Create a test user with default values."""
+    from api.database import User, AuthProvider
     
-    Returns headers dict with Bearer token for the admin_user.
-    """
-    from api.auth import create_access_token
-    
-    # Create JWT token for the admin user (using UUID as subject)
-    token = create_access_token(data={"sub": str(admin_user.id)})
-    
-    return {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-
-
-# Utility functions for common test patterns
-def create_test_user(db: Session, email: str = "test@example.com", **kwargs):
-    """
-    Helper function to create a test user with sensible defaults.
-    
-    Args:
-        db: Database session
-        email: User email (default: test@example.com)
-        **kwargs: Additional user fields
-    
-    Returns:
-        User: Created user instance
-    """
-    from api.database import User
-    
-    user_data = {
-        "email": email,
+    defaults = {
+        "email": "test@example.com",
         "first_name": "Test",
         "last_name": "User",
-        "password_hash": "hashed_password_123",
-        **kwargs
+        "password_hash": "$2b$12$hashed_password",
+        "auth_provider": AuthProvider.LOCAL,
+        "is_active": True,
+        "email_verified": True,
+        "has_projects_access": True,
     }
+    defaults.update(kwargs)
     
-    user = User(**user_data)
+    user = User(**defaults)
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
 
 
-def create_test_team(db: Session, name: str = "Test Team", **kwargs):
-    """
-    Helper function to create a test team with sensible defaults.
-    
-    Args:
-        db: Database session
-        name: Team name (default: Test Team)
-        **kwargs: Additional team fields
-    
-    Returns:
-        Team: Created team instance
-    """
+def create_test_team(db, **kwargs):
+    """Create a test team with default values."""
     from api.database import Team
     
-    team_data = {
-        "name": name,
-        "description": f"Description for {name}",
-        **kwargs
+    defaults = {
+        "name": "Test Team",
+        "description": "A test team",
+        "velocity_baseline": 10,
+        "sprint_length_days": 14,
+        "working_days_per_week": 5,
     }
+    defaults.update(kwargs)
     
-    team = Team(**team_data)
+    team = Team(**defaults)
     db.add(team)
     db.commit()
     db.refresh(team)
     return team
 
 
-def manually_verify_user_email(db: Session, email: str):
-    """
-    TEMPORARY TEST HELPER: Manually verify a user's email for testing purposes.
-    
-    This function directly sets email_verified=True and clears verification tokens
-    in the database to simulate successful email verification.
-    
-    ⚠️  TODO: When actual email sending is implemented, this helper should be removed
-    and tests should use real email verification tokens from the email service.
-    Tests should then verify emails by extracting tokens from sent emails and
-    calling the /api/v1/auth/verify-email/{token} endpoint.
-    
-    Args:
-        db: Database session
-        email: Email address of user to verify
-    
-    Returns:
-        bool: True if user was found and verified, False otherwise
-    """
+def manually_verify_user_email(db, email):
+    """Manually verify a user's email for testing purposes."""
     from api.database import User
     
     user = db.query(User).filter(User.email == email).first()
-    if not user:
-        return False
+    if user:
+        user.email_verified = True
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+def current_user(db):
+    """Create a verified test user for authentication tests."""
+    return create_test_user(db, email="current@user.com", email_verified=True)
+
+
+@pytest.fixture(scope="function")
+def auth_headers(current_user):
+    """Create authentication headers for API testing."""
+    from api.auth import create_access_token
     
-    # Manually mark email as verified (simulates successful email verification)
-    user.email_verified = True
-    user.email_verification_token = None
-    user.email_verification_expires_at = None
+    token = create_access_token(data={"sub": str(current_user.id)})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="function")
+def admin_user(db):
+    """Create an admin test user for admin-level testing."""
+    from api.database import UserRole
     
-    db.commit()
-    return True
+    return create_test_user(
+        db, 
+        email="admin@user.com", 
+        email_verified=True,
+        first_name="Admin",
+        last_name="User",
+        role=UserRole.ADMIN
+    )
+
+
+@pytest.fixture(scope="function")
+def admin_auth_headers(admin_user):
+    """Create authentication headers for admin API testing."""
+    from api.auth import create_access_token
+    
+    token = create_access_token(data={"sub": str(admin_user.id)})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="function")
+def user_with_known_password(db):
+    """Create a user with a known password for password change testing."""
+    from api.auth import get_password_hash
+    
+    raw_password = "OldPassword123!"
+    user = create_test_user(
+        db,
+        email="password@user.com",
+        password_hash=get_password_hash(raw_password),
+        email_verified=True
+    )
+    
+    # Store the raw password for testing purposes
+    user.known_password = raw_password
+    return user

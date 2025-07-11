@@ -207,6 +207,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			setMode(initialMode);
 			resetForms();
 			setToast(null);
+		} else {
+			// When modal opens, ensure mode matches initialMode
+			setMode(initialMode);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [isOpen, initialMode]); // Remove resetForms from dependencies to prevent infinite loop

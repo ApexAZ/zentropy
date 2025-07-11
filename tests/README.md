@@ -144,6 +144,77 @@ To ensure a clean, isolated database for your Python tests, explicitly request t
 - **How it works**: When a test function requests the `client` or `db` fixture, `pytest` provides a fresh, isolated database session and/or test client.
 - **Benefit**: This completely prevents test contamination and pollution of the main development database, making tests 100% reliable.
 
+### Available Test Fixtures
+
+The following fixtures are available in `tests/conftest.py` for use in your tests:
+
+#### Database and Client Fixtures
+- **`test_db_engine`** - Creates an isolated SQLite database engine for each test
+- **`db`** - Provides a clean database session for direct database operations
+- **`client`** - Provides a FastAPI TestClient with isolated database dependency injection
+
+#### Authentication and User Fixtures
+- **`current_user`** - Creates a verified test user (`current@user.com`) for standard authentication testing
+- **`auth_headers`** - Creates JWT authentication headers for the current user
+- **`admin_user`** - Creates an admin user with `UserRole.ADMIN` privileges
+- **`admin_auth_headers`** - Creates JWT authentication headers for the admin user
+- **`user_with_known_password`** - Creates a user with known password (`OldPassword123!`) for password management tests
+
+#### Email and Rate Limiting Fixtures
+- **`clean_mailpit`** - Ensures Mailpit is clean before and after each test (use only when you need pre-test cleanup)
+- **`auto_clean_mailpit`** - Automatically cleans Mailpit after every test (runs automatically, no need to explicitly use)
+- **`mailpit_disabled`** - Disables email sending for tests that don't need it
+- **`test_rate_limits`** - Configures generous but realistic rate limits for testing (prevents 429 errors)
+
+#### Helper Functions
+- **`create_test_user(db, **kwargs)`** - Creates a test user with customizable attributes
+- **`create_test_team(db, **kwargs)`** - Creates a test team with customizable attributes
+- **`manually_verify_user_email(db, email)`** - Manually verifies a user's email for testing purposes
+
+#### Usage Examples
+
+```python
+# Basic API endpoint test
+def test_create_widget(client, db, auth_headers):
+    widget_data = {"name": "Test Widget"}
+    response = client.post("/api/v1/widgets", json=widget_data, headers=auth_headers)
+    assert response.status_code == 201
+
+# Admin-only endpoint test
+def test_admin_operation(client, db, admin_auth_headers):
+    response = client.get("/api/v1/admin/users", headers=admin_auth_headers)
+    assert response.status_code == 200
+
+# Password management test
+def test_change_password(client, db, user_with_known_password):
+    # user_with_known_password.known_password contains the raw password
+    password_data = {
+        "current_password": user_with_known_password.known_password,
+        "new_password": "NewPassword123!"
+    }
+    response = client.post("/api/v1/users/change-password", json=password_data)
+    assert response.status_code == 200
+
+# Email-sending test with rate limiting
+def test_send_email(client, db, test_rate_limits):
+    # test_rate_limits prevents 429 Too Many Requests errors
+    response = client.post("/api/v1/auth/send-verification", json={"email": "test@example.com"})
+    assert response.status_code == 200
+    # auto_clean_mailpit fixture automatically cleans up test emails
+
+# Custom user creation
+def test_custom_user_scenario(client, db):
+    user = create_test_user(db, email="custom@example.com", role=UserRole.ADMIN)
+    assert user.role == UserRole.ADMIN
+```
+
+#### Important Notes
+
+- **Rate Limiting**: Always use the `test_rate_limits` fixture for tests that make multiple API calls or could trigger rate limiting
+- **Email Testing**: The `auto_clean_mailpit` fixture runs automatically, so you don't need to explicitly use it unless you need pre-test cleanup
+- **Authentication**: Use `auth_headers` for standard user tests and `admin_auth_headers` for admin-only operations
+- **Database Isolation**: All fixtures ensure complete test isolation - no test data will leak between tests or pollute the main database
+
 ## 4. Static Analysis & Code Quality: The Pipeline is the Law
 
 We enforce a strict, consistent, and automated approach to code quality. The linters, type checkers, and test runners are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors and warnings. These checks are run automatically by pre-commit hooks.

@@ -138,7 +138,7 @@ class TestGoogleOAuthEndpoint:
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_unverified_email(self, mock_verify_google_token, client):
+    def test_google_login_unverified_email(self, mock_verify_google_token, client, test_rate_limits):
         """Test Google login rejects unverified email addresses."""
         # Mock Google token with unverified email (verify_google_token raises exception for unverified)
         from api.google_oauth import GoogleEmailUnverifiedError
@@ -158,7 +158,7 @@ class TestGoogleOAuthEndpoint:
         assert "Google token verification failed" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_email_linking_security(self, mock_verify_google_token, client, db):
+    def test_google_login_email_linking_security(self, mock_verify_google_token, client, db, test_rate_limits):
         """Test that Google login cannot hijack existing local accounts."""
         # Create existing local user in the test database
         local_user = User(

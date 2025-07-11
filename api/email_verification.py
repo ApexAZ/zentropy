@@ -73,19 +73,10 @@ def verify_email_token(db: Session, token: str) -> Optional[User]:
 
 def send_verification_email(email: str, token: str, user_name: str) -> bool:
     """Send verification email to user."""
-    # For now, this is a placeholder that always returns True
-    # In a real implementation, this would integrate with an email service
-    # like SendGrid, AWS SES, or similar
+    from .email_service import send_verification_email as send_email
 
-    print("📧 [EMAIL SIMULATION] Sending verification email:")
-    print(f"   To: {email}")
-    print("   Subject: Please verify your email address")
-    print(f"   Body: Hello {user_name},")
-    print("         Please click this link to verify your email:")
-    print(f"         http://localhost:5173/verify-email/{token}")
-    print("         This link expires in 24 hours.")
-
-    return True  # Simulate successful email sending
+    # Use the email service to send the verification email
+    return send_email(email, token, user_name)
 
 
 def resend_verification_email(db: Session, email: str) -> bool:

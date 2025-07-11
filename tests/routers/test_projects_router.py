@@ -787,7 +787,1006 @@ class TestProjectAPIIntegration:
         # Step 4: Verify project is now organization-scoped
         response = client.get(f"/api/v1/projects/{project_id}", headers=auth_headers)
         assert response.status_code == 200
+
+
+class TestProjectValidationEdgeCases:
+    """Test edge cases for project validation not covered by existing tests."""
+    
+    def test_personal_project_with_organization_id_fails(self, client, auth_headers, db, current_user):
+        """Test that personal projects cannot have organization_id set."""
+        # Create organization first
+        org = Organization(
+            name="Test Organization",
+            domain="test.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add(org)
+        db.commit()
+        
+        # Try to create personal project with organization_id
+        project_data = {
+            "name": "Personal Project with Org",
+            "description": "This should fail",
+            "visibility": "personal",
+            "organization_id": str(org.id)
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "Personal projects cannot be assigned to an organization" in response.json()["detail"]
+    
+    def test_team_project_without_organization_fails(self, client, auth_headers):
+        """Test that team projects require organization_id."""
+        project_data = {
+            "name": "Team Project No Org",
+            "description": "This should fail",
+            "visibility": "team"
+            # Missing organization_id
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "Team projects require an organization" in response.json()["detail"]
+    
+    def test_organization_project_without_organization_fails(self, client, auth_headers):
+        """Test that organization projects require organization_id."""
+        project_data = {
+            "name": "Organization Project No Org",
+            "description": "This should fail",
+            "visibility": "organization"
+            # Missing organization_id
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "Organization projects require an organization" in response.json()["detail"]
+    
+    def test_create_project_nonexistent_organization_fails(self, client, auth_headers):
+        """Test creating project with non-existent organization ID."""
+        fake_org_id = str(uuid.uuid4())
+        
+        project_data = {
+            "name": "Project with Fake Org",
+            "description": "This should fail",
+            "visibility": "team",
+            "organization_id": fake_org_id
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+        assert "Organization not found" in response.json()["detail"]
+    
+    def test_create_project_organization_at_capacity_fails(self, client, auth_headers, db, current_user):
+        """Test creating project when organization is at maximum capacity."""
+        # Create organization with max_users=1
+        org = Organization(
+            name="Full Organization",
+            domain="full.com",
+            scope=OrganizationScope.SHARED,
+            max_users=1
+        )
+        db.add(org)
+        db.commit()
+        
+        # Create another user already in this organization
+        existing_user = User(
+            email="existing@full.com",
+            first_name="Existing",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True,
+            organization_id=org.id
+        )
+        db.add(existing_user)
+        db.commit()
+        
+        # Current user has no organization
+        current_user.organization_id = None
+        db.commit()
+        
+        # Try to create team project - should fail because org is at capacity
+        project_data = {
+            "name": "Team Project Full Org",
+            "description": "This should fail",
+            "visibility": "team",
+            "organization_id": str(org.id)
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "maximum user capacity" in response.json()["detail"]
+    
+    def test_create_project_user_not_organization_member_fails(self, client, auth_headers, db, current_user):
+        """Test creating project when user is not a member of the organization."""
+        # Create two organizations
+        org1 = Organization(
+            name="Org 1",
+            domain="org1.com",
+            scope=OrganizationScope.SHARED,
+            max_users=10
+        )
+        org2 = Organization(
+            name="Org 2",
+            domain="org2.com",
+            scope=OrganizationScope.SHARED,
+            max_users=10
+        )
+        db.add_all([org1, org2])
+        db.commit()
+        
+        # Assign user to org1
+        current_user.organization_id = org1.id
+        db.commit()
+        
+        # Try to create project in org2 (user is not a member)
+        project_data = {
+            "name": "Project in Wrong Org",
+            "description": "This should fail",
+            "visibility": "team",
+            "organization_id": str(org2.id)
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 403
+        assert "must be a member of the organization" in response.json()["detail"]
+    
+    def test_create_project_without_projects_access_fails(self, client, db, current_user):
+        """Test creating project when user doesn't have projects access."""
+        # Remove projects access from user
+        current_user.has_projects_access = False
+        db.commit()
+        
+        # Create auth headers for user without projects access
+        from api.auth import create_access_token
+        token = create_access_token(data={"sub": str(current_user.id)})
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        
+        project_data = {
+            "name": "Project No Access",
+            "description": "This should fail",
+            "visibility": "personal"
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=headers
+        )
+        assert response.status_code == 403
+        assert "does not have projects access" in response.json()["detail"]
+
+
+class TestProjectAccessEndpoint:
+    """Test the project access checking endpoint."""
+    
+    def test_check_project_access_success(self, client, auth_headers, db, current_user):
+        """Test successful project access check."""
+        # Create a project
+        project = Project(
+            name="Test Project",
+            description="Test description",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Check access
+        response = client.get(
+            f"/api/v1/projects/{project.id}/access-check",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
         
         data = response.json()
-        assert data["organization_id"] == org_id
+        assert data["has_access"] is True
+        assert data["can_modify"] is True
+        assert data["project_id"] == str(project.id)
+        assert data["visibility"] == "personal"
+        assert data["is_creator"] is True
+    
+    def test_check_project_access_not_found(self, client, auth_headers):
+        """Test project access check for non-existent project."""
+        fake_project_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/projects/{fake_project_id}/access-check",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+        assert "Project not found" in response.json()["detail"]
+    
+    def test_check_project_access_no_access(self, client, auth_headers, db, current_user):
+        """Test project access check when user has no access."""
+        # Create another user and their project
+        other_user = User(
+            email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(other_user)
+        db.commit()
+        
+        # Create project owned by other user
+        project = Project(
+            name="Other User Project",
+            description="Private project",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=other_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Check access as current user
+        response = client.get(
+            f"/api/v1/projects/{project.id}/access-check",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["has_access"] is False
+        assert data["can_modify"] is False
+        assert data["is_creator"] is False
+
+
+class TestProjectListingWithAdmin:
+    """Test project listing with admin privileges."""
+    
+    def test_admin_can_see_all_projects(self, client, db, admin_auth_headers, admin_user):
+        """Test that admin users can see all projects."""
+        # Create multiple users with different projects
+        user1 = User(
+            email="user1@example.com",
+            first_name="User",
+            last_name="One",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        user2 = User(
+            email="user2@example.com",
+            first_name="User",
+            last_name="Two",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add_all([user1, user2])
+        db.commit()
+        
+        # Create projects for different users
+        project1 = Project(
+            name="User1 Project",
+            description="User 1's project",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=user1.id
+        )
+        project2 = Project(
+            name="User2 Project",
+            description="User 2's project",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=user2.id
+        )
+        db.add_all([project1, project2])
+        db.commit()
+        
+        # Admin should see all projects
+        response = client.get(
+            "/api/v1/projects/",
+            headers=admin_auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        project_names = [p["name"] for p in data["projects"]]
+        assert "User1 Project" in project_names
+        assert "User2 Project" in project_names
+
+
+
+
+class TestProjectArchiveRestore:
+    """Test project archiving and restoration functionality."""
+    
+    def test_archive_project_success(self, client, auth_headers, db, current_user):
+        """Test successful project archiving."""
+        # Create project
+        project = Project(
+            name="Project to Archive",
+            description="Test project for archiving",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        db.add(project)
+        db.commit()
+        db.refresh(project)
+        
+        # Archive project
+        response = client.post(
+            f"/api/v1/projects/{project.id}/archive",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "archived"
+        assert data["name"] == "Project to Archive"
+        assert "updated_at" in data
+    
+    def test_archive_project_not_found(self, client, auth_headers):
+        """Test archiving non-existent project."""
+        fake_project_id = str(uuid.uuid4())
+        
+        response = client.post(
+            f"/api/v1/projects/{fake_project_id}/archive",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+        assert "Project not found" in response.json()["detail"]
+    
+    def test_archive_project_unauthorized(self, client, auth_headers, db, current_user):
+        """Test archiving project without ownership."""
+        # Create another user
+        other_user = User(
+            email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(other_user)
+        db.commit()
+        
+        # Create project owned by other user
+        project = Project(
+            name="Other User Project",
+            description="Not owned by current user",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=other_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Try to archive
+        response = client.post(
+            f"/api/v1/projects/{project.id}/archive",
+            headers=auth_headers
+        )
+        assert response.status_code == 403
+        assert "not authorized to archive" in response.json()["detail"].lower()
+    
+    def test_restore_project_success(self, client, auth_headers, db, current_user):
+        """Test successful project restoration."""
+        # Create archived project
+        project = Project(
+            name="Archived Project",
+            description="Test project for restoration",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ARCHIVED,
+            created_by=current_user.id
+        )
+        db.add(project)
+        db.commit()
+        db.refresh(project)
+        
+        # Restore project
+        response = client.post(
+            f"/api/v1/projects/{project.id}/restore",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "active"
+        assert data["name"] == "Archived Project"
+        assert "updated_at" in data
+    
+    def test_restore_project_not_found(self, client, auth_headers):
+        """Test restoring non-existent project."""
+        fake_project_id = str(uuid.uuid4())
+        
+        response = client.post(
+            f"/api/v1/projects/{fake_project_id}/restore",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+        assert "Project not found" in response.json()["detail"]
+    
+    def test_restore_project_unauthorized(self, client, auth_headers, db, current_user):
+        """Test restoring project without ownership."""
+        # Create another user
+        other_user = User(
+            email="other@example.com",
+            first_name="Other",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(other_user)
+        db.commit()
+        
+        # Create archived project owned by other user
+        project = Project(
+            name="Other User Archived Project",
+            description="Not owned by current user",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ARCHIVED,
+            created_by=other_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Try to restore
+        response = client.post(
+            f"/api/v1/projects/{project.id}/restore",
+            headers=auth_headers
+        )
+        assert response.status_code == 403
+        assert "not authorized to restore" in response.json()["detail"].lower()
+
+
+class TestOrganizationProjectListing:
+    """Test organization-specific project listing endpoint."""
+    
+    def test_list_organization_projects_success(self, client, auth_headers, db, current_user):
+        """Test successful organization project listing."""
+        # Create organization
+        org = Organization(
+            name="Test Organization",
+            domain="test.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add(org)
+        db.commit()
+        
+        # Assign user to organization
+        current_user.organization_id = org.id
+        db.commit()
+        
+        # Create projects in organization
+        project1 = Project(
+            name="Org Project 1",
+            description="First organization project",
+            visibility=ProjectVisibility.TEAM,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id,
+            organization_id=org.id
+        )
+        project2 = Project(
+            name="Org Project 2",
+            description="Second organization project",
+            visibility=ProjectVisibility.ORGANIZATION,
+            status=ProjectStatus.COMPLETED,
+            created_by=current_user.id,
+            organization_id=org.id
+        )
+        db.add_all([project1, project2])
+        db.commit()
+        
+        # List organization projects
+        response = client.get(
+            f"/api/v1/projects/organization/{org.id}",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert len(data["projects"]) == 2
+        assert data["total"] == 2
+        project_names = [p["name"] for p in data["projects"]]
+        assert "Org Project 1" in project_names
+        assert "Org Project 2" in project_names
+    
+    def test_list_organization_projects_with_status_filter(self, client, auth_headers, db, current_user):
+        """Test organization project listing with status filter."""
+        # Create organization
+        org = Organization(
+            name="Filter Test Org",
+            domain="filtertest.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add(org)
+        db.commit()
+        
+        # Assign user to organization
+        current_user.organization_id = org.id
+        db.commit()
+        
+        # Create projects with different statuses
+        active_project = Project(
+            name="Active Project",
+            description="Active project",
+            visibility=ProjectVisibility.TEAM,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id,
+            organization_id=org.id
+        )
+        completed_project = Project(
+            name="Completed Project",
+            description="Completed project",
+            visibility=ProjectVisibility.TEAM,
+            status=ProjectStatus.COMPLETED,
+            created_by=current_user.id,
+            organization_id=org.id
+        )
+        db.add_all([active_project, completed_project])
+        db.commit()
+        
+        # List only active projects
+        response = client.get(
+            f"/api/v1/projects/organization/{org.id}?status=active",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert len(data["projects"]) == 1
+        assert data["projects"][0]["name"] == "Active Project"
+        assert data["projects"][0]["status"] == "active"
+    
+    def test_list_organization_projects_not_found(self, client, auth_headers):
+        """Test listing projects for non-existent organization."""
+        fake_org_id = str(uuid.uuid4())
+        
+        response = client.get(
+            f"/api/v1/projects/organization/{fake_org_id}",
+            headers=auth_headers
+        )
+        assert response.status_code == 404
+        assert "Organization not found" in response.json()["detail"]
+    
+    def test_list_organization_projects_unauthorized(self, client, auth_headers, db, current_user):
+        """Test listing projects for organization user is not member of."""
+        # Create two organizations
+        org1 = Organization(
+            name="User's Organization",
+            domain="userorg.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        org2 = Organization(
+            name="Other Organization",
+            domain="otherorg.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add_all([org1, org2])
+        db.commit()
+        
+        # Assign user to org1
+        current_user.organization_id = org1.id
+        db.commit()
+        
+        # Try to list projects from org2
+        response = client.get(
+            f"/api/v1/projects/organization/{org2.id}",
+            headers=auth_headers
+        )
+        assert response.status_code == 403
+        assert "not authorized to view projects" in response.json()["detail"].lower()
+    
+    def test_list_organization_projects_pagination(self, client, auth_headers, db, current_user):
+        """Test organization project listing with pagination."""
+        # Create organization
+        org = Organization(
+            name="Pagination Test Org",
+            domain="paginationtest.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add(org)
+        db.commit()
+        
+        # Assign user to organization
+        current_user.organization_id = org.id
+        db.commit()
+        
+        # Create multiple projects
+        projects = []
+        for i in range(5):
+            project = Project(
+                name=f"Pagination Project {i+1}",
+                description=f"Project {i+1} for pagination testing",
+                visibility=ProjectVisibility.TEAM,
+                status=ProjectStatus.ACTIVE,
+                created_by=current_user.id,
+                organization_id=org.id
+            )
+            projects.append(project)
+        
+        db.add_all(projects)
+        db.commit()
+        
+        # Test pagination with limit=2
+        response = client.get(
+            f"/api/v1/projects/organization/{org.id}?page=1&limit=2",
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert len(data["projects"]) == 2
+        assert data["total"] == 5
+        assert data["page"] == 1
+        assert data["limit"] == 2
+
+
+class TestJustInTimeOrganizationAssignment:
+    """Test just-in-time organization assignment during project creation."""
+    
+    def test_just_in_time_organization_assignment_success(self, client, auth_headers, db, current_user):
+        """Test successful just-in-time organization assignment."""
+        # Create organization with capacity
+        org = Organization(
+            name="JIT Assignment Org",
+            domain="jitassign.com",
+            scope=OrganizationScope.SHARED,
+            max_users=10
+        )
+        db.add(org)
+        db.commit()
+        
+        # Ensure user has no organization
+        current_user.organization_id = None
+        db.commit()
+        
+        # Create team project - should trigger JIT assignment
+        project_data = {
+            "name": "JIT Team Project",
+            "description": "Project that triggers JIT assignment",
+            "visibility": "team",
+            "organization_id": str(org.id)
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 201
+        
+        data = response.json()
+        assert data["name"] == "JIT Team Project"
+        assert data["organization_id"] == str(org.id)
         assert data["visibility"] == "team"
+        
+        # Verify user was assigned to organization
+        db.refresh(current_user)
+        assert current_user.organization_id == org.id
+    
+    def test_just_in_time_assignment_blocked_by_capacity(self, client, auth_headers, db, current_user):
+        """Test JIT assignment blocked by organization capacity."""
+        # Create organization at capacity
+        org = Organization(
+            name="Full Organization",
+            domain="full.com",
+            scope=OrganizationScope.SHARED,
+            max_users=1
+        )
+        db.add(org)
+        db.commit()
+        
+        # Create user already in organization
+        existing_user = User(
+            email="existing@full.com",
+            first_name="Existing",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True,
+            organization_id=org.id
+        )
+        db.add(existing_user)
+        db.commit()
+        
+        # Ensure current user has no organization
+        current_user.organization_id = None
+        db.commit()
+        
+        # Try to create team project - should fail due to capacity
+        project_data = {
+            "name": "Capacity Blocked Project",
+            "description": "Should fail due to capacity",
+            "visibility": "team",
+            "organization_id": str(org.id)
+        }
+        
+        response = client.post(
+            "/api/v1/projects/",
+            json=project_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "maximum user capacity" in response.json()["detail"]
+
+
+class TestAdminProjectAccess:
+    """Test admin access to all projects."""
+    
+    def test_admin_can_modify_any_project(self, client, db, admin_auth_headers, admin_user):
+        """Test that admin can modify any project."""
+        # Create regular user
+        regular_user = User(
+            email="regular@example.com",
+            first_name="Regular",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(regular_user)
+        db.commit()
+        
+        # Create project owned by regular user
+        project = Project(
+            name="Regular User Project",
+            description="Owned by regular user",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=regular_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Admin should be able to modify
+        update_data = {
+            "name": "Modified by Admin",
+            "description": "Updated by admin user"
+        }
+        
+        response = client.put(
+            f"/api/v1/projects/{project.id}",
+            json=update_data,
+            headers=admin_auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["name"] == "Modified by Admin"
+        assert data["description"] == "Updated by admin user"
+    
+    def test_admin_can_delete_any_project(self, client, db, admin_auth_headers, admin_user):
+        """Test that admin can delete any project."""
+        # Create regular user
+        regular_user = User(
+            email="regular@example.com",
+            first_name="Regular",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(regular_user)
+        db.commit()
+        
+        # Create project owned by regular user
+        project = Project(
+            name="Project to Delete",
+            description="Will be deleted by admin",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=regular_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Admin should be able to delete
+        response = client.delete(
+            f"/api/v1/projects/{project.id}",
+            headers=admin_auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "deleted successfully" in data["message"]
+    
+    def test_admin_can_archive_any_project(self, client, db, admin_auth_headers, admin_user):
+        """Test that admin can archive any project."""
+        # Create regular user
+        regular_user = User(
+            email="regular@example.com",
+            first_name="Regular",
+            last_name="User",
+            password_hash="hashed_password",
+            role=UserRole.BASIC_USER,
+            is_active=True,
+            email_verified=True,
+            has_projects_access=True
+        )
+        db.add(regular_user)
+        db.commit()
+        
+        # Create project owned by regular user
+        project = Project(
+            name="Project to Archive",
+            description="Will be archived by admin",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=regular_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Admin should be able to archive
+        response = client.post(
+            f"/api/v1/projects/{project.id}/archive",
+            headers=admin_auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "archived"
+        assert data["name"] == "Project to Archive"
+
+
+class TestProjectUpdateEdgeCases:
+    """Test edge cases for project updates."""
+    
+    def test_update_project_name_uniqueness_validation(self, client, auth_headers, db, current_user):
+        """Test that project name uniqueness is validated during updates."""
+        # Create two projects
+        project1 = Project(
+            name="Original Project 1",
+            description="First project",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        project2 = Project(
+            name="Original Project 2",
+            description="Second project",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        db.add_all([project1, project2])
+        db.commit()
+        
+        # Try to update project2 name to match project1
+        update_data = {
+            "name": "Original Project 1"  # Same as project1
+        }
+        
+        response = client.put(
+            f"/api/v1/projects/{project2.id}",
+            json=update_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 400
+        assert "already exists" in response.json()["detail"]
+    
+    def test_update_project_visibility_with_organization_validation(self, client, auth_headers, db, current_user):
+        """Test updating project visibility with organization validation."""
+        # Create organization
+        org = Organization(
+            name="Update Test Org",
+            domain="updatetest.com",
+            scope=OrganizationScope.SHARED,
+            max_users=100
+        )
+        db.add(org)
+        db.commit()
+        
+        # Assign user to organization
+        current_user.organization_id = org.id
+        db.commit()
+        
+        # Create personal project
+        project = Project(
+            name="Personal to Team Project",
+            description="Will be migrated to team",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Update to team project
+        update_data = {
+            "visibility": "team",
+            "organization_id": str(org.id)
+        }
+        
+        response = client.put(
+            f"/api/v1/projects/{project.id}",
+            json=update_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["visibility"] == "team"
+        assert data["organization_id"] == str(org.id)
+    
+    def test_update_project_fallback_creation_method(self, client, auth_headers, db, current_user):
+        """Test that project updates handle fallback creation method."""
+        # Create project with manual creation (fallback method)
+        project = Project(
+            name="Manual Project",
+            description="Created manually",
+            visibility=ProjectVisibility.PERSONAL,
+            status=ProjectStatus.ACTIVE,
+            created_by=current_user.id
+        )
+        db.add(project)
+        db.commit()
+        
+        # Test updating with status field
+        update_data = {
+            "name": "Updated Manual Project",
+            "status": "completed"
+        }
+        
+        response = client.put(
+            f"/api/v1/projects/{project.id}",
+            json=update_data,
+            headers=auth_headers
+        )
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["name"] == "Updated Manual Project"
+        assert data["status"] == "completed"
+        assert "updated_at" in data

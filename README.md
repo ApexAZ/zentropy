@@ -43,11 +43,16 @@ npm install
 
 ### 4. Launch Backend Services
 
-Start the PostgreSQL database and Redis using Docker.
+Start the PostgreSQL database, Redis, and Mailpit using Docker.
 
 ```bash
 docker-compose up -d
 ```
+
+This will start:
+- **PostgreSQL**: Database server on port 5432
+- **Redis**: Cache and rate limiting on port 6379  
+- **Mailpit**: Email testing server on port 1025 (SMTP) and 8025 (Web UI)
 
 ### 5. Set Up the Database
 
@@ -68,6 +73,7 @@ npm run dev
 You should now be able to access:
 - **Frontend**: `http://localhost:5173`
 - **Backend API Docs**: `http://localhost:3000/docs`
+- **Mailpit Email Testing**: `http://localhost:8025`
 
 ## Development and Code Quality
 
@@ -114,6 +120,27 @@ The project has a comprehensive test suite covering both the backend and fronten
 npm run test
 ```
 This command executes the `pytest` suite for the backend and the `vitest` suite for the frontend.
+
+## Email Testing with Mailpit
+
+Zentropy includes email verification functionality for user registration. During development, we use **Mailpit** to test email sending without actually sending emails to real addresses.
+
+### How to Use Mailpit
+
+1. **Start Mailpit**: It automatically starts when you run `docker-compose up -d`
+2. **Access Web Interface**: Open `http://localhost:8025` in your browser
+3. **Test Email Sending**: Register a new user account and check Mailpit for the verification email
+4. **View Emails**: All emails sent by the application will appear in the Mailpit interface
+
+### Email Configuration
+
+The application uses the following email settings for development:
+- **SMTP Server**: localhost:1025 (Mailpit)
+- **From Address**: noreply@zentropy.local
+- **From Name**: Zentropy
+- **TLS**: Disabled (safe for local development)
+
+For production deployment, update the email configuration in your `.env` file with your actual SMTP provider details.
 
 ## Features
 

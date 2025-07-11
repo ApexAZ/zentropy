@@ -17,7 +17,7 @@ from api.database import User, Organization, Project, RegistrationType, AuthProv
 class TestOrganizationEdgeCases:
     """Test edge cases for organization management."""
 
-    def test_organization_capacity_limits(self, client: TestClient, db: Session):
+    def test_organization_capacity_limits(self, client: TestClient, db: Session, test_rate_limits):
         """Test organization capacity enforcement."""
         # Create organization with max_users = 2
         org = Organization(
@@ -88,7 +88,7 @@ class TestOrganizationEdgeCases:
         error_data = join_response.json()
         assert "capacity" in error_data["detail"].lower()
 
-    def test_personal_organization_single_user_limit(self, client: TestClient, db: Session):
+    def test_personal_organization_single_user_limit(self, client: TestClient, db: Session, test_rate_limits):
         """Test personal organization scope can only have one user."""
         # Create personal organization
         user_data = {
@@ -188,7 +188,7 @@ class TestOrganizationEdgeCases:
         admin_org_response = client.post("/api/v1/organizations/", json=org_data, headers=admin_auth_headers)
         assert admin_org_response.status_code == 201
 
-    def test_duplicate_organization_domain_handling(self, client: TestClient, db: Session):
+    def test_duplicate_organization_domain_handling(self, client: TestClient, db: Session, test_rate_limits):
         """Test handling of duplicate organization domains."""
         # Create first organization
         org1 = Organization(
@@ -239,7 +239,7 @@ class TestOrganizationEdgeCases:
 class TestProjectEdgeCases:
     """Test edge cases for project management."""
 
-    def test_project_visibility_constraints(self, client: TestClient, db: Session):
+    def test_project_visibility_constraints(self, client: TestClient, db: Session, test_rate_limits):
         """Test project visibility constraints and edge cases."""
         # Create user without organization
         user_data = {
@@ -284,7 +284,7 @@ class TestProjectEdgeCases:
         response = client.post("/api/v1/projects/", json=project_data, headers=headers)
         assert response.status_code == 201
 
-    def test_project_organization_id_validation(self, client: TestClient, db: Session):
+    def test_project_organization_id_validation(self, client: TestClient, db: Session, test_rate_limits):
         """Test validation of organization_id in project creation."""
         # Create organization
         org = Organization(
@@ -343,7 +343,7 @@ class TestProjectEdgeCases:
         user = db.query(User).filter(User.email == "user@valid.com").first()
         assert user.organization_id == org.id
 
-    def test_project_archive_restore_edge_cases(self, client: TestClient, db: Session):
+    def test_project_archive_restore_edge_cases(self, client: TestClient, db: Session, test_rate_limits):
         """Test project archive and restore edge cases."""
         # Create user and personal project
         user_data = {
@@ -401,7 +401,7 @@ class TestProjectEdgeCases:
 class TestAuthenticationEdgeCases:
     """Test authentication and authorization edge cases."""
 
-    def test_expired_token_handling(self, client: TestClient, db: Session):
+    def test_expired_token_handling(self, client: TestClient, db: Session, test_rate_limits):
         """Test handling of expired authentication tokens."""
         # Create user
         user_data = {
@@ -444,7 +444,7 @@ class TestAuthenticationEdgeCases:
         data = response.json()
         assert data["domain_found"] is False
 
-    def test_organization_member_permissions(self, client: TestClient, db: Session):
+    def test_organization_member_permissions(self, client: TestClient, db: Session, test_rate_limits):
         """Test organization member permission edge cases."""
         # Create organization and two users
         org = Organization(
@@ -542,7 +542,7 @@ class TestAuthenticationEdgeCases:
 class TestPerformanceEdgeCases:
     """Test performance and scalability edge cases."""
 
-    def test_large_organization_operations(self, client: TestClient, db: Session):
+    def test_large_organization_operations(self, client: TestClient, db: Session, test_rate_limits):
         """Test operations with large numbers of organizations."""
         # Create many organizations
         orgs = []
@@ -573,7 +573,7 @@ class TestPerformanceEdgeCases:
         assert data["domain_found"] is True
         assert data["organization"]["name"] == "Corp 025"
 
-    def test_concurrent_organization_joining(self, client: TestClient, db: Session):
+    def test_concurrent_organization_joining(self, client: TestClient, db: Session, test_rate_limits):
         """Test concurrent organization joining scenarios."""
         # Create organization with limited capacity
         org = Organization(
@@ -626,7 +626,7 @@ class TestPerformanceEdgeCases:
         assert successful_joins == 3  # Capacity limit
         assert failed_joins == 2    # Exceeded capacity
 
-    def test_project_list_pagination_edge_cases(self, client: TestClient, db: Session):
+    def test_project_list_pagination_edge_cases(self, client: TestClient, db: Session, test_rate_limits):
         """Test project list pagination with edge cases."""
         # Create user
         user_data = {
@@ -684,7 +684,7 @@ class TestPerformanceEdgeCases:
 class TestDataIntegrityEdgeCases:
     """Test data integrity and consistency edge cases."""
 
-    def test_orphaned_project_handling(self, client: TestClient, db: Session):
+    def test_orphaned_project_handling(self, client: TestClient, db: Session, test_rate_limits):
         """Test handling of projects when organization is deleted."""
         # Create organization and user
         org = Organization(
@@ -746,7 +746,7 @@ class TestDataIntegrityEdgeCases:
             # If FK constraint prevents deletion, that's also valid behavior
             db.rollback()
 
-    def test_user_organization_consistency(self, client: TestClient, db: Session):
+    def test_user_organization_consistency(self, client: TestClient, db: Session, test_rate_limits):
         """Test user-organization relationship consistency."""
         # Create organization
         org = Organization(

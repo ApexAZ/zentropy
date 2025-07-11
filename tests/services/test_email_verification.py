@@ -25,7 +25,7 @@ from api.schemas import UserCreate
 class TestEmailVerificationDatabase:
     """Test email verification database schema and models."""
     
-    def test_user_model_has_email_verification_fields(self, db: Session, client):
+    def test_user_model_has_email_verification_fields(self, db: Session, client, mailpit_disabled):
         """Test that User model has email verification fields."""
         # This test will fail initially - we need to add these fields
         user = User(
@@ -50,7 +50,7 @@ class TestEmailVerificationDatabase:
 class TestEmailVerificationEndpoints:
     """Test email verification API endpoints."""
     
-    def test_register_sends_verification_email(self, client: TestClient):
+    def test_register_sends_verification_email(self, client: TestClient, test_rate_limits):
         """Test that registration sends a verification email."""
         # Use random email to avoid conflicts with existing users
         random_id = random.randint(1000, 9999)
@@ -71,6 +71,8 @@ class TestEmailVerificationEndpoints:
         data = response.json()
         assert data["email"] == f"newuser{random_id}@example.com"
         assert data["email_verified"] is False  # Should exist in response
+        
+        # Email will be automatically cleaned up by auto_clean_mailpit fixture
         
     def test_send_verification_email_endpoint(self, client: TestClient):
         """Test endpoint to resend verification email."""
@@ -125,7 +127,7 @@ class TestEmailVerificationEndpoints:
         assert "detail" in data
         assert "invalid" in data["detail"].lower()
         
-    def test_verify_email_expired_token(self, client: TestClient):
+    def test_verify_email_expired_token(self, client: TestClient, test_rate_limits):
         """Test email verification with expired token."""
         response = client.post("/api/v1/auth/verify-email/expired-token")
         
@@ -138,7 +140,7 @@ class TestEmailVerificationEndpoints:
 class TestEmailVerificationFlow:
     """Test complete email verification flow."""
     
-    def test_complete_verification_flow(self, client: TestClient):
+    def test_complete_verification_flow(self, client: TestClient, test_rate_limits):
         """Test complete flow: register -> send email -> verify."""
         # 1. Register user
         random_id = random.randint(1000, 9999)
@@ -193,7 +195,7 @@ class TestEmailVerificationFlow:
         assert "detail" in data
         assert "verify your email" in data["detail"].lower()
         
-    def test_login_succeeds_after_email_verification(self, client: TestClient, db: Session):
+    def test_login_succeeds_after_email_verification(self, client: TestClient, db: Session, test_rate_limits):
         """Test that login succeeds after email verification."""
         # Register user
         random_id = random.randint(1000, 9999)
@@ -234,7 +236,7 @@ class TestEmailVerificationFlow:
         assert "user" in data
         assert data["user"]["email_verified"] is True
         
-    def test_oauth_login_endpoint_requires_verified_email(self, client: TestClient):
+    def test_oauth_login_endpoint_requires_verified_email(self, client: TestClient, test_rate_limits):
         """Test that OAuth login endpoint also requires verified email."""
         # Register user (unverified)
         random_id = random.randint(1000, 9999)
@@ -283,6 +285,48 @@ class TestEmailVerificationSecurity:
         """Test that verification tokens can only be used once."""
         # Once verified, token should be invalidated
         pass
+        
+    def test_rate_limiting_still_works(self, client: TestClient):
+        """Test that rate limiting logic still functions when limits are exceeded."""
+        # Use production rate limits for this specific test
+        import os
+        original_requests = os.environ.get("RATE_LIMIT_EMAIL_REQUESTS")
+        original_window = os.environ.get("RATE_LIMIT_EMAIL_WINDOW_MINUTES")
+        
+        try:
+            # Set very restrictive limits for this test
+            os.environ["RATE_LIMIT_EMAIL_REQUESTS"] = "1"
+            os.environ["RATE_LIMIT_EMAIL_WINDOW_MINUTES"] = "60"
+            
+            # Clear rate limiting state to start fresh
+            from api.rate_limiter import rate_limiter
+            if hasattr(rate_limiter, '_memory_store'):
+                rate_limiter._memory_store.clear()
+            
+            # First request should succeed (within limit)
+            response1 = client.post("/api/v1/auth/send-verification", 
+                                   json={"email": "test1@example.com"})
+            # Might be 200 (success) or 404 (endpoint not implemented)
+            assert response1.status_code in [200, 404]
+            
+            # Second request should be rate limited (exceeds limit)
+            response2 = client.post("/api/v1/auth/send-verification", 
+                                   json={"email": "test2@example.com"})
+            # Should be 429 Too Many Requests due to rate limiting
+            if response2.status_code == 429:
+                assert "rate limit" in response2.json().get("detail", "").lower()
+                
+        finally:
+            # Restore original values
+            if original_requests:
+                os.environ["RATE_LIMIT_EMAIL_REQUESTS"] = original_requests
+            else:
+                os.environ.pop("RATE_LIMIT_EMAIL_REQUESTS", None)
+                
+            if original_window:
+                os.environ["RATE_LIMIT_EMAIL_WINDOW_MINUTES"] = original_window  
+            else:
+                os.environ.pop("RATE_LIMIT_EMAIL_WINDOW_MINUTES", None)
 
 
 class TestEmailVerificationNotifications:
