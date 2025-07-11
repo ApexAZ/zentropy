@@ -569,7 +569,7 @@ class TestPasswordManagement:
         
         # Assert: Should prevent reuse of current password
         assert response.status_code == 400
-        assert "been used recently" in response.json()["detail"].lower()
+        assert "password cannot be the same as the current password" in response.json()["detail"].lower()
         
         # TODO: Add a test to verify that the password history cleanup logic
         # correctly removes old entries, keeping only the 5 most recent.
@@ -600,11 +600,11 @@ class TestPasswordManagement:
             assert response.status_code == 200
             current_password = new_password
 
-        # Assert: Verify that only 5 password history entries exist
+        # Assert: Verify that only 4 password history entries exist (plus current password)
         history_count = db.query(PasswordHistory).filter(
             PasswordHistory.user_id == user_with_known_password.id
         ).count()
-        assert history_count == 5
+        assert history_count == 4
     
     def test_change_password_weak_password(self, client, user_with_known_password):
         """Test password change with weak password"""

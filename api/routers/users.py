@@ -200,19 +200,22 @@ def change_password(
             user_id=current_user.id, password_hash=old_password_hash
         )
         db.add(password_history_entry)
+        # Flush the session to make the new entry available for the cleanup query
+        db.flush()
 
     # Clean up old password history, keeping the 4 most recent entries.
     # The 5th password is the current one in the users table.
-    subquery = (
+    all_ids_query = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == current_user.id)
         .order_by(database.PasswordHistory.created_at.desc())
-        .offset(4)
-        .scalar_subquery()
     )
-    db.query(database.PasswordHistory).filter(
-        database.PasswordHistory.id.in_(subquery)
-    ).delete(synchronize_session=False)
+    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
+
+    if ids_to_delete:
+        db.query(database.PasswordHistory).filter(
+            database.PasswordHistory.id.in_(ids_to_delete)
+        ).delete(synchronize_session=False)
 
     db.commit()
 
