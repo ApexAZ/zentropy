@@ -56,11 +56,12 @@ class TestAuthenticationFlow:
         # Assert - Test the API response behavior
         assert response.status_code == 201
         data = response.json()
-        assert "id" in data
-        assert data["email"] == unique_email
-        assert data["first_name"] == "Test"
-        assert data["last_name"] == "User"
-        assert data["email_verified"] is False  # New users start unverified
+        assert "user" in data
+        assert "id" in data["user"]
+        assert data["user"]["email"] == unique_email
+        assert data["user"]["first_name"] == "Test"
+        assert data["user"]["last_name"] == "User"
+        assert data["user"]["email_verified"] is False  # New users start unverified
         
         # Note: Database verification intentionally omitted for integration tests
         # API contract testing above provides sufficient validation for integration layer
@@ -124,10 +125,20 @@ class TestAuthenticationFlow:
         
         # Second registration should fail with duplicate email error
         duplicate_response = client.post("/api/v1/auth/register", json=duplicate_data)
-        assert duplicate_response.status_code == 400
+        assert duplicate_response.status_code == 409  # 409 Conflict is more appropriate for duplicates
         data = duplicate_response.json()
         assert "detail" in data
-        assert "email" in data["detail"].lower() or "already" in data["detail"].lower()
+        
+        # Check for structured error response
+        detail = data["detail"]
+        if isinstance(detail, dict):
+            # New structured response
+            assert "error_type" in detail
+            assert detail["error_type"] == "email_already_exists"
+            assert "email is already registered" in detail["detail"].lower()
+        else:
+            # Backward compatibility with simple string response
+            assert "email" in detail.lower() or "registered" in detail.lower()
         
         # Note: Database verification intentionally omitted for integration tests
         # API behavior validation above confirms duplicate email protection works correctly

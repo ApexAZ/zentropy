@@ -10,7 +10,7 @@ from ..schemas import (
     LoginResponse,
     UserLogin,
     UserCreate,
-    UserResponse,
+    UserLoginResponse,
     MessageResponse,
     GoogleLoginRequest,
     GoogleOAuthRequest,
@@ -124,24 +124,26 @@ def login_json(
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
-        user={
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "organization_id": user.organization_id,
-            "has_projects_access": user.has_projects_access,
-            "email_verified": user.email_verified,
-            "registration_type": user.registration_type.value,
-        },
+        user=UserLoginResponse(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            organization_id=user.organization_id,
+            has_projects_access=user.has_projects_access,
+            email_verified=user.email_verified,
+            registration_type=user.registration_type.value,
+            role=user.role.value if user.role else None,
+        ),
     )
 
 
 @router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+    "/register", response_model=LoginResponse, status_code=status.HTTP_201_CREATED
 )
 def register(
     request: Request, user_create: UserCreate, db: Session = Depends(get_db)
-) -> database.User:
+) -> LoginResponse:
     """Register a new user"""
     # Apply rate limiting to prevent spam registrations
     client_ip = get_client_ip(request)
@@ -162,7 +164,11 @@ def register(
     )
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "detail": "This email is already registered.",
+                "error_type": "email_already_exists",
+            },
         )
 
     # Validate password
@@ -208,7 +214,24 @@ def register(
     user_name = f"{db_user.first_name} {db_user.last_name}"
     send_verification_email(str(db_user.email), token, user_name)
 
-    return db_user
+    # Create access token for immediate login after registration
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=UserLoginResponse(
+            id=db_user.id,
+            email=db_user.email,
+            first_name=db_user.first_name,
+            last_name=db_user.last_name,
+            organization_id=db_user.organization_id,
+            has_projects_access=db_user.has_projects_access,
+            email_verified=db_user.email_verified,
+            registration_type=db_user.registration_type.value,
+            role=db_user.role.value,
+        ),
+    )
 
 
 @router.post("/logout", response_model=MessageResponse)
@@ -344,30 +367,20 @@ def google_login(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
 
-    # Load organization name for response
-    organization_name = None
-    if user.organization_id:
-        organization = (
-            db.query(database.Organization)
-            .filter(database.Organization.id == user.organization_id)
-            .first()
-        )
-        if organization:
-            organization_name = organization.name
-
     return LoginResponse(
         access_token=access_token,
         token_type="bearer",
-        user={
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "organization_id": user.organization_id,
-            "organization": organization_name,
-            "has_projects_access": user.has_projects_access,
-            "email_verified": user.email_verified,
-            "registration_type": user.registration_type.value,
-        },
+        user=UserLoginResponse(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            organization_id=user.organization_id,
+            has_projects_access=user.has_projects_access,
+            email_verified=user.email_verified,
+            registration_type=user.registration_type.value,
+            role=user.role.value if user.role else None,
+        ),
     )
 
 
@@ -393,7 +406,7 @@ def google_oauth_register(
         return LoginResponse(
             access_token=auth_response["access_token"],
             token_type=auth_response["token_type"],
-            user=auth_response["user"],
+            user=UserLoginResponse(**auth_response["user"]),
         )
 
     except GoogleTokenInvalidError as e:

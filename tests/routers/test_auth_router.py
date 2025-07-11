@@ -292,16 +292,20 @@ class TestGoogleOAuthSchemas:
                 access_token="jwt_token_here",
                 token_type="bearer",
                 user={
+                    "id": "12345678-1234-1234-1234-123456789012",
                     "email": "google@example.com",
                     "first_name": "Google",
                     "last_name": "User",
-                    "organization": "Google Inc",
-                    "has_projects_access": True
+                    "organization_id": None,
+                    "has_projects_access": True,
+                    "email_verified": True,
+                    "registration_type": "google_oauth",
+                    "role": "basic_user"
                 }
             )
             
             assert google_response.access_token == "jwt_token_here"
-            assert google_response.user["email"] == "google@example.com"
+            assert google_response.user.email == "google@example.com"
             
         except ImportError:
             pytest.fail("LoginResponse schema should already exist")

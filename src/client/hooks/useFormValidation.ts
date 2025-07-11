@@ -183,9 +183,9 @@ export function useFormValidation<T extends Record<string, any>>(
 				try {
 					setIsSubmitting(true);
 					await onSubmit(values);
-				} catch {
-					// Error handling is managed by the onSubmit handler
-					// This allows for flexible error handling strategies
+				} catch (error) {
+					// Re-throw error so calling component can handle it
+					throw error;
 				} finally {
 					setIsSubmitting(false);
 				}

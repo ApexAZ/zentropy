@@ -4,11 +4,10 @@ import tailwindcss from "@tailwindcss/postcss";
 
 export default defineConfig({
 	plugins: [react()],
-	root: "src/client",
 	css: {
 		postcss: {
-			plugins: [tailwindcss()],
-		},
+			plugins: [tailwindcss()]
+		}
 	},
 	build: {
 		outDir: "dist",
@@ -20,15 +19,17 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		proxy: {
-			"^/api/.*": {
+			"/api": {
 				target: "http://localhost:3000",
 				changeOrigin: true,
-				secure: false
+				secure: false,
+				rewrite: path => path
 			},
-			"^/health$": {
+			"/health": {
 				target: "http://localhost:3000",
 				changeOrigin: true,
-				secure: false
+				secure: false,
+				rewrite: path => path
 			}
 		}
 	}

@@ -212,10 +212,13 @@ class TestRegistrationTypeInResponses:
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
         
-        # This should FAIL initially since UserResponse schema doesn't include registration_type
-        user_response = response.json()
-        assert "registration_type" in user_response
-        assert user_response["registration_type"] == "email"
+        # Registration now returns LoginResponse format with access_token and user
+        response_data = response.json()
+        assert "access_token" in response_data
+        assert "user" in response_data
+        user_data_response = response_data["user"]
+        assert "registration_type" in user_data_response
+        assert user_data_response["registration_type"] == "email"
 
     @patch('api.routers.auth.process_google_oauth')
     def test_google_oauth_response_includes_registration_type(self, mock_process_oauth, client):
@@ -224,12 +227,15 @@ class TestRegistrationTypeInResponses:
             "access_token": "test-token",
             "token_type": "bearer",
             "user": {
+                "id": "12345678-1234-1234-1234-123456789012",
                 "email": "oauth-response@example.com",
                 "first_name": "OAuth",
                 "last_name": "Response",
+                "organization_id": None,
                 "has_projects_access": True,
                 "email_verified": True,
-                "registration_type": "google_oauth"  # Should be included in response
+                "registration_type": "google_oauth",  # Should be included in response
+                "role": "basic_user"
             }
         }
 

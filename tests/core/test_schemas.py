@@ -457,15 +457,21 @@ class TestAuthenticationSchemas:
                 "id": str(uuid4()),
                 "email": "user@example.com",
                 "first_name": "John",
-                "last_name": "Doe"
+                "last_name": "Doe",
+                "organization_id": None,
+                "has_projects_access": True,
+                "email_verified": True,
+                "registration_type": "email",
+                "role": "basic_user"
             }
         }
         
         response = LoginResponse(**response_data)
         assert response.access_token == "jwt_token_here"
         assert response.token_type == "bearer"
-        assert "email" in response.user
-        assert response.user["email"] == "user@example.com"
+        assert response.user.email == "user@example.com"
+        assert response.user.first_name == "John"
+        assert response.user.last_name == "Doe"
     
     def test_token_data_optional_user_id(self):
         """Test TokenData with optional user_id."""

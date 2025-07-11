@@ -170,7 +170,7 @@ def mailpit_disabled():
         os.environ.pop("EMAIL_ENABLED", None)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def test_rate_limits():
     """
     Configures realistic but generous rate limits for testing.
@@ -186,13 +186,13 @@ def test_rate_limits():
     # Test-friendly limits: generous enough for tests, realistic enough to catch bugs
     test_config = {
         "RATE_LIMIT_AUTH_REQUESTS": "50",      # vs prod: 5 requests  
-        "RATE_LIMIT_AUTH_WINDOW_MINUTES": "1", # vs prod: 15 minutes
+        "RATE_LIMIT_AUTH_WINDOW_MINUTES": "10", # vs prod: 15 minutes
         "RATE_LIMIT_OAUTH_REQUESTS": "100",    # vs prod: 20 requests
         "RATE_LIMIT_OAUTH_WINDOW_MINUTES": "1", # vs prod: 1 minute  
         "RATE_LIMIT_API_REQUESTS": "500",      # vs prod: 100 requests
         "RATE_LIMIT_API_WINDOW_MINUTES": "1",  # vs prod: 1 minute
         "RATE_LIMIT_EMAIL_REQUESTS": "25",     # vs prod: 3 requests
-        "RATE_LIMIT_EMAIL_WINDOW_MINUTES": "1" # vs prod: 5 minutes
+        "RATE_LIMIT_EMAIL_WINDOW_MINUTES": "5" # vs prod: 5 minutes
     }
     
     for key, value in test_config.items():

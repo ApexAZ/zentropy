@@ -116,14 +116,16 @@ class TestEnumAPIResponseConsistency:
         assert response.status_code == 201
         
         user_response = response.json()
+        assert "user" in user_response
+        user_data = user_response["user"]
         
         # Verify enum values are included as lowercase strings (enum.value)
-        assert user_response["role"] == "basic_user"  # Not "BASIC_USER"
-        assert user_response["registration_type"] == "email"  # Not "EMAIL"
+        assert user_data["role"] == "basic_user"  # Not "BASIC_USER"
+        assert user_data["registration_type"] == "email"  # Not "EMAIL"
         
         # Verify boolean fields are actual booleans
-        assert isinstance(user_response["has_projects_access"], bool)
-        assert isinstance(user_response["email_verified"], bool)
+        assert isinstance(user_data["has_projects_access"], bool)
+        assert isinstance(user_data["email_verified"], bool)
 
     @patch('api.google_oauth.verify_google_token')
     def test_google_oauth_response_contains_proper_enum_values(self, mock_verify_token, client):

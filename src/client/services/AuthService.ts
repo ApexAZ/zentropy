@@ -1,4 +1,12 @@
-import type { AuthUser, SignInCredentials, SignUpData, AuthResponse, PasswordValidationResult } from "../types";
+import type {
+	AuthUser,
+	SignInCredentials,
+	SignUpData,
+	AuthResponse,
+	PasswordValidationResult,
+	APIError,
+	CustomError
+} from "../types";
 
 export class AuthService {
 	/**
@@ -44,8 +52,22 @@ export class AuthService {
 		});
 
 		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(errorData.detail || "Registration failed");
+			const errorData: APIError = await response.json();
+
+			// Handle structured error responses
+			if (typeof errorData.detail === "object" && errorData.detail.error_type) {
+				// Extract the error type and message
+				const errorType = errorData.detail.error_type;
+				const errorMessage = errorData.detail.detail || "Registration failed";
+
+				// Create custom error with type information
+				const error = new Error(errorMessage) as CustomError;
+				error.type = errorType;
+				throw error;
+			}
+
+			// Handle simple string errors (backward compatibility)
+			throw new Error((errorData.detail as string) || "Registration failed");
 		}
 
 		const data: AuthResponse = await response.json();

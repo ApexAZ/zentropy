@@ -10,9 +10,10 @@ from datetime import datetime, timedelta
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+import uuid
 
 from api.main import app
-from api.database import User, RegistrationType
+from api.database import User, RegistrationType, UserRole
 
 # Note: Using isolated test database fixtures from conftest.py
 # This ensures tests don't pollute the main database
@@ -53,13 +54,15 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
+                id=uuid.uuid4(),
                 email="test@example.com",
                 first_name="Test",
                 last_name="User",
                 registration_type=RegistrationType.EMAIL,
                 email_verified=True,
-                is_active=True
+                is_active=True,
+                has_projects_access=True,
+                role=UserRole.BASIC_USER
             )
             mock_auth.return_value = mock_user
 
@@ -89,13 +92,15 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
+                id=uuid.uuid4(),
                 email="test@example.com",
                 first_name="Test",
                 last_name="User", 
                 registration_type=RegistrationType.EMAIL,
                 email_verified=True,
-                is_active=True
+                is_active=True,
+                has_projects_access=True,
+                role=UserRole.BASIC_USER
             )
             mock_auth.return_value = mock_user
 
@@ -125,13 +130,15 @@ class TestRememberMeBackend:
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
             mock_user = User(
-                id="test-user-id",
+                id=uuid.uuid4(),
                 email="test@example.com",
                 first_name="Test",
                 last_name="User",
                 registration_type=RegistrationType.EMAIL,
                 email_verified=True,
-                is_active=True
+                is_active=True,
+                has_projects_access=True,
+                role=UserRole.BASIC_USER
             )
             mock_auth.return_value = mock_user
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AuthService } from "../services/AuthService";
-import type { AuthUser, SignInCredentials, SignUpData } from "../types";
+import type { AuthUser, SignInCredentials, SignUpData, CustomError } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
@@ -56,7 +56,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
 	const [mode, setMode] = useState<AuthMode>(initialMode);
 	const [isLoading, setIsLoading] = useState(false);
-	const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+	const [toast, setToast] = useState<{
+		message: string;
+		type: "success" | "error" | "info" | "critical-error";
+		actionLink?: { text: string; onClick: () => void };
+	} | null>(null);
 	const [showPasswords, setShowPasswords] = useState({
 		password: false,
 		confirm: false
@@ -192,9 +196,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Remove form dependencies to prevent infinite loop
 
-	// Auto-hide toast
+	// Auto-hide toast (but not for critical errors)
 	useEffect(() => {
-		if (toast) {
+		if (toast && toast.type !== "critical-error") {
 			const timer = setTimeout(() => setToast(null), 5000);
 			return () => clearTimeout(timer);
 		}
@@ -235,7 +239,31 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		try {
 			await signUpForm.handleSubmit(e);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Registration failed";
+			let message = "Registration failed";
+
+			if (error instanceof Error) {
+				message = error.message;
+
+				// Handle specific error types
+				const errorType = (error as CustomError).type;
+				if (errorType === "email_already_exists") {
+					// For duplicate email, show persistent error with sign-in link
+					setToast({
+						message: error.message,
+						type: "critical-error",
+						actionLink: {
+							text: "Sign in",
+							onClick: () => {
+								setToast(null); // Clear the toast FIRST
+								setMode("signin");
+								signInForm.setFieldValue("email", signUpForm.values.email);
+							}
+						}
+					});
+					return; // Exit early to avoid setting the regular toast
+				}
+			}
+
 			setToast({ message, type: "error" });
 		} finally {
 			setIsLoading(false);
@@ -662,12 +690,34 @@ const AuthModal: React.FC<AuthModalProps> = ({
 							className={`mb-4 rounded-lg p-3 ${
 								toast.type === "success"
 									? "bg-green-100 text-green-800"
-									: toast.type === "error"
+									: toast.type === "error" || toast.type === "critical-error"
 										? "bg-red-100 text-red-800"
 										: "bg-blue-100 text-blue-800"
 							}`}
 						>
-							{toast.message}
+							<div className="flex items-start justify-between">
+								<div className="flex-1 text-center">
+									<div>{toast.message}</div>
+									{toast.actionLink && (
+										<div className="mt-3">
+											<button
+												onClick={toast.actionLink.onClick}
+												className="text-base font-medium text-red-700 underline hover:text-red-900 hover:no-underline"
+											>
+												{toast.actionLink.text}
+											</button>
+										</div>
+									)}
+								</div>
+								{toast.type === "critical-error" && (
+									<button
+										onClick={() => setToast(null)}
+										className="ml-2 text-red-600 hover:text-red-800"
+									>
+										✕
+									</button>
+								)}
+							</div>
 						</div>
 					)}
 

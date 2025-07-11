@@ -1,8 +1,14 @@
 """
-Integration Tests for Phase 6: Just-in-Time Organization System Integration & Migration
+Integration Tests for Organization Workflows
 
-These tests verify the complete end-to-end workflows for the just-in-time organization system,
+End-to-end integration tests for the just-in-time organization system workflows,
 including registration flows, organization discovery, project creation, and user workflows.
+
+Test Categories:
+- Registration with organization discovery
+- Project creation triggering organization assignment
+- Multi-user organization workflows
+- Organization migration and user assignment
 """
 
 import pytest

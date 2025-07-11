@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 from .database import (
@@ -185,10 +185,22 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class UserLoginResponse(BaseModel):
+    id: UUID
+    email: EmailStr
+    first_name: str
+    last_name: str
+    organization_id: Optional[UUID] = None
+    has_projects_access: bool
+    email_verified: bool
+    registration_type: str
+    role: Optional[str] = None
+
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: Dict[str, Any]  # Contains user info like first_name, last_name, email
+    user: UserLoginResponse
 
 
 class TokenData(BaseModel):
@@ -219,6 +231,11 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class DetailedErrorResponse(BaseModel):
+    detail: str
+    error_type: str
 
 
 # Project schemas

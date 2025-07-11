@@ -69,8 +69,9 @@ class TestEmailVerificationEndpoints:
         # Should succeed but user should be unverified
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == f"newuser{random_id}@example.com"
-        assert data["email_verified"] is False  # Should exist in response
+        assert "user" in data
+        assert data["user"]["email"] == f"newuser{random_id}@example.com"
+        assert data["user"]["email_verified"] is False  # Should exist in response
         
         # Email will be automatically cleaned up by auto_clean_mailpit fixture
         

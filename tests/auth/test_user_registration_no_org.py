@@ -19,7 +19,7 @@ class TestUserRegistrationWithoutOrganization:
     """Test user registration without organization assignment."""
     
     def test_user_registration_without_organization_id(self, client, db):
-        """Test that users can register without providing organization_id."""
+        """Test that users can register without providing organization_id and get access token."""
         user_data = {
             "email": "no-org@example.com",
             "password": "Password123!",
@@ -31,6 +31,17 @@ class TestUserRegistrationWithoutOrganization:
 
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
+
+        # Verify response includes access token for immediate login
+        response_data = response.json()
+        assert "access_token" in response_data
+        assert "token_type" in response_data
+        assert response_data["token_type"] == "bearer"
+        assert "user" in response_data
+        assert response_data["user"]["email"] == "no-org@example.com"
+        assert response_data["user"]["first_name"] == "NoOrg"
+        assert response_data["user"]["last_name"] == "User"
+        assert response_data["user"]["organization_id"] is None
 
         # Verify user was created without organization
         user = db.query(User).filter(User.email == "no-org@example.com").first()
@@ -98,7 +109,7 @@ class TestUserRegistrationWithoutOrganization:
             assert user.registration_type == RegistrationType.EMAIL
     
     def test_user_response_includes_null_organization_id(self, client):
-        """Test that API response correctly shows null organization_id."""
+        """Test that API response correctly shows null organization_id in LoginResponse format."""
         user_data = {
             "email": "response-null@example.com",
             "password": "Password123!",
@@ -110,11 +121,14 @@ class TestUserRegistrationWithoutOrganization:
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
         
-        user_response = response.json()
-        assert user_response["organization_id"] is None
-        assert user_response["email"] == "response-null@example.com"
-        assert user_response["first_name"] == "ResponseNull"
-        assert user_response["last_name"] == "User"
+        response_data = response.json()
+        assert "access_token" in response_data
+        assert "user" in response_data
+        user_data_response = response_data["user"]
+        assert user_data_response["organization_id"] is None
+        assert user_data_response["email"] == "response-null@example.com"
+        assert user_data_response["first_name"] == "ResponseNull"
+        assert user_data_response["last_name"] == "User"
 
 
 class TestGoogleOAuthRegistrationWithoutOrganization:
@@ -399,10 +413,96 @@ class TestJustInTimeOrganizationReadiness:
         response = client.post("/api/v1/auth/register", json=minimal_user_data)
         assert response.status_code == 201
         
-        user_response = response.json()
-        assert user_response["email"] == "frictionless@example.com"
-        assert user_response["organization_id"] is None
-        assert user_response["has_projects_access"] is True  # Should default to True
+        response_data = response.json()
+        assert "access_token" in response_data
+        assert "user" in response_data
+        user_data = response_data["user"]
+        assert user_data["email"] == "frictionless@example.com"
+        assert user_data["organization_id"] is None
+        assert user_data["has_projects_access"] is True  # Should default to True
+
+
+class TestDuplicateEmailRegistration:
+    """Test handling of duplicate email registration attempts."""
+    
+    def test_duplicate_email_registration_returns_helpful_error(self, client, db, test_rate_limits):
+        """Test that registering with existing email returns helpful error message with sign-in guidance."""
+        # First, register a user
+        user_data = {
+            "email": "existing@example.com",
+            "password": "Password123!",
+            "first_name": "Existing",
+            "last_name": "User",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+
+        # Verify user was created
+        user = db.query(User).filter(User.email == "existing@example.com").first()
+        assert user is not None
+
+        # Try to register with same email again
+        duplicate_user_data = {
+            "email": "existing@example.com",  # Same email
+            "password": "DifferentPassword123!",
+            "first_name": "Different",
+            "last_name": "Name",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=duplicate_user_data)
+        
+        # Should return 409 Conflict with helpful message
+        assert response.status_code == 409
+        response_data = response.json()
+        assert "detail" in response_data
+        
+        # The detail field contains our structured error response
+        error_detail = response_data["detail"]
+        assert isinstance(error_detail, dict)
+        
+        # Message should be helpful and guide user to sign in
+        message = error_detail["detail"]
+        assert "email is already registered" in message.lower()
+        assert message == "This email is already registered."
+        
+        # Should also include error_type for frontend handling
+        assert "error_type" in error_detail
+        assert error_detail["error_type"] == "email_already_exists"
+    
+    def test_duplicate_email_case_insensitive(self, client, db, test_rate_limits):
+        """Test that duplicate email detection is case insensitive."""
+        # Register with lowercase email
+        user_data = {
+            "email": "casetest@example.com",
+            "password": "Password123!",
+            "first_name": "Case",
+            "last_name": "Test",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=user_data)
+        assert response.status_code == 201
+
+        # Try to register with uppercase email
+        duplicate_user_data = {
+            "email": "CASETEST@EXAMPLE.COM",  # Same email, different case
+            "password": "Password123!",
+            "first_name": "Case",
+            "last_name": "Test",
+            "terms_agreement": True
+        }
+
+        response = client.post("/api/v1/auth/register", json=duplicate_user_data)
+        
+        # Should detect duplicate despite case difference
+        assert response.status_code == 409
+        response_data = response.json()
+        error_detail = response_data["detail"]
+        assert "email is already registered" in error_detail["detail"].lower()
+        assert error_detail["error_type"] == "email_already_exists"
 
 
 class TestUserOrganizationUtilityMethods:

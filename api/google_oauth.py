@@ -257,6 +257,7 @@ def process_google_oauth(
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
+            "id": user.id,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
@@ -264,5 +265,6 @@ def process_google_oauth(
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,  # Registration type
+            "role": user.role.value if user.role else None,
         },
     }

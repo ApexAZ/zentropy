@@ -291,3 +291,18 @@ export interface OrganizationValidationResult {
 	isValid: boolean;
 	errors: Record<string, string>;
 }
+
+// API Error types for better error handling
+export interface APIError {
+	detail:
+		| string
+		| {
+				detail: string;
+				error_type: string;
+		  };
+	message?: string;
+}
+
+export interface CustomError extends Error {
+	type?: string;
+}
