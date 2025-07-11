@@ -29,8 +29,12 @@ export default defineConfig({
 				'node_modules/',
 				'src/test-setup.ts',
 				'**/*.d.ts',
-				'**/*.config.{js,ts}',
+				'**/*.config.{js,ts,cjs}',
 				'**/dist/**',
+				'**/coverage/**',
+				'**/htmlcov/**',
+				'scripts/**',
+				'tests-e2e/**', // E2E tests not part of unit test coverage
 				'src/client/main.tsx', // Entry point - not testable
 				'src/client/types/index.ts' // Type definitions - no executable code
 			],

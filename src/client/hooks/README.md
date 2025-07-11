@@ -531,6 +531,10 @@ export function useApiData<T>(endpoint: string) {
 
 ## Related Documentation
 
-- [Component Documentation](../components/README.md)
-- [Service Layer Documentation](../services/README.md)
-- [Testing Guide](../../../tests/README.md)
+### Frontend Development
+- **[React Components](../components/README.md)** - UI components that consume these hooks
+- **[Service Layer](../services/README.md)** - API services that hooks integrate with
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../../tests/README.md)** - Hook testing with renderHook and comprehensive patterns
+- **[End-to-End Testing](../../../tests-e2e/README.md)** - User workflow validation using hook-powered components

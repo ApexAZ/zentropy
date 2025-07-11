@@ -8,6 +8,7 @@ Read the following documents and make sure you understand the standards:
 CLAUDE.md
 README.md
 tests/README.md
+tests-e2e/README.md
 architecture/README.md
 examples/README.md
 

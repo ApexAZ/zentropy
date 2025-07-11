@@ -103,3 +103,14 @@ locust -f performance/locustfile.py --host=http://localhost:3000 -u 10 -r 2 -t 3
 - Ensure API server is running on port 3000
 - Check database connection is working
 - Verify `/health` endpoint responds
+
+## Related Documentation
+
+### Core Testing Strategy
+- **[Unit & Integration Testing](../tests/README.md)** - Functional testing with pytest and vitest
+- **[End-to-End Testing](../tests-e2e/README.md)** - User workflow testing with Playwright
+- **[Test Coverage Matrix](../docs/testing/TestCoverage.md)** - Comprehensive test coverage across all layers
+
+### Architecture & Development
+- **[Main Project Guide](../README.md)** - Getting started and development workflow
+- **[Architecture Overview](../docs/architecture/README.md)** - System architecture and performance considerations

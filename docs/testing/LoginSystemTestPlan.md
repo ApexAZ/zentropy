@@ -43,6 +43,10 @@ This document provides a comprehensive test plan for Zentropy's secure authentic
 - ✅ User created with `AuthProvider.LOCAL`
 - ✅ Can log in with email/password
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 **Test Data**:
 ```json
 {
@@ -71,6 +75,10 @@ This document provides a comprehensive test plan for Zentropy's secure authentic
 - ✅ No password hash stored
 - ✅ Email marked as verified (Google pre-verified)
 - ✅ Can log in with Google OAuth
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 **Test Data**:
 ```json
@@ -103,6 +111,10 @@ This document provides a comprehensive test plan for Zentropy's secure authentic
 - ✅ User redirected to dashboard
 - ✅ Session established correctly
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 1.4: Google OAuth Login**
@@ -120,6 +132,10 @@ This document provides a comprehensive test plan for Zentropy's secure authentic
 - ✅ JWT token generated
 - ✅ User redirected to dashboard
 - ✅ Session established correctly
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -143,6 +159,10 @@ Authorization: Bearer {jwt_token}
 }
 ```
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 2.2: GOOGLE User Security Status**
@@ -162,6 +182,10 @@ Authorization: Bearer {jwt_token}
   "google_email": "testgoogle+oauth@gmail.com"
 }
 ```
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -210,6 +234,10 @@ GET /api/v1/users/me/security
 }
 ```
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 3.2: Verify HYBRID Login Methods**
@@ -229,6 +257,10 @@ GET /api/v1/users/me/security
 - ✅ Both login methods succeed
 - ✅ Same user ID and profile data
 - ✅ Same permissions and access rights
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -274,6 +306,10 @@ GET /api/v1/users/me/security
 }
 ```
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ## **Phase 4: Security Boundary Testing**
@@ -291,6 +327,10 @@ GET /api/v1/users/me/security
 - ❌ Error: `"Google email must match your account email"`
 - ✅ No linking occurs
 - ✅ User remains LOCAL-only
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -311,6 +351,10 @@ GET /api/v1/users/me/security
 - ❌ User B linking fails with `409 Conflict`
 - ❌ Error: `"This Google account is already linked to another user"`
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 4.3: Already Linked Prevention**
@@ -323,6 +367,10 @@ GET /api/v1/users/me/security
 **Expected Results**:
 - ❌ Status Code: `400 Bad Request`
 - ❌ Error: `"Google account is already linked to your account"`
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -344,6 +392,10 @@ GET /api/v1/users/me/security
 - ❌ Error: `"Invalid password"`
 - ✅ Google account remains linked
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 4.5: Cannot Unlink Without Password Backup**
@@ -357,6 +409,10 @@ GET /api/v1/users/me/security
 - ❌ Status Code: `400 Bad Request`
 - ❌ Error: `"Cannot unlink Google account: no password set. Set a password first."`
 - ✅ User cannot lock themselves out
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -387,6 +443,10 @@ GET /api/v1/users/me/security
 - ✅ LOCAL account remains secure
 - ✅ Attacker cannot access account
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 5.2: LOCAL Login Cannot Access Google Accounts**
@@ -404,6 +464,10 @@ GET /api/v1/users/me/security
 - ❌ Login fails (no password exists)
 - ✅ Cannot access Google account via password guessing
 - ✅ Must use proper Google OAuth
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -425,6 +489,10 @@ POST /api/v1/users/me/unlink-google
 - ✅ No account information exposed
 - ✅ No operations permitted
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 6.2: Invalid Token Handling**
@@ -440,6 +508,10 @@ Authorization: Bearer invalid_token_here
 **Expected Results**:
 - ❌ Status Code: `401 Unauthorized`
 - ❌ Error: `"Could not validate credentials"`
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -461,6 +533,10 @@ Authorization: Bearer invalid_token_here
 - ❌ Status Code: `400 Bad Request`
 - ❌ Error: `"Google OAuth error: Invalid Google token"`
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 7.2: Missing Request Data**
@@ -481,6 +557,10 @@ POST /api/v1/users/me/unlink-google
 - ❌ Status Code: `422 Unprocessable Entity`
 - ❌ Validation errors for required fields
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 7.3: Database Error Handling**
@@ -493,6 +573,10 @@ POST /api/v1/users/me/unlink-google
 - ❌ Error: `"Failed to link/unlink Google account"`
 - ✅ No data corruption
 - ✅ User can retry operation
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -511,6 +595,10 @@ POST /api/v1/users/me/unlink-google
 - ✅ No duplicate Google IDs in database
 - ✅ Consistent user state
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 8.2: Session Expiration**
@@ -525,6 +613,10 @@ POST /api/v1/users/me/unlink-google
 - ❌ Operations fail with `401 Unauthorized`
 - ✅ User must re-authenticate
 - ✅ Can continue after fresh login
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 
@@ -546,6 +638,10 @@ POST /api/v1/users/me/unlink-google
 - ✅ Login methods work as expected
 - ✅ Security status always accurate
 
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
+
 ---
 
 ### **Test 9.2: GOOGLE → HYBRID → LOCAL Journey**
@@ -561,6 +657,10 @@ POST /api/v1/users/me/unlink-google
 - ✅ Password setting converts to HYBRID
 - ✅ Can unlink Google after password set
 - ✅ Account remains accessible
+
+**Test Status**: 🟢 PASS | 🔴 FAIL | ⚪ NOT TESTED
+**Notes**: [Optional: Any issues, observations, or specific details]
+**Tested Date**: [YYYY-MM-DD]
 
 ---
 

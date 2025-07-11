@@ -24,6 +24,9 @@
 		"// === TESTING (Advanced) ===": "",
 		"test:python": "python3 -m pytest",
 		"test:frontend": "vitest run",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed",
 		"test:coverage": "npm run test:python:coverage && npm run test:frontend:coverage",
 		"test:python:coverage": "python3 -m pytest --cov=api --cov-report=html:htmlcov --cov-report=term-missing --cov-report=xml --cov-fail-under=80",
 		"test:frontend:coverage": "vitest run --coverage --coverage.thresholds.lines=80 --coverage.thresholds.functions=80 --coverage.thresholds.statements=80 --coverage.thresholds.branches=80",
@@ -53,6 +56,7 @@
 	},
 	"devDependencies": {
 		"@lhci/cli": "^0.15.1",
+		"@playwright/test": "^1.48.2",
 		"@tailwindcss/postcss": "^4.1.11",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/react": "^16.3.0",

@@ -359,6 +359,11 @@ View API documentation:
 
 ## Related Documentation
 
-- [API Routes Documentation](./routers/README.md)
-- [Testing Guide](../tests/README.md)
-- [Frontend Integration](../src/client/services/README.md)
+### API Development
+- **[API Routes Documentation](./routers/README.md)** - RESTful endpoint patterns and authentication
+- **[Frontend Integration](../src/client/services/README.md)** - Service layer patterns for API consumption
+
+### Testing & Quality
+- **[Unit & Integration Testing](../tests/README.md)** - Backend testing strategies with pytest and auto-isolation
+- **[Test Coverage Matrix](../docs/testing/TestCoverage.md)** - API endpoint test coverage across all layers
+- **[End-to-End Testing](../tests-e2e/README.md)** - Complete user workflow validation

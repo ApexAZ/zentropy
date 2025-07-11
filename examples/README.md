@@ -153,7 +153,9 @@ All examples demonstrate:
 
 When writing frontend tests, always use a robust mocking strategy for API calls. Instead of chaining multiple `.mockResolvedValueOnce()`, use `.mockImplementation()` to create a resilient mock that can handle multiple calls without breaking.
 
-For a detailed guide and examples, see the **Frontend API Mocking** section in the main [Testing & Quality Handbook](../tests/README.md).
+For detailed testing guides and examples:
+- **[Unit & Integration Testing](../tests/README.md)** - Frontend API mocking patterns, TDD practices, and quality pipeline
+- **[End-to-End Testing](../tests-e2e/README.md)** - Complete user workflow testing with Playwright
 
 ## Example Usage Snippets
 
@@ -244,9 +246,11 @@ When creating new examples:
 ## Getting Help
 
 ### Resources
-- **Architecture Guide**: `/docs/architecture/README.md`
+- **[Architecture Guide](../docs/architecture/README.md)** - System architecture and design patterns
+- **[Unit & Integration Testing](../tests/README.md)** - Testing strategies and quality pipeline
+- **[End-to-End Testing](../tests-e2e/README.md)** - Playwright browser testing
+- **[Test Coverage Matrix](../docs/testing/TestCoverage.md)** - Cross-layer test relationships
 - **Module Documentation**: Individual README files in each module
-- **Testing Guide**: `/tests/README.md`
 - **API Documentation**: Auto-generated at `http://localhost:3000/docs`
 
 ### Support

@@ -17,7 +17,7 @@ For a high-level overview of the project's architecture and tech stack, refer to
 - **Backend**: Python (FastAPI, SQLAlchemy, PostgreSQL, Uvicorn)
 - **Frontend**: TypeScript (React, Vite, TailwindCSS)
 - **Authentication**: JWT tokens, Google OAuth
-- **Quality Tools**: flake8, black, pyright, ESLint, Prettier, TypeScript Compiler, Husky, pytest, Vitest
+- **Quality Tools**: flake8, black, pyright, ESLint, Prettier, TypeScript Compiler, Husky, pytest, Vitest, Playwright
 
 For more specific details on each module, refer to their respective `README.md` files:
 
@@ -25,6 +25,8 @@ For more specific details on each module, refer to their respective `README.md` 
 - `src/client/components/README.md` (React Components)
 - `src/client/hooks/README.md` (React Hooks)
 - `src/client/services/README.md` (Frontend Services)
+- `tests/README.md` (Unit & Integration Testing)
+- `tests-e2e/README.md` (End-to-End Testing with Playwright)
 - `performance/README.md` (Performance Testing)
 
 ## Development Workflow
@@ -35,7 +37,8 @@ For a comprehensive overview of the development workflow and core commands, refe
 
 - `npm run dev`: Starts the full development environment.
 - `npm run quality`: Runs the full quality pipeline (lint, format, type-check, test) with zero tolerance for errors and warnings.
-- `npm run test`: Runs the complete test suite.
+- `npm run test`: Runs the complete unit and integration test suite.
+- `npm run test:e2e`: Runs end-to-end tests with Playwright.
 - `npm run fix`: Auto-fixes formatting and linting issues.
 
 ### Environment Variables (Summary)
@@ -60,7 +63,12 @@ The `SECRET_KEY` environment variable is crucial for JWT token security.
 
 - **Quality Obsessed MANDATORY TDD Practices - TESTS FIRST**: Write tests before code, every time, no exceptions.
 - **Zero Tolerance for Warnings**: The quality pipeline is configured to fail on any warnings (e.g., deprecation notices) to ensure code is always up-to-date and following best practices.
-- For full details on our quality process, including specific tooling and configurations, refer to `tests/README.md`.
+- **Three-Layer Testing Strategy**: Comprehensive testing across unit, integration, and end-to-end layers for maximum confidence.
+
+For full details on our quality process, including specific tooling and configurations:
+- **Unit & Integration Testing**: `tests/README.md` - Backend (pytest) and frontend (vitest) testing strategies
+- **End-to-End Testing**: `tests-e2e/README.md` - Playwright browser testing for complete user workflows
+- **Test Coverage Matrix**: `docs/testing/TestCoverage.md` - Cross-layer test coverage relationships
 
 ### 🔒 TEST ISOLATION STANDARD (MANDATORY)
 
@@ -168,41 +176,41 @@ For deeper dives, refer to these files. They are the project's memory.
 
 ## Current Session Recap
 
-### **Secure Account Linking Implementation Session** (2025-01-11 08:30:00 PST - Completed 2025-01-11 09:15:00 PST)
+### **Documentation Architecture & Quality Excellence Session** (2025-01-11 12:00:00 PST - Completed 2025-01-11 13:00:00 PST)
 
-- ✅ **Critical Security Fix** - Fixed Google OAuth vulnerability in `google_oauth.py:180` that allowed account takeover by adding proper auth provider validation with 409 Conflict responses
-- ✅ **Database Schema Enhancement** - Added `HYBRID` auth provider enum to support accounts with both email/password and Google OAuth authentication methods
-- ✅ **Secure API Implementation** - Created 3 industry-standard endpoints: `GET /api/v1/users/me/security` (status), `POST /api/v1/users/me/link-google` (link with email verification), `POST /api/v1/users/me/unlink-google` (unlink with password protection)
-- ✅ **Enhanced OAuth Logic** - Updated existing Google OAuth login to support HYBRID accounts while maintaining security boundaries between LOCAL and GOOGLE users
-- ✅ **Comprehensive Security Testing** - Built 17-test security suite covering account takeover prevention, email verification, password protection, authentication requirements, and all boundary conditions
-- ✅ **Complete Documentation** - Created comprehensive frontend test plan with 25+ test scenarios covering all user journeys, security boundaries, and edge cases
+- ✅ **Complete Documentation Audit** - Systematically audited all 13 README files across the project ensuring proper information placement and cross-reference tracing
+- ✅ **Information Architecture Cleanup** - Fixed feature-specific details scattered across implementation guides, centralized OAuth configuration details in TestCoverage.md master registry, established clear separation between "how to test" vs "what to test"
+- ✅ **Cross-Reference Standardization** - Enhanced all README files with consistent Related Documentation sections organized into logical categories (Development vs Testing & Quality), added descriptive link text explaining document coverage
+- ✅ **Testing Reference Integration** - Updated all documentation to reflect three-layer testing strategy with strategic references to unit/integration/E2E testing guides and coverage matrix
+- ✅ **Quality Pipeline Resolution** - Fixed vitest coverage configuration to exclude E2E test files and configuration files, achieved 92.65% frontend coverage and 91.77% backend coverage (both above 80% threshold)
+- ✅ **Session Management** - Properly archived previous session recap to SessionArchive.md following established compaction patterns with timestamp retention
 
 ### **Technical Implementation**
 
-- **Backend Security**: Account takeover prevention, email verification for linking, password verification for unlinking, structured error responses with proper HTTP status codes
-- **Database Model**: Added `HYBRID` auth provider supporting both LOCAL and GOOGLE authentication methods simultaneously  
-- **API Endpoints**: Secure account linking with JWT authentication, input validation via Pydantic schemas, comprehensive error handling
-- **Test Coverage**: 17 security-focused tests covering all attack vectors, boundary conditions, and user workflows with 100% pass rate
+- **Documentation Structure**: Established proper information hierarchy with implementation guides staying feature-agnostic and TestCoverage.md serving as the central feature registry
+- **Cross-Reference System**: Created consistent navigation patterns with organized sections and descriptive linking between related documentation
+- **Quality Configuration**: Updated vitest.config.ts to exclude tests-e2e/**, scripts/**, and configuration files from coverage calculations
+- **Archive Management**: Moved completed E2E Testing Infrastructure session to archive following established compaction format
 
-### **Security Achievements**
+### **Documentation Flow Validation**
 
-- **Account Takeover Prevention**: Google OAuth cannot hijack LOCAL accounts (409 Conflict with structured error response)
-- **Email Verification**: Account linking requires matching email addresses between Google and existing account
-- **Lockout Prevention**: Password verification required to unlink Google accounts, preventing users from losing access
-- **Authentication Requirements**: All account linking operations require valid JWT authentication
-- **Boundary Testing**: Comprehensive validation of security boundaries, duplicate prevention, and error conditions
+- **Entry Points**: README.md and CLAUDE.md provide organized testing sections with clear navigation paths
+- **Core Guides**: Enhanced tests/README.md and tests-e2e/README.md with strategic cross-references avoiding duplication
+- **Feature Registry**: TestCoverage.md serves as central mapping hub with OAuth configuration requirements and comprehensive status tracking
+- **Supporting Documentation**: All module READMEs now have consistent Related Documentation sections with logical categorization
 
-### **System State**: ✅ **SECURE ACCOUNT LINKING COMPLETE** - Full industry-standard secure account linking system implemented with comprehensive security testing and documentation
+### **System State**: ✅ **DOCUMENTATION ARCHITECTURE COMPLETE** - Clean, navigable documentation system with proper information placement, consistent cross-references, and scalable architecture for new features
 
 ### **Quality Metrics**
-- **Test Coverage**: 91.77% backend, 80.25% frontend (both above 80% threshold)
-- **Test Results**: 1,503 tests passing (571 backend + 932 frontend) with 0 failures
-- **Code Quality**: All linting, formatting, and type checking passes with zero warnings
-- **Security Validation**: All 17 security tests pass including critical account takeover prevention
+- **Test Coverage**: 91.77% backend, 92.65% frontend (both above 80% threshold)
+- **Test Results**: All quality pipeline checks pass (571 backend + 932 frontend tests)
+- **Documentation Coverage**: 13 README files audited and enhanced with proper cross-references
+- **Information Architecture**: Clean separation between implementation guides and feature registries
 
 ### **Available Next Steps**
-- 🔲 **Frontend AccountSecurity Component** - Build UI component for users to manage linked authentication methods
-- 🔲 **Audit Logging Enhancement** - Add comprehensive logging for all account linking/unlinking events for compliance and monitoring
+- 🔲 **OAuth Configuration** - Set up Google OAuth test credentials to enable OAuth test scenarios (Tests 1.2, 1.4, 2.2)
+- 🔲 **Additional Test Scenarios** - Implement remaining Login System Test Plan scenarios (Tests 3.1-5.2)
+- 🔲 **CI/CD Integration** - Configure GitHub Actions workflow to include E2E testing in automated pipeline
 
 ---
 

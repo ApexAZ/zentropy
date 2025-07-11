@@ -270,7 +270,22 @@ POST   /api/v1/teams/{id}/members/{user_id}    # Nested resources
 
 ## Testing Architecture
 
-Zentropy employs a robust testing architecture focusing on user behavior and test isolation. For detailed information on our testing philosophy, the auto-isolation system, and testing strategies, refer to `tests/README.md` and `GEMINI.md`.
+Zentropy employs a comprehensive three-layer testing architecture with strict quality standards:
+
+### Three-Layer Testing Strategy
+- **Unit Tests**: Fast, isolated testing of business logic (pytest/vitest)
+- **Integration Tests**: API contracts and component integration (FastAPI TestClient/React Testing Library)  
+- **End-to-End Tests**: Complete user workflows across browsers (Playwright)
+
+### Quality Standards
+- **TDD Mandatory**: Tests written before code, every time
+- **Zero Tolerance**: Quality pipeline fails on any warnings
+- **Test Isolation**: Isolated test databases prevent contamination
+
+For detailed information:
+- **[Unit & Integration Testing](../tests/README.md)**: Testing strategies, quality pipeline, and TDD practices
+- **[End-to-End Testing](../tests-e2e/README.md)**: Playwright browser testing and user workflow validation
+- **[Test Coverage Matrix](../docs/testing/TestCoverage.md)**: Cross-layer test relationships and coverage mapping
 
 ## Performance Architecture
 

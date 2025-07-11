@@ -727,7 +727,11 @@ static async createTeam(teamData: CreateTeamData): Promise<Team> {
 
 ## Related Documentation
 
-- [Hooks Documentation](../hooks/README.md)
-- [API Documentation](../../../api/README.md)
-- [Component Integration](../components/README.md)
-- [Testing Guide](../../../tests/README.md)
+### Frontend Development
+- **[React Hooks](../hooks/README.md)** - Custom hooks that consume these services
+- **[React Components](../components/README.md)** - UI components integrated with services
+- **[Backend API](../../../api/README.md)** - Backend endpoints these services consume
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../../tests/README.md)** - Service layer testing with mock strategies and integration patterns
+- **[End-to-End Testing](../../../tests-e2e/README.md)** - Complete API-to-UI workflow validation

@@ -460,7 +460,11 @@ def test_rate_limiting(client):
 
 ## Related Documentation
 
-- [Core API Documentation](../README.md)
-- [Authentication Guide](../auth.py)
-- [Database Models](../database.py)
-- [Testing Guide](../../tests/README.md)
+### API Development
+- **[Core API Documentation](../README.md)** - Backend architecture and component overview
+- **[Database Models](../database.py)** - SQLAlchemy models and relationships
+- **[Frontend Services](../../src/client/services/README.md)** - How frontend consumes these APIs
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../tests/README.md)** - Backend API testing with pytest auto-isolation
+- **[Test Coverage Matrix](../../docs/testing/TestCoverage.md)** - Router endpoint test coverage status

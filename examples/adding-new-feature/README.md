@@ -933,3 +933,16 @@ npm run test:frontend -- src/client/components/__tests__/ProjectCard.test.tsx
 - Accessibility considerations
 
 This example demonstrates the complete Zentropy development workflow while maintaining all established quality and consistency standards.
+
+## Related Documentation
+
+### Core Development Guides
+- **[Backend API](../../api/README.md)** - FastAPI patterns and database models
+- **[Frontend Components](../../src/client/components/README.md)** - Component architecture and design system
+- **[React Hooks](../../src/client/hooks/README.md)** - Custom hook patterns for state management
+- **[Service Layer](../../src/client/services/README.md)** - API integration patterns
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../tests/README.md)** - Auto-isolation testing patterns and comprehensive strategies
+- **[Test Coverage Matrix](../../docs/testing/TestCoverage.md)** - Understanding test coverage across all layers
+- **[End-to-End Testing](../../tests-e2e/README.md)** - Complete workflow testing with Playwright

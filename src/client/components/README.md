@@ -575,6 +575,11 @@ When updating existing components:
 
 ## Related Documentation
 
-- [Hooks Documentation](../hooks/README.md)
-- [Testing Guide](../../../tests/README.md)
-- [Design System](../../../CLAUDE.md#design-system--semantic-color-variables)
+### Frontend Development
+- **[React Hooks](../hooks/README.md)** - Custom hooks for state management and API interactions
+- **[Service Layer](../services/README.md)** - Frontend services for API integration
+- **[Design System](../../../CLAUDE.md#design-system--semantic-color-variables)** - Semantic color system and styling standards
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../../tests/README.md)** - Frontend component testing with vitest and React Testing Library
+- **[End-to-End Testing](../../../tests-e2e/README.md)** - Complete user workflow testing across components

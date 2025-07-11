@@ -543,3 +543,14 @@ import { Badge } from './atoms/Badge';
 - Well-documented usage
 
 This Badge component demonstrates how to create atomic components that integrate seamlessly with the Zentropy design system while maintaining flexibility and reusability.
+
+## Related Documentation
+
+### Frontend Development
+- **[React Components](../../src/client/components/README.md)** - Component architecture patterns and atomic design principles
+- **[Design System](../../CLAUDE.md#design-system--semantic-color-variables)** - Semantic color system and styling standards
+- **[React Hooks](../../src/client/hooks/README.md)** - Custom hooks for component state management
+
+### Testing & Quality
+- **[Unit & Integration Testing](../../tests/README.md)** - Component testing with React Testing Library and user interaction patterns
+- **[End-to-End Testing](../../tests-e2e/README.md)** - Complete user workflow testing across component interactions

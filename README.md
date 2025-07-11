@@ -113,13 +113,25 @@ We use **Husky** to manage pre-commit hooks. When you commit your changes, a sub
 
 ### Running Tests
 
-The project has a comprehensive test suite covering both the backend and frontend. To run all tests, use the following command:
+The project has a comprehensive three-layer testing strategy covering unit, integration, and end-to-end tests:
 
 ```bash
-# Run all Python and React tests
+# Run unit and integration tests (fast feedback)
 npm run test
+
+# Run end-to-end tests (complete user workflows)
+npm run test:e2e
+
+# Run complete quality pipeline (all tests + quality checks)
+npm run quality
 ```
-This command executes the `pytest` suite for the backend and the `vitest` suite for the frontend.
+
+**Testing Layers:**
+- **Unit & Integration Tests**: `pytest` (backend) and `vitest` (frontend) for fast feedback
+- **End-to-End Tests**: `Playwright` for complete user workflow validation across browsers
+- **Quality Pipeline**: Comprehensive validation including linting, formatting, type-checking, and all tests
+
+For detailed testing strategies and guidelines, see our [Testing Documentation](#testing-documentation).
 
 ## Email Testing with Mailpit
 
@@ -159,7 +171,7 @@ This project uses a modern, decoupled architecture with a Python backend and a R
 
 - **Backend**: Python, FastAPI, SQLAlchemy, PostgreSQL, Redis
 - **Frontend**: React, TypeScript, Vite, TailwindCSS
-- **Development & Testing**: Docker, `pytest` for backend tests, `vitest` for frontend tests
+- **Development & Testing**: Docker, Three-layer testing with `pytest`, `vitest`, and `Playwright`
 
 ### High-Level Architecture
 
@@ -176,7 +188,8 @@ The codebase is organized into distinct directories with clear responsibilities:
 ```
 /api/           # Python FastAPI backend
 /src/client/    # React TypeScript frontend
-/tests/         # Backend tests
+/tests/         # Unit and integration tests
+/tests-e2e/     # End-to-end tests with Playwright
 /scripts/       # Development and utility scripts
 /docs/          # Project-wide documentation
 /examples/      # End-to-end feature examples
@@ -186,14 +199,23 @@ The codebase is organized into distinct directories with clear responsibilities:
 
 This project includes extensive documentation to help you understand the architecture, code, and development patterns.
 
+### Core Architecture & Development
 - **[Architecture Deep Dive](./docs/architecture/README.md)**: A comprehensive analysis of the system architecture, technology stack, and design patterns.
 - **[Database Schema](./docs/database-erd.md)**: The complete Entity Relationship Diagram (ERD) and data model details.
-- **[Testing Guide](./tests/README.md)**: An in-depth look at our testing infrastructure and how to write tests.
 - **[API Module](./api/README.md)**: Documentation for the backend FastAPI application.
 - **[API Routers](./api/routers/README.md)**: RESTful endpoint documentation with authentication and validation patterns.
-- **[UI Components](./src/client/components/README.md)**: A guide to the reusable React components.
+
+### Testing Documentation
+- **[Unit & Integration Testing](./tests/README.md)**: Comprehensive guide to backend (pytest) and frontend (vitest) testing strategies, quality pipeline, and TDD practices.
+- **[End-to-End Testing](./tests-e2e/README.md)**: Playwright browser testing for complete user workflows and cross-system validation.
+- **[Test Coverage Matrix](./docs/testing/TestCoverage.md)**: Cross-layer test coverage mapping showing relationships between unit, integration, and E2E tests.
+
+### Frontend Development
+- **[UI Components](./src/client/components/README.md)**: A guide to the reusable React components and design system.
 - **[React Hooks](./src/client/hooks/README.md)**: Custom hooks for state management, API interactions, and business logic.
 - **[Service Layer](./src/client/services/README.md)**: Frontend services that bridge React components with backend APIs.
+
+### Examples & Guides
 - **[Examples Overview](./examples/README.md)**: Complete working examples of extending the Zentropy application.
 - **[Adding New Features](./examples/adding-new-feature/README.md)**: A step-by-step guide to adding a new CRUD feature from the database to the UI.
 - **[Creating UI Components](./examples/ui-component/README.md)**: Learn how to build reusable components that follow our design system.

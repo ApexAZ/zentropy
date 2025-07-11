@@ -1,6 +1,6 @@
 # Zentropy Testing & Quality Handbook
 
-**Purpose**: This is the **single source of truth** for all testing and code quality standards in the Zentropy project.
+**Purpose**: This is the **comprehensive guide** for unit and integration testing in the Zentropy project, covering backend (pytest) and frontend (vitest) testing strategies.
 
 ## 1. Quality Philosophy: Test What Can Break
 
@@ -288,3 +288,19 @@ npm run format
 # Run the full type-checking suite
 npm run type-check
 ```
+
+## Related Testing Documentation
+
+### Complete Testing Strategy
+For a comprehensive view of all testing layers in Zentropy:
+- **[Test Coverage Matrix](../docs/testing/TestCoverage.md)** - Cross-layer test coverage mapping showing unit, integration, and E2E test relationships
+
+### End-to-End Testing
+For complete user workflow testing:
+- **[E2E Testing Guide](../tests-e2e/README.md)** - Playwright-based browser testing for user workflows and cross-system integration
+- **Commands**: `npm run test:e2e`, `npm run test:e2e:ui`
+
+### When to Use Each Testing Layer
+- **Unit Tests** (this guide): Business logic, individual functions, component behavior
+- **Integration Tests** (this guide): API contracts, database interactions, component integration
+- **E2E Tests** (see above): Complete user journeys, cross-browser validation, email workflows
