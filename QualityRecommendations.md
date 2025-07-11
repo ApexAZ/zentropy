@@ -41,7 +41,6 @@ This document outlines the actionable tasks derived from the findings in the `Qu
     - `api/auth.py` (90% - 9/89 lines missing)
     - `api/database.py` (90% - 40/390 lines missing)
   - **Excluded from targets:**
-    - `api/migration_phase6.py` (0% - migration script, testing not required)
 
 ### Task 1.2: Organize Test Directory Structure
 

@@ -135,7 +135,7 @@ class CalendarEntryBase(BaseModel):
 
 
 class CalendarEntryCreate(CalendarEntryBase):
-    user_id: UUID
+    pass  # user_id is automatically set from current_user
 
 
 class CalendarEntryUpdate(BaseModel):
