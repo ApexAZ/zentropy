@@ -30,7 +30,8 @@ export default defineConfig({
 				'src/test-setup.ts',
 				'**/*.d.ts',
 				'**/*.config.{js,ts}',
-				'**/dist/**'
+				'**/dist/**',
+				'src/client/main.tsx' // Entry point - not testable
 			],
 			thresholds: {
 				global: {

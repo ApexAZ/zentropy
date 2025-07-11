@@ -146,7 +146,6 @@ def change_password(
     current_user: database.User = Depends(get_current_active_user),
 ) -> MessageResponse:
     """Change current user's password"""
-    # Verify current password
     if not verify_password(
         password_update.current_password, str(current_user.password_hash)
     ):
@@ -155,25 +154,7 @@ def change_password(
             detail="Current password is incorrect",
         )
 
-    # Check password reuse against history
-    password_history = (
-        db.query(database.PasswordHistory)
-        .filter(database.PasswordHistory.user_id == current_user.id)
-        .order_by(database.PasswordHistory.created_at.desc())
-        .limit(5)
-        .all()
-    )
-
-    for history_entry in password_history:
-        if verify_password(
-            password_update.new_password, str(history_entry.password_hash)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password has been used recently and cannot be reused",
-            )
-
-    # Validate new password
+    # Validate new password strength before anything else
     user_info = {
         "email": current_user.email,
         "first_name": current_user.first_name,
@@ -181,26 +162,54 @@ def change_password(
     }
     validate_password_strength(password_update.new_password, user_info)
 
-    # Update password
+    # Check for reuse against the current password
+    if verify_password(password_update.new_password, str(current_user.password_hash)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password cannot be the same as the current password.",
+        )
+
+    # Check for reuse against the 4 most recent passwords in history.
+    # Combined with the current password, this prevents reuse of the last 5 passwords.
+    password_history = (
+        db.query(database.PasswordHistory)
+        .filter(database.PasswordHistory.user_id == current_user.id)
+        .order_by(database.PasswordHistory.created_at.desc())
+        .limit(4)
+        .all()
+    )
+    for history_entry in password_history:
+        if verify_password(
+            password_update.new_password, str(history_entry.password_hash)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password has been used recently and cannot be reused.",
+            )
+
+    # If all checks pass, proceed with the update.
+    old_password_hash = current_user.password_hash
     new_password_hash = get_password_hash(password_update.new_password)
+
     current_user.password_hash = new_password_hash
     current_user.updated_at = datetime.now(timezone.utc)
 
-    # Add to password history
-    password_history_entry = database.PasswordHistory(
-        user_id=current_user.id, password_hash=new_password_hash
-    )
-    db.add(password_history_entry)
+    # Add the OLD password to history
+    if old_password_hash:
+        password_history_entry = database.PasswordHistory(
+            user_id=current_user.id, password_hash=old_password_hash
+        )
+        db.add(password_history_entry)
 
-    # Clean up old password history (keep only 5 most recent)
+    # Clean up old password history, keeping the 4 most recent entries.
+    # The 5th password is the current one in the users table.
     subquery = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == current_user.id)
         .order_by(database.PasswordHistory.created_at.desc())
-        .offset(5)
+        .offset(4)
         .scalar_subquery()
     )
-
     db.query(database.PasswordHistory).filter(
         database.PasswordHistory.id.in_(subquery)
     ).delete(synchronize_session=False)
