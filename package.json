@@ -23,7 +23,7 @@
 		"test:python:coverage": "python3 -m pytest --cov=api --cov-report=html:htmlcov --cov-report=term-missing --cov-report=xml --cov-fail-under=80",
 		"test:frontend:coverage": "vitest run --coverage --coverage.thresholds.lines=80 --coverage.thresholds.functions=80 --coverage.thresholds.statements=80 --coverage.thresholds.branches=80",
 		"test:roles": "python3 -m pytest tests/test_role_system.py::TestRoleEnums tests/test_role_system.py::TestRoleHierarchy tests/test_role_system.py::TestRoleSystemIntegration -v",
-		"test:pre-commit": "python3 -m pytest tests/test_startup.py -v && vitest run",
+		"test:pre-commit": "python3 -m pytest tests/core/test_startup.py -v && vitest run",
 		"// === QUALITY (Advanced) ===": "",
 		"lint:python": "python3 -m flake8 api/ --max-line-length=88 --extend-ignore=E203,W503",
 		"lint:typescript": "eslint src/client/**/*.{ts,tsx} --fix",

@@ -61,15 +61,7 @@ const mockGoogleOAuth = {
 };
 
 // Email Verification Mock Objects and Helpers
-const mockUseEmailVerification = vi.fn();
-
-const resetEmailVerificationMock = (): void => {
-	mockUseEmailVerification.mockClear();
-};
-
-const setEmailVerificationDefault = (): void => {
-	mockUseEmailVerification.mockImplementation(() => {});
-};
+// Mock is handled via vi.mock() and accessed in tests via vi.mocked()
 
 // ================================
 // VI.MOCK DECLARATIONS
@@ -86,9 +78,7 @@ vi.mock("../hooks/useGoogleOAuth", () => ({
 }));
 
 // Mock useEmailVerification hook
-vi.mock("../hooks/useEmailVerification", () => ({
-	useEmailVerification: mockUseEmailVerification
-}));
+vi.mock("../hooks/useEmailVerification");
 
 // Mock page components
 vi.mock("../pages/HomePage", () => ({
@@ -537,13 +527,17 @@ describe("App - Google OAuth Integration (TDD)", () => {
 });
 
 describe("App - General Rendering and Routing Logic", () => {
-	beforeEach(() => {
+	let mockUseEmailVerification: ReturnType<typeof vi.fn>;
+
+	beforeEach(async () => {
 		vi.clearAllMocks();
 		// Reset auth state using centralized helper
 		resetAuthMock();
-		// Reset email verification mock using centralized helper
-		resetEmailVerificationMock();
-		setEmailVerificationDefault();
+
+		// Get the mocked function
+		const { useEmailVerification } = await import("../hooks/useEmailVerification");
+		mockUseEmailVerification = vi.mocked(useEmailVerification);
+		mockUseEmailVerification.mockReturnValue(undefined);
 	});
 
 	afterEach(() => {

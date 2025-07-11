@@ -207,6 +207,43 @@ def admin_user(db) -> "User":
 
 
 @pytest.fixture(scope="function")
+def user_with_known_password(db) -> "User":
+    """
+    Creates and returns a test user with a known password for password-related testing.
+    
+    Password: "secret123"
+    This fixture is specifically designed for tests that need to verify current passwords,
+    change passwords, or test password-related functionality.
+    """
+    from api.auth import get_password_hash
+    from api.database import User, UserRole, RegistrationType, AuthProvider
+    
+    known_password = "secret123"
+    
+    user = User(
+        email="passwordtest@example.com",
+        first_name="Password",
+        last_name="TestUser", 
+        password_hash=get_password_hash(known_password),
+        role=UserRole.BASIC_USER,
+        is_active=True,
+        email_verified=True,
+        has_projects_access=True,
+        registration_type=RegistrationType.EMAIL,
+        auth_provider=AuthProvider.LOCAL
+    )
+    
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Attach the known password for easy access in tests
+    user.known_password = known_password
+    
+    return user
+
+
+@pytest.fixture(scope="function")
 def auth_headers(current_user) -> dict:
     """
     Creates authentication headers for API requests.

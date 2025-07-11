@@ -193,16 +193,17 @@ def change_password(
     db.add(password_history_entry)
 
     # Clean up old password history (keep only 5 most recent)
-    old_entries = (
-        db.query(database.PasswordHistory)
+    subquery = (
+        db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == current_user.id)
         .order_by(database.PasswordHistory.created_at.desc())
         .offset(5)
-        .all()
+        .scalar_subquery()
     )
 
-    for entry in old_entries:
-        db.delete(entry)
+    db.query(database.PasswordHistory).filter(
+        database.PasswordHistory.id.in_(subquery)
+    ).delete(synchronize_session=False)
 
     db.commit()
 
