@@ -31,7 +31,8 @@ export default defineConfig({
 				'**/*.d.ts',
 				'**/*.config.{js,ts}',
 				'**/dist/**',
-				'src/client/main.tsx' // Entry point - not testable
+				'src/client/main.tsx', // Entry point - not testable
+				'src/client/types/index.ts' // Type definitions - no executable code
 			],
 			thresholds: {
 				global: {
