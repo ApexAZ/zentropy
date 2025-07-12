@@ -32,16 +32,11 @@ class TestUserRegistrationWithoutOrganization:
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
 
-        # Verify response includes access token for immediate login
+        # Verify response includes verification message (no automatic login)
         response_data = response.json()
-        assert "access_token" in response_data
-        assert "token_type" in response_data
-        assert response_data["token_type"] == "bearer"
-        assert "user" in response_data
-        assert response_data["user"]["email"] == "no-org@example.com"
-        assert response_data["user"]["first_name"] == "NoOrg"
-        assert response_data["user"]["last_name"] == "User"
-        assert response_data["user"]["organization_id"] is None
+        assert "message" in response_data
+        assert "verify" in response_data["message"].lower()
+        assert "no-org@example.com" in response_data["message"]
 
         # Verify user was created without organization
         user = db.query(User).filter(User.email == "no-org@example.com").first()
@@ -122,13 +117,9 @@ class TestUserRegistrationWithoutOrganization:
         assert response.status_code == 201
         
         response_data = response.json()
-        assert "access_token" in response_data
-        assert "user" in response_data
-        user_data_response = response_data["user"]
-        assert user_data_response["organization_id"] is None
-        assert user_data_response["email"] == "response-null@example.com"
-        assert user_data_response["first_name"] == "ResponseNull"
-        assert user_data_response["last_name"] == "User"
+        assert "message" in response_data
+        assert "verify" in response_data["message"].lower()
+        assert "response-null@example.com" in response_data["message"]
 
 
 class TestGoogleOAuthRegistrationWithoutOrganization:
@@ -414,12 +405,9 @@ class TestJustInTimeOrganizationReadiness:
         assert response.status_code == 201
         
         response_data = response.json()
-        assert "access_token" in response_data
-        assert "user" in response_data
-        user_data = response_data["user"]
-        assert user_data["email"] == "frictionless@example.com"
-        assert user_data["organization_id"] is None
-        assert user_data["has_projects_access"] is True  # Should default to True
+        assert "message" in response_data
+        assert "verify" in response_data["message"].lower()
+        assert "frictionless@example.com" in response_data["message"]
 
 
 class TestDuplicateEmailRegistration:

@@ -198,7 +198,7 @@ class TestGoogleOAuthRegistrationWithType:
 class TestRegistrationTypeInResponses:
     """Test that registration_type is included in API responses."""
 
-    def test_user_response_includes_registration_type(self, client):
+    def test_user_response_includes_registration_type(self, client, db):
         """Test that user API responses include registration_type field."""
         # Create a user first
         user_data = {
@@ -212,11 +212,25 @@ class TestRegistrationTypeInResponses:
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
         
-        # Registration now returns LoginResponse format with access_token and user
+        # Registration now returns message only (security fix)
         response_data = response.json()
-        assert "access_token" in response_data
-        assert "user" in response_data
-        user_data_response = response_data["user"]
+        assert "message" in response_data
+        
+        # Verify the user after registration to test login
+        from api.database import User
+        user = db.query(User).filter(User.email == "response@example.com").first()
+        user.email_verified = True  # Manually verify for testing
+        db.commit()
+        
+        # Test registration type via login endpoint
+        login_response = client.post("/api/v1/auth/login-json", json={
+            "email": "response@example.com",
+            "password": "Password123!"
+        })
+        assert login_response.status_code == 200
+        login_data = login_response.json()
+        assert "user" in login_data
+        user_data_response = login_data["user"]
         assert "registration_type" in user_data_response
         assert user_data_response["registration_type"] == "email"
 

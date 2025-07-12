@@ -54,8 +54,8 @@ export default defineConfig({
 	},
 	
 	// Environment setup for tests
-	globalSetup: require.resolve("./tests-e2e/global-setup.ts"),
-	globalTeardown: require.resolve("./tests-e2e/global-teardown.ts"),
+	globalSetup: "./tests-e2e/global-setup.ts",
+	globalTeardown: "./tests-e2e/global-teardown.ts",
 	
 	// Project configurations for different browsers
 	projects: [

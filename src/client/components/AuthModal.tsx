@@ -4,6 +4,7 @@ import type { AuthUser, SignInCredentials, SignUpData, CustomError } from "../ty
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
+import { setPendingVerification } from "../utils/pendingVerification";
 
 type AuthMode = "signin" | "signup" | "method-selection";
 
@@ -171,14 +172,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				has_projects_access: values.has_projects_access
 			};
 
-			const { token, user } = await AuthService.signUp(userData);
-			auth.login(token, user, false);
+			const { message } = await AuthService.signUp(userData);
 
-			setToast({ message: "Registration successful!", type: "success" });
+			// Set pending verification state so user can resend for 24 hours
+			setPendingVerification(values.email);
+
+			setToast({ message, type: "success" });
+
+			// After successful registration, close modal and let parent handle success
+			// This ensures proper app navigation flow
 			setTimeout(() => {
-				onSuccess();
-				onClose();
-			}, 1000);
+				onSuccess(); // Call parent callback to close modal
+				onClose(); // Ensure modal is closed
+			}, 2000);
 		}
 	});
 
@@ -597,9 +603,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								<div className={passwordValidation.requirements.symbol ? "text-success" : "text-error"}>
 									✓ One special character
 								</div>
-								<div className={passwordValidation.requirements.match ? "text-success" : "text-error"}>
-									✓ Passwords match
-								</div>
+								{signUpForm.values.confirm_password && (
+									<div
+										className={
+											passwordValidation.requirements.match ? "text-success" : "text-error"
+										}
+									>
+										✓ Passwords match
+									</div>
+								)}
 							</div>
 						)}
 						{signUpForm.touched.password && signUpForm.errors.password && (

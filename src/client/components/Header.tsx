@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import NavigationPanel from "./NavigationPanel";
 import FlyoutNavigation from "./FlyoutNavigation";
 import EmailVerificationResendButton from "./EmailVerificationResendButton";
 import type { AuthUser } from "../types";
+import { getPendingVerification } from "../utils/pendingVerification";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
@@ -23,6 +24,74 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowSignIn, auth }) => {
+	const [pendingVerification, setPendingVerificationState] = useState(getPendingVerification());
+
+	// Check for pending verification state changes
+	useEffect(() => {
+		const checkPendingVerification = () => {
+			setPendingVerificationState(getPendingVerification());
+		};
+
+		// Check immediately
+		checkPendingVerification();
+
+		// Set up periodic checking to handle expiration (every minute)
+		const interval = setInterval(checkPendingVerification, 60000);
+
+		// Listen for custom pending verification events (immediate updates)
+		const handlePendingVerificationChange = () => {
+			checkPendingVerification();
+		};
+
+		// Listen for storage changes (if user opens multiple tabs)
+		const handleStorageChange = (e: StorageEvent) => {
+			if (e.key === "pendingEmailVerification") {
+				checkPendingVerification();
+			} else if (e.key === "appTabFocusRequest") {
+				// Another tab is requesting this tab to focus
+				try {
+					window.focus();
+					// Bring tab to front if possible
+					if (document.hidden) {
+						// Tab is in background, try to make it visible
+						window.focus();
+					}
+				} catch (error) {
+					// Silently handle focus errors (some browsers restrict this)
+					console.debug("Could not focus tab:", error);
+				}
+			} else if (e.key === "appTabClosureRequest") {
+				// Another tab is requesting this tab to close (for clean email verification flow)
+				try {
+					// Only close if this tab doesn't have any user data that would be lost
+					// Since this is just the home page or verification pages, it's safe to close
+					window.close();
+				} catch (error) {
+					// Silently handle closure errors (some browsers restrict this)
+					console.debug("Could not close tab:", error);
+				}
+			}
+		};
+
+		window.addEventListener("pendingVerificationChanged", handlePendingVerificationChange);
+		window.addEventListener("storage", handleStorageChange);
+
+		return () => {
+			clearInterval(interval);
+			window.removeEventListener("pendingVerificationChanged", handlePendingVerificationChange);
+			window.removeEventListener("storage", handleStorageChange);
+		};
+	}, []);
+
+	// Determine if we should show the email verification notice
+	const shouldShowVerificationNotice =
+		// Authenticated user with unverified email
+		(auth.isAuthenticated && auth.user && !auth.user.email_verified) ||
+		// OR unauthenticated user with pending verification
+		(!auth.isAuthenticated && pendingVerification);
+
+	const verificationEmail = auth.isAuthenticated && auth.user ? auth.user.email : pendingVerification?.email || "";
+
 	return (
 		<header className="border-layout-background bg-content-background flex w-full items-center border-b px-8 py-4 shadow-sm">
 			{/* Left side - Flyout navigation */}
@@ -43,10 +112,10 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 			{/* Right side - Email verification + Auth navigation */}
 			<div className="flex flex-1 items-center justify-end gap-4">
 				{/* Email verification notice */}
-				{auth.isAuthenticated && auth.user && !auth.user.email_verified && (
+				{shouldShowVerificationNotice && verificationEmail && (
 					<div className="flex items-center gap-3">
 						<span className="text-warning text-lg font-medium">Email verification required</span>
-						<EmailVerificationResendButton userEmail={auth.user.email} />
+						<EmailVerificationResendButton userEmail={verificationEmail} />
 					</div>
 				)}
 

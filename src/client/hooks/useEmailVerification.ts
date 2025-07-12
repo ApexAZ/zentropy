@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "../utils/logger";
+import { clearPendingVerification, requestAppTabClosure } from "../utils/pendingVerification";
 
 interface EmailVerificationState {
 	isVerifying: boolean;
@@ -84,8 +85,10 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 				onRedirectHome?.();
 
 				if (response.ok) {
-					// Success
+					// Success - clear pending verification state
 					logger.info("Email verification successful");
+					clearPendingVerification();
+
 					setState(prev => ({
 						...prev,
 						isVerifying: false,
@@ -94,6 +97,10 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 
 					const successMessage = "Email verified successfully! Please sign in.";
 					onSuccess?.(successMessage);
+
+					// Close any existing app tabs to ensure clean single-tab experience
+					requestAppTabClosure();
+
 					onShowSignIn?.();
 				} else {
 					// API Error
@@ -108,14 +115,14 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 					}));
 
 					onError?.(errorMessage);
-					onShowSignIn?.();
+					// Do not open login modal on verification failure - keep user on main page with resend button
 				}
 			} catch (error) {
 				// Network Error
 				logger.error("Network error during verification", { error });
 
 				// Get current callbacks from ref
-				const { onError, onRedirectHome, onShowSignIn } = callbacksRef.current;
+				const { onError, onRedirectHome } = callbacksRef.current;
 
 				// Clean URL in case of network error
 				window.history.pushState({}, "", "/");
@@ -129,7 +136,7 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 				}));
 
 				onError?.(errorMessage);
-				onShowSignIn?.();
+				// Do not open login modal on network error - keep user on main page with resend button
 			}
 		},
 		[] // No dependencies - use callbacksRef.current inside the function

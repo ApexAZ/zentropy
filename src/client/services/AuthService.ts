@@ -42,7 +42,7 @@ export class AuthService {
 	/**
 	 * Sign up with email registration
 	 */
-	static async signUp(userData: SignUpData): Promise<{ token: string; user: AuthUser }> {
+	static async signUp(userData: SignUpData): Promise<{ message: string }> {
 		const response = await fetch("/api/v1/auth/register", {
 			method: "POST",
 			headers: {
@@ -70,16 +70,10 @@ export class AuthService {
 			throw new Error((errorData.detail as string) || "Registration failed");
 		}
 
-		const data: AuthResponse = await response.json();
+		const data: { message: string } = await response.json();
 
 		return {
-			token: data.access_token,
-			user: {
-				email: data.user.email,
-				name: `${data.user.first_name} ${data.user.last_name}`,
-				has_projects_access: data.user.has_projects_access,
-				email_verified: data.user.email_verified
-			}
+			message: data.message
 		};
 	}
 

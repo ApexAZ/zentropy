@@ -145,10 +145,10 @@ describe("AuthModal", () => {
 
 	it("should allow user to register with valid information", async () => {
 		const user = userEvent.setup();
-		const mockToken = "mock-token";
-		const mockUser = { id: "1", name: "Test User", email: "test@example.com" };
+		const mockMessage =
+			"Registration successful! Please check your email at john@example.com to verify your account before logging in.";
 
-		(AuthService.signUp as any).mockResolvedValue({ token: mockToken, user: mockUser });
+		(AuthService.signUp as any).mockResolvedValue({ message: mockMessage });
 
 		render(<AuthModal {...mockProps} initialMode="signup" />);
 
@@ -162,7 +162,7 @@ describe("AuthModal", () => {
 
 		await user.click(screen.getByRole("button", { name: /create account/i }));
 
-		// Verify service call and authentication
+		// Verify service call - no automatic login expected
 		await waitFor(() => {
 			expect(AuthService.signUp).toHaveBeenCalledWith({
 				first_name: "John",
@@ -174,9 +174,8 @@ describe("AuthModal", () => {
 			});
 		});
 
-		await waitFor(() => {
-			expect(mockAuth.login).toHaveBeenCalledWith(mockToken, mockUser, false);
-		});
+		// Verify no automatic login occurs (security fix)
+		expect(mockAuth.login).not.toHaveBeenCalled();
 	});
 
 	it("should show validation errors for required fields", async () => {

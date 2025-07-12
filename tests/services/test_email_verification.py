@@ -66,12 +66,12 @@ class TestEmailVerificationEndpoints:
         
         response = client.post("/api/v1/auth/register", json=user_data)
         
-        # Should succeed but user should be unverified
+        # Should succeed and return verification message
         assert response.status_code == 201
         data = response.json()
-        assert "user" in data
-        assert data["user"]["email"] == f"newuser{random_id}@example.com"
-        assert data["user"]["email_verified"] is False  # Should exist in response
+        assert "message" in data
+        assert "verify" in data["message"].lower()
+        assert f"newuser{random_id}@example.com" in data["message"]
         
         # Email will be automatically cleaned up by auto_clean_mailpit fixture
         

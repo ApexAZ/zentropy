@@ -19,6 +19,9 @@ const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps
 			await AuthService.sendEmailVerification(userEmail);
 			setShowSuccess(true);
 
+			// Log success for debugging
+			logger.info("Verification email resent successfully", { email: userEmail });
+
 			// Hide success message after 3 seconds
 			setTimeout(() => setShowSuccess(false), 3000);
 		} catch (error) {
@@ -30,7 +33,7 @@ const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps
 	};
 
 	if (showSuccess) {
-		return <span className="text-success text-sm font-medium">Verification email sent!</span>;
+		return <span className="text-success text-sm font-medium">Verification email sent to {userEmail}!</span>;
 	}
 
 	return (

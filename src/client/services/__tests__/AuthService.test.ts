@@ -124,21 +124,21 @@ describe("AuthService", () => {
 		};
 
 		it("should sign up successfully with valid data", async () => {
+			const mockMessageResponse = {
+				message:
+					"Registration successful! Please check your email at jane@example.com to verify your account before logging in."
+			};
+
 			vi.mocked(fetch).mockResolvedValueOnce({
 				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
+				json: () => Promise.resolve(mockMessageResponse)
 			} as Response);
 
 			const result = await AuthService.signUp(mockSignUpData);
 
 			expect(result).toEqual({
-				token: "new-user-token-456",
-				user: {
-					email: "jane@example.com",
-					name: "Jane Smith",
-					has_projects_access: false,
-					email_verified: false
-				}
+				message:
+					"Registration successful! Please check your email at jane@example.com to verify your account before logging in."
 			});
 
 			expect(fetch).toHaveBeenCalledWith("/api/v1/auth/register", {

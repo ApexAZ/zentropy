@@ -139,11 +139,11 @@ def login_json(
 
 
 @router.post(
-    "/register", response_model=LoginResponse, status_code=status.HTTP_201_CREATED
+    "/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
 )
 def register(
     request: Request, user_create: UserCreate, db: Session = Depends(get_db)
-) -> LoginResponse:
+) -> MessageResponse:
     """Register a new user"""
     # Apply rate limiting to prevent spam registrations
     client_ip = get_client_ip(request)
@@ -214,23 +214,11 @@ def register(
     user_name = f"{db_user.first_name} {db_user.last_name}"
     send_verification_email(str(db_user.email), token, user_name)
 
-    # Create access token for immediate login after registration
-    access_token = create_access_token(data={"sub": str(db_user.id)})
-
-    return LoginResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserLoginResponse(
-            id=db_user.id,
-            email=db_user.email,
-            first_name=db_user.first_name,
-            last_name=db_user.last_name,
-            organization_id=db_user.organization_id,
-            has_projects_access=db_user.has_projects_access,
-            email_verified=db_user.email_verified,
-            registration_type=db_user.registration_type.value,
-            role=db_user.role.value,
-        ),
+    return MessageResponse(
+        message=(
+            f"Registration successful! Please check your email at {db_user.email} "
+            "to verify your account before logging in."
+        )
     )
 
 
@@ -472,14 +460,8 @@ def send_verification_email_endpoint(
 
 
 @router.post("/verify-email/{token}", response_model=MessageResponse)
-def verify_email_endpoint(
-    request: Request, token: str, db: Session = Depends(get_db)
-) -> MessageResponse:
+def verify_email_endpoint(token: str, db: Session = Depends(get_db)) -> MessageResponse:
     """Verify email address using verification token."""
-    # Apply rate limiting to prevent token brute force attacks
-    client_ip = get_client_ip(request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
-
     user = verify_email_token(db, token)
 
     if not user:

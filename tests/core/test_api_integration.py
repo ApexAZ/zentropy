@@ -53,15 +53,12 @@ class TestAuthenticationFlow:
         # Act
         response = client.post("/api/v1/auth/register", json=registration_data)
         
-        # Assert - Test the API response behavior
+        # Assert - Test the API response behavior (security fix: no auto-login)
         assert response.status_code == 201
         data = response.json()
-        assert "user" in data
-        assert "id" in data["user"]
-        assert data["user"]["email"] == unique_email
-        assert data["user"]["first_name"] == "Test"
-        assert data["user"]["last_name"] == "User"
-        assert data["user"]["email_verified"] is False  # New users start unverified
+        assert "message" in data
+        assert "verify" in data["message"].lower()
+        assert unique_email in data["message"]
         
         # Note: Database verification intentionally omitted for integration tests
         # API contract testing above provides sufficient validation for integration layer

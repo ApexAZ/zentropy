@@ -16,7 +16,8 @@ vi.mock("../../services/AuthService", () => ({
 // Mock the logger
 vi.mock("../../utils/logger", () => ({
 	logger: {
-		error: vi.fn()
+		error: vi.fn(),
+		info: vi.fn()
 	}
 }));
 
@@ -71,7 +72,7 @@ describe("EmailVerificationResendButton", () => {
 		await user.click(button);
 
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent!")).toBeInTheDocument();
+			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
 		});
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
@@ -88,13 +89,13 @@ describe("EmailVerificationResendButton", () => {
 
 		// Wait for success message to appear
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent!")).toBeInTheDocument();
+			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
 		});
 
 		// Wait for success message to disappear (3 seconds + some buffer)
 		await waitFor(
 			() => {
-				expect(screen.queryByText("Verification email sent!")).not.toBeInTheDocument();
+				expect(screen.queryByText("Verification email sent to test@example.com!")).not.toBeInTheDocument();
 				expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
 			},
 			{ timeout: 4000 }
@@ -139,7 +140,7 @@ describe("EmailVerificationResendButton", () => {
 		// Second click - succeeds
 		await user.click(button);
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent!")).toBeInTheDocument();
+			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
 		});
 
 		expect(mockSendEmailVerification).toHaveBeenCalledTimes(2);
