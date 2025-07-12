@@ -5,8 +5,6 @@
  */
 
 const PENDING_VERIFICATION_KEY = "pendingEmailVerification";
-const TAB_FOCUS_REQUEST_KEY = "appTabFocusRequest";
-const TAB_CLOSURE_REQUEST_KEY = "appTabClosureRequest";
 const VERIFICATION_EXPIRY_HOURS = 24;
 
 interface PendingVerificationState {
@@ -84,43 +82,6 @@ export function hasPendingVerification(): boolean {
 	return getPendingVerification() !== null;
 }
 
-/**
- * Request focus on existing app tab (if any)
- * Uses localStorage to communicate across tabs
- * @returns void
- */
-export function requestAppTabFocus(): void {
-	try {
-		// Send focus request to other tabs
-		localStorage.setItem(TAB_FOCUS_REQUEST_KEY, Date.now().toString());
-
-		// Clean up the request after a short delay
-		setTimeout(() => {
-			localStorage.removeItem(TAB_FOCUS_REQUEST_KEY);
-		}, 1000);
-	} catch (error) {
-		// Silently handle localStorage errors
-		console.warn("Failed to request app tab focus:", error);
-	}
-}
-
-/**
- * Request closure of existing app tabs
- * Used when email verification succeeds to ensure only one tab remains
- * Uses localStorage to communicate across tabs
- * @returns void
- */
-export function requestAppTabClosure(): void {
-	try {
-		// Send closure request to other tabs
-		localStorage.setItem(TAB_CLOSURE_REQUEST_KEY, Date.now().toString());
-
-		// Clean up the request after a short delay
-		setTimeout(() => {
-			localStorage.removeItem(TAB_CLOSURE_REQUEST_KEY);
-		}, 1000);
-	} catch (error) {
-		// Silently handle localStorage errors
-		console.warn("Failed to request app tab closure:", error);
-	}
-}
+// Note: Cross-tab communication functions (requestAppTabFocus, requestAppTabClosure)
+// have been moved to BroadcastChannel implementation in useVerificationChannel.ts
+// for more reliable real-time messaging between tabs.

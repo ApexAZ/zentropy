@@ -9,46 +9,29 @@ import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 import { useAuth } from "./hooks/useAuth";
-import { useEmailVerification } from "./hooks/useEmailVerification";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 function App(): React.JSX.Element {
+	console.log("🔥 APP STARTUP: Current URL:", window.location.href);
+	console.log("🔥 APP STARTUP: Pathname:", window.location.pathname);
+	
 	const [currentPage, setCurrentPage] = useState<Page>("home");
 	const [showAuthModal, setShowAuthModal] = useState(false);
 	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup" | "method-selection">("method-selection");
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 	const auth = useAuth();
 
-	// Create stable callback references to prevent infinite re-renders
-	const handleVerificationSuccess = useCallback((message: string) => {
-		setToast({ message, type: "success" });
-		setAuthModalMode("signin");
-		setShowAuthModal(true);
+	// Check for email verification URL on app load
+	useEffect(() => {
+		const pathSegments = window.location.pathname.split("/");
+		if (pathSegments[1] === "verify" && pathSegments[2]) {
+			// This is a verification URL - no routing needed, just log it
+			console.log("🔥 APP: Detected verification URL, EmailVerificationPage will handle it");
+		}
 	}, []);
-
-	const handleVerificationError = useCallback((message: string) => {
-		setToast({ message, type: "error" });
-		// Do not open auth modal for verification errors - keep user on main page with resend button
-	}, []);
-
-	const handleRedirectHome = useCallback(() => {
-		setCurrentPage("home");
-	}, []);
-
-	const handleShowSignIn = useCallback(() => {
-		setAuthModalMode("signin");
-		setShowAuthModal(true);
-	}, []);
-
-	// Email verification hook with stable callbacks
-	useEmailVerification({
-		onSuccess: handleVerificationSuccess,
-		onError: handleVerificationError,
-		onRedirectHome: handleRedirectHome,
-		onShowSignIn: handleShowSignIn
-	});
 
 	// Auto-hide toast after 5 seconds
 	useEffect(() => {
@@ -64,6 +47,11 @@ function App(): React.JSX.Element {
 		setShowAuthModal(true);
 	};
 
+	const handleShowSignIn = (): void => {
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
+	};
+
 	const handleCloseAuth = (): void => {
 		setShowAuthModal(false);
 	};
@@ -74,6 +62,13 @@ function App(): React.JSX.Element {
 	};
 
 	const renderPage = (): React.JSX.Element => {
+		// Check if this is an email verification URL
+		const pathSegments = window.location.pathname.split("/");
+		if (pathSegments[1] === "verify" && pathSegments[2]) {
+			console.log("🔥 APP: Rendering EmailVerificationPage for URL:", window.location.pathname);
+			return <EmailVerificationPage />;
+		}
+
 		// Projects module pages that require special access
 		const projectsPages = ["teams", "calendar", "dashboard", "team-configuration"];
 

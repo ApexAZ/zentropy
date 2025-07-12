@@ -228,57 +228,9 @@ describe("Header", () => {
 		expect(headerElement).toContainElement(profileButton);
 	});
 
-	it("should focus window when tab focus is requested via localStorage", () => {
-		const focusSpy = vi.spyOn(window, "focus");
+	// Note: Cross-tab focus test removed - this feature is now handled by 
+	// BroadcastChannel in useVerificationChannel.ts for more reliable messaging
 
-		render(
-			<Header
-				currentPage="home"
-				onPageChange={mockOnPageChange}
-				onShowRegistration={vi.fn()}
-				onShowSignIn={vi.fn()}
-				auth={mockAuth}
-			/>
-		);
-
-		// Simulate tab focus request from another tab
-		const storageEvent = new StorageEvent("storage", {
-			key: "appTabFocusRequest",
-			newValue: Date.now().toString(),
-			storageArea: localStorage
-		});
-
-		window.dispatchEvent(storageEvent);
-
-		expect(focusSpy).toHaveBeenCalled();
-
-		focusSpy.mockRestore();
-	});
-
-	it("should close window when tab closure is requested via localStorage", () => {
-		const closeSpy = vi.spyOn(window, "close").mockImplementation(() => {});
-
-		render(
-			<Header
-				currentPage="home"
-				onPageChange={mockOnPageChange}
-				onShowRegistration={vi.fn()}
-				onShowSignIn={vi.fn()}
-				auth={mockAuth}
-			/>
-		);
-
-		// Simulate tab closure request from another tab (email verification succeeded)
-		const storageEvent = new StorageEvent("storage", {
-			key: "appTabClosureRequest",
-			newValue: Date.now().toString(),
-			storageArea: localStorage
-		});
-
-		window.dispatchEvent(storageEvent);
-
-		expect(closeSpy).toHaveBeenCalled();
-
-		closeSpy.mockRestore();
-	});
+	// Note: Cross-tab closure test removed - this feature is now handled by 
+	// BroadcastChannel in useVerificationChannel.ts for more reliable messaging
 });

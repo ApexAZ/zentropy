@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { logger } from "../utils/logger";
-import { clearPendingVerification, requestAppTabClosure } from "../utils/pendingVerification";
+import { clearPendingVerification } from "../utils/pendingVerification";
+import { requestCrossTabRedirect } from "../utils/crossTabRedirect";
 
 interface EmailVerificationState {
 	isVerifying: boolean;
@@ -55,6 +56,7 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 
 	const verifyEmailToken = useCallback(
 		async (token: string) => {
+			console.log("🔥 VERIFICATION: verifyEmailToken called with token:", token);
 			logger.info("Email verification started", { token });
 
 			setState(prev => ({
@@ -65,7 +67,7 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 			}));
 
 			try {
-				const response = await fetch(`/api/v1/auth/verify-email/${token}`, {
+				const response = await fetch(`/api/v1/auth/verify/${token}`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json"
@@ -79,10 +81,6 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 
 				// Get current callbacks from ref
 				const { onSuccess, onError, onRedirectHome, onShowSignIn } = callbacksRef.current;
-
-				// Clean URL immediately
-				window.history.pushState({}, "", "/");
-				onRedirectHome?.();
 
 				if (response.ok) {
 					// Success - clear pending verification state
@@ -98,8 +96,12 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 					const successMessage = "Email verified successfully! Please sign in.";
 					onSuccess?.(successMessage);
 
-					// Close any existing app tabs to ensure clean single-tab experience
-					requestAppTabClosure();
+					// Request other tabs to redirect to home page for clean single-tab experience
+					requestCrossTabRedirect("success", "/", "Email verification successful");
+
+					// Clean URL and redirect AFTER successful verification
+					window.history.pushState({}, "", "/");
+					onRedirectHome?.();
 
 					onShowSignIn?.();
 				} else {
@@ -114,8 +116,12 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 						error: errorMessage
 					}));
 
-					// Close any existing app tabs even for failed verification
-					requestAppTabClosure();
+					// Request other tabs to redirect to home page even for failed verification
+					requestCrossTabRedirect("failure", "/", errorMessage);
+
+					// Clean URL and redirect AFTER failed verification
+					window.history.pushState({}, "", "/");
+					onRedirectHome?.();
 
 					onError?.(errorMessage);
 					// Do not open login modal on verification failure - keep user on main page with resend button
@@ -127,10 +133,6 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 				// Get current callbacks from ref
 				const { onError, onRedirectHome } = callbacksRef.current;
 
-				// Clean URL in case of network error
-				window.history.pushState({}, "", "/");
-				onRedirectHome?.();
-
 				const errorMessage = "Network error during email verification. Please try again.";
 				setState(prev => ({
 					...prev,
@@ -138,8 +140,12 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 					error: errorMessage
 				}));
 
-				// Close any existing app tabs even for network errors
-				requestAppTabClosure();
+				// Request other tabs to redirect to home page even for network errors
+				requestCrossTabRedirect("error", "/", errorMessage);
+
+				// Clean URL and redirect AFTER network error
+				window.history.pushState({}, "", "/");
+				onRedirectHome?.();
 
 				onError?.(errorMessage);
 				// Do not open login modal on network error - keep user on main page with resend button
@@ -150,23 +156,31 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 
 	// Auto-detect email verification tokens in URL - run only once on mount
 	useEffect(() => {
+		console.log("🔥 VERIFICATION: useEffect running with URL:", window.location.href);
 		logger.debug("Email verification useEffect running", {
 			pathname: window.location.pathname
 		});
 
 		const pathSegments = window.location.pathname.split("/");
-		if (pathSegments[1] === "verify-email" && pathSegments[2]) {
+		console.log("🔥 VERIFICATION: Path segments:", pathSegments);
+		
+		if (pathSegments[1] === "verify" && pathSegments[2]) {
 			const token = pathSegments[2];
+			console.log("🔥 VERIFICATION: Token detected:", token);
 
 			// Check if we've already attempted verification for this token
 			if (verificationAttempted.current.has(token)) {
+				console.log("🔥 VERIFICATION: Skipping duplicate for token:", token);
 				logger.debug("Skipping duplicate verification attempt", { token });
 				return;
 			}
 
+			console.log("🔥 VERIFICATION: Starting verification for token:", token);
 			logger.info("Email verification token detected", { token });
 			verificationAttempted.current.add(token);
 			verifyEmailToken(token);
+		} else {
+			console.log("🔥 VERIFICATION: No token found in URL");
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Remove verifyEmailToken dependency to prevent infinite loop

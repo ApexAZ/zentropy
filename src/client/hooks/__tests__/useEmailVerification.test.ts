@@ -13,7 +13,8 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { act } from "react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { useEmailVerification } from "../useEmailVerification";
-import { clearPendingVerification, requestAppTabClosure } from "../../utils/pendingVerification";
+import { clearPendingVerification } from "../../utils/pendingVerification";
+import { requestTabRedirect } from "../useVerificationChannel";
 
 // Mock the logger
 vi.mock("../../utils/logger", () => ({
@@ -27,8 +28,12 @@ vi.mock("../../utils/logger", () => ({
 
 // Mock pendingVerification utils
 vi.mock("../../utils/pendingVerification", () => ({
-	clearPendingVerification: vi.fn(),
-	requestAppTabClosure: vi.fn()
+	clearPendingVerification: vi.fn()
+}));
+
+// Mock verification channel (BroadcastChannel)
+vi.mock("../useVerificationChannel", () => ({
+	requestTabRedirect: vi.fn()
 }));
 
 describe("useEmailVerification", () => {
@@ -209,8 +214,8 @@ describe("useEmailVerification", () => {
 			expect(callbacks.onError).not.toHaveBeenCalled();
 			expect(callbacks.onRedirectHome).toHaveBeenCalled();
 			expect(callbacks.onShowSignIn).toHaveBeenCalled();
-			// Verify existing tabs are closed for clean single-tab experience
-			expect(requestAppTabClosure).toHaveBeenCalled();
+			// Verify other tabs are redirected for clean single-tab experience
+			expect(requestTabRedirect).toHaveBeenCalledWith("success", "/", "Email verification successful");
 			expect(clearPendingVerification).toHaveBeenCalled();
 		});
 
@@ -232,7 +237,7 @@ describe("useEmailVerification", () => {
 			expect(result.current.state.error).toBeNull();
 			// Should not throw errors when callbacks are undefined
 			// But should still call utility functions
-			expect(requestAppTabClosure).toHaveBeenCalled();
+			expect(requestTabRedirect).toHaveBeenCalledWith("success", "/", "Email verification successful");
 			expect(clearPendingVerification).toHaveBeenCalled();
 		});
 	});
@@ -266,6 +271,8 @@ describe("useEmailVerification", () => {
 			expect(callbacks.onSuccess).not.toHaveBeenCalled();
 			expect(callbacks.onRedirectHome).toHaveBeenCalled();
 			expect(callbacks.onShowSignIn).not.toHaveBeenCalled(); // Should not open login modal on error
+			// Verify other tabs are redirected even for failed verification
+			expect(requestTabRedirect).toHaveBeenCalledWith("failure", "/", "Invalid verification token");
 		});
 
 		it("should handle API error without detail message", async () => {
@@ -311,6 +318,8 @@ describe("useEmailVerification", () => {
 			);
 			expect(callbacks.onRedirectHome).toHaveBeenCalled();
 			expect(callbacks.onShowSignIn).not.toHaveBeenCalled(); // Should not open login modal on network error
+			// Verify other tabs are redirected even for network errors
+			expect(requestTabRedirect).toHaveBeenCalledWith("error", "/", "Network error during email verification. Please try again.");
 
 			// Verify URL cleanup even on network error
 			expect(window.history.pushState).toHaveBeenCalledWith({}, "", "/");

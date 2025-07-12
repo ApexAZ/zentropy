@@ -26,6 +26,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowSignIn, auth }) => {
 	const [pendingVerification, setPendingVerificationState] = useState(getPendingVerification());
 
+	// Note: Cross-tab redirect listener is now set up globally in main.tsx
+	// to avoid React lifecycle race conditions
+
 	// Check for pending verification state changes
 	useEffect(() => {
 		const checkPendingVerification = () => {
@@ -43,33 +46,11 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 			checkPendingVerification();
 		};
 
-		// Listen for storage changes (if user opens multiple tabs)
+		// Listen for storage changes for pending verification updates only
+		// (Cross-tab communication now handled by BroadcastChannel)
 		const handleStorageChange = (e: StorageEvent) => {
 			if (e.key === "pendingEmailVerification") {
 				checkPendingVerification();
-			} else if (e.key === "appTabFocusRequest") {
-				// Another tab is requesting this tab to focus
-				try {
-					window.focus();
-					// Bring tab to front if possible
-					if (document.hidden) {
-						// Tab is in background, try to make it visible
-						window.focus();
-					}
-				} catch (error) {
-					// Silently handle focus errors (some browsers restrict this)
-					console.debug("Could not focus tab:", error);
-				}
-			} else if (e.key === "appTabClosureRequest") {
-				// Another tab is requesting this tab to close (for clean email verification flow)
-				try {
-					// Only close if this tab doesn't have any user data that would be lost
-					// Since this is just the home page or verification pages, it's safe to close
-					window.close();
-				} catch (error) {
-					// Silently handle closure errors (some browsers restrict this)
-					console.debug("Could not close tab:", error);
-				}
 			}
 		};
 

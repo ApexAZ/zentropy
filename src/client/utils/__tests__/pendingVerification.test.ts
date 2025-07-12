@@ -1,11 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
 	setPendingVerification,
 	getPendingVerification,
 	clearPendingVerification,
-	hasPendingVerification,
-	requestAppTabFocus,
-	requestAppTabClosure
+	hasPendingVerification
 } from "../pendingVerification";
 
 // Mock localStorage
@@ -143,91 +141,7 @@ describe("pendingVerification utilities", () => {
 		});
 	});
 
-	describe("requestAppTabFocus", () => {
-		beforeEach(() => {
-			vi.clearAllTimers();
-			vi.useFakeTimers();
-		});
-
-		afterEach(() => {
-			vi.useRealTimers();
-		});
-
-		it("should set focus request in localStorage", () => {
-			const timestampSpy = vi.spyOn(Date, "now").mockReturnValue(123456789);
-
-			requestAppTabFocus();
-
-			expect(mockLocalStorage.setItem).toHaveBeenCalledWith("appTabFocusRequest", "123456789");
-
-			timestampSpy.mockRestore();
-		});
-
-		it("should remove focus request after 1 second", () => {
-			requestAppTabFocus();
-
-			// Fast-forward time by 1 second
-			vi.advanceTimersByTime(1000);
-
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("appTabFocusRequest");
-		});
-
-		it("should handle localStorage errors gracefully", () => {
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			mockLocalStorage.setItem.mockImplementationOnce(() => {
-				throw new Error("localStorage error");
-			});
-
-			// Should not throw
-			expect(() => requestAppTabFocus()).not.toThrow();
-
-			expect(consoleSpy).toHaveBeenCalledWith("Failed to request app tab focus:", expect.any(Error));
-
-			consoleSpy.mockRestore();
-		});
-	});
-
-	describe("requestAppTabClosure", () => {
-		beforeEach(() => {
-			vi.clearAllTimers();
-			vi.useFakeTimers();
-		});
-
-		afterEach(() => {
-			vi.useRealTimers();
-		});
-
-		it("should set closure request in localStorage", () => {
-			const timestampSpy = vi.spyOn(Date, "now").mockReturnValue(123456789);
-
-			requestAppTabClosure();
-
-			expect(mockLocalStorage.setItem).toHaveBeenCalledWith("appTabClosureRequest", "123456789");
-
-			timestampSpy.mockRestore();
-		});
-
-		it("should remove closure request after 1 second", () => {
-			requestAppTabClosure();
-
-			// Fast-forward time by 1 second
-			vi.advanceTimersByTime(1000);
-
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("appTabClosureRequest");
-		});
-
-		it("should handle localStorage errors gracefully", () => {
-			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-			mockLocalStorage.setItem.mockImplementationOnce(() => {
-				throw new Error("localStorage error");
-			});
-
-			// Should not throw
-			expect(() => requestAppTabClosure()).not.toThrow();
-
-			expect(consoleSpy).toHaveBeenCalledWith("Failed to request app tab closure:", expect.any(Error));
-
-			consoleSpy.mockRestore();
-		});
-	});
+	// Note: Cross-tab communication tests (requestAppTabFocus, requestAppTabClosure) 
+	// have been moved to useVerificationChannel.test.ts which tests the new 
+	// BroadcastChannel implementation for more reliable cross-tab messaging.
 });
