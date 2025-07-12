@@ -114,6 +114,9 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 						error: errorMessage
 					}));
 
+					// Close any existing app tabs even for failed verification
+					requestAppTabClosure();
+
 					onError?.(errorMessage);
 					// Do not open login modal on verification failure - keep user on main page with resend button
 				}
@@ -134,6 +137,9 @@ export function useEmailVerification(callbacks: EmailVerificationCallbacks = {})
 					isVerifying: false,
 					error: errorMessage
 				}));
+
+				// Close any existing app tabs even for network errors
+				requestAppTabClosure();
 
 				onError?.(errorMessage);
 				// Do not open login modal on network error - keep user on main page with resend button

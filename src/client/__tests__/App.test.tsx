@@ -853,9 +853,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				callbackConfig.onError!("Email verification failed!");
 			});
 
-			// Should open sign in modal and show error toast
-			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
-			expect(screen.getByTestId("auth-modal-mode")).toHaveTextContent("signin");
+			// Should NOT open auth modal for verification errors, only show error toast
+			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
+			expect(screen.getByText("Email verification failed!")).toBeInTheDocument();
 		});
 
 		it("should handle redirect home callback", async () => {

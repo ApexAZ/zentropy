@@ -30,8 +30,7 @@ function App(): React.JSX.Element {
 
 	const handleVerificationError = useCallback((message: string) => {
 		setToast({ message, type: "error" });
-		setAuthModalMode("signin");
-		setShowAuthModal(true);
+		// Do not open auth modal for verification errors - keep user on main page with resend button
 	}, []);
 
 	const handleRedirectHome = useCallback(() => {
