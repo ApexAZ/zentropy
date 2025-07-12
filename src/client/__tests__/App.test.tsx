@@ -115,7 +115,7 @@ vi.mock("../pages/TeamConfigurationPage", () => ({
 
 // Mock Header component
 vi.mock("../components/Header", () => ({
-	default: ({ currentPage, onPageChange, onShowRegistration, onShowSignIn }: any) => (
+	default: ({ currentPage, onPageChange, onShowRegistration, onShowSignIn, auth }: any) => (
 		<header data-testid="header">
 			<span data-testid="current-page">{currentPage}</span>
 			<button onClick={() => onPageChange("about")}>Navigate to About</button>
@@ -125,6 +125,13 @@ vi.mock("../components/Header", () => ({
 			<button onClick={() => onPageChange("profile")}>Navigate to Profile</button>
 			<button onClick={onShowRegistration}>Show Registration</button>
 			<button onClick={onShowSignIn}>Show Sign In</button>
+			{/* Email verification elements */}
+			{auth.isAuthenticated && auth.user && !auth.user.email_verified && (
+				<>
+					<span>Email verification required</span>
+					<button>Resend</button>
+				</>
+			)}
 		</header>
 	)
 }));
@@ -195,12 +202,6 @@ vi.mock("../components/AuthModal", () => ({
 			</div>
 		) : null;
 	}
-}));
-
-// Mock EmailVerificationStatusBanner component
-vi.mock("../components/EmailVerificationStatusBanner", () => ({
-	default: ({ userEmail, isVisible }: any) =>
-		isVisible ? <div data-testid="email-verification-banner">Email verification needed for {userEmail}</div> : null
 }));
 
 describe("App - Google OAuth Integration (TDD)", () => {
@@ -706,8 +707,8 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 	});
 
-	describe("Email Verification Banner", () => {
-		it("should show email verification banner for authenticated users with unverified emails", () => {
+	describe("Email Verification Header Elements", () => {
+		it("should show email verification elements in header for authenticated users with unverified emails", () => {
 			// Set authenticated user with unverified email using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -718,11 +719,11 @@ describe("App - General Rendering and Routing Logic", () => {
 
 			render(<App />);
 
-			expect(screen.getByTestId("email-verification-banner")).toBeInTheDocument();
-			expect(screen.getByText("Email verification needed for test@example.com")).toBeInTheDocument();
+			expect(screen.getByText("Email verification required")).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
 		});
 
-		it("should hide email verification banner for authenticated users with verified emails", () => {
+		it("should hide email verification elements for authenticated users with verified emails", () => {
 			// Set authenticated user with verified email using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -733,16 +734,18 @@ describe("App - General Rendering and Routing Logic", () => {
 
 			render(<App />);
 
-			expect(screen.queryByTestId("email-verification-banner")).not.toBeInTheDocument();
+			expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
 		});
 
-		it("should hide email verification banner for unauthenticated users", () => {
+		it("should hide email verification elements for unauthenticated users", () => {
 			// Ensure unauthenticated state using centralized helper
 			setUnauthenticatedState();
 
 			render(<App />);
 
-			expect(screen.queryByTestId("email-verification-banner")).not.toBeInTheDocument();
+			expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
 		});
 	});
 

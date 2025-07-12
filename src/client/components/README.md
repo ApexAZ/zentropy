@@ -17,7 +17,7 @@ components/
 ├── NavigationPanel.tsx      # Slide-out navigation menu
 ├── Header.tsx              # Main application header
 ├── OAuthProviders.tsx      # OAuth provider selection
-├── EmailVerificationStatusBanner.tsx
+├── EmailVerificationResendButton.tsx
 ├── RequiredAsterisk.tsx
 └── __tests__/              # Component tests
 ```

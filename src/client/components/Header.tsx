@@ -1,5 +1,7 @@
 import React from "react";
 import NavigationPanel from "./NavigationPanel";
+import FlyoutNavigation from "./FlyoutNavigation";
+import EmailVerificationResendButton from "./EmailVerificationResendButton";
 import type { AuthUser } from "../types";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
@@ -22,7 +24,13 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegistration, onShowSignIn, auth }) => {
 	return (
-		<header className="border-layout-background bg-content-background flex w-full items-center justify-between border-b px-8 py-4 shadow-sm">
+		<header className="border-layout-background bg-content-background flex w-full items-center border-b px-8 py-4 shadow-sm">
+			{/* Left side - Flyout navigation */}
+			<div className="flex flex-1 items-center">
+				<FlyoutNavigation currentPage={currentPage} onPageChange={onPageChange} />
+			</div>
+
+			{/* Center - Zentropy logo */}
 			<h1 className="m-0 flex-shrink-0 text-3xl">
 				<button
 					onClick={() => onPageChange("home")}
@@ -31,42 +39,24 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onPageChange, onShowRegist
 					Zentropy
 				</button>
 			</h1>
-			<nav id="nav-container" className="flex flex-grow items-center justify-end">
-				<ul className="m-0 mr-4 flex list-none gap-6 p-0">
-					<li>
-						<button
-							className={`cursor-pointer border-none bg-transparent text-base font-medium transition-all duration-200 ${
-								currentPage === "about"
-									? "text-interactive border-interactive border-b"
-									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
-							}`}
-							onClick={() => onPageChange("about")}
-						>
-							About
-						</button>
-					</li>
-					<li>
-						<button
-							className={`cursor-pointer border-none bg-transparent text-base font-medium transition-all duration-200 ${
-								currentPage === "contact"
-									? "text-interactive border-interactive border-b"
-									: "text-interactive hover:text-interactive-hover hover:border-interactive-hover hover:border-b"
-							}`}
-							onClick={() => onPageChange("contact")}
-						>
-							Contact
-						</button>
-					</li>
-				</ul>
-				<div className="nav-auth">
-					<NavigationPanel
-						onPageChange={onPageChange}
-						onShowRegistration={onShowRegistration}
-						onShowSignIn={onShowSignIn}
-						auth={auth}
-					/>
-				</div>
-			</nav>
+
+			{/* Right side - Email verification + Auth navigation */}
+			<div className="flex flex-1 items-center justify-end gap-4">
+				{/* Email verification notice */}
+				{auth.isAuthenticated && auth.user && !auth.user.email_verified && (
+					<div className="flex items-center gap-3">
+						<span className="text-warning text-lg font-medium">Email verification required</span>
+						<EmailVerificationResendButton userEmail={auth.user.email} />
+					</div>
+				)}
+
+				<NavigationPanel
+					onPageChange={onPageChange}
+					onShowRegistration={onShowRegistration}
+					onShowSignIn={onShowSignIn}
+					auth={auth}
+				/>
+			</div>
 		</header>
 	);
 };

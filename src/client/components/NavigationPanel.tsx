@@ -101,7 +101,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 			{/* Person icon - clickable for all users */}
 			<button
 				ref={toggleRef}
-				className="focus:outline-interactive mr-3 flex h-10 w-10 cursor-pointer items-center justify-center border-none bg-transparent p-2 transition-all duration-200 hover:-translate-y-px focus:outline-2 focus:outline-offset-2"
+				className="focus:outline-interactive mr-1 flex h-12 w-12 cursor-pointer items-center justify-center border-none bg-transparent p-1 transition-all duration-200 hover:-translate-y-px focus:outline-2 focus:outline-offset-1"
 				type="button"
 				aria-expanded={isOpen}
 				aria-haspopup="true"
@@ -110,8 +110,8 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 			>
 				<svg
 					className="text-interactive hover:text-interactive-hover transition-colors duration-200"
-					width="24"
-					height="24"
+					width="30"
+					height="30"
 					viewBox="0 0 24 24"
 					fill="currentColor"
 				>
@@ -122,11 +122,11 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 			{isOpen && (
 				<>
 					<button
-						className="text-interactive hover:text-interactive-hover focus:outline-interactive fixed top-4 right-10 z-[1001] flex h-10 w-10 cursor-pointer items-center justify-center border-none bg-transparent transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
+						className="text-interactive hover:text-interactive-hover focus:outline-interactive fixed top-4 right-10 z-[1001] flex h-12 w-12 cursor-pointer items-center justify-center border-none bg-transparent p-1 transition-colors duration-200 focus:outline-2 focus:outline-offset-1"
 						onClick={() => setIsOpen(false)}
 						aria-label="Close profile menu"
 					>
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
 							<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
 						</svg>
 					</button>
@@ -147,8 +147,8 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 						role="menu"
 					>
 						<div className="border-layout-background bg-layout-background flex items-center gap-3 border-b p-8">
-							<div className="bg-layout-background text-interactive flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-								<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+							<div className="bg-layout-background text-interactive flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full">
+								<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
 									<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
 								</svg>
 							</div>

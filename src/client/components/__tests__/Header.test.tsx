@@ -19,6 +19,14 @@ const mockAuth = {
 	logout: vi.fn()
 };
 
+const mockAuthUnverified = {
+	...mockAuth,
+	user: {
+		...mockAuth.user,
+		email_verified: false
+	}
+};
+
 describe("Header", () => {
 	beforeEach(() => {
 		mockOnPageChange.mockClear();
@@ -43,7 +51,7 @@ describe("Header", () => {
 		expect(logo).toHaveTextContent("Zentropy");
 	});
 
-	it("highlights current page in navigation", () => {
+	it("renders flyout navigation menu button", () => {
 		render(
 			<Header
 				currentPage="about"
@@ -54,15 +62,12 @@ describe("Header", () => {
 			/>
 		);
 
-		const aboutLink = screen.getByRole("button", { name: "About" });
-		expect(aboutLink).toHaveClass("text-interactive", "border-interactive", "border-b");
-
-		const contactLink = screen.getByRole("button", { name: "Contact" });
-		expect(contactLink).toHaveClass("text-interactive");
-		expect(contactLink).not.toHaveClass("border-b");
+		const menuButton = screen.getByRole("button", { name: "Navigation menu" });
+		expect(menuButton).toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-label", "Navigation menu");
 	});
 
-	it("calls onPageChange when navigation link is clicked", async () => {
+	it("opens flyout navigation and calls onPageChange when link is clicked", async () => {
 		const user = userEvent.setup();
 		render(
 			<Header
@@ -74,7 +79,12 @@ describe("Header", () => {
 			/>
 		);
 
-		const aboutLink = screen.getByRole("button", { name: "About" });
+		// Open the flyout navigation
+		const menuButton = screen.getByRole("button", { name: "Navigation menu" });
+		await user.click(menuButton);
+
+		// Click on About link in the flyout
+		const aboutLink = screen.getByText("About");
 		await user.click(aboutLink);
 
 		expect(mockOnPageChange).toHaveBeenCalledWith("about");
@@ -109,11 +119,13 @@ describe("Header", () => {
 		const header = screen.getByRole("banner");
 		expect(header).toBeInTheDocument();
 
-		const navigation = screen.getByRole("navigation");
-		expect(navigation).toBeInTheDocument();
+		// The flyout navigation includes a nav element inside it
+		const menuButton = screen.getByRole("button", { name: "Navigation menu" });
+		expect(menuButton).toBeInTheDocument();
 	});
 
-	it("renders all navigation links", () => {
+	it("renders flyout navigation with all links when opened", async () => {
+		const user = userEvent.setup();
 		render(
 			<Header
 				currentPage="home"
@@ -124,7 +136,95 @@ describe("Header", () => {
 			/>
 		);
 
-		expect(screen.getByRole("button", { name: "About" })).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Contact" })).toBeInTheDocument();
+		// Open the flyout navigation
+		const menuButton = screen.getByRole("button", { name: "Navigation menu" });
+		await user.click(menuButton);
+
+		// Check that navigation links are now visible
+		expect(screen.getByText("About")).toBeInTheDocument();
+		expect(screen.getByText("Contact")).toBeInTheDocument();
+	});
+
+	it("does not show email verification elements for verified users", () => {
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				auth={mockAuth}
+			/>
+		);
+
+		expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
+	});
+
+	it("shows email verification elements for unverified users", () => {
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				auth={mockAuthUnverified}
+			/>
+		);
+
+		expect(screen.getByText("Email verification required")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
+	});
+
+	it("does not show email verification elements for unauthenticated users", () => {
+		const unauthenticatedAuth = {
+			isAuthenticated: false,
+			user: null,
+			token: null,
+			login: vi.fn(),
+			logout: vi.fn()
+		};
+
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				auth={unauthenticatedAuth}
+			/>
+		);
+
+		expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
+	});
+
+	it("positions email verification elements correctly in header", () => {
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				auth={mockAuthUnverified}
+			/>
+		);
+
+		const emailVerificationText = screen.getByText("Email verification required");
+		const resendButton = screen.getByRole("button", { name: "Resend" });
+		const profileButton = screen.getByRole("button", { name: /profile/i });
+
+		expect(emailVerificationText).toBeInTheDocument();
+		expect(resendButton).toBeInTheDocument();
+		expect(profileButton).toBeInTheDocument();
+
+		// Verify email verification elements are together
+		const emailVerificationContainer = emailVerificationText.closest("div");
+		expect(emailVerificationContainer).toContainElement(resendButton);
+
+		// Verify they're all in the header's right side
+		const headerElement = screen.getByRole("banner");
+		expect(headerElement).toContainElement(emailVerificationText);
+		expect(headerElement).toContainElement(resendButton);
+		expect(headerElement).toContainElement(profileButton);
 	});
 });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Header from "./components/Header";
 import AuthModal from "./components/AuthModal";
-import EmailVerificationStatusBanner from "./components/EmailVerificationStatusBanner";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
@@ -112,9 +111,6 @@ function App(): React.JSX.Element {
 		}
 	};
 
-	// Show email verification banner for authenticated users with unverified emails
-	const showEmailVerificationBanner = auth.isAuthenticated && auth.user && !auth.user.email_verified;
-
 	return (
 		<div className="flex min-h-screen flex-col">
 			<Header
@@ -124,9 +120,6 @@ function App(): React.JSX.Element {
 				onShowSignIn={handleShowSignIn}
 				auth={auth}
 			/>
-			{showEmailVerificationBanner && auth.user && (
-				<EmailVerificationStatusBanner userEmail={auth.user.email} isVisible={true} />
-			)}
 			{renderPage()}
 			<footer className="border-layout-background bg-layout-background text-text-primary mt-auto border-t px-8 py-6 text-center text-sm">
 				<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>

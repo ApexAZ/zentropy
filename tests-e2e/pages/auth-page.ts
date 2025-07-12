@@ -47,9 +47,6 @@ export class AuthPage extends BasePage {
 		userMenu: '[data-testid="user-menu"]',
 		logoutButton: '[data-testid="logout-button"]',
 		
-		// Email verification banner
-		verificationBanner: '[data-testid="email-verification-banner"]',
-		resendVerificationButton: '[data-testid="resend-verification"]',
 	};
 	
 	constructor(page: Page) {
@@ -201,18 +198,19 @@ export class AuthPage extends BasePage {
 	}
 	
 	/**
-	 * Check if email verification is required
+	 * Check if email verification is required (now shown in header)
 	 */
 	async isEmailVerificationRequired(): Promise<boolean> {
-		return await this.isVisible(this.selectors.verificationBanner);
+		return await this.page.locator('text=Email verification required').isVisible();
 	}
 	
 	/**
-	 * Resend verification email
+	 * Resend verification email (now from header button)
 	 */
 	async resendVerificationEmail() {
-		if (await this.isVisible(this.selectors.resendVerificationButton)) {
-			await this.clickWithRetry(this.selectors.resendVerificationButton);
+		const resendButton = this.page.locator('button:has-text("Resend")');
+		if (await resendButton.isVisible()) {
+			await resendButton.click();
 		}
 	}
 	

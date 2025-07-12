@@ -1,0 +1,169 @@
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import FlyoutNavigation from "../FlyoutNavigation";
+
+describe("FlyoutNavigation", () => {
+	const mockOnPageChange = vi.fn();
+
+	const defaultProps = {
+		currentPage: "home" as const,
+		onPageChange: mockOnPageChange
+	};
+
+	beforeEach(() => {
+		mockOnPageChange.mockClear();
+	});
+
+	it("renders the menu button with proper accessibility attributes", () => {
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+		expect(menuButton).toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-label", "Navigation menu");
+		expect(menuButton).toHaveAttribute("aria-expanded", "false");
+		expect(menuButton).toHaveAttribute("aria-haspopup", "true");
+	});
+
+	it("shows the list icon in the menu button", () => {
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const icon = screen.getByRole("button", { name: /navigation menu/i }).querySelector("svg");
+		expect(icon).toBeInTheDocument();
+		expect(icon).toHaveAttribute("viewBox", "0 0 24 24");
+	});
+
+	it("does not show the dropdown menu initially", () => {
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		expect(screen.queryByText("About")).not.toBeInTheDocument();
+		expect(screen.queryByText("Contact")).not.toBeInTheDocument();
+	});
+
+	it("shows the dropdown menu when button is clicked", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+		await user.click(menuButton);
+
+		expect(screen.getByText("About")).toBeInTheDocument();
+		expect(screen.getByText("Contact")).toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-expanded", "true");
+	});
+
+	it("hides the dropdown menu when button is clicked again", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+
+		// Open menu
+		await user.click(menuButton);
+		expect(screen.getByText("About")).toBeInTheDocument();
+
+		// Close menu
+		await user.click(menuButton);
+		expect(screen.queryByText("About")).not.toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("calls onPageChange when About is clicked", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		// Open menu
+		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+
+		// Click About
+		await user.click(screen.getByText("About"));
+
+		expect(mockOnPageChange).toHaveBeenCalledWith("about");
+	});
+
+	it("calls onPageChange when Contact is clicked", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		// Open menu
+		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+
+		// Click Contact
+		await user.click(screen.getByText("Contact"));
+
+		expect(mockOnPageChange).toHaveBeenCalledWith("contact");
+	});
+
+	it("closes the menu after clicking a navigation item", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+
+		// Open menu
+		await user.click(menuButton);
+		expect(screen.getByText("About")).toBeInTheDocument();
+
+		// Click About
+		await user.click(screen.getByText("About"));
+
+		// Menu should be closed
+		expect(screen.queryByText("About")).not.toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("highlights the current page in the dropdown", async () => {
+		const user = userEvent.setup();
+		render(<FlyoutNavigation {...defaultProps} currentPage="about" />);
+
+		// Open menu
+		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+
+		const aboutButton = screen.getByText("About");
+		const contactButton = screen.getByText("Contact");
+
+		expect(aboutButton).toHaveClass("bg-content-background-hover");
+		expect(contactButton).not.toHaveClass("bg-content-background-hover");
+	});
+
+	it("closes the menu when clicking outside", async () => {
+		render(
+			<div>
+				<FlyoutNavigation {...defaultProps} />
+				<div data-testid="outside-element">Outside</div>
+			</div>
+		);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+
+		// Open menu
+		fireEvent.click(menuButton);
+		expect(screen.getByText("About")).toBeInTheDocument();
+
+		// Click outside
+		fireEvent.mouseDown(screen.getByTestId("outside-element"));
+
+		// Menu should be closed
+		expect(screen.queryByText("About")).not.toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("does not close the menu when clicking inside the dropdown", async () => {
+		render(<FlyoutNavigation {...defaultProps} />);
+
+		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
+
+		// Open menu
+		fireEvent.click(menuButton);
+		expect(screen.getByText("About")).toBeInTheDocument();
+
+		// Click inside the dropdown (but not on a menu item)
+		const dropdown = screen.getByText("About").closest("div");
+		fireEvent.mouseDown(dropdown!);
+
+		// Menu should stay open
+		expect(screen.getByText("About")).toBeInTheDocument();
+		expect(menuButton).toHaveAttribute("aria-expanded", "true");
+	});
+});
