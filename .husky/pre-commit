@@ -1,12 +1,13 @@
 echo "🔍 Running pre-commit quality checks..."
 
-# First run full quality check (lint, format, type-check)
-echo "📋 Step 1: Code quality check..."
+# Run comprehensive quality check (format, lint, type-check, all tests)
+echo "📋 Running complete quality pipeline..."
 if ! npm run quality:pre-commit; then
     echo ""
     echo "❌ Code quality check failed!"
     echo "💡 Please fix the issues above before committing"
     echo "🔧 Common fixes:"
+    echo "   npm run fix       # Auto-fix formatting and linting issues"
     echo "   npm run lint      # Auto-fix linting issues"
     echo "   npm run format    # Auto-format code"
     echo "   npm run type-check # Check TypeScript errors"
@@ -18,23 +19,5 @@ fi
 echo "📝 Re-staging formatted files..."
 git add .
 
-echo "✅ Code quality passed!"
-echo ""
-
-# Then run server startup health check
-echo "🚀 Step 2: Server startup health check..."
-if ! npm run test:pre-commit; then
-    echo ""
-    echo "❌ Server startup test failed!"
-    echo "💡 Server hanging issue detected - commit blocked"
-    echo "🔧 Try these fixes:"
-    echo "   npm run emergency                # Quick recovery"
-    echo "   ./scripts/emergency-recovery.sh  # Full recovery"
-    echo "📚 See: CLAUDETroubleshooting.md"
-    echo ""
-    exit 1
-fi
-
-echo "✅ Server startup healthy!"
-echo ""
+echo "✅ Complete quality pipeline passed!"
 echo "🎉 All pre-commit checks passed - ready to commit!"

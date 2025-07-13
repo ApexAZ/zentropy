@@ -941,12 +941,16 @@ describe("ProfilePage", () => {
 			// Initially Profile is active
 			expect(profileTab).toHaveAttribute("aria-selected", "true");
 
-			// Simulate ArrowRight key
-			fireEvent.keyDown(tablist, { key: "ArrowRight" });
+			// Simulate ArrowRight key with act() wrapper for state updates
+			act(() => {
+				fireEvent.keyDown(tablist, { key: "ArrowRight" });
+			});
 
-			// Security tab should become active
-			expect(securityTab).toHaveAttribute("aria-selected", "true");
-			expect(profileTab).toHaveAttribute("aria-selected", "false");
+			// Wait for state to stabilize and check Security tab is active
+			await waitFor(() => {
+				expect(securityTab).toHaveAttribute("aria-selected", "true");
+				expect(profileTab).toHaveAttribute("aria-selected", "false");
+			});
 		});
 
 		it("should maintain correct tabIndex for accessibility", async () => {

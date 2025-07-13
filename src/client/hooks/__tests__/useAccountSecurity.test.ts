@@ -224,7 +224,7 @@ describe("useAccountSecurity", () => {
 		expect(result.current.linkingLoading).toBe(false);
 	});
 
-	it("should expose OAuth state correctly", () => {
+	it("should expose OAuth state correctly", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
 
 		// Mock OAuth not ready
@@ -238,8 +238,14 @@ describe("useAccountSecurity", () => {
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
+		// Immediately check OAuth state (synchronous)
 		expect(result.current.googleOAuthReady).toBe(false);
 		expect(result.current.oauthLoading).toBe(true);
+
+		// Wait for async operations to complete to prevent act() warnings
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
 	});
 
 	it("should allow manual security status refresh", async () => {

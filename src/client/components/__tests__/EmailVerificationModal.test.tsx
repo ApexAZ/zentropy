@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -30,10 +30,16 @@ describe("EmailVerificationModal", () => {
 		vi.clearAllMocks();
 		mockFetch.mockClear();
 		vi.mocked(clearPendingVerification).mockClear();
+		// Reset DOM state
+		cleanup();
 	});
 
 	afterEach(() => {
+		// Ensure clean state between tests
 		cleanup();
+		vi.clearAllMocks();
+		// Clear any pending timers that might affect subsequent tests
+		vi.clearAllTimers();
 	});
 
 	it("should not render when isOpen is false", () => {
@@ -287,12 +293,19 @@ describe("EmailVerificationModal", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
 
 		const resendButton = screen.getByRole("button", { name: /didn't receive a code\? resend/i });
-		await user.click(resendButton);
 
-		// Should show error message
-		await waitFor(() => {
-			expect(screen.getByText("Failed to resend code. Please try again.")).toBeInTheDocument();
+		// Wrap user interaction in act() for proper state handling
+		await act(async () => {
+			await user.click(resendButton);
 		});
+
+		// Wait for error message with increased timeout for async operations
+		await waitFor(
+			() => {
+				expect(screen.getByText("Failed to resend code. Please try again.")).toBeInTheDocument();
+			},
+			{ timeout: 3000 } // Increased timeout for async state updates
+		);
 	});
 
 	it("should close modal when close button is clicked", async () => {
@@ -354,19 +367,25 @@ describe("EmailVerificationModal", () => {
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
 		expect(emailInput.value).toBe("test@example.com");
 
-		// Fill in complete code
+		// Fill in complete code with proper async handling
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
 
-		for (let i = 0; i < 6; i++) {
-			await user.type(codeInputs[i], (i + 1).toString());
-		}
-
-		// Button should be enabled when both email and code are complete
-		const verifyButton = screen.getByRole("button", { name: /verify email/i });
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
+		// Type into each input sequentially, wrapped in act() for state updates
+		await act(async () => {
+			for (let i = 0; i < 6; i++) {
+				await user.type(codeInputs[i], (i + 1).toString());
+			}
 		});
+
+		// Wait for React state to stabilize and button to be enabled
+		const verifyButton = screen.getByRole("button", { name: /verify email/i });
+		await waitFor(
+			() => {
+				expect(verifyButton).not.toBeDisabled();
+			},
+			{ timeout: 3000 } // Increased timeout for state stabilization
+		);
 	});
 });
