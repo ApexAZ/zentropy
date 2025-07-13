@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import EmailVerificationResendButton from "../EmailVerificationResendButton";
@@ -27,6 +27,14 @@ describe("EmailVerificationResendButton", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.useRealTimers(); // Ensure real timers before each test
+		// Clear localStorage before each test
+		localStorage.clear();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers(); // Cleanup fake timers after each test
+		localStorage.clear();
 	});
 
 	it("renders the resend button initially", () => {
@@ -62,44 +70,57 @@ describe("EmailVerificationResendButton", () => {
 		expect(mockSendEmailVerification).toHaveBeenCalledWith(mockEmail);
 	});
 
-	it("shows success message after successful email send", async () => {
+	it("calls onResendSuccess callback and starts countdown after successful email send", async () => {
 		const user = userEvent.setup();
-		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
+		const mockOnResendSuccess = vi.fn();
+		mockSendEmailVerification.mockResolvedValue({
+			message: "Email sent successfully",
+			rate_limit_seconds_remaining: 60
+		});
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		await user.click(button);
 
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
+			expect(mockOnResendSuccess).toHaveBeenCalled();
 		});
 
-		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+		// Should start countdown timer after successful send
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
+		});
+
+		// Button should be disabled during countdown
+		expect(screen.getByRole("button", { name: "60s" })).toBeDisabled();
 	});
 
-	it("hides success message after 3 seconds", async () => {
+	it("does not manage success state internally (parent handles it)", async () => {
 		const user = userEvent.setup();
-		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
+		const mockOnResendSuccess = vi.fn();
+		mockSendEmailVerification.mockResolvedValue({
+			message: "Email sent successfully",
+			rate_limit_seconds_remaining: 60
+		});
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		await user.click(button);
 
-		// Wait for success message to appear
+		// Should always show the button (no internal success state)
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
+			expect(mockOnResendSuccess).toHaveBeenCalled();
 		});
 
-		// Wait for success message to disappear (3 seconds + some buffer)
-		await waitFor(
-			() => {
-				expect(screen.queryByText("Verification email sent to test@example.com!")).not.toBeInTheDocument();
-				expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
-			},
-			{ timeout: 4000 }
-		);
+		// Button should show countdown after successful send (rate limiting starts)
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
+		});
+
+		// Should not show internal success message (parent handles it)
+		expect(screen.queryByText("Verification email sent to test@example.com!")).not.toBeInTheDocument();
 	});
 
 	it("returns to normal state after error", async () => {
@@ -123,11 +144,12 @@ describe("EmailVerificationResendButton", () => {
 
 	it("can be clicked again after an error", async () => {
 		const user = userEvent.setup();
+		const mockOnResendSuccess = vi.fn();
 		mockSendEmailVerification
 			.mockRejectedValueOnce(new Error("Network error"))
 			.mockResolvedValueOnce({ message: "Email sent successfully" });
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 
@@ -140,7 +162,7 @@ describe("EmailVerificationResendButton", () => {
 		// Second click - succeeds
 		await user.click(button);
 		await waitFor(() => {
-			expect(screen.getByText("Verification email sent to test@example.com!")).toBeInTheDocument();
+			expect(mockOnResendSuccess).toHaveBeenCalled();
 		});
 
 		expect(mockSendEmailVerification).toHaveBeenCalledTimes(2);
@@ -160,6 +182,193 @@ describe("EmailVerificationResendButton", () => {
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		// Should have the secondary variant base with steel blue override and extra compact sizing
-		expect(button).toHaveClass("!px-3", "!py-1", "!bg-interactive", "!text-white", "!border-none");
+		expect(button).toHaveClass("!px-2", "!py-1", "!bg-interactive", "!text-white", "!border-none");
+	});
+
+	describe("Rate Limiting", () => {
+		it("handles rate limit error and shows countdown", async () => {
+			// Mock HTTP 429 rate limit error with updated error structure
+			const rateError = new Error("Please wait 1 minute(s) before requesting a new code");
+			(rateError as any).response = {
+				status: 429,
+				data: {
+					detail: {
+						message: "Please wait 1 minute(s) before requesting a new code",
+						rate_limited: true,
+						rate_limit_seconds_remaining: 60
+					}
+				}
+			};
+			mockSendEmailVerification.mockRejectedValue(rateError);
+
+			const user = userEvent.setup();
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			await user.click(button);
+
+			// Should show countdown after rate limit error
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
+			});
+
+			// Button should be disabled during countdown
+			expect(screen.getByRole("button", { name: "60s" })).toBeDisabled();
+		});
+
+		it("sets up countdown state correctly", async () => {
+			const rateError = new Error("Rate limit exceeded");
+			(rateError as any).response = {
+				status: 429,
+				data: {
+					detail: {
+						rate_limit_seconds_remaining: 5
+					}
+				}
+			};
+			mockSendEmailVerification.mockRejectedValue(rateError);
+
+			const user = userEvent.setup();
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			await user.click(screen.getByRole("button", { name: "Resend" }));
+
+			// Should show countdown after rate limit error
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: "5s" })).toBeInTheDocument();
+			});
+
+			// Button should be disabled during countdown
+			expect(screen.getByRole("button", { name: "5s" })).toBeDisabled();
+		});
+
+		it("handles different countdown values", async () => {
+			const rateError = new Error("Rate limit exceeded");
+			(rateError as any).response = {
+				status: 429,
+				data: {
+					detail: {
+						rate_limit_seconds_remaining: 45
+					}
+				}
+			};
+			mockSendEmailVerification.mockRejectedValue(rateError);
+
+			const user = userEvent.setup();
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			await user.click(screen.getByRole("button", { name: "Resend" }));
+
+			// Should show countdown with correct value
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: "45s" })).toBeInTheDocument();
+			});
+
+			// Button should be disabled during countdown
+			expect(screen.getByRole("button", { name: "45s" })).toBeDisabled();
+		});
+
+		it("persists rate limit state in localStorage", async () => {
+			const user = userEvent.setup();
+
+			const rateError = new Error("Rate limit exceeded");
+			(rateError as any).response = {
+				status: 429,
+				data: {
+					detail: {
+						rate_limit_seconds_remaining: 30
+					}
+				}
+			};
+			mockSendEmailVerification.mockRejectedValue(rateError);
+
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			await user.click(screen.getByRole("button", { name: "Resend" }));
+
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: "30s" })).toBeInTheDocument();
+			});
+
+			// Check that rate limit data is saved to localStorage
+			const storedData = localStorage.getItem("emailResendRateLimit");
+			expect(storedData).toBeTruthy();
+
+			const parsedData = JSON.parse(storedData!);
+			expect(parsedData.email).toBe(mockEmail);
+			expect(parsedData.expiresAt).toBeGreaterThan(Date.now());
+		});
+
+		it("restores rate limit state from localStorage on mount", () => {
+			// Pre-populate localStorage with rate limit data
+			const expiresAt = Date.now() + 45000; // 45 seconds from now
+			const rateLimitData = {
+				email: mockEmail,
+				expiresAt
+			};
+			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
+
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			// Should show countdown from localStorage
+			const button = screen.getByRole("button");
+			expect(button.textContent).toMatch(/\d+s/);
+			expect(button).toBeDisabled();
+		});
+
+		it("ignores localStorage data for different email", () => {
+			// Pre-populate localStorage with rate limit data for different email
+			const expiresAt = Date.now() + 45000;
+			const rateLimitData = {
+				email: "different@example.com",
+				expiresAt
+			};
+			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
+
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			// Should not show countdown for different email
+			const button = screen.getByRole("button", { name: "Resend" });
+			expect(button).not.toBeDisabled();
+		});
+
+		it("clears expired localStorage data on mount", () => {
+			// Pre-populate localStorage with expired rate limit data
+			const expiresAt = Date.now() - 1000; // Expired 1 second ago
+			const rateLimitData = {
+				email: mockEmail,
+				expiresAt
+			};
+			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
+
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			// Should not show countdown and should clear localStorage
+			const button = screen.getByRole("button", { name: "Resend" });
+			expect(button).not.toBeDisabled();
+			expect(localStorage.getItem("emailResendRateLimit")).toBeNull();
+		});
+
+		it("persists rate limit state after successful sends", async () => {
+			const user = userEvent.setup();
+			mockSendEmailVerification.mockResolvedValue({
+				message: "Email sent successfully",
+				rate_limit_seconds_remaining: 60
+			});
+
+			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			await user.click(screen.getByRole("button", { name: "Resend" }));
+
+			// Should save rate limit data to localStorage after successful send
+			await waitFor(() => {
+				const storedData = localStorage.getItem("emailResendRateLimit");
+				expect(storedData).toBeTruthy();
+
+				const parsedData = JSON.parse(storedData!);
+				expect(parsedData.email).toBe(mockEmail);
+				expect(parsedData.expiresAt).toBeGreaterThan(Date.now());
+			});
+		});
 	});
 });

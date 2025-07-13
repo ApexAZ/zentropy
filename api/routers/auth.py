@@ -41,7 +41,6 @@ from ..database import AuthProvider, Organization
 from ..email_verification import (
     create_verification_code,
     send_verification_email,
-    verify_email_token,
     resend_verification_email,
 )
 
@@ -351,11 +350,9 @@ def google_login(
         db.commit()
         db.refresh(user)
 
-    # Create JWT token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
-    )
+    # Create JWT token with extended expiry for OAuth (30 days like "remember me")
+    # OAuth is inherently secure since Google handles authentication
+    access_token = create_access_token(data={"sub": str(user.id)}, remember_me=True)
 
     return LoginResponse(
         access_token=access_token,
@@ -448,6 +445,19 @@ def send_verification_email_endpoint(
     result = resend_verification_email(db, request.email)
 
     if not result["success"]:
+        # Check for rate limiting error
+        if result.get("rate_limited", False):
+            # Return rate limit information for better UX
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "message": result["message"],
+                    "rate_limited": True,
+                    "rate_limit_seconds_remaining": result[
+                        "rate_limit_seconds_remaining"
+                    ],
+                },
+            )
         # Don't reveal if email exists for security
         # Always return success to prevent email enumeration
         pass
@@ -458,28 +468,20 @@ def send_verification_email_endpoint(
             "a verification code has been sent"
         ),
         email=request.email,
+        rate_limit_seconds_remaining=60,  # 1-minute rate limit period
     )
-
-
-@router.post("/verify-email/{token}", response_model=MessageResponse)
-def verify_email_endpoint(token: str, db: Session = Depends(get_db)) -> MessageResponse:
-    """Verify email address using verification token."""
-    user = verify_email_token(db, token)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired verification token",
-        )
-
-    return MessageResponse(message=f"Email verified successfully for {user.email}")
 
 
 @router.post("/verify-code", response_model=VerificationCodeResponse)
 def verify_code_endpoint(
-    request: VerificationCodeRequest, db: Session = Depends(get_db)
+    fastapi_request: Request,
+    request: VerificationCodeRequest,
+    db: Session = Depends(get_db),
 ) -> VerificationCodeResponse:
     """Verify email using verification code (new secure method)."""
+    # Apply rate limiting to prevent brute force attacks on verification codes
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
     # Find user by email
     user = (
         db.query(database.User)

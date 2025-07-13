@@ -131,30 +131,13 @@ class TestEmailVerificationEndpoints:
         assert "message" in data
         assert "verified" in data["message"].lower()
         
-    def test_verify_email_invalid_token(self, client: TestClient):
-        """Test email verification with invalid token."""
-        response = client.post("/api/v1/auth/verify-email/invalid-token")
-        
-        assert response.status_code == 400
-        data = response.json()
-        assert "detail" in data
-        assert "invalid" in data["detail"].lower()
-        
-    def test_verify_email_expired_token(self, client: TestClient, test_rate_limits):
-        """Test email verification with expired token."""
-        response = client.post("/api/v1/auth/verify-email/expired-token")
-        
-        assert response.status_code == 400
-        data = response.json()
-        assert "detail" in data
-        assert "expired" in data["detail"].lower()
 
 
 class TestEmailVerificationFlow:
     """Test complete email verification flow."""
     
     def test_complete_verification_flow(self, client: TestClient, test_rate_limits):
-        """Test complete flow: register -> send email -> verify."""
+        """Test complete flow: register -> verify with code."""
         # 1. Register user
         random_id = random.randint(1000, 9999)
         email = f"flowtest{random_id}@example.com"
@@ -171,12 +154,18 @@ class TestEmailVerificationFlow:
         register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
-        # 2. Resend verification email
-        send_response = client.post("/api/v1/auth/send-verification", json={"email": email})
-        assert send_response.status_code == 200
+        # Registration automatically creates a verification code
+        # 2. Verify with incorrect code first (should fail)
+        verify_response = client.post("/api/v1/auth/verify-code", json={
+            "email": email,
+            "code": "000000",
+            "verification_type": "email_verification"
+        })
+        assert verify_response.status_code == 400
         
-        # 3. In real implementation, we'd get token from email
-        # For testing, we'll need to extract token from database or mock it
+        # 3. For testing, we can't get the actual code from email,
+        # so this test validates the verification endpoint works
+        # Real verification would use the 6-digit code from email
         
     def test_login_requires_verified_email(self, client: TestClient):
         """Test that login is rejected for unverified users."""

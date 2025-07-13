@@ -259,7 +259,7 @@ While the full configuration is in `eslint.config.js`, these are the most import
 # Run the complete test suite (Python + React)
 npm run test
 
-# Run the full quality pipeline (lint, format, type-check, test)
+# Run the full quality pipeline (format, lint, type-check, test)
 # This is the command to run before committing.
 npm run quality
 
@@ -270,10 +270,10 @@ npm run fix
 ### Advanced Commands
 
 ```bash
-# Run only Python tests
-npm run test:python
+# Run only backend tests
+npm run test:backend
 
-# Run only Frontend tests
+# Run only frontend tests
 npm run test:frontend
 
 # Run React tests with coverage

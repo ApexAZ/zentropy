@@ -23,6 +23,7 @@ const mockUser = {
 describe("ProfilePage", () => {
 	beforeEach(() => {
 		mockFetch.mockClear();
+		vi.useRealTimers(); // Ensure real timers before each test
 		// Mock all ProfilePage API calls by default with robust URL-based implementation
 		mockFetch.mockImplementation((url: string, options?: any) => {
 			if (url.includes("/api/v1/users/me") && !options?.method) {
@@ -48,6 +49,10 @@ describe("ProfilePage", () => {
 			}
 			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
 		});
+	});
+
+	afterEach(() => {
+		vi.useRealTimers(); // Cleanup fake timers after each test
 	});
 
 	it("renders profile page with main elements", async () => {
@@ -614,8 +619,20 @@ describe("ProfilePage", () => {
 	});
 
 	it("auto-dismisses toast after 5 seconds", async () => {
-		// Test toast auto-dismissal using real timers with shorter delay
-		// This is more reliable than fake timers for this complex component
+		// Store original setTimeout
+		const originalSetTimeout = window.setTimeout;
+		let capturedCallback: (() => void) | null = null;
+
+		// Mock setTimeout to capture the 5000ms timer specifically
+		window.setTimeout = vi.fn((callback: () => void, delay: number) => {
+			if (delay === 5000) {
+				capturedCallback = callback;
+				return 123 as any; // Return fake timer ID
+			}
+			// For other delays (like userEvent), use original setTimeout
+			return originalSetTimeout(callback, delay);
+		}) as any;
+
 		const user = userEvent.setup();
 		render(<ProfilePage />);
 
@@ -633,14 +650,25 @@ describe("ProfilePage", () => {
 			expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
 		});
 
-		// Wait for toast to be auto-dismissed (5 seconds + small buffer)
-		await waitFor(
-			() => {
-				expect(screen.queryByText("Profile updated successfully!")).not.toBeInTheDocument();
-			},
-			{ timeout: 6000 }
-		);
-	}, 10000);
+		// Verify setTimeout was called with correct parameters
+		expect(window.setTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
+		expect(capturedCallback).toBeTruthy();
+
+		// Execute the captured callback to simulate timer firing
+		if (capturedCallback) {
+			act(() => {
+				capturedCallback!();
+			});
+		}
+
+		// Wait for toast to disappear
+		await waitFor(() => {
+			expect(screen.queryByText("Profile updated successfully!")).not.toBeInTheDocument();
+		});
+
+		// Restore original setTimeout
+		window.setTimeout = originalSetTimeout;
+	});
 
 	it("allows manual dismissal of toast", async () => {
 		// Mock initial profile load and failed update

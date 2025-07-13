@@ -26,9 +26,17 @@ interface NavigationPanelProps {
 	onShowSignIn: () => void;
 	/** Authentication state and methods from useAuth hook */
 	auth: Auth;
+	/** Pending verification state to show contextual messaging */
+	pendingVerification?: { email: string; timestamp: number } | null;
 }
 
-const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowRegistration, onShowSignIn, auth }) => {
+const NavigationPanel: React.FC<NavigationPanelProps> = ({
+	onPageChange,
+	onShowRegistration,
+	onShowSignIn,
+	auth,
+	pendingVerification
+}) => {
 	const [isOpen, setIsOpen] = useState(false);
 	const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
 	const panelRef = useRef<HTMLDivElement>(null);
@@ -122,7 +130,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 			{isOpen && (
 				<>
 					<button
-						className="text-interactive hover:text-interactive-hover focus:outline-interactive fixed top-4 right-10 z-[1001] flex h-12 w-12 cursor-pointer items-center justify-center border-none bg-transparent p-1 transition-colors duration-200 focus:outline-2 focus:outline-offset-1"
+						className="text-interactive hover:text-interactive-hover focus:outline-interactive fixed top-[15px] right-[15px] z-[1001] flex h-12 w-12 cursor-pointer items-center justify-center border-none bg-transparent p-1 transition-colors duration-200 focus:outline-2 focus:outline-offset-1"
 						onClick={() => setIsOpen(false)}
 						aria-label="Close profile menu"
 					>
@@ -164,26 +172,34 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({ onPageChange, onShowR
 									</>
 								) : (
 									<div className="-ml-3 flex items-center gap-1">
-										<button
-											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-											onClick={handleShowSignIn}
-											aria-label="Sign in"
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-												<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-											</svg>
-											Sign in
-										</button>
-										<button
-											className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-2 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-											onClick={handleShowRegistration}
-											aria-label="Register"
-										>
-											<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-											</svg>
-											Register
-										</button>
+										{pendingVerification ? (
+											<div className="text-warning w-full text-center text-sm font-medium">
+												Please verify your email
+											</div>
+										) : (
+											<>
+												<button
+													className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
+													onClick={handleShowSignIn}
+													aria-label="Sign in"
+												>
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+														<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+													</svg>
+													Sign in
+												</button>
+												<button
+													className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
+													onClick={handleShowRegistration}
+													aria-label="Register"
+												>
+													<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+														<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+													</svg>
+													Register
+												</button>
+											</>
+										)}
 									</div>
 								)}
 							</div>

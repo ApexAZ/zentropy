@@ -781,13 +781,10 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 	});
 
-	// Email Verification Hook Integration tests have been removed as
-	// we now handle verification through EmailVerificationPage directly
-	// TODO: Add new tests for EmailVerificationPage integration
-
-	describe("Email Verification Page Integration", () => {
-		it("should show verification page when requested", () => {
-			// Basic test that verification page can be rendered
+	// Email Verification Modal Integration tests
+	describe("Email Verification Modal Integration", () => {
+		it("should show verification modal when requested", () => {
+			// Basic test that verification modal can be rendered
 			render(<App />);
 			// This will be expanded to test the new verification flow
 			expect(screen.getByTestId("header")).toBeInTheDocument();

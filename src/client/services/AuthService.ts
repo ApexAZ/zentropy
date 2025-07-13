@@ -165,7 +165,15 @@ export class AuthService {
 
 		if (!response.ok) {
 			const errorData = await response.json();
-			throw new Error(errorData.detail || "Failed to send verification email");
+			// Preserve HTTP response structure for rate limiting
+			const error = new Error(
+				errorData.detail?.message || errorData.detail || "Failed to send verification email"
+			);
+			(error as any).response = {
+				status: response.status,
+				data: errorData
+			};
+			throw error;
 		}
 
 		const data = await response.json();

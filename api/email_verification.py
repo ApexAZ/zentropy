@@ -6,11 +6,15 @@ Maintains backward compatibility while migrating to code-based verification.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 from .database import User
-from .verification_service import VerificationCodeService, VerificationType
+from .verification_service import (
+    VerificationCodeService,
+    VerificationType,
+    VerificationCode,
+)
 
 
 def create_verification_code(db: Session, user_id: str) -> tuple[str, datetime]:
@@ -45,33 +49,6 @@ def verify_email_code(db: Session, user_id: uuid.UUID, code: str) -> Dict[str, A
             result["user"] = user
 
     return result
-
-
-def verify_email_token(db: Session, token: str) -> Optional[User]:
-    """DEPRECATED: Legacy function for backward compatibility - will be removed
-    after migration."""
-    # Find user with this token
-    user = db.query(User).filter(User.email_verification_token == token).first()
-
-    if not user:
-        return None
-
-    # Check if token is expired
-    expires_at = user.email_verification_expires_at
-    if expires_at:
-        # Ensure both datetimes are timezone-aware for comparison
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            return None
-
-    # Mark email as verified and clear token
-    user.email_verified = True
-    user.email_verification_token = None
-    user.email_verification_expires_at = None
-    db.commit()
-
-    return user
 
 
 def send_verification_email(email: str, code: str, user_name: str) -> bool:
@@ -112,4 +89,50 @@ def resend_verification_email(db: Session, email: str) -> Dict[str, Any]:
             return {"success": False, "message": "Failed to send email"}
 
     except ValueError as e:
-        return {"success": False, "message": str(e)}
+        # Check if this is a rate limiting error and calculate remaining time
+        error_message = str(e)
+        if "Please wait" in error_message and "minute(s) before" in error_message:
+            # This is a rate limiting error - calculate remaining seconds
+
+            # Find the most recent verification code to calculate rate limit expiry
+            now = datetime.now(timezone.utc)
+            config = VerificationCodeService.TYPE_CONFIG[
+                VerificationType.EMAIL_VERIFICATION
+            ]
+            rate_limit_minutes = config["rate_limit_minutes"]
+
+            # Query for the most recent code that's causing the rate limit
+            recent_code = (
+                db.query(VerificationCode)
+                .filter(
+                    VerificationCode.user_id == user.id,
+                    VerificationCode.verification_type
+                    == (VerificationType.EMAIL_VERIFICATION),
+                    VerificationCode.created_at
+                    > now - timedelta(minutes=rate_limit_minutes),
+                )
+                .order_by(VerificationCode.created_at.desc())
+                .first()
+            )
+
+            if recent_code:
+                # Rate limit expires after the rate limit period
+                rate_limit_expires = recent_code.created_at + timedelta(
+                    minutes=rate_limit_minutes
+                )
+
+                # Ensure both datetimes are timezone-aware for comparison
+                if recent_code.created_at.tzinfo is None:
+                    # SQLite datetime without timezone, assume UTC
+                    rate_limit_expires = rate_limit_expires.replace(tzinfo=timezone.utc)
+
+                if rate_limit_expires > now:
+                    remaining_seconds = int((rate_limit_expires - now).total_seconds())
+                    return {
+                        "success": False,
+                        "message": error_message,
+                        "rate_limited": True,
+                        "rate_limit_seconds_remaining": remaining_seconds,
+                    }
+
+        return {"success": False, "message": error_message}

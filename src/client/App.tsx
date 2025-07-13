@@ -9,7 +9,7 @@ import CalendarPage from "./pages/CalendarPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
-import EmailVerificationPage from "./pages/EmailVerificationPage";
+import EmailVerificationModal from "./components/EmailVerificationModal";
 import { useAuth } from "./hooks/useAuth";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
@@ -17,7 +17,7 @@ type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "d
 function App(): React.JSX.Element {
 	const [currentPage, setCurrentPage] = useState<Page>("home");
 	const [showAuthModal, setShowAuthModal] = useState(false);
-	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup" | "method-selection">("method-selection");
+	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signin");
 	const [showVerificationPage, setShowVerificationPage] = useState(false);
 	const [verificationEmail, setVerificationEmail] = useState<string>("");
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -120,6 +120,7 @@ function App(): React.JSX.Element {
 				onPageChange={setCurrentPage}
 				onShowRegistration={handleShowRegistration}
 				onShowSignIn={handleShowSignIn}
+				onShowVerification={handleShowVerification}
 				auth={auth}
 			/>
 			{renderPage()}
@@ -136,12 +137,13 @@ function App(): React.JSX.Element {
 				onShowVerification={handleShowVerification}
 			/>
 
-			{/* Email Verification Page */}
-			{showVerificationPage && (
-				<div className="fixed inset-0 z-[1200] bg-white">
-					<EmailVerificationPage onClose={handleCloseVerification} initialEmail={verificationEmail} />
-				</div>
-			)}
+			{/* Email Verification Modal */}
+			<EmailVerificationModal
+				isOpen={showVerificationPage}
+				onClose={handleCloseVerification}
+				onSuccess={handleAuthSuccess}
+				initialEmail={verificationEmail}
+			/>
 
 			{/* Toast Notification */}
 			{toast && (

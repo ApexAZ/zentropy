@@ -116,13 +116,19 @@ We use **Husky** to manage pre-commit hooks. When you commit your changes, a sub
 The project has a comprehensive three-layer testing strategy covering unit, integration, and end-to-end tests:
 
 ```bash
-# Run unit and integration tests (fast feedback)
+# Run all tests (backend + frontend)
 npm run test
+
+# Run backend tests only (Python/pytest)
+npm run test:backend
+
+# Run frontend tests only (TypeScript/vitest)
+npm run test:frontend
 
 # Run end-to-end tests (complete user workflows)
 npm run test:e2e
 
-# Run complete quality pipeline (all tests + quality checks)
+# Run complete quality pipeline (format, lint, type-check, test)
 npm run quality
 ```
 

@@ -228,5 +228,61 @@ describe("Header", () => {
 		expect(headerElement).toContainElement(profileButton);
 	});
 
+	it("shows Enter Code button when onShowVerification is provided", () => {
+		const mockOnShowVerification = vi.fn();
+
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				onShowVerification={mockOnShowVerification}
+				auth={mockAuthUnverified}
+			/>
+		);
+
+		expect(screen.getByText("Email verification required")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /enter code/i })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
+	});
+
+	it("does not show Enter Code button when onShowVerification is not provided", () => {
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				auth={mockAuthUnverified}
+			/>
+		);
+
+		expect(screen.getByText("Email verification required")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /enter code/i })).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
+	});
+
+	it("calls onShowVerification with user email when Enter Code is clicked", async () => {
+		const user = userEvent.setup();
+		const mockOnShowVerification = vi.fn();
+
+		render(
+			<Header
+				currentPage="home"
+				onPageChange={mockOnPageChange}
+				onShowRegistration={vi.fn()}
+				onShowSignIn={vi.fn()}
+				onShowVerification={mockOnShowVerification}
+				auth={mockAuthUnverified}
+			/>
+		);
+
+		const enterCodeButton = screen.getByRole("button", { name: /enter code/i });
+		await user.click(enterCodeButton);
+
+		expect(mockOnShowVerification).toHaveBeenCalledWith("john@example.com");
+	});
+
 	// Note: Cross-tab functionality has been replaced with a central verification code system
 });

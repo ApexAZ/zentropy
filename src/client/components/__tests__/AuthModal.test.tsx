@@ -70,32 +70,17 @@ describe("AuthModal", () => {
 	});
 
 	// Test user behavior, not implementation - following tests/README.md philosophy
-	it("should allow user to navigate between authentication modes", async () => {
-		const user = userEvent.setup();
+	it("should show sign in form by default when modal opens", async () => {
 		render(<AuthModal {...mockProps} />);
 
-		// User starts at method selection
-		await waitFor(() => {
-			expect(screen.getByText("Welcome to Zentropy")).toBeInTheDocument();
-		});
-
-		// User clicks Sign In
-		await user.click(screen.getByText("Sign In"));
+		// User sees sign in form directly
 		await waitFor(() => {
 			expect(screen.getByText("Welcome back to Zentropy")).toBeInTheDocument();
 		});
 
-		// User goes back to method selection
-		await user.click(screen.getByText("← Back to options"));
-		await waitFor(() => {
-			expect(screen.getByText("Welcome to Zentropy")).toBeInTheDocument();
-		});
-
-		// User clicks Sign Up
-		await user.click(screen.getByText("Sign Up"));
-		await waitFor(() => {
-			expect(screen.getByRole("heading", { name: "Create Your Account" })).toBeInTheDocument();
-		});
+		// Should not see method selection screen since it's removed
+		expect(screen.queryByText("Welcome to Zentropy")).not.toBeInTheDocument();
+		expect(screen.queryByText("Choose how you'd like to continue")).not.toBeInTheDocument();
 	});
 
 	it("should go directly to signup form when initialMode is signup", async () => {

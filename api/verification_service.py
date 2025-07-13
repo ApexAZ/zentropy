@@ -100,6 +100,7 @@ class VerificationCodeService:
             "expiration_minutes": 15,
             "max_attempts": 3,
             "rate_limit_minutes": 1,  # Min time between code generation requests
+            "hourly_limit": 6,  # Max verification emails per hour per user
         },
         VerificationType.TWO_FACTOR_AUTH: {
             "expiration_minutes": 5,
@@ -163,6 +164,27 @@ class VerificationCodeService:
                 f"Please wait {config['rate_limit_minutes']} minute(s) before "
                 "requesting a new code"
             )
+
+        # Check hourly limit - prevent abuse
+        if "hourly_limit" in config:
+            hourly_cutoff = now - timedelta(hours=1)
+            hourly_count = (
+                db.query(VerificationCode)
+                .filter(
+                    and_(
+                        VerificationCode.user_id == user_id,
+                        VerificationCode.verification_type == verification_type,
+                        VerificationCode.created_at > hourly_cutoff,
+                    )
+                )
+                .count()
+            )
+
+            if hourly_count >= config["hourly_limit"]:
+                raise ValueError(
+                    f"Hourly limit exceeded. You can request at most "
+                    f"{config['hourly_limit']} verification codes per hour"
+                )
 
         # Invalidate any existing codes for this user/type
         db.query(VerificationCode).filter(

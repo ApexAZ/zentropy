@@ -130,6 +130,40 @@ class TestVerificationCodeCreation:
                 db=db, user_id=user_id, verification_type=VerificationType.EMAIL_VERIFICATION
             )
 
+    def test_hourly_rate_limiting_prevents_abuse(self, db: Session):
+        """Test that hourly rate limiting prevents too many verification requests."""
+        user_id = uuid.uuid4()
+        now = datetime.now(timezone.utc)
+        
+        # Manually create 6 verification codes with timestamps spread across the hour
+        # to simulate reaching the hourly limit
+        for i in range(6):  # Create 6 codes (the hourly limit)
+            # Create code manually to avoid rate limiting during test setup
+            code = VerificationCodeService.generate_code()
+            expires_at = now + timedelta(minutes=15)
+            
+            verification_code = VerificationCode(
+                user_id=user_id,
+                verification_type=VerificationType.EMAIL_VERIFICATION,
+                code=code,
+                expires_at=expires_at,
+                max_attempts=3,
+                # Set created_at to be (5 + i * 8) minutes ago to avoid 1-minute rate limit
+                # but still be within the hour for hourly limit checking
+                created_at=now - timedelta(minutes=5 + i * 8),
+                is_used=False,
+                attempts=0
+            )
+            db.add(verification_code)
+        
+        db.commit()
+        
+        # Now try to create a 7th code - should fail due to hourly limit
+        with pytest.raises(ValueError, match="Hourly limit exceeded"):
+            VerificationCodeService.create_verification_code(
+                db=db, user_id=user_id, verification_type=VerificationType.EMAIL_VERIFICATION
+            )
+
     def test_invalidates_existing_codes_on_new_creation(self, db: Session):
         """Test that creating a new code invalidates existing unused codes."""
         user_id = uuid.uuid4()

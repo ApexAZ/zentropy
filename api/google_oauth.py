@@ -5,10 +5,10 @@ from typing import Dict, List, Any, Mapping
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from .database import User, UserRole, AuthProvider, RegistrationType, Organization
-from .auth import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from .auth import create_access_token
 from .rate_limiter import rate_limiter, RateLimitType
 
 # Legacy in-memory rate limiter for backward compatibility
@@ -272,11 +272,9 @@ def process_google_oauth(
     # Get or create user
     user = get_or_create_google_user(db, google_info)
 
-    # Create access token with proper expiry
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(user.id)}, expires_delta=access_token_expires
-    )
+    # Create access token with extended expiry for OAuth (30 days like "remember me")
+    # OAuth is inherently secure since Google handles authentication
+    access_token = create_access_token(data={"sub": str(user.id)}, remember_me=True)
 
     # Return authentication response
     return {

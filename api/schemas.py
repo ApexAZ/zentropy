@@ -222,6 +222,7 @@ class EmailVerificationRequest(BaseModel):
 class EmailVerificationResponse(BaseModel):
     message: str
     email: EmailStr
+    rate_limit_seconds_remaining: int = 60  # Include rate limit info for UX
 
 
 # Verification code schemas
