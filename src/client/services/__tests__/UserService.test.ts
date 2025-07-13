@@ -1,13 +1,31 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { UserService } from "../UserService";
 import { AuthService } from "../AuthService";
-import type { User, ProfileUpdateData, PasswordUpdateData } from "../../types";
+import type {
+	User,
+	ProfileUpdateData,
+	PasswordUpdateData,
+	AccountSecurityResponse,
+	LinkGoogleAccountRequest,
+	UnlinkGoogleAccountRequest,
+	LinkAccountResponse,
+	UnlinkAccountResponse
+} from "../../types";
+import * as authUtils from "../../utils/auth";
 
 // Mock fetch globally
 global.fetch = vi.fn();
 
 // Mock AuthService dependency
 vi.mock("../AuthService");
+
+// Mock auth utils
+vi.mock("../../utils/auth", () => ({
+	createAuthHeaders: vi.fn(() => ({
+		"Content-Type": "application/json",
+		Authorization: "Bearer mock-token"
+	}))
+}));
 
 describe("UserService", () => {
 	beforeEach(() => {
@@ -661,6 +679,209 @@ describe("UserService", () => {
 			vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
 
 			await expect(UserService.getCurrentUser()).rejects.toThrow("Failed to fetch");
+		});
+	});
+
+	describe("getAccountSecurity", () => {
+		const mockSecurityResponse: AccountSecurityResponse = {
+			email_auth_linked: true,
+			google_auth_linked: false,
+			google_email: undefined
+		};
+
+		const mockHybridSecurityResponse: AccountSecurityResponse = {
+			email_auth_linked: true,
+			google_auth_linked: true,
+			google_email: "john@gmail.com"
+		};
+
+		it("should retrieve account security status successfully", async () => {
+			mockSuccessResponse(mockSecurityResponse);
+
+			const result = await UserService.getAccountSecurity();
+
+			expect(result).toEqual(mockSecurityResponse);
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/security", {
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer mock-token"
+				}
+			});
+			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
+		});
+
+		it("should retrieve hybrid account security status", async () => {
+			mockSuccessResponse(mockHybridSecurityResponse);
+
+			const result = await UserService.getAccountSecurity();
+
+			expect(result).toEqual(mockHybridSecurityResponse);
+			expect(result.google_auth_linked).toBe(true);
+			expect(result.google_email).toBe("john@gmail.com");
+		});
+
+		it("should handle unauthorized error when getting security status", async () => {
+			mockErrorResponse(401, "Unauthorized");
+
+			await expect(UserService.getAccountSecurity()).rejects.toThrow("Unauthorized");
+		});
+
+		it("should handle API errors when getting security status", async () => {
+			mockErrorResponse(500, "Internal server error");
+
+			await expect(UserService.getAccountSecurity()).rejects.toThrow("Internal server error");
+		});
+
+		it("should handle network errors when getting security status", async () => {
+			mockNetworkError();
+
+			await expect(UserService.getAccountSecurity()).rejects.toThrow("Network error");
+		});
+	});
+
+	describe("linkGoogleAccount", () => {
+		const linkRequest: LinkGoogleAccountRequest = {
+			google_credential: "google-oauth-credential-token-123"
+		};
+
+		const backendResponse = {
+			message: "Google account linked successfully",
+			google_email: "john@gmail.com"
+		};
+
+		const expectedResponse: LinkAccountResponse = {
+			message: "Google account linked successfully",
+			google_email: "john@gmail.com",
+			success: true
+		};
+
+		it("should link Google account successfully", async () => {
+			mockSuccessResponse(backendResponse);
+
+			const result = await UserService.linkGoogleAccount(linkRequest);
+
+			expect(result).toEqual(expectedResponse);
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/link-google", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer mock-token"
+				},
+				body: JSON.stringify(linkRequest)
+			});
+			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
+		});
+
+		it("should handle email mismatch error during linking", async () => {
+			mockErrorResponse(400, "Google email does not match account email");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"Google email does not match account email"
+			);
+		});
+
+		it("should handle already linked error", async () => {
+			mockErrorResponse(409, "Google account already linked to another user");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"Google account already linked to another user"
+			);
+		});
+
+		it("should handle invalid Google credential error", async () => {
+			mockErrorResponse(400, "Invalid Google credential");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Invalid Google credential");
+		});
+
+		it("should handle unauthorized error during linking", async () => {
+			mockErrorResponse(401, "Unauthorized");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Unauthorized");
+		});
+
+		it("should handle API errors during linking", async () => {
+			mockErrorResponse(500, "Internal server error");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Internal server error");
+		});
+
+		it("should handle network errors during linking", async () => {
+			mockNetworkError();
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Network error");
+		});
+	});
+
+	describe("unlinkGoogleAccount", () => {
+		const unlinkRequest: UnlinkGoogleAccountRequest = {
+			password: "current-password-123"
+		};
+
+		const backendResponse = {
+			message: "Google account unlinked successfully"
+		};
+
+		const expectedResponse: UnlinkAccountResponse = {
+			message: "Google account unlinked successfully",
+			success: true
+		};
+
+		it("should unlink Google account successfully", async () => {
+			mockSuccessResponse(backendResponse);
+
+			const result = await UserService.unlinkGoogleAccount(unlinkRequest);
+
+			expect(result).toEqual(expectedResponse);
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/unlink-google", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer mock-token"
+				},
+				body: JSON.stringify(unlinkRequest)
+			});
+			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
+		});
+
+		it("should handle incorrect password error during unlinking", async () => {
+			mockErrorResponse(400, "Incorrect password");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Incorrect password");
+		});
+
+		it("should handle no Google account linked error", async () => {
+			mockErrorResponse(400, "No Google account is currently linked");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"No Google account is currently linked"
+			);
+		});
+
+		it("should handle last authentication method error", async () => {
+			mockErrorResponse(400, "Cannot remove last authentication method");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"Cannot remove last authentication method"
+			);
+		});
+
+		it("should handle unauthorized error during unlinking", async () => {
+			mockErrorResponse(401, "Unauthorized");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Unauthorized");
+		});
+
+		it("should handle API errors during unlinking", async () => {
+			mockErrorResponse(500, "Internal server error");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Internal server error");
+		});
+
+		it("should handle network errors during unlinking", async () => {
+			mockNetworkError();
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Network error");
 		});
 	});
 });

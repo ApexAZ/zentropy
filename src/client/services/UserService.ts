@@ -1,7 +1,25 @@
-import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
+import type {
+	User,
+	ProfileUpdateData,
+	PasswordUpdateData,
+	AccountSecurityResponse,
+	LinkGoogleAccountRequest,
+	UnlinkGoogleAccountRequest,
+	LinkAccountResponse,
+	UnlinkAccountResponse
+} from "../types";
 import { AuthService } from "./AuthService";
+import { createAuthHeaders } from "../utils/auth";
 
 export class UserService {
+	/**
+	 * Security endpoint URLs for maintainability
+	 */
+	private static readonly SECURITY_ENDPOINTS = {
+		GET_STATUS: "/api/v1/users/me/security",
+		LINK_GOOGLE: "/api/v1/users/me/link-google",
+		UNLINK_GOOGLE: "/api/v1/users/me/unlink-google"
+	};
 	private static async handleResponse<T>(response: Response): Promise<T> {
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
@@ -141,6 +159,49 @@ export class UserService {
 		return {
 			isValid: Object.keys(errors).length === 0,
 			errors
+		};
+	}
+
+	/**
+	 * Get current user's account security status
+	 */
+	static async getAccountSecurity(): Promise<AccountSecurityResponse> {
+		const response = await fetch(this.SECURITY_ENDPOINTS.GET_STATUS, {
+			headers: createAuthHeaders()
+		});
+		return this.handleResponse<AccountSecurityResponse>(response);
+	}
+
+	/**
+	 * Link Google OAuth account to current user
+	 */
+	static async linkGoogleAccount(linkData: LinkGoogleAccountRequest): Promise<LinkAccountResponse> {
+		const response = await fetch(this.SECURITY_ENDPOINTS.LINK_GOOGLE, {
+			method: "POST",
+			headers: createAuthHeaders(),
+			body: JSON.stringify(linkData)
+		});
+		const result = await this.handleResponse<{ message: string; google_email: string }>(response);
+		return {
+			message: result.message,
+			google_email: result.google_email,
+			success: true
+		};
+	}
+
+	/**
+	 * Unlink Google OAuth account from current user
+	 */
+	static async unlinkGoogleAccount(unlinkData: UnlinkGoogleAccountRequest): Promise<UnlinkAccountResponse> {
+		const response = await fetch(this.SECURITY_ENDPOINTS.UNLINK_GOOGLE, {
+			method: "POST",
+			headers: createAuthHeaders(),
+			body: JSON.stringify(unlinkData)
+		});
+		const result = await this.handleResponse<{ message: string }>(response);
+		return {
+			message: result.message,
+			success: true
 		};
 	}
 }

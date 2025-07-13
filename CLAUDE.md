@@ -216,4 +216,50 @@ For deeper dives, refer to these files. They are the project's memory.
 
 ---
 
+## TODO List
+
+### Code Quality & Technical Debt
+
+1. **Eliminate Legacy Code**
+   * Status: 🔴 Not Corrected
+   * Specifics: The file src/client/hooks/useFormValidation.ts still contains the function useFormValidationLegacy. This function represents technical debt and creates two different ways of handling forms in the codebase.
+   * Impact: This leads to inconsistent form behavior and creates confusion for developers on which hook to use.
+   * Proposed Solution: Migrate any components still using useFormValidationLegacy to the modern useFormValidation hook and delete the legacy code.
+
+2. **Simplify Google OAuth**
+   * Status: 🔴 Not Corrected
+   * Specifics: The src/client/hooks/useGoogleOAuth.ts hook still contains a complex, manual implementation that uses setInterval and setTimeout to poll for the existence of the window.google object. The package.json file confirms that a dedicated library like @react-oauth/google has not been added.
+   * Impact: This manual approach is brittle, harder to maintain, and reinvents functionality that is handled more robustly by specialized libraries.
+   * Proposed Solution: Replace the custom hook with a well-maintained library like @react-oauth/google to simplify the code and improve reliability.
+
+3. **Refactor AuthModal.tsx**
+   * Status: 🟡 Partially Corrected
+   * Specifics: The AuthModal.tsx component was simplified by removing the method-selection mode. However, it remains a large, monolithic component that still contains the full logic and JSX for both renderSignIn and renderSignUp. The useEffect hooks still contain eslint-disable-next-line comments to avoid infinite loops, which is a sign of overly complex state interactions.
+   * Impact: The component is still difficult to modify and debug. A change to the sign-in form could unintentionally affect the sign-up form.
+   * Proposed Solution: Break the component into smaller, single-responsibility components: AuthModal (as the shell), SignInForm, and SignUpForm.
+
+4. **Adopt a State Management Library**
+   * Status: 🔴 Not Corrected
+   * Specifics: The main App.tsx component still manages a large amount of global state using useState, including currentPage, showAuthModal, authModalMode, showVerificationPage, and verificationEmail. These state variables and their setters are passed down as props to child components (Header, AuthModal, etc.), which is a pattern known as prop drilling.
+   * Impact: App.tsx is a bottleneck for state, making it complex and hard to maintain. Adding new global features will further bloat this component.
+   * Proposed Solution: Introduce a lightweight state management library like Zustand to create a central store for this global state, which will significantly simplify App.tsx and decouple the components.
+
+5. **Introduce a Routing Library**
+   * Status: 🔴 Not Corrected
+   * Specifics: In App.tsx, navigation is handled by a renderPage function that uses a switch statement based on the currentPage state variable.
+   * Impact: This manual routing system is not scalable and does not support standard web application features like nested routes, URL parameters (e.g., /teams/:id), or a declarative API.
+   * Proposed Solution: Replace the manual switch-based routing with the industry-standard react-router-dom library for a more robust and scalable navigation architecture.
+
+### Feature Enhancements
+
+6. **Add password reset functionality to profile page** (how should user information be organized? Security, personal information, etc?)
+
+7. **User name and Password recovery functions** (use our centralized code system??)
+
+8. **How to use the account merge function if a user starts with email registration, but wants to start using OAuth instead?** See docs/Org
+
+9. **Add another state to disable resend verification button completely with a new label indicating the lockout**
+
+---
+
 _Previous session recaps have been moved to [docs/archive/SessionArchive.md](docs/archive/SessionArchive.md) for historical reference._

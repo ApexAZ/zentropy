@@ -306,3 +306,115 @@ export interface APIError {
 export interface CustomError extends Error {
 	type?: string;
 }
+
+// Account Security types
+export interface AccountSecurityResponse {
+	email_auth_linked: boolean;
+	google_auth_linked: boolean;
+	google_email?: string;
+}
+
+export interface LinkGoogleAccountRequest {
+	google_credential: string;
+}
+
+export interface UnlinkGoogleAccountRequest {
+	password: string;
+}
+
+export interface LinkAccountResponse {
+	message: string;
+	google_email: string;
+	success: boolean;
+}
+
+export interface UnlinkAccountResponse {
+	message: string;
+	success: boolean;
+}
+
+// OAuth Provider types for scalability
+export interface OAuthProvider {
+	/** Provider name (e.g., 'google', 'github', 'microsoft') */
+	name: string;
+	/** Display name for UI (e.g., 'Google', 'GitHub', 'Microsoft') */
+	displayName: string;
+	/** CSS class for provider icon styling */
+	iconClass: string;
+	/** Primary brand color for UI theming */
+	brandColor: string;
+}
+
+export interface OAuthProviderConfig {
+	/** Whether this provider is enabled */
+	enabled: boolean;
+	/** Provider-specific configuration */
+	config: Record<string, any>;
+	/** OAuth scopes required */
+	scopes: string[];
+}
+
+export interface OAuthProviderState {
+	/** Whether OAuth initialization is complete */
+	isReady: boolean;
+	/** Whether authentication is in progress */
+	isLoading: boolean;
+	/** Current error state */
+	error: string | null;
+}
+
+export interface OAuthCredential {
+	/** The credential token from the OAuth provider */
+	token: string;
+	/** Provider name that issued the credential */
+	provider: string;
+	/** Optional additional provider data */
+	providerData?: Record<string, any>;
+}
+
+// Enhanced Account Security types with provider abstraction
+export interface ProviderAccountStatus {
+	/** Whether this provider is linked to the account */
+	linked: boolean;
+	/** Provider name */
+	provider: string;
+	/** Provider-specific identifier (email, username, etc.) */
+	identifier?: string;
+	/** When this provider was linked */
+	linked_at?: string;
+}
+
+export interface EnhancedAccountSecurityResponse {
+	/** Primary authentication method always available */
+	email_auth: ProviderAccountStatus;
+	/** All linked OAuth providers */
+	oauth_providers: ProviderAccountStatus[];
+	/** Available OAuth providers that can be linked */
+	available_providers: OAuthProvider[];
+}
+
+// Generic OAuth operation types
+export interface LinkOAuthProviderRequest {
+	/** OAuth credential from provider */
+	credential: string;
+	/** Provider name */
+	provider: string;
+}
+
+export interface UnlinkOAuthProviderRequest {
+	/** User password for security verification */
+	password: string;
+	/** Provider name to unlink */
+	provider: string;
+}
+
+export interface OAuthOperationResponse {
+	/** Operation result message */
+	message: string;
+	/** Whether the operation succeeded */
+	success: boolean;
+	/** Provider that was affected */
+	provider: string;
+	/** Provider-specific identifier (email, username, etc.) */
+	provider_identifier?: string;
+}
