@@ -284,27 +284,34 @@ describe("EmailVerificationModal", () => {
 	it("should handle resend failure", async () => {
 		const user = userEvent.setup();
 
-		// Mock failed resend response
-		mockFetch.mockResolvedValueOnce({
+		// Create a promise that resolves to a failed response
+		const failedResponse = Promise.resolve({
 			ok: false,
 			json: () => Promise.resolve({})
 		});
+
+		// Mock failed resend response
+		mockFetch.mockReturnValueOnce(failedResponse);
 
 		render(<EmailVerificationModal {...defaultProps} />);
 
 		const resendButton = screen.getByRole("button", { name: /didn't receive a code\? resend/i });
 
-		// Wrap user interaction in act() for proper state handling
+		// Click and wait for all async operations to settle
 		await act(async () => {
 			await user.click(resendButton);
+			// Ensure the fetch promise and all subsequent state updates complete
+			await failedResponse;
+			// Add small delay for React state batching
+			await new Promise(resolve => setTimeout(resolve, 100));
 		});
 
-		// Wait for error message with increased timeout for async operations
+		// Wait for error message to appear in DOM
 		await waitFor(
 			() => {
 				expect(screen.getByText("Failed to resend code. Please try again.")).toBeInTheDocument();
 			},
-			{ timeout: 3000 } // Increased timeout for async state updates
+			{ timeout: 5000, interval: 50 } // More frequent checks with longer timeout
 		);
 	});
 

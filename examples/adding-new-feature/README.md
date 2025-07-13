@@ -899,7 +899,7 @@ npm run dev
 npm test
 
 # Run specific test files
-npm run test:python -- tests/test_projects.py
+npm run test:backend -- tests/test_projects.py
 npm run test:frontend -- src/client/components/__tests__/ProjectCard.test.tsx
 ```
 

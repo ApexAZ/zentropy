@@ -265,7 +265,7 @@ When updating the **Login System Test Plan**:
 ### Unit & Integration Testing
 E2E tests complement our comprehensive unit and integration test suites:
 - **[Testing & Quality Handbook](../tests/README.md)** - Unit and integration testing strategies for backend (pytest) and frontend (vitest)
-- **Commands**: `npm run test`, `npm run test:python`, `npm run test:frontend`
+- **Commands**: `npm run test`, `npm run test:backend`, `npm run test:frontend`
 
 ### Complete Testing Strategy
 For a comprehensive view of all testing layers:
