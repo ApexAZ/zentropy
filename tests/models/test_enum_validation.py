@@ -8,6 +8,7 @@ These tests ensure that invalid enum values return proper 422 validation errors.
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+from sqlalchemy.orm import Session
 
 from api.main import app
 
@@ -101,7 +102,7 @@ class TestAPIEnumValidation:
 class TestEnumAPIResponseConsistency:
     """Test that API responses include enum values correctly."""
 
-    def test_user_response_contains_proper_enum_values(self, client):
+    def test_user_response_contains_proper_enum_values(self, client, db):
         """Test that user API responses contain enum values, not names."""
         user_data = {
             "email": "enum-response@example.com",
@@ -112,20 +113,49 @@ class TestEnumAPIResponseConsistency:
             "terms_agreement": True
         }
 
+        # Register user first
         response = client.post("/api/v1/auth/register", json=user_data)
         assert response.status_code == 201
         
-        user_response = response.json()
+        # Verify the user's email to enable login
+        from api.database import User
+        from api.verification_service import VerificationCode, VerificationType
+        user = db.query(User).filter(User.email == "enum-response@example.com").first()
+        assert user is not None
+        
+        # Get and use verification code
+        verification_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user.id,
+            VerificationCode.verification_type == VerificationType.EMAIL_VERIFICATION
+        ).first()
+        assert verification_code is not None
+        
+        # Verify email using code
+        verify_response = client.post("/api/v1/auth/verify-code", json={
+            "email": "enum-response@example.com",
+            "code": verification_code.code,
+            "verification_type": "email_verification"
+        })
+        assert verify_response.status_code == 200
+        
+        # Now test login response which contains user data
+        login_response = client.post("/api/v1/auth/login-json", json={
+            "email": "enum-response@example.com",
+            "password": "Password123!"
+        })
+        assert login_response.status_code == 200
+        
+        user_response = login_response.json()
         assert "user" in user_response
-        user_data = user_response["user"]
+        user_data_response = user_response["user"]
         
         # Verify enum values are included as lowercase strings (enum.value)
-        assert user_data["role"] == "basic_user"  # Not "BASIC_USER"
-        assert user_data["registration_type"] == "email"  # Not "EMAIL"
+        assert user_data_response["role"] == "basic_user"  # Not "BASIC_USER"
+        assert user_data_response["registration_type"] == "email"  # Not "EMAIL"
         
         # Verify boolean fields are actual booleans
-        assert isinstance(user_data["has_projects_access"], bool)
-        assert isinstance(user_data["email_verified"], bool)
+        assert isinstance(user_data_response["has_projects_access"], bool)
+        assert isinstance(user_data_response["email_verified"], bool)
 
     @patch('api.google_oauth.verify_google_token')
     def test_google_oauth_response_contains_proper_enum_values(self, mock_verify_token, client):

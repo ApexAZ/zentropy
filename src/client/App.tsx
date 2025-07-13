@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import AuthModal from "./components/AuthModal";
 import HomePage from "./pages/HomePage";
@@ -15,21 +15,22 @@ import { useAuth } from "./hooks/useAuth";
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
 function App(): React.JSX.Element {
-	console.log("🔥 APP STARTUP: Current URL:", window.location.href);
-	console.log("🔥 APP STARTUP: Pathname:", window.location.pathname);
-	
 	const [currentPage, setCurrentPage] = useState<Page>("home");
 	const [showAuthModal, setShowAuthModal] = useState(false);
 	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup" | "method-selection">("method-selection");
+	const [showVerificationPage, setShowVerificationPage] = useState(false);
+	const [verificationEmail, setVerificationEmail] = useState<string>("");
 	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 	const auth = useAuth();
 
-	// Check for email verification URL on app load
+	// Check for legacy email verification URL on app load and redirect
 	useEffect(() => {
 		const pathSegments = window.location.pathname.split("/");
 		if (pathSegments[1] === "verify" && pathSegments[2]) {
-			// This is a verification URL - no routing needed, just log it
-			console.log("🔥 APP: Detected verification URL, EmailVerificationPage will handle it");
+			// Legacy verification URL detected - show verification page
+			setShowVerificationPage(true);
+			// Clean URL
+			window.history.pushState({}, "", "/");
 		}
 	}, []);
 
@@ -61,14 +62,21 @@ function App(): React.JSX.Element {
 		// Stay on current page after successful authentication
 	};
 
-	const renderPage = (): React.JSX.Element => {
-		// Check if this is an email verification URL
-		const pathSegments = window.location.pathname.split("/");
-		if (pathSegments[1] === "verify" && pathSegments[2]) {
-			console.log("🔥 APP: Rendering EmailVerificationPage for URL:", window.location.pathname);
-			return <EmailVerificationPage />;
-		}
+	const handleShowVerification = (email: string): void => {
+		setVerificationEmail(email);
+		setShowVerificationPage(true);
+		setShowAuthModal(false);
+	};
 
+	const handleCloseVerification = (): void => {
+		setShowVerificationPage(false);
+		setVerificationEmail("");
+		// Show sign in modal after successful verification
+		setAuthModalMode("signin");
+		setShowAuthModal(true);
+	};
+
+	const renderPage = (): React.JSX.Element => {
 		// Projects module pages that require special access
 		const projectsPages = ["teams", "calendar", "dashboard", "team-configuration"];
 
@@ -125,7 +133,15 @@ function App(): React.JSX.Element {
 				onSuccess={handleAuthSuccess}
 				auth={auth}
 				initialMode={authModalMode}
+				onShowVerification={handleShowVerification}
 			/>
+
+			{/* Email Verification Page */}
+			{showVerificationPage && (
+				<div className="fixed inset-0 z-[1200] bg-white">
+					<EmailVerificationPage onClose={handleCloseVerification} initialEmail={verificationEmail} />
+				</div>
+			)}
 
 			{/* Toast Notification */}
 			{toast && (

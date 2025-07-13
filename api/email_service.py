@@ -177,9 +177,83 @@ class EmailService:
 email_service = EmailService()
 
 
+def send_verification_code_email(email: str, code: str, user_name: str) -> bool:
+    """
+    Send email verification code to user.
+
+    Args:
+        email: User's email address
+        code: 6-digit verification code
+        user_name: User's full name
+
+    Returns:
+        bool: True if email was sent successfully, False otherwise
+    """
+    subject = "Your Zentropy verification code"
+
+    # HTML version of the email (escape user input for security)
+    escaped_user_name = html.escape(user_name)
+    html_content = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #6A8BA7;">Welcome to Zentropy!</h2>
+            <p>Hello {escaped_user_name},</p>
+            <p>Thank you for registering with Zentropy. Please enter the
+                verification code below in the app to verify your email address:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <div style="background-color: #f8f9fa; border: 2px dashed #6A8BA7;
+                           border-radius: 8px; padding: 20px; display: inline-block;">
+                    <h1 style="font-size: 32px; letter-spacing: 4px; margin: 0;
+                              color: #6A8BA7; font-weight: bold;">{code}</h1>
+                    <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
+                        Verification Code
+                    </p>
+                </div>
+            </div>
+
+            <p><strong>This code expires in 15 minutes.</strong></p>
+            <p>If you didn't create an account with Zentropy, please ignore
+                this email.</p>
+            <br>
+            <p>Best regards,<br>The Zentropy Team</p>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Plain text version
+    text_content = f"""
+    Welcome to Zentropy!
+
+    Hello {user_name},
+
+    Thank you for registering with Zentropy. Please enter the verification code
+    below in the app to verify your email address:
+
+    Verification Code: {code}
+
+    This code expires in 15 minutes.
+
+    If you didn't create an account with Zentropy, please ignore this email.
+
+    Best regards,
+    The Zentropy Team
+    """
+
+    return email_service.send_email_sync(
+        to_email=email,
+        subject=subject,
+        html_content=html_content,
+        text_content=text_content,
+    )
+
+
 def send_verification_email(email: str, token: str, user_name: str) -> bool:
     """
-    Send email verification email to user.
+    DEPRECATED: Send email verification email to user with URL token.
+    Use send_verification_code_email() instead.
 
     Args:
         email: User's email address

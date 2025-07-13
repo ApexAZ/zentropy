@@ -228,9 +228,5 @@ describe("Header", () => {
 		expect(headerElement).toContainElement(profileButton);
 	});
 
-	// Note: Cross-tab focus test removed - this feature is now handled by 
-	// BroadcastChannel in useVerificationChannel.ts for more reliable messaging
-
-	// Note: Cross-tab closure test removed - this feature is now handled by 
-	// BroadcastChannel in useVerificationChannel.ts for more reliable messaging
+	// Note: Cross-tab functionality has been replaced with a central verification code system
 });

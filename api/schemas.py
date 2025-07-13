@@ -224,6 +224,19 @@ class EmailVerificationResponse(BaseModel):
     email: EmailStr
 
 
+# Verification code schemas
+class VerificationCodeRequest(BaseModel):
+    email: EmailStr
+    code: str
+    verification_type: str = "email_verification"
+
+
+class VerificationCodeResponse(BaseModel):
+    message: str
+    success: bool
+    user_id: Optional[UUID] = None
+
+
 # Generic response schemas
 class MessageResponse(BaseModel):
     message: str

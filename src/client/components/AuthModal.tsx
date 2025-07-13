@@ -15,6 +15,8 @@ interface AuthModalProps {
 	onClose: () => void;
 	/** Called when authentication succeeds */
 	onSuccess: () => void;
+	/** Called when user needs to verify their email */
+	onShowVerification?: (email: string) => void;
 	/** Authentication state and methods from useAuth hook */
 	auth: {
 		/** Current authentication status */
@@ -52,6 +54,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	isOpen,
 	onClose,
 	onSuccess,
+	onShowVerification,
 	auth,
 	initialMode = "method-selection"
 }) => {
@@ -174,17 +177,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 			const { message } = await AuthService.signUp(userData);
 
-			// Set pending verification state so user can resend for 24 hours
-			setPendingVerification(values.email);
-
 			setToast({ message, type: "success" });
 
-			// After successful registration, close modal and let parent handle success
-			// This ensures proper app navigation flow
+			// Show verification page after successful registration
 			setTimeout(() => {
-				onSuccess(); // Call parent callback to close modal
-				onClose(); // Ensure modal is closed
-			}, 2000);
+				if (onShowVerification) {
+					onShowVerification(values.email);
+				} else {
+					// Fallback to old behavior if verification handler not provided
+					setPendingVerification(values.email);
+					onSuccess();
+					onClose();
+				}
+			}, 1500);
 		}
 	});
 

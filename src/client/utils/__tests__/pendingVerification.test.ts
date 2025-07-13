@@ -141,7 +141,7 @@ describe("pendingVerification utilities", () => {
 		});
 	});
 
-	// Note: Cross-tab communication tests (requestAppTabFocus, requestAppTabClosure) 
-	// have been moved to useVerificationChannel.test.ts which tests the new 
+	// Note: Cross-tab communication tests (requestAppTabFocus, requestAppTabClosure)
+	// have been moved to useVerificationChannel.test.ts which tests the new
 	// BroadcastChannel implementation for more reliable cross-tab messaging.
 });

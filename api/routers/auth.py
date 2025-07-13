@@ -16,6 +16,8 @@ from ..schemas import (
     GoogleOAuthRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
+    VerificationCodeRequest,
+    VerificationCodeResponse,
 )
 from ..auth import (
     authenticate_user,
@@ -37,7 +39,7 @@ from ..google_oauth import (
 from .. import database
 from ..database import AuthProvider, Organization
 from ..email_verification import (
-    create_verification_token,
+    create_verification_code,
     send_verification_email,
     verify_email_token,
     resend_verification_email,
@@ -209,10 +211,10 @@ def register(
     db.add(password_history)
     db.commit()
 
-    # Generate verification token and send email
-    token = create_verification_token(db, str(db_user.id))
+    # Generate verification code and send email
+    code, _ = create_verification_code(db, str(db_user.id))
     user_name = f"{db_user.first_name} {db_user.last_name}"
-    send_verification_email(str(db_user.email), token, user_name)
+    send_verification_email(str(db_user.email), code, user_name)
 
     return MessageResponse(
         message=(
@@ -443,9 +445,9 @@ def send_verification_email_endpoint(
     client_ip = get_client_ip(fastapi_request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
 
-    success = resend_verification_email(db, request.email)
+    result = resend_verification_email(db, request.email)
 
-    if not success:
+    if not result["success"]:
         # Don't reveal if email exists for security
         # Always return success to prevent email enumeration
         pass
@@ -453,7 +455,7 @@ def send_verification_email_endpoint(
     return EmailVerificationResponse(
         message=(
             "If an account with that email exists and is unverified, "
-            "a verification email has been sent"
+            "a verification code has been sent"
         ),
         email=request.email,
     )
@@ -471,3 +473,51 @@ def verify_email_endpoint(token: str, db: Session = Depends(get_db)) -> MessageR
         )
 
     return MessageResponse(message=f"Email verified successfully for {user.email}")
+
+
+@router.post("/verify-code", response_model=VerificationCodeResponse)
+def verify_code_endpoint(
+    request: VerificationCodeRequest, db: Session = Depends(get_db)
+) -> VerificationCodeResponse:
+    """Verify email using verification code (new secure method)."""
+    # Find user by email
+    user = (
+        db.query(database.User)
+        .filter(database.User.email == request.email.lower())
+        .first()
+    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address",
+        )
+
+    # Verify the code using central service
+    from ..verification_service import VerificationCodeService, VerificationType
+
+    try:
+        verification_type = VerificationType(request.verification_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid verification type: {request.verification_type}",
+        )
+
+    result = VerificationCodeService.verify_code(
+        db=db, user_id=user.id, code=request.code, verification_type=verification_type
+    )
+
+    # If email verification is successful, mark user's email as verified
+    if result["valid"] and verification_type == VerificationType.EMAIL_VERIFICATION:
+        user.email_verified = True
+        db.commit()
+
+    if result["valid"]:
+        return VerificationCodeResponse(
+            message="Email verified successfully", success=True, user_id=user.id
+        )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["message"],
+        )

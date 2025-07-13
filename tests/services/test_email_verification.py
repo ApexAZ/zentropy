@@ -77,20 +77,21 @@ class TestEmailVerificationEndpoints:
         
     def test_send_verification_email_endpoint(self, client: TestClient):
         """Test endpoint to resend verification email."""
-        # This endpoint doesn't exist yet - test will fail
+        # Updated for new verification code system
         response = client.post("/api/v1/auth/send-verification", json={"email": "test@example.com"})
         
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
-        assert "verification email" in data["message"].lower()
+        assert "verification" in data["message"].lower()
         
     def test_verify_email_endpoint(self, client: TestClient, db: Session):
-        """Test endpoint to verify email with token."""
-        # First, register a user to get a verification token
+        """Test endpoint to verify email with verification code."""
+        # First, register a user to get a verification code
         random_id = random.randint(1000, 9999)
+        email = f"verify{random_id}@example.com"
         user_data = {
-            "email": f"verify{random_id}@example.com",
+            "email": email,
             "password": "SecurePass123!",
             "first_name": "Verify",
             "last_name": "User",
@@ -99,25 +100,36 @@ class TestEmailVerificationEndpoints:
             "has_projects_access": True
         }
         
-        # Register user (this creates a verification token)
+        # Register user (this creates a verification code)
         register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
-        # Get the verification token from database
+        # Get the verification code from database
         from api.database import User
-        user = db.query(User).filter(User.email == f"verify{random_id}@example.com").first()
+        from api.verification_service import VerificationCode, VerificationType
+        user = db.query(User).filter(User.email == email).first()
         assert user is not None
-        assert user.email_verification_token is not None
         
-        token = user.email_verification_token
+        # Get the verification code for this user
+        verification_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user.id,
+            VerificationCode.verification_type == VerificationType.EMAIL_VERIFICATION
+        ).first()
+        assert verification_code is not None
         
-        # Now verify the email using the token
-        response = client.post(f"/api/v1/auth/verify-email/{token}")
+        code = verification_code.code
+        
+        # Now verify the email using the code
+        response = client.post("/api/v1/auth/verify-code", json={
+            "email": email,
+            "code": code,
+            "verification_type": "email_verification"
+        })
         
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
-        assert "email verified" in data["message"].lower()
+        assert "verified" in data["message"].lower()
         
     def test_verify_email_invalid_token(self, client: TestClient):
         """Test email verification with invalid token."""
@@ -214,15 +226,27 @@ class TestEmailVerificationFlow:
         register_response = client.post("/api/v1/auth/register", json=user_data)
         assert register_response.status_code == 201
         
-        # Get verification token from database
+        # Get verification code from database
         from api.database import User
+        from api.verification_service import VerificationCode, VerificationType
         user = db.query(User).filter(User.email == email).first()
         assert user is not None
-        assert user.email_verification_token is not None
-        token = user.email_verification_token
         
-        # Verify email
-        verify_response = client.post(f"/api/v1/auth/verify-email/{token}")
+        # Get the verification code for this user
+        verification_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user.id,
+            VerificationCode.verification_type == VerificationType.EMAIL_VERIFICATION
+        ).first()
+        assert verification_code is not None
+        
+        code = verification_code.code
+        
+        # Verify email using the new verification code endpoint
+        verify_response = client.post("/api/v1/auth/verify-code", json={
+            "email": email,
+            "code": code,
+            "verification_type": "email_verification"
+        })
         assert verify_response.status_code == 200
         
         # Now login should succeed
