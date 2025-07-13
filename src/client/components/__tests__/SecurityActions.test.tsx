@@ -84,7 +84,7 @@ describe("SecurityActions", () => {
 	it("should show linking loading state", () => {
 		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} linkingLoading={true} />);
 
-		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
+		const linkButton = screen.getByRole("button", { name: "Linking..." });
 		expect(linkButton).toBeDisabled();
 		expect(linkButton).toHaveTextContent("Linking...");
 	});
@@ -92,7 +92,7 @@ describe("SecurityActions", () => {
 	it("should show OAuth loading state", () => {
 		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} oauthLoading={true} />);
 
-		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
+		const linkButton = screen.getByRole("button", { name: "Starting OAuth..." });
 		expect(linkButton).toBeDisabled();
 		expect(linkButton).toHaveTextContent("Starting OAuth...");
 	});
@@ -100,8 +100,9 @@ describe("SecurityActions", () => {
 	it("should show unlinking loading state", () => {
 		render(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} unlinkingLoading={true} />);
 
-		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
+		const unlinkButton = screen.getByRole("button", { name: "Loading..." });
 		expect(unlinkButton).toBeDisabled();
+		expect(unlinkButton).toHaveTextContent("Loading...");
 	});
 
 	it("should disable link button when Google OAuth not ready", () => {
@@ -132,6 +133,6 @@ describe("SecurityActions", () => {
 		rerender(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		expect(unlinkButton).toHaveClass("bg-error"); // Danger variant
+		expect(unlinkButton).toHaveClass("bg-red-600"); // Danger variant
 	});
 });

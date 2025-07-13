@@ -332,6 +332,14 @@ describe("ProfilePage", () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
 
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
+
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
 		});
@@ -348,6 +356,14 @@ describe("ProfilePage", () => {
 	it("validates password change form", async () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -370,6 +386,14 @@ describe("ProfilePage", () => {
 	it("validates new password requirements", async () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -398,6 +422,14 @@ describe("ProfilePage", () => {
 	it("validates password confirmation match", async () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -429,6 +461,14 @@ describe("ProfilePage", () => {
 		});
 
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -478,6 +518,14 @@ describe("ProfilePage", () => {
 
 		render(<ProfilePage />);
 
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
+
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
 		});
@@ -497,6 +545,14 @@ describe("ProfilePage", () => {
 	it("cancels password change and clears form", async () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -520,6 +576,14 @@ describe("ProfilePage", () => {
 	it("toggles password visibility", async () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
@@ -554,6 +618,14 @@ describe("ProfilePage", () => {
 		const user = userEvent.setup();
 		render(<ProfilePage />);
 
+		// Navigate to Security tab first
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
+
 		await waitFor(() => {
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
 		});
@@ -575,7 +647,22 @@ describe("ProfilePage", () => {
 	});
 
 	it("displays security status and account information", async () => {
+		const user = userEvent.setup();
 		render(<ProfilePage />);
+
+		// Check Account Information in Profile tab
+		await waitFor(() => {
+			expect(screen.getByText("Account Information")).toBeInTheDocument();
+		});
+		expect(screen.getByText("Active")).toBeInTheDocument();
+
+		// Navigate to Security tab to check password security
+		await waitFor(() => {
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		const securityTab = screen.getByRole("tab", { name: "Security" });
+		await user.click(securityTab);
 
 		await waitFor(() => {
 			expect(screen.getByText("Password & Security")).toBeInTheDocument();
@@ -585,8 +672,6 @@ describe("ProfilePage", () => {
 		expect(screen.getByText("Last changed: Recent")).toBeInTheDocument();
 		expect(screen.getByText("Secure")).toBeInTheDocument();
 		expect(screen.getByText("Your account meets all security requirements")).toBeInTheDocument();
-		expect(screen.getByText("Account Information")).toBeInTheDocument();
-		expect(screen.getByText("Active")).toBeInTheDocument();
 	});
 
 	it("formats dates correctly", async () => {
@@ -752,5 +837,126 @@ describe("ProfilePage", () => {
 
 		expect(screen.getByText("Test User")).toBeInTheDocument();
 		expect(callCount).toBe(2); // Verify retry actually triggered another API call
+	});
+
+	// Tab Interface Tests
+	describe("Tabbed Interface", () => {
+		it("should render tab navigation with Profile and Security tabs", async () => {
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByRole("tablist")).toBeInTheDocument();
+			});
+
+			expect(screen.getByRole("tab", { name: "Profile" })).toBeInTheDocument();
+			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		});
+
+		it("should show Profile tab as active by default", async () => {
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("aria-selected", "true");
+			});
+
+			expect(screen.getByRole("tab", { name: "Security" })).toHaveAttribute("aria-selected", "false");
+		});
+
+		it("should switch to Security tab when clicked", async () => {
+			const user = userEvent.setup();
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+			});
+
+			const securityTab = screen.getByRole("tab", { name: "Security" });
+			await user.click(securityTab);
+
+			expect(screen.getByRole("tab", { name: "Security" })).toHaveAttribute("aria-selected", "true");
+			expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("aria-selected", "false");
+		});
+
+		it("should show Profile content in Profile tab", async () => {
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByText("Profile Information")).toBeInTheDocument();
+			});
+
+			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
+			expect(screen.getByText("Account Information")).toBeInTheDocument();
+		});
+
+		it("should show Security content in Security tab", async () => {
+			const user = userEvent.setup();
+			render(<ProfilePage />);
+
+			// Switch to Security tab
+			await waitFor(() => {
+				expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+			});
+
+			const securityTab = screen.getByRole("tab", { name: "Security" });
+			await user.click(securityTab);
+
+			// Should show Security content
+			await waitFor(() => {
+				expect(screen.getByText("Account Security")).toBeInTheDocument();
+			});
+
+			expect(screen.getByText("Password & Security")).toBeInTheDocument();
+			expect(screen.getByText("Change Password")).toBeInTheDocument();
+		});
+
+		it("should hide Profile content when Security tab is active", async () => {
+			const user = userEvent.setup();
+			render(<ProfilePage />);
+
+			// Initially shows Profile content
+			await waitFor(() => {
+				expect(screen.getByText("Edit Profile")).toBeInTheDocument();
+			});
+
+			// Switch to Security tab
+			const securityTab = screen.getByRole("tab", { name: "Security" });
+			await user.click(securityTab);
+
+			// Profile content should be hidden
+			expect(screen.queryByText("Edit Profile")).not.toBeInTheDocument();
+			expect(screen.queryByText("Profile Information")).not.toBeInTheDocument();
+		});
+
+		it("should support keyboard navigation between tabs", async () => {
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByRole("tablist")).toBeInTheDocument();
+			});
+
+			const tablist = screen.getByRole("tablist");
+			const profileTab = screen.getByRole("tab", { name: "Profile" });
+			const securityTab = screen.getByRole("tab", { name: "Security" });
+
+			// Initially Profile is active
+			expect(profileTab).toHaveAttribute("aria-selected", "true");
+
+			// Simulate ArrowRight key
+			fireEvent.keyDown(tablist, { key: "ArrowRight" });
+
+			// Security tab should become active
+			expect(securityTab).toHaveAttribute("aria-selected", "true");
+			expect(profileTab).toHaveAttribute("aria-selected", "false");
+		});
+
+		it("should maintain correct tabIndex for accessibility", async () => {
+			render(<ProfilePage />);
+
+			await waitFor(() => {
+				expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("tabIndex", "0");
+			});
+
+			expect(screen.getByRole("tab", { name: "Security" })).toHaveAttribute("tabIndex", "-1");
+		});
 	});
 });
