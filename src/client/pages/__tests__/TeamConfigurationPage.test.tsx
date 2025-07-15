@@ -448,32 +448,6 @@ describe("TeamConfigurationPage", () => {
 			});
 		});
 
-		it.skip("should validate email format in add member form", async () => {
-			const user = userEvent.setup();
-
-			render(<TeamConfigurationPage />);
-
-			await waitFor(() => {
-				expect(screen.getByText("John Doe")).toBeInTheDocument();
-			});
-
-			// Open modal
-			const addButton = screen.getByRole("button", { name: /add team member/i });
-			await user.click(addButton);
-
-			// Enter invalid email
-			const emailInput = screen.getByLabelText(/email address/i);
-			await user.type(emailInput, "invalid-email");
-
-			const submitButton = screen.getByRole("button", { name: /add member/i });
-			await user.click(submitButton);
-
-			// Check for validation error
-			await waitFor(() => {
-				expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument();
-			});
-		});
-
 		it("should remove team member when remove button is clicked", async () => {
 			const user = userEvent.setup();
 

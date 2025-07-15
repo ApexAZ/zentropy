@@ -272,7 +272,6 @@ class TestGoogleOAuthSchemas:
                 
             )
             assert valid_request.google_token == "valid_token_string"
-            assert valid_request.organization == "Optional Company"
             
             # Required field validation
             with pytest.raises(ValueError):

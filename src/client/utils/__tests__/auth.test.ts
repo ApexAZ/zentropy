@@ -325,28 +325,6 @@ describe("Auth Utilities", () => {
 			});
 		});
 
-		it.skip("should handle timeout", async () => {
-			mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
-
-			const fetchPromise = authenticatedFetch("/api/test", {}, 1000);
-
-			// Advance time to trigger timeout
-			vi.advanceTimersByTime(1000);
-
-			await expect(fetchPromise).rejects.toThrow("Request timeout");
-		});
-
-		it.skip("should use custom timeout", async () => {
-			mockFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
-
-			const fetchPromise = authenticatedFetch("/api/test", {}, 5000);
-
-			// Advance time to trigger timeout
-			vi.advanceTimersByTime(5000);
-
-			await expect(fetchPromise).rejects.toThrow("Request timeout");
-		});
-
 		it("should retry on network errors", async () => {
 			const networkError = new Error("Network failure");
 			networkError.message = "fetch failed";
@@ -364,22 +342,6 @@ describe("Auth Utilities", () => {
 
 			expect(mockFetch).toHaveBeenCalledTimes(2);
 			expect(result.status).toBe(200);
-		});
-
-		it.skip("should not retry on timeout errors beyond retry limit", async () => {
-			const timeoutError = new Error("Request timeout");
-
-			mockFetch.mockRejectedValue(timeoutError);
-
-			const fetchPromise = authenticatedFetch("/api/test", {}, 10000, 2);
-
-			// Fast forward through retry delays
-			await vi.advanceTimersByTimeAsync(1000); // First retry
-			await vi.advanceTimersByTimeAsync(2000); // Second retry
-
-			await expect(fetchPromise).rejects.toThrow("Request timeout");
-
-			expect(mockFetch).toHaveBeenCalledTimes(3); // Initial + 2 retries
 		});
 
 		it("should use exponential backoff for retries", async () => {
@@ -403,16 +365,6 @@ describe("Auth Utilities", () => {
 			expect(mockFetch).toHaveBeenCalledTimes(3);
 		});
 
-		it.skip("should not retry on non-network errors", async () => {
-			const otherError = new Error("Some other error");
-
-			mockFetch.mockRejectedValueOnce(otherError);
-
-			await expect(authenticatedFetch("/api/test", {}, 10000, 1)).rejects.toThrow("Some other error");
-
-			expect(mockFetch).toHaveBeenCalledTimes(1); // No retry
-		});
-
 		it("should handle successful response without retry", async () => {
 			const mockResponse = new Response("success", { status: 200 });
 			mockFetch.mockResolvedValueOnce(mockResponse);
@@ -431,32 +383,6 @@ describe("Auth Utilities", () => {
 			await authenticatedFetch("/api/test");
 
 			expect(clearTimeoutSpy).toHaveBeenCalled();
-		});
-
-		it.skip("should clear timeout on error", async () => {
-			const clearTimeoutSpy = vi.spyOn(global, "clearTimeout");
-			const error = new Error("Test error");
-			mockFetch.mockRejectedValueOnce(error);
-
-			await expect(authenticatedFetch("/api/test")).rejects.toThrow("Test error");
-
-			expect(clearTimeoutSpy).toHaveBeenCalled();
-		});
-
-		it.skip("should handle AbortError correctly", async () => {
-			const abortError = new Error("Operation was aborted");
-			abortError.name = "AbortError";
-
-			mockFetch.mockRejectedValueOnce(abortError);
-
-			await expect(authenticatedFetch("/api/test")).rejects.toThrow("Request timeout");
-		});
-
-		it.skip("should handle unknown error types", async () => {
-			// Simulate a non-Error object being thrown
-			mockFetch.mockRejectedValueOnce("string error");
-
-			await expect(authenticatedFetch("/api/test")).rejects.toThrow("Unknown error");
 		});
 	});
 

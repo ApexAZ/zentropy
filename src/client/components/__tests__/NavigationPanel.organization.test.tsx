@@ -302,13 +302,6 @@ describe("NavigationPanel - Organization Features", () => {
 	});
 
 	describe("Organization Management", () => {
-		it.skip("should show organization settings for current organization", () => {
-			// TODO: Implement organization settings functionality
-			render(<NavigationPanel {...mockProps} />);
-
-			expect(screen.getByRole("button", { name: /organization settings/i })).toBeInTheDocument();
-		});
-
 		it("should show leave organization option", () => {
 			render(<NavigationPanel {...mockProps} />);
 
@@ -418,19 +411,6 @@ describe("NavigationPanel - Organization Features", () => {
 
 			expect(screen.getByText("Loading projects...")).toBeInTheDocument();
 		});
-
-		it.skip("should disable actions during loading", () => {
-			// TODO: Implement button disabling during loading states
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				isLoading: true
-			});
-
-			render(<NavigationPanel {...mockProps} />);
-
-			expect(screen.getByRole("button", { name: /create project/i })).toBeDisabled();
-			expect(screen.getByRole("button", { name: /join organization/i })).toBeDisabled();
-		});
 	});
 
 	describe("Error Handling", () => {
@@ -525,23 +505,6 @@ describe("NavigationPanel - Organization Features", () => {
 			expect(screen.getByText("Another Org")).toBeInTheDocument();
 		});
 
-		it.skip("should support arrow key navigation in organization list", async () => {
-			// TODO: Implement keyboard navigation for organization dropdown
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
-
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
-
-			const orgOptions = screen.getAllByRole("option");
-			orgOptions[0].focus();
-
-			await user.keyboard("{ArrowDown}");
-			expect(document.activeElement).toBe(orgOptions[1]);
-
-			await user.keyboard("{ArrowUp}");
-			expect(document.activeElement).toBe(orgOptions[0]);
-		});
-
 		it("should support Enter key for organization selection", async () => {
 			const user = userEvent.setup();
 			render(<NavigationPanel {...mockProps} />);
@@ -564,17 +527,6 @@ describe("NavigationPanel - Organization Features", () => {
 			const switchButton = screen.getByRole("button", { name: /switch organization/i });
 			expect(switchButton).toHaveAttribute("aria-expanded", "false");
 			expect(switchButton).toHaveAttribute("aria-label", "Switch Organization");
-		});
-
-		it.skip("should announce organization changes to screen readers", async () => {
-			// TODO: Implement accessibility announcements for organization changes
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
-
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
-			await user.click(screen.getByText("Another Org"));
-
-			expect(screen.getByText("Switched to Another Org")).toHaveAttribute("aria-live", "polite");
 		});
 
 		it("should have proper heading structure", () => {

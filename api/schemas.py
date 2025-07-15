@@ -83,7 +83,6 @@ class PasswordUpdate(BaseModel):
 # Google OAuth schemas
 class GoogleLoginRequest(BaseModel):
     google_token: str
-    organization: Optional[str] = "Optional Company"
 
 
 class GoogleOAuthRequest(BaseModel):

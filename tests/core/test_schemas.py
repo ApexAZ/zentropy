@@ -491,22 +491,11 @@ class TestGoogleOAuthSchemas:
     def test_google_login_request_valid_data(self):
         """Test GoogleLoginRequest with valid data."""
         request_data = {
-            "google_token": "google_oauth_token_123",
-            "organization": "Acme Corp"
-        }
-        
-        request = GoogleLoginRequest(**request_data)
-        assert request.google_token == "google_oauth_token_123"
-        assert request.organization == "Acme Corp"
-    
-    def test_google_login_request_default_organization(self):
-        """Test GoogleLoginRequest with default organization."""
-        request_data = {
             "google_token": "google_oauth_token_123"
         }
         
         request = GoogleLoginRequest(**request_data)
-        assert request.organization == "Optional Company"  # Default
+        assert request.google_token == "google_oauth_token_123"
     
     def test_google_oauth_request_valid_data(self):
         """Test GoogleOAuthRequest with valid data."""
