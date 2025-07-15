@@ -4,6 +4,7 @@ import { userEvent } from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import TeamConfigurationPage from "../TeamConfigurationPage";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock data
 const mockTeam = {
@@ -82,6 +83,15 @@ describe("TeamConfigurationPage", () => {
 			});
 	};
 
+	// Helper function to render TeamConfigurationPage with required providers
+	const renderTeamConfigurationPage = () => {
+		return render(
+			<ToastProvider>
+				<TeamConfigurationPage />
+			</ToastProvider>
+		);
+	};
+
 	describe("loading state", () => {
 		it("should display loading spinner while fetching team configuration", async () => {
 			// Setup delayed responses to capture loading state
@@ -126,7 +136,7 @@ describe("TeamConfigurationPage", () => {
 						)
 				);
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			expect(screen.getByText(/loading team configuration/i)).toBeInTheDocument();
 			expect(screen.getByRole("heading", { name: /team configuration/i })).toBeInTheDocument();
@@ -142,7 +152,7 @@ describe("TeamConfigurationPage", () => {
 		it("should display error message and retry button on fetch failure", async () => {
 			mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText(/unable to load configuration/i)).toBeInTheDocument();
@@ -159,7 +169,7 @@ describe("TeamConfigurationPage", () => {
 			// First call fails
 			mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText(/network error/i)).toBeInTheDocument();
@@ -184,7 +194,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display team information form with current values", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -204,7 +214,7 @@ describe("TeamConfigurationPage", () => {
 		it("should update team information when form is submitted", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -244,7 +254,7 @@ describe("TeamConfigurationPage", () => {
 		it("should toggle working days when checkboxes are clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("checkbox", { name: /saturday/i })).not.toBeChecked();
@@ -266,7 +276,7 @@ describe("TeamConfigurationPage", () => {
 		it("should display error toast when team update fails", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -294,7 +304,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display velocity settings form with current values", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -311,7 +321,7 @@ describe("TeamConfigurationPage", () => {
 		it("should update velocity settings when form is submitted", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -349,7 +359,7 @@ describe("TeamConfigurationPage", () => {
 		it("should update sprint length when dropdown is changed", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -370,7 +380,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display team members list", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -383,7 +393,7 @@ describe("TeamConfigurationPage", () => {
 		it("should open add member modal when add button is clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -400,7 +410,7 @@ describe("TeamConfigurationPage", () => {
 		it("should add team member when form is submitted with valid data", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -451,7 +461,7 @@ describe("TeamConfigurationPage", () => {
 		it("should remove team member when remove button is clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -484,7 +494,7 @@ describe("TeamConfigurationPage", () => {
 		it("should close add member modal when cancel button is clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -510,7 +520,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display sprints list", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Sprint 1")).toBeInTheDocument();
@@ -523,7 +533,7 @@ describe("TeamConfigurationPage", () => {
 		it("should open create sprint modal when create button is clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Sprint 1")).toBeInTheDocument();
@@ -541,7 +551,7 @@ describe("TeamConfigurationPage", () => {
 		it("should create sprint when form is submitted with valid data", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Sprint 1")).toBeInTheDocument();
@@ -598,7 +608,7 @@ describe("TeamConfigurationPage", () => {
 		it("should validate sprint dates", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Sprint 1")).toBeInTheDocument();
@@ -627,7 +637,7 @@ describe("TeamConfigurationPage", () => {
 		it("should show generate multiple sprints alert", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Sprint 1")).toBeInTheDocument();
@@ -653,7 +663,7 @@ describe("TeamConfigurationPage", () => {
 		it("should dismiss toast when close button is clicked", async () => {
 			const user = userEvent.setup();
 
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
@@ -677,7 +687,7 @@ describe("TeamConfigurationPage", () => {
 			});
 
 			// Close toast
-			const closeButton = screen.getByRole("button", { name: /close notification/i });
+			const closeButton = screen.getByRole("button", { name: /dismiss notification/i });
 			await user.click(closeButton);
 
 			expect(screen.queryByText(/team information updated successfully/i)).not.toBeInTheDocument();
@@ -703,7 +713,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display empty state for team members", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText(/no team members found/i)).toBeInTheDocument();
@@ -712,7 +722,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display empty state for sprints", async () => {
-			render(<TeamConfigurationPage />);
+			renderTeamConfigurationPage();
 
 			await waitFor(() => {
 				expect(screen.getByText(/no sprints found/i)).toBeInTheDocument();

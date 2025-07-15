@@ -486,6 +486,145 @@ Based on 2025 UX research, tabs are the optimal choice for settings pages becaus
 
 **Quality Standards**: All tests pass, zero linting issues, full TypeScript compliance, follows established atomic design patterns
 
+### Phase 2.5: Toast System Consolidation (Critical - Before Phase 3)
+
+#### 2.5.1 Toast Implementation Inconsistencies ❌ **CRITICAL ISSUE**
+**Problem**: Despite having an excellent centralized toast system, the codebase contains significant UX inconsistencies due to multiple ad-hoc toast implementations.
+
+**Current State Analysis**:
+- **✅ Centralized System**: Complete `ToastProvider` with `useToast` hook and atomic `Toast` component
+- **❌ Duplicate Implementations**: 6+ components with manual toast state management
+- **❌ Inconsistent UX**: Different toast behaviors, positioning, and styling across pages
+- **❌ Technical Debt**: 200+ lines of duplicate toast-related code
+
+**Specific Issues Identified**:
+
+**Component-Level Duplications**:
+- **ProfilePage.tsx**: Manual toast state with 5-second timeout and custom JSX rendering
+- **TeamsPage.tsx**: Duplicate toast rendering with inconsistent z-index values
+- **TeamConfigurationPage.tsx**: Manual timeout handling and custom styling classes
+- **CalendarPage.tsx**: Ad-hoc toast implementation without accessibility support
+- **AuthModal.tsx**: Complex toast with action links and custom error types
+
+**Hook-Level Duplications**:
+- **useTeams.ts**: Custom `UseTeamsToast` interface with manual state management
+- **useProject.ts**: Duplicate toast state and timeout logic
+- **useOrganization.ts**: Inconsistent error messaging patterns
+
+**Impact Assessment**:
+- **User Experience**: Inconsistent toast behaviors confuse users across different pages
+- **Accessibility**: Ad-hoc implementations lack proper ARIA attributes and keyboard navigation
+- **Maintainability**: Multiple toast implementations increase maintenance burden
+- **Code Quality**: 200+ lines of duplicate code violate DRY principles
+
+#### 2.5.2 Toast System Consolidation Strategy ⏳ **PENDING**
+**Objective**: Eliminate all duplicate toast implementations and establish centralized toast system as the single source of truth.
+
+**Implementation Plan**:
+
+**Phase 2.5A: Low-Risk Component Refactoring**
+- ⏳ Replace manual toast state in `ProfilePage.tsx` with `useToast()` hook
+- ⏳ Remove duplicate JSX rendering in `TeamsPage.tsx`
+- ⏳ Eliminate manual timeout handling in `TeamConfigurationPage.tsx`
+- ⏳ Standardize `CalendarPage.tsx` toast implementation
+
+**Phase 2.5B: Medium-Risk Hook Integration**
+- ⏳ Refactor `useTeams.ts` to use centralized toast system internally
+- ⏳ Update `useProject.ts` to eliminate custom toast interfaces
+- ⏳ Consolidate `useOrganization.ts` error messaging patterns
+
+**Phase 2.5C: High-Risk Enhanced Features**
+- ⏳ Enhance `ToastProvider` to support action links for `AuthModal.tsx`
+- ⏳ Add `persistent` toast option for critical messages
+- ⏳ Implement toast categorization system for different message types
+
+**Expected Benefits**:
+- **Consistency**: Unified toast behavior across all pages
+- **Accessibility**: Centralized accessibility features for all notifications
+- **Maintainability**: Single source of truth for toast functionality
+- **Performance**: Reduced bundle size by eliminating duplicate code
+- **UX Quality**: Consistent positioning, timing, and visual styling
+
+**Migration Strategy**:
+```typescript
+// Before (ProfilePage.tsx)
+const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+setToast({ message: "Profile updated successfully!", type: "success" });
+
+// After (ProfilePage.tsx)
+const { showSuccess, showError } = useToast();
+showSuccess("Profile updated successfully!");
+```
+
+**Acceptance Criteria**:
+- ⏳ All components use centralized `useToast()` hook
+- ⏳ Zero duplicate toast rendering JSX remains in codebase
+- ⏳ Consistent toast positioning and timing across all pages
+- ⏳ Full accessibility support for all toast notifications
+- ⏳ `AuthModal.tsx` action links supported by centralized system
+
+#### 2.5.3 AuthModal Toast Enhancement Requirements ⏳ **PENDING**
+**Objective**: Extend centralized toast system to support complex patterns currently in `AuthModal.tsx`.
+
+**Current AuthModal Pattern**:
+```typescript
+const [toast, setToast] = useState<{
+  message: string;
+  type: "success" | "error" | "info" | "critical-error";
+  actionLink?: { text: string; onClick: () => void };
+} | null>(null);
+```
+
+**Required Enhancements**:
+- **Action Link Support**: Extend `ToastMessage` interface to include optional action buttons
+- **Critical Error Type**: Add `critical-error` type with persistent display
+- **Enhanced Styling**: Support for complex toast layouts with action elements
+
+**Implementation Requirements**:
+```typescript
+interface ToastMessage {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info" | "warning" | "critical-error";
+  persistent?: boolean;
+  actionLink?: { text: string; onClick: () => void };
+  autoDissmissTimeout?: number;
+}
+```
+
+#### 2.5.4 Implementation Timeline ⏳ **PENDING**
+**Estimated Effort**: 2-3 hours for complete consolidation
+
+**Phase 2.5A** (30 minutes):
+- Update `ProfilePage`, `CalendarPage`, `TeamConfigurationPage` components
+- Direct replacement of manual toast state with `useToast()` hook
+
+**Phase 2.5B** (45 minutes):
+- Refactor `useTeams`, `useProject`, `useOrganization` hooks
+- Remove custom toast interfaces and state management
+
+**Phase 2.5C** (60-90 minutes):
+- Enhance `ToastProvider` with action link support
+- Update `AuthModal.tsx` to use centralized system
+- Add `critical-error` type and persistent toast options
+
+**Quality Assurance** (30 minutes):
+- Test all toast implementations across the application
+- Verify accessibility compliance and consistent UX
+- Ensure no regressions in existing functionality
+
+#### 2.5.5 Benefits for Phase 3 Development ✅ **STRATEGIC**
+**Foundation for User Guidance**: Phase 3 features will heavily rely on notifications and user feedback, making toast system consistency critical.
+
+**Specific Phase 3 Dependencies**:
+- **Security Recommendations**: Will use toast notifications for user guidance
+- **Confirmation Flows**: Toast confirmations for destructive actions
+- **Help Integration**: Contextual help messages via toast system
+
+**Development Velocity**: Clean, consistent toast system will accelerate Phase 3 implementation by eliminating the need to work around inconsistent notification patterns.
+
+**User Testing Impact**: Consistent toast behavior is essential for meaningful user testing during Phase 3 development.
+
 ### Phase 3: User Guidance and Enhancement (Nice-to-Have - Lower Priority)
 
 #### 3.1 Security Recommendations

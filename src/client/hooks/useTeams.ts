@@ -1,21 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { TeamService } from "../services/TeamService";
+import { useToast } from "../contexts/ToastContext";
 import type { Team, CreateTeamData } from "../types";
-
-export interface UseTeamsToast {
-	message: string;
-	type: "success" | "error";
-}
 
 export interface UseTeamsResult {
 	// Data state
 	teams: Team[];
 	isLoading: boolean;
 	error: string;
-
-	// Toast state
-	toast: UseTeamsToast | null;
-	setToast: (toast: UseTeamsToast | null) => void;
 
 	// Actions
 	refreshTeams: () => Promise<void>;
@@ -29,7 +21,9 @@ export const useTeams = (): UseTeamsResult => {
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string>("");
-	const [toast, setToast] = useState<UseTeamsToast | null>(null);
+
+	// Centralized toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Load teams function
 	const loadTeams = useCallback(async (): Promise<void> => {
@@ -57,20 +51,14 @@ export const useTeams = (): UseTeamsResult => {
 		async (teamData: CreateTeamData): Promise<void> => {
 			try {
 				await TeamService.createTeam(teamData);
-				setToast({
-					message: "Team created successfully!",
-					type: "success"
-				});
+				showSuccess("Team created successfully!");
 				await loadTeams();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to create team";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadTeams]
+		[loadTeams, showSuccess, showError]
 	);
 
 	// Update team
@@ -78,20 +66,14 @@ export const useTeams = (): UseTeamsResult => {
 		async (teamId: string, teamData: CreateTeamData): Promise<void> => {
 			try {
 				await TeamService.updateTeam(teamId, teamData);
-				setToast({
-					message: "Team updated successfully!",
-					type: "success"
-				});
+				showSuccess("Team updated successfully!");
 				await loadTeams();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to update team";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadTeams]
+		[loadTeams, showSuccess, showError]
 	);
 
 	// Delete team
@@ -99,20 +81,14 @@ export const useTeams = (): UseTeamsResult => {
 		async (teamId: string): Promise<void> => {
 			try {
 				await TeamService.deleteTeam(teamId);
-				setToast({
-					message: "Team deleted successfully!",
-					type: "success"
-				});
+				showSuccess("Team deleted successfully!");
 				await loadTeams();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to delete team";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadTeams]
+		[loadTeams, showSuccess, showError]
 	);
 
 	// Load teams on mount
@@ -125,10 +101,6 @@ export const useTeams = (): UseTeamsResult => {
 		teams,
 		isLoading,
 		error,
-
-		// Toast state
-		toast,
-		setToast,
 
 		// Actions
 		refreshTeams,

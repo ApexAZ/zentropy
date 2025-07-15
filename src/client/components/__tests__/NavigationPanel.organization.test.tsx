@@ -6,6 +6,7 @@ import "@testing-library/jest-dom";
 import NavigationPanel from "../NavigationPanel.enhanced";
 import { useOrganization } from "../../hooks/useOrganization";
 import { useProject } from "../../hooks/useProject";
+import { useToast } from "../../contexts/ToastContext";
 import type { Organization, Project } from "../../types";
 
 // Mock hooks
@@ -15,6 +16,11 @@ vi.mock("../../hooks/useOrganization", () => ({
 
 vi.mock("../../hooks/useProject", () => ({
 	useProject: vi.fn()
+}));
+
+// Mock centralized toast system
+vi.mock("../../contexts/ToastContext", () => ({
+	useToast: vi.fn()
 }));
 
 describe("NavigationPanel - Organization Features", () => {
@@ -64,13 +70,19 @@ describe("NavigationPanel - Organization Features", () => {
 		}
 	];
 
+	// Mock centralized toast functions
+	const mockShowSuccess = vi.fn();
+	const mockShowError = vi.fn();
+	const mockUseToast = {
+		showSuccess: mockShowSuccess,
+		showError: mockShowError
+	};
+
 	const mockUseOrganization = {
 		organizations: mockOrganizations,
 		currentOrganization: mockOrganizations[0],
 		isLoading: false,
 		error: "",
-		toast: null,
-		setToast: vi.fn(),
 		checkDomain: vi.fn(),
 		loadOrganizations: vi.fn(),
 		getOrganizationById: vi.fn(),
@@ -86,8 +98,6 @@ describe("NavigationPanel - Organization Features", () => {
 		currentProject: null,
 		isLoading: false,
 		error: "",
-		toast: null,
-		setToast: vi.fn(),
 		loadProjects: vi.fn(),
 		loadProjectsByOrganization: vi.fn(),
 		getProjectById: vi.fn(),
@@ -125,6 +135,7 @@ describe("NavigationPanel - Organization Features", () => {
 		vi.clearAllMocks();
 		(useOrganization as any).mockReturnValue(mockUseOrganization);
 		(useProject as any).mockReturnValue(mockUseProject);
+		(useToast as any).mockReturnValue(mockUseToast);
 	});
 
 	afterEach(() => {
@@ -451,41 +462,56 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 	});
 
-	describe("Toast Notifications", () => {
-		it("should display organization toast messages", () => {
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				toast: { message: "Organization joined successfully", type: "success" }
-			});
-
-			render(<NavigationPanel {...mockProps} />);
-
-			expect(screen.getByText("Organization joined successfully")).toBeInTheDocument();
-		});
-
-		it("should display project toast messages", () => {
-			(useProject as any).mockReturnValue({
-				...mockUseProject,
-				toast: { message: "Project created successfully", type: "success" }
-			});
-
-			render(<NavigationPanel {...mockProps} />);
-
-			expect(screen.getByText("Project created successfully")).toBeInTheDocument();
-		});
-
-		it("should allow dismissing toast messages", async () => {
+	describe("Organization Operations", () => {
+		it("should successfully switch organizations", async () => {
 			const user = userEvent.setup();
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				toast: { message: "Organization joined successfully", type: "success" }
-			});
+			mockUseOrganization.getOrganizationById.mockResolvedValue(mockOrganizations[1]);
 
 			render(<NavigationPanel {...mockProps} />);
 
-			await user.click(screen.getByRole("button", { name: /dismiss/i }));
+			// Open organization dropdown
+			await user.click(screen.getByRole("button", { name: /switch organization/i }));
 
-			expect(mockUseOrganization.setToast).toHaveBeenCalledWith(null);
+			// Select different organization
+			await user.click(screen.getByText("Another Org"));
+
+			// Should call the organization switching function
+			expect(mockUseOrganization.getOrganizationById).toHaveBeenCalledWith("org-2");
+		});
+
+		it("should successfully leave organization with confirmation", async () => {
+			const user = userEvent.setup();
+			mockUseOrganization.leaveOrganization.mockResolvedValue(undefined);
+
+			render(<NavigationPanel {...mockProps} />);
+
+			// Click leave organization
+			await user.click(screen.getByRole("button", { name: /leave organization/i }));
+
+			// Confirm in dialog
+			await user.click(screen.getByRole("button", { name: /confirm/i }));
+
+			// Should call leave organization function
+			expect(mockUseOrganization.leaveOrganization).toHaveBeenCalledWith("org-1");
+		});
+
+		it("should handle organization joining workflow", async () => {
+			const user = userEvent.setup();
+			mockUseOrganization.joinOrganization.mockResolvedValue(undefined);
+
+			render(<NavigationPanel {...mockProps} />);
+
+			// Open organization dropdown
+			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+
+			// Click join organization to open selector
+			await waitFor(async () => {
+				const joinButton = screen.getByRole("button", { name: /join organization/i });
+				await user.click(joinButton);
+			});
+
+			// Should open organization selector
+			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
 	});
 

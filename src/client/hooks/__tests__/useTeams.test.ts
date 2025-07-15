@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useTeams } from "../useTeams";
 import { TeamService } from "../../services/TeamService";
 import type { Team, CreateTeamData } from "../../types";
@@ -8,6 +8,16 @@ import type { Team, CreateTeamData } from "../../types";
 vi.mock("../../services/TeamService");
 const mockTeamService = vi.mocked(TeamService);
 
+// Mock the toast context
+const mockShowSuccess = vi.fn();
+const mockShowError = vi.fn();
+vi.mock("../../contexts/ToastContext", () => ({
+	useToast: () => ({
+		showSuccess: mockShowSuccess,
+		showError: mockShowError
+	})
+}));
+
 describe("useTeams", () => {
 	// Mock data following actual types from the application
 	const mockTeams: Team[] = [
@@ -15,6 +25,9 @@ describe("useTeams", () => {
 			id: "team-1",
 			name: "Frontend Team",
 			description: "React and TypeScript development team",
+			velocity_baseline: 25,
+			sprint_length_days: 14,
+			working_days_per_week: 5,
 			created_at: "2025-01-01T00:00:00Z",
 			updated_at: "2025-01-01T00:00:00Z"
 		},
@@ -22,6 +35,9 @@ describe("useTeams", () => {
 			id: "team-2",
 			name: "Backend Team",
 			description: "Python FastAPI development team",
+			velocity_baseline: 30,
+			sprint_length_days: 14,
+			working_days_per_week: 5,
 			created_at: "2025-01-02T00:00:00Z",
 			updated_at: "2025-01-02T00:00:00Z"
 		}
@@ -29,12 +45,17 @@ describe("useTeams", () => {
 
 	const mockCreateTeamData: CreateTeamData = {
 		name: "New Team",
-		description: "A newly created team"
+		description: "A newly created team",
+		velocity_baseline: 20,
+		sprint_length_days: 14,
+		working_days_per_week: 5
 	};
 
 	beforeEach(() => {
 		// Reset all mocks before each test
 		vi.clearAllMocks();
+		mockShowSuccess.mockClear();
+		mockShowError.mockClear();
 	});
 
 	describe("Initial State and Data Loading", () => {
@@ -77,7 +98,6 @@ describe("useTeams", () => {
 			// Assert: Error state is set correctly
 			expect(result.current.teams).toEqual([]);
 			expect(result.current.error).toBe(errorMessage);
-			expect(result.current.toast).toBeNull();
 		});
 
 		it("should handle empty teams list without errors", async () => {
@@ -100,7 +120,7 @@ describe("useTeams", () => {
 	});
 
 	describe("Team Creation Workflow", () => {
-		it("should create team and refresh teams list with success toast", async () => {
+		it("should create team and provide success feedback to user", async () => {
 			// Arrange: Mock initial load and create team operations
 			mockTeamService.getTeams
 				.mockResolvedValueOnce(mockTeams) // Initial load
@@ -126,17 +146,14 @@ describe("useTeams", () => {
 				await result.current.createTeam(mockCreateTeamData);
 			});
 
-			// Assert: Success toast is shown and teams list is refreshed
-			expect(result.current.toast).toEqual({
-				message: "Team created successfully!",
-				type: "success"
-			});
+			// Assert: User receives success feedback and sees updated teams list
+			expect(mockShowSuccess).toHaveBeenCalledWith("Team created successfully!");
 			expect(result.current.teams).toHaveLength(3);
 			expect(mockTeamService.createTeam).toHaveBeenCalledWith(mockCreateTeamData);
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(2); // Initial + refresh
 		});
 
-		it("should show error toast when team creation fails", async () => {
+		it("should provide error feedback when team creation fails", async () => {
 			// Arrange: Mock initial load success and create failure
 			mockTeamService.getTeams.mockResolvedValueOnce(mockTeams);
 			const errorMessage = "Team name already exists";
@@ -153,11 +170,8 @@ describe("useTeams", () => {
 				await result.current.createTeam(mockCreateTeamData);
 			});
 
-			// Assert: Error toast is shown and teams list remains unchanged
-			expect(result.current.toast).toEqual({
-				message: errorMessage,
-				type: "error"
-			});
+			// Assert: User receives error feedback and teams list remains unchanged
+			expect(mockShowError).toHaveBeenCalledWith(errorMessage);
 			expect(result.current.teams).toEqual(mockTeams); // No change
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(1); // Only initial load
 		});
@@ -178,19 +192,22 @@ describe("useTeams", () => {
 				await result.current.createTeam(mockCreateTeamData);
 			});
 
-			// Assert: Fallback error message is used
-			expect(result.current.toast).toEqual({
-				message: "Failed to create team",
-				type: "error"
-			});
+			// Assert: User receives fallback error message
+			expect(mockShowError).toHaveBeenCalledWith("Failed to create team");
 		});
 	});
 
 	describe("Team Update Workflow", () => {
-		it("should update team and refresh teams list with success toast", async () => {
+		it("should update team and provide success feedback to user", async () => {
 			// Arrange: Mock operations
 			const teamId = "team-1";
-			const updateData = { name: "Updated Team Name", description: "Updated description" };
+			const updateData: CreateTeamData = {
+				name: "Updated Team Name",
+				description: "Updated description",
+				velocity_baseline: 30,
+				sprint_length_days: 14,
+				working_days_per_week: 5
+			};
 			const updatedTeams = mockTeams.map(team => (team.id === teamId ? { ...team, ...updateData } : team));
 
 			mockTeamService.getTeams
@@ -209,17 +226,14 @@ describe("useTeams", () => {
 				await result.current.updateTeam(teamId, updateData);
 			});
 
-			// Assert: Success toast and updated teams list
-			expect(result.current.toast).toEqual({
-				message: "Team updated successfully!",
-				type: "success"
-			});
+			// Assert: User receives success feedback and sees updated teams list
+			expect(mockShowSuccess).toHaveBeenCalledWith("Team updated successfully!");
 			expect(result.current.teams).toEqual(updatedTeams);
 			expect(mockTeamService.updateTeam).toHaveBeenCalledWith(teamId, updateData);
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(2);
 		});
 
-		it("should show error toast when team update fails", async () => {
+		it("should provide error feedback when team update fails", async () => {
 			// Arrange: Mock initial success and update failure
 			mockTeamService.getTeams.mockResolvedValueOnce(mockTeams);
 			const errorMessage = "Insufficient permissions to update team";
@@ -236,17 +250,14 @@ describe("useTeams", () => {
 				await result.current.updateTeam("team-1", mockCreateTeamData);
 			});
 
-			// Assert: Error toast and unchanged teams list
-			expect(result.current.toast).toEqual({
-				message: errorMessage,
-				type: "error"
-			});
+			// Assert: User receives error feedback and teams list remains unchanged
+			expect(mockShowError).toHaveBeenCalledWith(errorMessage);
 			expect(result.current.teams).toEqual(mockTeams);
 		});
 	});
 
 	describe("Team Deletion Workflow", () => {
-		it("should delete team and refresh teams list with success toast", async () => {
+		it("should delete team and provide success feedback to user", async () => {
 			// Arrange: Mock operations
 			const teamIdToDelete = "team-1";
 			const remainingTeams = mockTeams.filter(team => team.id !== teamIdToDelete);
@@ -267,17 +278,14 @@ describe("useTeams", () => {
 				await result.current.deleteTeam(teamIdToDelete);
 			});
 
-			// Assert: Success toast and updated teams list
-			expect(result.current.toast).toEqual({
-				message: "Team deleted successfully!",
-				type: "success"
-			});
+			// Assert: User receives success feedback and sees updated teams list
+			expect(mockShowSuccess).toHaveBeenCalledWith("Team deleted successfully!");
 			expect(result.current.teams).toEqual(remainingTeams);
 			expect(mockTeamService.deleteTeam).toHaveBeenCalledWith(teamIdToDelete);
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(2);
 		});
 
-		it("should show error toast when team deletion fails", async () => {
+		it("should provide error feedback when team deletion fails", async () => {
 			// Arrange: Mock initial success and deletion failure
 			mockTeamService.getTeams.mockResolvedValueOnce(mockTeams);
 			const errorMessage = "Cannot delete team with active members";
@@ -294,17 +302,14 @@ describe("useTeams", () => {
 				await result.current.deleteTeam("team-1");
 			});
 
-			// Assert: Error toast and unchanged teams list
-			expect(result.current.toast).toEqual({
-				message: errorMessage,
-				type: "error"
-			});
+			// Assert: User receives error feedback and teams list remains unchanged
+			expect(mockShowError).toHaveBeenCalledWith(errorMessage);
 			expect(result.current.teams).toEqual(mockTeams);
 		});
 	});
 
 	describe("Manual Refresh Functionality", () => {
-		it("should refresh teams data when refreshTeams is called", async () => {
+		it("should refresh teams data when user requests refresh", async () => {
 			// Arrange: Mock multiple getTeams calls with different data
 			const initialTeams = [mockTeams[0]];
 			const refreshedTeams = mockTeams;
@@ -322,17 +327,17 @@ describe("useTeams", () => {
 			// Verify initial state
 			expect(result.current.teams).toEqual(initialTeams);
 
-			// Act: Manual refresh
+			// Act: User manually refreshes
 			await act(async () => {
 				await result.current.refreshTeams();
 			});
 
-			// Assert: Teams are refreshed
+			// Assert: User sees refreshed teams data
 			expect(result.current.teams).toEqual(refreshedTeams);
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(2);
 		});
 
-		it("should handle refresh errors without affecting current teams data", async () => {
+		it("should handle refresh errors without losing current teams data", async () => {
 			// Arrange: Mock initial success and refresh failure
 			mockTeamService.getTeams
 				.mockResolvedValueOnce(mockTeams) // Initial load success
@@ -348,70 +353,14 @@ describe("useTeams", () => {
 			expect(result.current.teams).toEqual(mockTeams);
 			expect(result.current.error).toBe("");
 
-			// Act: Manual refresh that fails
+			// Act: User attempts manual refresh that fails
 			await act(async () => {
 				await result.current.refreshTeams();
 			});
 
-			// Assert: Error is set but teams data is preserved
+			// Assert: User sees error but retains their teams data
 			expect(result.current.error).toBe("Network error");
 			expect(result.current.teams).toEqual(mockTeams); // Data preserved
-		});
-	});
-
-	describe("Toast Management", () => {
-		it("should allow manual toast management with setToast", async () => {
-			// Arrange: Mock initial load
-			mockTeamService.getTeams.mockResolvedValueOnce(mockTeams);
-
-			// Act: Render hook
-			const { result } = renderHook(() => useTeams());
-
-			// Wait for initial load to complete
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
-			});
-
-			// Act: Set custom toast
-			act(() => {
-				result.current.setToast({
-					message: "Custom toast message",
-					type: "success"
-				});
-			});
-
-			// Assert: Toast is set
-			expect(result.current.toast).toEqual({
-				message: "Custom toast message",
-				type: "success"
-			});
-
-			// Act: Clear toast
-			act(() => {
-				result.current.setToast(null);
-			});
-
-			// Assert: Toast is cleared
-			expect(result.current.toast).toBeNull();
-		});
-
-		it("should start with null toast state", async () => {
-			// Arrange: Mock initial load
-			mockTeamService.getTeams.mockResolvedValueOnce(mockTeams);
-
-			// Act: Render hook
-			const { result } = renderHook(() => useTeams());
-
-			// Assert: Initial toast state is null before async operations
-			expect(result.current.toast).toBeNull();
-
-			// Wait for initial load to complete
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
-			});
-
-			// Assert: Toast remains null after loading
-			expect(result.current.toast).toBeNull();
 		});
 	});
 
@@ -433,8 +382,7 @@ describe("useTeams", () => {
 				refreshTeams: result.current.refreshTeams,
 				createTeam: result.current.createTeam,
 				updateTeam: result.current.updateTeam,
-				deleteTeam: result.current.deleteTeam,
-				setToast: result.current.setToast
+				deleteTeam: result.current.deleteTeam
 			};
 
 			// Act: Force re-render
@@ -445,7 +393,6 @@ describe("useTeams", () => {
 			expect(result.current.createTeam).toBe(initialFunctions.createTeam);
 			expect(result.current.updateTeam).toBe(initialFunctions.updateTeam);
 			expect(result.current.deleteTeam).toBe(initialFunctions.deleteTeam);
-			expect(result.current.setToast).toBe(initialFunctions.setToast);
 		});
 
 		it("should provide complete interface as documented in types", async () => {
@@ -459,8 +406,6 @@ describe("useTeams", () => {
 			expect(result.current).toHaveProperty("teams");
 			expect(result.current).toHaveProperty("isLoading");
 			expect(result.current).toHaveProperty("error");
-			expect(result.current).toHaveProperty("toast");
-			expect(result.current).toHaveProperty("setToast");
 			expect(result.current).toHaveProperty("refreshTeams");
 			expect(result.current).toHaveProperty("createTeam");
 			expect(result.current).toHaveProperty("updateTeam");
@@ -471,7 +416,6 @@ describe("useTeams", () => {
 			expect(typeof result.current.createTeam).toBe("function");
 			expect(typeof result.current.updateTeam).toBe("function");
 			expect(typeof result.current.deleteTeam).toBe("function");
-			expect(typeof result.current.setToast).toBe("function");
 
 			// Wait for initial load to complete to avoid act warnings
 			await waitFor(() => {

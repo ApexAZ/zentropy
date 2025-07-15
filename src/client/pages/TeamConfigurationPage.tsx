@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberData, CreateSprintData } from "../types";
 import { formatDate, getDayName } from "../utils/formatters";
 import { TeamService } from "../services";
+import { useToast } from "../contexts/ToastContext";
 
 // interface GenerateSprintsData {
 //   starting_sprint_number: number
@@ -15,7 +16,9 @@ const TeamConfigurationPage: React.FC = () => {
 	const [sprints, setSprints] = useState<Sprint[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string>("");
-	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+	// Toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Form states
 	const [teamBasicData, setTeamBasicData] = useState<TeamBasicData>({
@@ -54,15 +57,6 @@ const TeamConfigurationPage: React.FC = () => {
 	useEffect(() => {
 		void loadTeamConfiguration();
 	}, []);
-
-	// Hide toast after 5 seconds
-	useEffect(() => {
-		if (toast) {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast]);
 
 	const loadTeamConfiguration = async (): Promise<void> => {
 		try {
@@ -109,15 +103,9 @@ const TeamConfigurationPage: React.FC = () => {
 		try {
 			const updatedTeam = await TeamService.updateTeamBasicInfo(team.id, teamBasicData);
 			setTeam(updatedTeam);
-			setToast({
-				message: "Team information updated successfully!",
-				type: "success"
-			});
+			showSuccess("Team information updated successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to update team information",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to update team information");
 		}
 	};
 
@@ -131,15 +119,9 @@ const TeamConfigurationPage: React.FC = () => {
 		try {
 			const updatedTeam = await TeamService.updateTeamVelocity(team.id, velocityData);
 			setTeam(updatedTeam);
-			setToast({
-				message: "Velocity settings updated successfully!",
-				type: "success"
-			});
+			showSuccess("Velocity settings updated successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to update velocity settings",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to update velocity settings");
 		}
 	};
 
@@ -168,15 +150,9 @@ const TeamConfigurationPage: React.FC = () => {
 			setShowAddMemberModal(false);
 			setAddMemberData({ email: "", role: "member" });
 			setMemberErrors({});
-			setToast({
-				message: "Team member added successfully!",
-				type: "success"
-			});
+			showSuccess("Team member added successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to add team member",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to add team member");
 		}
 	};
 
@@ -188,15 +164,9 @@ const TeamConfigurationPage: React.FC = () => {
 		try {
 			await TeamService.removeTeamMember(team.id, memberId);
 			setTeamMembers(teamMembers.filter(member => member.id !== memberId));
-			setToast({
-				message: "Team member removed successfully!",
-				type: "success"
-			});
+			showSuccess("Team member removed successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to remove team member",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to remove team member");
 		}
 	};
 
@@ -236,15 +206,9 @@ const TeamConfigurationPage: React.FC = () => {
 			setShowCreateSprintModal(false);
 			setCreateSprintData({ name: "", start_date: "", end_date: "" });
 			setSprintErrors({});
-			setToast({
-				message: "Sprint created successfully!",
-				type: "success"
-			});
+			showSuccess("Sprint created successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to create sprint",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to create sprint");
 		}
 	};
 
@@ -690,30 +654,6 @@ const TeamConfigurationPage: React.FC = () => {
 								</button>
 							</div>
 						</form>
-					</div>
-				</div>
-			)}
-
-			{/* Toast */}
-			{toast && (
-				<div className="animate-slide-in fixed top-5 right-5 z-[60] min-w-[300px] rounded-md shadow-lg">
-					<div
-						className={`flex items-center justify-between gap-2 p-4 ${
-							toast.type === "success"
-								? "border border-green-200 bg-green-50"
-								: "border border-red-200 bg-red-50"
-						}`}
-					>
-						<span className={toast.type === "success" ? "text-green-700" : "text-red-700"}>
-							{toast.message}
-						</span>
-						<button
-							onClick={() => setToast(null)}
-							className="text-xl opacity-80 transition-opacity duration-200 hover:opacity-100"
-							aria-label="Close notification"
-						>
-							&times;
-						</button>
 					</div>
 				</div>
 			)}

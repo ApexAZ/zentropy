@@ -6,6 +6,7 @@ import "@testing-library/jest-dom";
 import ProjectCreationModal from "../ProjectCreationModal";
 import { useProject } from "../../hooks/useProject";
 import { useOrganization } from "../../hooks/useOrganization";
+import { ToastProvider } from "../../contexts/ToastContext";
 import type { Organization } from "../../types";
 
 // Mock hooks
@@ -18,6 +19,10 @@ vi.mock("../../hooks/useOrganization", () => ({
 }));
 
 describe("ProjectCreationModal", () => {
+	// Test wrapper to provide ToastProvider context
+	const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+		React.createElement(ToastProvider, null, children);
+
 	// Mock data
 	const mockOrganizations: Organization[] = [
 		{
@@ -262,24 +267,28 @@ describe("ProjectCreationModal", () => {
 			});
 		});
 
-		it("should handle creation errors", async () => {
+		it("should handle creation errors gracefully", async () => {
 			const user = userEvent.setup();
 
-			// Mock the useProject hook to return an error toast
-			(useProject as any).mockReturnValue({
-				...mockUseProject,
-				toast: { message: "Project name already exists", type: "error" },
-				createProject: vi.fn().mockRejectedValue(new Error("Project name already exists"))
-			});
+			// Mock the createProject to fail
+			mockUseProject.createProject.mockRejectedValue(new Error("Project name already exists"));
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
 			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
+			// Should call createProject but not close modal due to error
 			await waitFor(() => {
-				expect(screen.getByText("Project name already exists")).toBeInTheDocument();
+				expect(mockUseProject.createProject).toHaveBeenCalledWith(
+					expect.objectContaining({
+						name: "Test Project"
+					})
+				);
 			});
+
+			// Should NOT close modal when creation fails
+			expect(mockProps.onClose).not.toHaveBeenCalled();
 		});
 	});
 
@@ -436,41 +445,41 @@ describe("ProjectCreationModal", () => {
 		});
 	});
 
-	describe("Toast Notifications", () => {
-		it("should display toast messages from project hook", () => {
-			(useProject as any).mockReturnValue({
-				...mockUseProject,
-				toast: { message: "Project created successfully", type: "success" }
-			});
-
-			render(<ProjectCreationModal {...mockProps} />);
-
-			expect(screen.getByText("Project created successfully")).toBeInTheDocument();
-		});
-
-		it("should display toast messages from organization hook", () => {
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				toast: { message: "Organization selected", type: "success" }
-			});
-
-			render(<ProjectCreationModal {...mockProps} />);
-
-			expect(screen.getByText("Organization selected")).toBeInTheDocument();
-		});
-
-		it("should allow dismissing toast messages", async () => {
+	describe("Project Creation Workflow", () => {
+		it("should successfully create project with valid data", async () => {
 			const user = userEvent.setup();
-			(useProject as any).mockReturnValue({
-				...mockUseProject,
-				toast: { message: "Project created successfully", type: "success" }
+			mockUseProject.createProject.mockResolvedValue(undefined);
+
+			render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
+
+			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			await user.type(screen.getByRole("textbox", { name: /description/i }), "Test description");
+			await user.click(screen.getByRole("button", { name: /create project/i }));
+
+			// Should call createProject with the provided data
+			await waitFor(() => {
+				expect(mockUseProject.createProject).toHaveBeenCalledWith(
+					expect.objectContaining({
+						name: "Test Project",
+						description: "Test description"
+					})
+				);
 			});
 
+			// Should close modal on successful creation
+			await waitFor(() => {
+				expect(mockProps.onClose).toHaveBeenCalled();
+			});
+		});
+
+		it("should allow switching organizations during creation", async () => {
 			render(<ProjectCreationModal {...mockProps} />);
 
-			await user.click(screen.getByRole("button", { name: /dismiss/i }));
+			// Should show organization selection section
+			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 
-			expect(mockUseProject.setToast).toHaveBeenCalledWith(null);
+			// Should be able to interact with organization selector
+			expect(screen.getByRole("dialog")).toBeInTheDocument();
 		});
 	});
 
@@ -577,21 +586,27 @@ describe("ProjectCreationModal", () => {
 		it("should handle network errors gracefully", async () => {
 			const user = userEvent.setup();
 
-			// Mock the useProject hook to return an error toast
-			(useProject as any).mockReturnValue({
-				...mockUseProject,
-				toast: { message: "Network error", type: "error" },
-				createProject: vi.fn().mockRejectedValue(new Error("Network error"))
-			});
+			// Mock the createProject to fail with network error
+			mockUseProject.createProject.mockRejectedValue(new Error("Network error"));
 
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />, {
+				wrapper: TestWrapper
+			});
 
 			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
+			// Should call createProject and handle error gracefully
 			await waitFor(() => {
-				expect(screen.getByText("Network error")).toBeInTheDocument();
+				expect(mockUseProject.createProject).toHaveBeenCalledWith(
+					expect.objectContaining({
+						name: "Test Project"
+					})
+				);
 			});
+
+			// Should NOT close modal when network error occurs
+			expect(mockProps.onClose).not.toHaveBeenCalled();
 		});
 	});
 });

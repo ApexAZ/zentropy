@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { ProjectService } from "../services/ProjectService";
+import { useToast } from "../contexts/ToastContext";
 import type {
 	Project,
 	CreateProjectData,
@@ -8,21 +9,12 @@ import type {
 	ProjectValidationResult
 } from "../types";
 
-export interface UseProjectToast {
-	message: string;
-	type: "success" | "error";
-}
-
 export interface UseProjectResult {
 	// Data state
 	projects: Project[];
 	currentProject: Project | null;
 	isLoading: boolean;
 	error: string;
-
-	// Toast state
-	toast: UseProjectToast | null;
-	setToast: (toast: UseProjectToast | null) => void;
 
 	// Data loading actions
 	loadProjects: (
@@ -59,7 +51,9 @@ export const useProject = (): UseProjectResult => {
 	const [currentProject, setCurrentProject] = useState<Project | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string>("");
-	const [toast, setToast] = useState<UseProjectToast | null>(null);
+
+	// Centralized toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Load projects with pagination and filtering
 	const loadProjects = useCallback(
@@ -172,30 +166,21 @@ export const useProject = (): UseProjectResult => {
 				const validation = ProjectService.validate(data);
 				if (!validation.isValid) {
 					const firstError = Object.values(validation.errors)[0];
-					setToast({
-						message: `Validation error: ${firstError}`,
-						type: "error"
-					});
+					showError(`Validation error: ${firstError}`);
 					return;
 				}
 
 				await ProjectService.create(data);
-				setToast({
-					message: "Project created successfully!",
-					type: "success"
-				});
+				showSuccess("Project created successfully!");
 
 				// Reload projects to reflect the new project
 				await loadProjects();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to create project";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadProjects]
+		[loadProjects, showSuccess, showError]
 	);
 
 	// Update project
@@ -206,30 +191,21 @@ export const useProject = (): UseProjectResult => {
 				const validation = ProjectService.validate(data);
 				if (!validation.isValid) {
 					const firstError = Object.values(validation.errors)[0];
-					setToast({
-						message: `Validation error: ${firstError}`,
-						type: "error"
-					});
+					showError(`Validation error: ${firstError}`);
 					return;
 				}
 
 				await ProjectService.update(id, data);
-				setToast({
-					message: "Project updated successfully!",
-					type: "success"
-				});
+				showSuccess("Project updated successfully!");
 
 				// Reload projects to reflect the changes
 				await loadProjects();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to update project";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadProjects]
+		[loadProjects, showSuccess, showError]
 	);
 
 	// Delete project
@@ -237,10 +213,7 @@ export const useProject = (): UseProjectResult => {
 		async (id: string): Promise<void> => {
 			try {
 				await ProjectService.delete(id);
-				setToast({
-					message: "Project deleted successfully!",
-					type: "success"
-				});
+				showSuccess("Project deleted successfully!");
 
 				// Clear current project if it was deleted
 				if (currentProject?.id === id) {
@@ -251,13 +224,10 @@ export const useProject = (): UseProjectResult => {
 				await loadProjects();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to delete project";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[currentProject, loadProjects]
+		[currentProject, loadProjects, showSuccess, showError]
 	);
 
 	// Archive project
@@ -265,22 +235,16 @@ export const useProject = (): UseProjectResult => {
 		async (id: string): Promise<void> => {
 			try {
 				await ProjectService.archive(id);
-				setToast({
-					message: "Project archived successfully!",
-					type: "success"
-				});
+				showSuccess("Project archived successfully!");
 
 				// Reload projects to reflect the status change
 				await loadProjects();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to archive project";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadProjects]
+		[loadProjects, showSuccess, showError]
 	);
 
 	// Restore project
@@ -288,22 +252,16 @@ export const useProject = (): UseProjectResult => {
 		async (id: string): Promise<void> => {
 			try {
 				await ProjectService.restore(id);
-				setToast({
-					message: "Project restored successfully!",
-					type: "success"
-				});
+				showSuccess("Project restored successfully!");
 
 				// Reload projects to reflect the status change
 				await loadProjects();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to restore project";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadProjects]
+		[loadProjects, showSuccess, showError]
 	);
 
 	return {
@@ -312,10 +270,6 @@ export const useProject = (): UseProjectResult => {
 		currentProject,
 		isLoading,
 		error,
-
-		// Toast state
-		toast,
-		setToast,
 
 		// Data loading actions
 		loadProjects,

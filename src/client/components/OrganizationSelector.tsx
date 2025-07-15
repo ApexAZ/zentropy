@@ -28,17 +28,8 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 	allowCreate = true,
 	allowPersonal = true
 }) => {
-	const {
-		organizations,
-		isLoading,
-		error,
-		toast,
-		setToast,
-		checkDomain,
-		loadOrganizations,
-		createOrganization,
-		joinOrganization
-	} = useOrganization();
+	const { organizations, isLoading, error, checkDomain, loadOrganizations, createOrganization, joinOrganization } =
+		useOrganization();
 
 	const [showCreateForm, setShowCreateForm] = useState(false);
 	const [domainCheckResult, setDomainCheckResult] = useState<DomainCheckResult | null>(null);
@@ -250,26 +241,6 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 							✕
 						</button>
 					</div>
-
-					{/* Toast notification */}
-					{toast && (
-						<div
-							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
-								toast.type === "success"
-									? "bg-success-background text-success"
-									: "bg-error-background text-error"
-							}`}
-						>
-							<span>{toast.message}</span>
-							<button
-								onClick={() => setToast(null)}
-								className="ml-4 text-sm underline"
-								aria-label="Dismiss"
-							>
-								Dismiss
-							</button>
-						</div>
-					)}
 
 					{/* Error Display */}
 					{error && (

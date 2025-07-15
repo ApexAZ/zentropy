@@ -3,6 +3,7 @@ import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import CalendarPage from "../CalendarPage";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -28,6 +29,15 @@ const mockUsers = [
 ];
 
 describe("CalendarPage", () => {
+	// Helper function to render CalendarPage with required providers
+	const renderCalendarPage = () => {
+		return render(
+			<ToastProvider>
+				<CalendarPage />
+			</ToastProvider>
+		);
+	};
+
 	beforeEach(() => {
 		mockFetch.mockClear();
 		// Mock all CalendarPage API calls by default with robust URL-based implementation
@@ -47,7 +57,7 @@ describe("CalendarPage", () => {
 
 	it("renders calendar page with main elements", async () => {
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -79,7 +89,7 @@ describe("CalendarPage", () => {
 			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
 		});
 
-		render(<CalendarPage />);
+		renderCalendarPage();
 
 		// Should show loading state initially
 		expect(screen.getByText("Loading calendar entries...")).toBeInTheDocument();
@@ -123,7 +133,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -138,7 +148,7 @@ describe("CalendarPage", () => {
 		const user = userEvent.setup();
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -157,7 +167,7 @@ describe("CalendarPage", () => {
 		const user = userEvent.setup();
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -194,7 +204,7 @@ describe("CalendarPage", () => {
 		const user = userEvent.setup();
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -257,7 +267,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		// Open create modal
@@ -320,7 +330,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		// Open create modal and fill form with valid data
@@ -367,7 +377,7 @@ describe("CalendarPage", () => {
 
 		const user = userEvent.setup();
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -402,7 +412,7 @@ describe("CalendarPage", () => {
 
 		const user = userEvent.setup();
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -452,7 +462,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -510,7 +520,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -574,7 +584,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -597,7 +607,7 @@ describe("CalendarPage", () => {
 	it("closes modal when cancel button is clicked", async () => {
 		const user = userEvent.setup();
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		// Open create modal using the specific button (not the modal header)
@@ -633,7 +643,7 @@ describe("CalendarPage", () => {
 		});
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		await waitFor(() => {
@@ -646,7 +656,7 @@ describe("CalendarPage", () => {
 		mockFetch.mockRejectedValue(new Error("Network error"));
 
 		await act(async () => {
-			render(<CalendarPage />);
+			renderCalendarPage();
 		});
 
 		// Network errors during initialization show error state with "Unable to Load Calendar" and the specific error message

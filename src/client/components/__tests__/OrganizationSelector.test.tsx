@@ -1,9 +1,11 @@
+import React from "react";
 import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import OrganizationSelector from "../OrganizationSelector";
 import { useOrganization } from "../../hooks/useOrganization";
+import { ToastProvider } from "../../contexts/ToastContext";
 import type { Organization, DomainCheckResult } from "../../types";
 
 // Mock useOrganization hook
@@ -12,6 +14,10 @@ vi.mock("../../hooks/useOrganization", () => ({
 }));
 
 describe("OrganizationSelector", () => {
+	// Test wrapper to provide ToastProvider context
+	const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+		React.createElement(ToastProvider, null, children);
+
 	// Mock data
 	const mockOrganizations: Organization[] = [
 		{
@@ -76,6 +82,12 @@ describe("OrganizationSelector", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Reset all mock functions to ensure clean state
+		Object.values(mockUseOrganization).forEach(value => {
+			if (typeof value === "function" && "mockClear" in value) {
+				(value as any).mockClear();
+			}
+		});
 		(useOrganization as any).mockReturnValue(mockUseOrganization);
 	});
 
@@ -357,19 +369,15 @@ describe("OrganizationSelector", () => {
 			});
 		});
 
-		it("should handle organization creation errors", async () => {
+		it("should handle organization creation errors gracefully", async () => {
 			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
 			});
 
-			// Mock createOrganization to show error via toast
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				toast: { message: "Organization already exists", type: "error" },
-				createOrganization: vi.fn().mockRejectedValue(new Error("Organization already exists"))
-			});
+			// Mock createOrganization to fail
+			mockUseOrganization.createOrganization.mockRejectedValue(new Error("Organization already exists"));
 
 			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
 
@@ -385,9 +393,19 @@ describe("OrganizationSelector", () => {
 			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
 
+			// Should call createOrganization but not call onSelect due to error
 			await waitFor(() => {
-				expect(screen.getByText("Organization already exists")).toBeInTheDocument();
+				expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
+					name: "New Org",
+					description: "",
+					domain: "test.com",
+					scope: "shared",
+					max_users: 50
+				});
 			});
+
+			// Should NOT call onSelect when creation fails
+			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
 
@@ -422,17 +440,12 @@ describe("OrganizationSelector", () => {
 			expect(mockUseOrganization.joinOrganization).toHaveBeenCalledWith("org-1");
 		});
 
-		it("should handle join organization errors", async () => {
+		it("should handle join organization errors gracefully", async () => {
 			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue(mockDomainCheckResult);
 
-			// Mock join error to show via toast
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				checkDomain: vi.fn().mockResolvedValue(mockDomainCheckResult),
-				toast: { message: "Organization is at capacity", type: "error" },
-				joinOrganization: vi.fn().mockRejectedValue(new Error("Organization is at capacity"))
-			});
+			// Mock join error
+			mockUseOrganization.joinOrganization.mockRejectedValue(new Error("Organization is at capacity"));
 
 			render(<OrganizationSelector {...mockProps} />);
 
@@ -442,9 +455,13 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /join test organization/i }));
 
+			// Should call joinOrganization but not call onSelect due to error
 			await waitFor(() => {
-				expect(screen.getByText("Organization is at capacity")).toBeInTheDocument();
+				expect(mockUseOrganization.joinOrganization).toHaveBeenCalledWith("org-1");
 			});
+
+			// Should NOT call onSelect when join fails
+			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
 
@@ -484,34 +501,110 @@ describe("OrganizationSelector", () => {
 		});
 	});
 
-	describe("Toast Notifications", () => {
-		it("should display toast messages", async () => {
+	describe("User Experience", () => {
+		it("should successfully complete organization joining workflow", async () => {
+			const user = userEvent.setup();
+
+			// Clear and setup mocks explicitly for this test
+			vi.clearAllMocks();
+			const joinOrgMock = vi.fn().mockResolvedValue({
+				message: "Successfully joined organization",
+				status: "approved",
+				organization_id: "org-1"
+			});
+			const checkDomainMock = vi.fn().mockResolvedValue(mockDomainCheckResult);
+
+			// Override the entire hook return value for this specific test
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
-				toast: { message: "Operation successful", type: "success" }
+				isLoading: false,
+				checkDomain: checkDomainMock,
+				joinOrganization: joinOrgMock
 			});
 
-			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+			render(<OrganizationSelector {...mockProps} />, { wrapper: TestWrapper });
+
+			// Wait for domain check to complete and join button to appear
+			await waitFor(() => {
+				expect(checkDomainMock).toHaveBeenCalledWith("test@test.com");
 			});
 
-			expect(screen.getByText("Operation successful")).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
+			});
+
+			const joinButton = screen.getByRole("button", { name: /join test organization/i });
+			await user.click(joinButton);
+
+			// Verify the join function was called with correct organization ID
+			await waitFor(() => {
+				expect(joinOrgMock).toHaveBeenCalledWith("org-1");
+			});
 		});
 
-		it("should allow dismissing toast messages", async () => {
+		it("should successfully complete organization creation workflow", async () => {
 			const user = userEvent.setup();
+
+			// Clear and setup mocks explicitly for this test
+			vi.clearAllMocks();
+			const createOrgMock = vi.fn().mockResolvedValue(undefined);
+			const loadOrgMock = vi.fn().mockResolvedValue(undefined);
+			const checkDomainMock = vi.fn().mockResolvedValue({
+				...mockDomainCheckResult,
+				domain_found: false
+			});
+
+			// Override the entire hook return value for this specific test
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
-				toast: { message: "Operation successful", type: "success" }
+				isLoading: false,
+				checkDomain: checkDomainMock,
+				createOrganization: createOrgMock,
+				loadOrganizations: loadOrgMock
 			});
 
-			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+			render(<OrganizationSelector {...mockProps} allowCreate={true} />, { wrapper: TestWrapper });
+
+			// Wait for domain check to complete
+			await waitFor(() => {
+				expect(checkDomainMock).toHaveBeenCalledWith("test@test.com");
 			});
 
-			await user.click(screen.getByRole("button", { name: /dismiss/i }));
+			// Wait for the "Create New Organization" button to appear
+			await waitFor(() => {
+				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
+			});
 
-			expect(mockUseOrganization.setToast).toHaveBeenCalledWith(null);
+			// Step 1: Click "Create New Organization" to show the form
+			await user.click(screen.getByRole("button", { name: /create new organization/i }));
+
+			// Step 2: Wait for the form to appear and fill it
+			await waitFor(() => {
+				expect(screen.getByLabelText("Organization Name")).toBeInTheDocument();
+			});
+
+			await user.type(screen.getByLabelText("Organization Name"), "New Org");
+			await user.type(screen.getByLabelText("Description"), "New organization");
+
+			// Step 3: Submit the form
+			const submitButton = screen.getByRole("button", { name: /create organization/i });
+			await user.click(submitButton);
+
+			// Verify the create function was called with correct data
+			await waitFor(() => {
+				expect(createOrgMock).toHaveBeenCalledWith({
+					name: "New Org",
+					description: "New organization",
+					domain: "test.com",
+					scope: "shared",
+					max_users: 50
+				});
+			});
+
+			// Verify loadOrganizations was called to refresh the list
+			await waitFor(() => {
+				expect(loadOrgMock).toHaveBeenCalled();
+			});
 		});
 	});
 

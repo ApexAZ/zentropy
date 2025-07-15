@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { CalendarEntry, Team, User, CreateCalendarEntryData } from "../types";
 import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from "../utils/formatters";
 import { CalendarService, TeamService } from "../services";
+import { useToast } from "../contexts/ToastContext";
 
 const CalendarPage: React.FC = () => {
 	// State management
@@ -14,7 +15,9 @@ const CalendarPage: React.FC = () => {
 	const [error, setError] = useState<string>("");
 	const [showEntryModal, setShowEntryModal] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
-	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+	// Toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Filter state
 	const [selectedTeam, setSelectedTeam] = useState<string>("");
@@ -119,15 +122,6 @@ const CalendarPage: React.FC = () => {
 			setIsLoading(false);
 		}
 	};
-
-	// Hide toast after 5 seconds
-	useEffect(() => {
-		if (toast) {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast]);
 
 	// Load team users when team is selected
 	useEffect(() => {
@@ -240,18 +234,12 @@ const CalendarPage: React.FC = () => {
 				await CalendarService.createCalendarEntry(formData);
 			}
 
-			setToast({
-				message: isEditing ? "Calendar entry updated successfully!" : "Calendar entry created successfully!",
-				type: "success"
-			});
+			showSuccess(isEditing ? "Calendar entry updated successfully!" : "Calendar entry created successfully!");
 
 			closeModals();
 			await refreshEntries();
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to save calendar entry",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to save calendar entry");
 		}
 	};
 
@@ -263,18 +251,12 @@ const CalendarPage: React.FC = () => {
 		try {
 			await CalendarService.deleteCalendarEntry(currentEntry.id);
 
-			setToast({
-				message: "Calendar entry deleted successfully!",
-				type: "success"
-			});
+			showSuccess("Calendar entry deleted successfully!");
 
 			closeModals();
 			await refreshEntries();
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to delete calendar entry",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to delete calendar entry");
 		}
 	};
 
@@ -669,30 +651,6 @@ const CalendarPage: React.FC = () => {
 								Delete Entry
 							</button>
 						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Toast */}
-			{toast && (
-				<div className="animate-slide-in fixed top-5 right-5 z-[60] min-w-[300px] rounded-md shadow-lg">
-					<div
-						className={`flex items-center justify-between gap-2 p-4 ${
-							toast.type === "success"
-								? "border border-green-200 bg-green-50"
-								: "border border-red-200 bg-red-50"
-						}`}
-					>
-						<span className={toast.type === "success" ? "text-green-700" : "text-red-700"}>
-							{toast.message}
-						</span>
-						<button
-							onClick={() => setToast(null)}
-							className="text-xl opacity-80 transition-opacity duration-200 hover:opacity-100"
-							aria-label="Close notification"
-						>
-							&times;
-						</button>
 					</div>
 				</div>
 			)}

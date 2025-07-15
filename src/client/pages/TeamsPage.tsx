@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Button from "../components/atoms/Button";
 import Input from "../components/atoms/Input";
 import Card from "../components/atoms/Card";
@@ -9,7 +9,7 @@ import { formatDate, formatVelocity, formatSprintLength, formatWorkingDays } fro
 
 const TeamsPage: React.FC = () => {
 	// Use teams hook for all data management
-	const { teams, isLoading, error, toast, setToast, refreshTeams, createTeam, updateTeam, deleteTeam } = useTeams();
+	const { teams, isLoading, error, refreshTeams, createTeam, updateTeam, deleteTeam } = useTeams();
 
 	// Modal and form state
 	const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
@@ -26,15 +26,6 @@ const TeamsPage: React.FC = () => {
 		working_days_per_week: 5
 	});
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-	// Auto-hide toast after 5 seconds
-	useEffect(() => {
-		if (toast) {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast, setToast]);
 
 	// Modal handlers
 	const openCreateModal = (): void => {
@@ -333,26 +324,6 @@ const TeamsPage: React.FC = () => {
 								Delete Team
 							</Button>
 						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Toast */}
-			{toast && (
-				<div className="animate-slide-in fixed top-5 right-5 z-[60] min-w-[300px] rounded-md shadow-lg">
-					<div
-						className={`flex items-center justify-between gap-2 p-4 ${
-							toast.type === "success"
-								? "border border-green-200 bg-green-50"
-								: "border border-red-200 bg-red-50"
-						}`}
-					>
-						<span className={toast.type === "success" ? "text-green-700" : "text-red-700"}>
-							{toast.message}
-						</span>
-						<Button onClick={() => setToast(null)} variant="icon" aria-label="Close notification">
-							&times;
-						</Button>
 					</div>
 				</div>
 			)}

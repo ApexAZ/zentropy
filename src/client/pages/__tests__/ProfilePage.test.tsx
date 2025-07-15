@@ -800,7 +800,7 @@ describe("ProfilePage", () => {
 		});
 
 		// Find and click dismiss button (×)
-		const dismissButton = screen.getByRole("button", { name: /close notification/i });
+		const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
 		await user.click(dismissButton);
 
 		// Toast should be dismissed immediately

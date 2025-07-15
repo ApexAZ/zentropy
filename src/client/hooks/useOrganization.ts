@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { OrganizationService } from "../services/OrganizationService";
+import { useToast } from "../contexts/ToastContext";
 import type {
 	Organization,
 	CreateOrganizationData,
@@ -9,21 +10,12 @@ import type {
 	OrganizationListResponse
 } from "../types";
 
-export interface UseOrganizationToast {
-	message: string;
-	type: "success" | "error";
-}
-
 export interface UseOrganizationResult {
 	// Data state
 	organizations: Organization[];
 	currentOrganization: Organization | null;
 	isLoading: boolean;
 	error: string;
-
-	// Toast state
-	toast: UseOrganizationToast | null;
-	setToast: (toast: UseOrganizationToast | null) => void;
 
 	// Domain checking
 	checkDomain: (email: string) => Promise<DomainCheckResult>;
@@ -48,7 +40,9 @@ export const useOrganization = (): UseOrganizationResult => {
 	const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string>("");
-	const [toast, setToast] = useState<UseOrganizationToast | null>(null);
+
+	// Centralized toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Domain checking
 	const checkDomain = useCallback(async (email: string): Promise<DomainCheckResult> => {
@@ -111,22 +105,16 @@ export const useOrganization = (): UseOrganizationResult => {
 		async (data: CreateOrganizationData): Promise<void> => {
 			try {
 				await OrganizationService.create(data);
-				setToast({
-					message: "Organization created successfully!",
-					type: "success"
-				});
+				showSuccess("Organization created successfully!");
 
 				// Reload organizations to reflect the new organization
 				await loadOrganizations();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to create organization";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadOrganizations]
+		[loadOrganizations, showSuccess, showError]
 	);
 
 	// Update organization
@@ -134,22 +122,16 @@ export const useOrganization = (): UseOrganizationResult => {
 		async (id: string, data: UpdateOrganizationData): Promise<void> => {
 			try {
 				await OrganizationService.update(id, data);
-				setToast({
-					message: "Organization updated successfully!",
-					type: "success"
-				});
+				showSuccess("Organization updated successfully!");
 
 				// Reload organizations to reflect the changes
 				await loadOrganizations();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to update organization";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadOrganizations]
+		[loadOrganizations, showSuccess, showError]
 	);
 
 	// Delete organization
@@ -157,59 +139,47 @@ export const useOrganization = (): UseOrganizationResult => {
 		async (id: string): Promise<void> => {
 			try {
 				await OrganizationService.delete(id);
-				setToast({
-					message: "Organization deleted successfully!",
-					type: "success"
-				});
+				showSuccess("Organization deleted successfully!");
 
 				// Reload organizations to reflect the deletion
 				await loadOrganizations();
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to delete organization";
-				setToast({
-					message: errorMessage,
-					type: "error"
-				});
+				showError(errorMessage);
 			}
 		},
-		[loadOrganizations]
+		[loadOrganizations, showSuccess, showError]
 	);
 
 	// Join organization
-	const joinOrganization = useCallback(async (id: string): Promise<JoinOrganizationResult> => {
-		try {
-			const result = await OrganizationService.join(id);
-			setToast({
-				message: "Successfully joined organization!",
-				type: "success"
-			});
-			return result;
-		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Failed to join organization";
-			setToast({
-				message: errorMessage,
-				type: "error"
-			});
-			throw err;
-		}
-	}, []);
+	const joinOrganization = useCallback(
+		async (id: string): Promise<JoinOrganizationResult> => {
+			try {
+				const result = await OrganizationService.join(id);
+				showSuccess("Successfully joined organization!");
+				return result;
+			} catch (err) {
+				const errorMessage = err instanceof Error ? err.message : "Failed to join organization";
+				showError(errorMessage);
+				throw err;
+			}
+		},
+		[showSuccess, showError]
+	);
 
 	// Leave organization
-	const leaveOrganization = useCallback(async (id: string): Promise<void> => {
-		try {
-			await OrganizationService.leave(id);
-			setToast({
-				message: "Successfully left organization!",
-				type: "success"
-			});
-		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Failed to leave organization";
-			setToast({
-				message: errorMessage,
-				type: "error"
-			});
-		}
-	}, []);
+	const leaveOrganization = useCallback(
+		async (id: string): Promise<void> => {
+			try {
+				await OrganizationService.leave(id);
+				showSuccess("Successfully left organization!");
+			} catch (err) {
+				const errorMessage = err instanceof Error ? err.message : "Failed to leave organization";
+				showError(errorMessage);
+			}
+		},
+		[showSuccess, showError]
+	);
 
 	return {
 		// Data state
@@ -217,10 +187,6 @@ export const useOrganization = (): UseOrganizationResult => {
 		currentOrganization,
 		isLoading,
 		error,
-
-		// Toast state
-		toast,
-		setToast,
 
 		// Domain checking
 		checkDomain,

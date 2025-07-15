@@ -30,15 +30,9 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 	preselectedOrganization = null,
 	defaultVisibility = "team"
 }) => {
-	const {
-		isLoading: projectLoading,
-		toast: projectToast,
-		setToast: setProjectToast,
-		createProject,
-		validateProject
-	} = useProject();
+	const { isLoading: projectLoading, createProject, validateProject } = useProject();
 
-	const { toast: organizationToast, setToast: setOrganizationToast } = useOrganization();
+	const {} = useOrganization();
 
 	const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(preselectedOrganization);
 	const [showOrganizationSelector, setShowOrganizationSelector] = useState(false);
@@ -256,45 +250,6 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 							✕
 						</button>
 					</div>
-
-					{/* Toast notifications */}
-					{projectToast && (
-						<div
-							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
-								projectToast.type === "success"
-									? "bg-green-100 text-green-800"
-									: "bg-error-background text-error"
-							}`}
-						>
-							<span>{projectToast.message}</span>
-							<button
-								onClick={() => setProjectToast(null)}
-								className="ml-4 text-sm underline"
-								aria-label="Dismiss"
-							>
-								Dismiss
-							</button>
-						</div>
-					)}
-
-					{organizationToast && (
-						<div
-							className={`mb-4 flex items-center justify-between rounded-lg p-3 ${
-								organizationToast.type === "success"
-									? "bg-green-100 text-green-800"
-									: "bg-error-background text-error"
-							}`}
-						>
-							<span>{organizationToast.message}</span>
-							<button
-								onClick={() => setOrganizationToast(null)}
-								className="ml-4 text-sm underline"
-								aria-label="Dismiss"
-							>
-								Dismiss
-							</button>
-						</div>
-					)}
 
 					{/* Project Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">

@@ -41,8 +41,6 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 		organizations,
 		currentOrganization,
 		error: orgError,
-		toast: orgToast,
-		setToast: setOrgToast,
 		loadOrganizations,
 		getOrganizationById,
 		leaveOrganization
@@ -52,8 +50,6 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 		projects,
 		isLoading: projectLoading,
 		error: projectError,
-		toast: projectToast,
-		setToast: setProjectToast,
 		loadProjects,
 		loadProjectsByOrganization
 	} = useProject();
@@ -350,49 +346,6 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 										Leave Org
 									</button>
 								)}
-							</div>
-						</div>
-					)}
-
-					{/* Toast Notifications */}
-					{orgToast && (
-						<div
-							className={`mx-4 mt-4 rounded-lg p-3 ${
-								orgToast.type === "success"
-									? "bg-success-background text-success"
-									: "bg-error-background text-error"
-							}`}
-						>
-							<div className="flex items-center justify-between">
-								<span className="text-sm">{orgToast.message}</span>
-								<button
-									onClick={() => setOrgToast(null)}
-									className="ml-2 text-sm underline"
-									aria-label="Dismiss"
-								>
-									×
-								</button>
-							</div>
-						</div>
-					)}
-
-					{projectToast && (
-						<div
-							className={`mx-4 mt-4 rounded-lg p-3 ${
-								projectToast.type === "success"
-									? "bg-green-100 text-green-800"
-									: "bg-error-background text-error"
-							}`}
-						>
-							<div className="flex items-center justify-between">
-								<span className="text-sm">{projectToast.message}</span>
-								<button
-									onClick={() => setProjectToast(null)}
-									className="ml-2 text-sm underline"
-									aria-label="Dismiss"
-								>
-									×
-								</button>
 							</div>
 						</div>
 					)}

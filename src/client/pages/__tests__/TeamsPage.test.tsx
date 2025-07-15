@@ -1,13 +1,19 @@
+import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import TeamsPage from "../TeamsPage";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock fetch globally
 global.fetch = vi.fn();
 
 const mockFetch = fetch as any;
+
+// Test wrapper to provide ToastProvider context
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+	React.createElement(ToastProvider, null, children);
 
 describe("TeamsPage", () => {
 	beforeEach(() => {
@@ -71,7 +77,7 @@ describe("TeamsPage", () => {
 
 	it("renders teams page with main elements", async () => {
 		await act(async () => {
-			render(<TeamsPage />);
+			render(<TeamsPage />, { wrapper: TestWrapper });
 		});
 
 		expect(screen.getByText("Team Management")).toBeInTheDocument();
@@ -95,7 +101,7 @@ describe("TeamsPage", () => {
 		);
 
 		await act(async () => {
-			render(<TeamsPage />);
+			render(<TeamsPage />, { wrapper: TestWrapper });
 		});
 
 		expect(screen.getByText("Loading teams...")).toBeInTheDocument();
@@ -127,7 +133,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Frontend Team")).toBeInTheDocument();
@@ -141,7 +147,7 @@ describe("TeamsPage", () => {
 
 	it("displays empty state when no teams", async () => {
 		// Default mock already returns empty array, so this should work
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("No Teams Yet")).toBeInTheDocument();
@@ -153,7 +159,7 @@ describe("TeamsPage", () => {
 	it("handles API errors gracefully", async () => {
 		mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Unable to Load Teams")).toBeInTheDocument();
@@ -165,7 +171,7 @@ describe("TeamsPage", () => {
 
 	it("opens create modal when Create New Team button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -195,7 +201,7 @@ describe("TeamsPage", () => {
 
 	it("validates required fields when creating team", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -222,7 +228,7 @@ describe("TeamsPage", () => {
 
 	it("validates team name length", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -252,7 +258,7 @@ describe("TeamsPage", () => {
 
 	it("validates description length", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -300,7 +306,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -365,7 +371,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -426,7 +432,7 @@ describe("TeamsPage", () => {
 			json: async () => mockTeams
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Existing Team")).toBeInTheDocument();
@@ -479,7 +485,7 @@ describe("TeamsPage", () => {
 			json: async () => []
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Original Team")).toBeInTheDocument();
@@ -523,7 +529,7 @@ describe("TeamsPage", () => {
 			json: async () => mockTeams
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Team to Delete")).toBeInTheDocument();
@@ -572,7 +578,7 @@ describe("TeamsPage", () => {
 			json: async () => []
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Team to Delete")).toBeInTheDocument();
@@ -593,7 +599,7 @@ describe("TeamsPage", () => {
 
 	it("closes modals when cancel button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -617,7 +623,7 @@ describe("TeamsPage", () => {
 
 	it("closes modals when X button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -664,7 +670,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -719,7 +725,7 @@ describe("TeamsPage", () => {
 			json: async () => ({ message: "Cannot delete team with active members" })
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("Team to Delete")).toBeInTheDocument();
@@ -756,7 +762,7 @@ describe("TeamsPage", () => {
 			json: async () => mockTeams
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.getByText("New Team")).toBeInTheDocument();
@@ -810,7 +816,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -885,7 +891,7 @@ describe("TeamsPage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<TeamsPage />);
+		render(<TeamsPage />, { wrapper: TestWrapper });
 
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
@@ -910,7 +916,7 @@ describe("TeamsPage", () => {
 		});
 
 		// Click dismiss button using aria-label for specificity
-		const dismissButton = screen.getByRole("button", { name: /close notification/i });
+		const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
 		await user.click(dismissButton);
 
 		// Toast should be dismissed immediately

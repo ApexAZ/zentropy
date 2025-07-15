@@ -5,6 +5,7 @@ import { UserService } from "../services/UserService";
 import { AuthService } from "../services/AuthService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { AccountSecuritySection } from "../components/AccountSecuritySection";
+import { useToast } from "../contexts/ToastContext";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -13,7 +14,9 @@ const ProfilePage: React.FC = () => {
 	const [error, setError] = useState<string>("");
 	const [isEditingProfile, setIsEditingProfile] = useState(false);
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
-	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+	// Toast notifications
+	const { showSuccess, showError } = useToast();
 
 	// Form states
 	const [profileData, setProfileData] = useState<ProfileUpdateData>({
@@ -61,15 +64,6 @@ const ProfilePage: React.FC = () => {
 
 		void loadUserData();
 	}, []);
-
-	// Hide toast after 5 seconds
-	useEffect(() => {
-		if (toast) {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast]);
 
 	// Retry function for error recovery
 	const retryLoadProfile = async (): Promise<void> => {
@@ -127,15 +121,9 @@ const ProfilePage: React.FC = () => {
 			const updatedUser = await UserService.updateProfile(profileData);
 			setUser(updatedUser);
 			setIsEditingProfile(false);
-			setToast({
-				message: "Profile updated successfully!",
-				type: "success"
-			});
+			showSuccess("Profile updated successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to update profile",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to update profile");
 		}
 	};
 
@@ -180,15 +168,9 @@ const ProfilePage: React.FC = () => {
 				new_password: "",
 				confirm_new_password: ""
 			});
-			setToast({
-				message: "Password updated successfully!",
-				type: "success"
-			});
+			showSuccess("Password updated successfully!");
 		} catch (err) {
-			setToast({
-				message: err instanceof Error ? err.message : "Failed to update password",
-				type: "error"
-			});
+			showError(err instanceof Error ? err.message : "Failed to update password");
 		}
 	};
 
@@ -206,10 +188,7 @@ const ProfilePage: React.FC = () => {
 	};
 
 	const handleSecurityError = (error: string): void => {
-		setToast({
-			message: error,
-			type: "error"
-		});
+		showError(error);
 	};
 
 	if (isLoading) {
@@ -675,30 +654,6 @@ const ProfilePage: React.FC = () => {
 					</div>
 				</div>
 			</TabPanel>
-
-			{/* Toast */}
-			{toast && (
-				<div className="animate-slide-in fixed top-5 right-5 z-[60] min-w-[300px] rounded-md shadow-lg">
-					<div
-						className={`flex items-center justify-between gap-2 p-4 ${
-							toast.type === "success"
-								? "border border-green-200 bg-green-50"
-								: "border border-red-200 bg-red-50"
-						}`}
-					>
-						<span className={toast.type === "success" ? "text-green-700" : "text-red-700"}>
-							{toast.message}
-						</span>
-						<button
-							onClick={() => setToast(null)}
-							className="text-xl opacity-80 transition-opacity duration-200 hover:opacity-100"
-							aria-label="Close notification"
-						>
-							&times;
-						</button>
-					</div>
-				</div>
-			)}
 		</main>
 	);
 };
