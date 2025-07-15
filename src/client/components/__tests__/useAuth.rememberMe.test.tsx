@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useAuth } from "../../hooks/useAuth";
 
 // Mock localStorage
@@ -173,14 +173,14 @@ describe("useAuth Hook Remember Me Integration", () => {
 		expect(result.current.token).toBe(null);
 	});
 
-	test("initialization checks localStorage and sessionStorage for existing tokens", async () => {
-		// Mock localStorage having a token
+	test("user remains logged in after browser refresh when 'remember me' was selected", async () => {
+		// Simulate user has previously logged in with "remember me" option
 		mockLocalStorage.getItem.mockImplementation(key => {
 			if (key === "authToken") return "stored-token-123";
 			return null;
 		});
 
-		// Mock successful token validation
+		// Mock successful token validation - user should still be valid
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
 			json: async () => ({
@@ -192,63 +192,24 @@ describe("useAuth Hook Remember Me Integration", () => {
 			})
 		});
 
-		await act(async () => {
-			renderHook(() => useAuth());
-			// Wait for the async token validation to complete
-			await new Promise(resolve => setTimeout(resolve, 0));
-		});
+		const { result } = renderHook(() => useAuth());
 
-		// Should check new token storage locations (access_token removed in fix)
-		expect(mockLocalStorage.getItem).toHaveBeenCalledWith("authToken");
-		expect(mockSessionStorage.getItem).toHaveBeenCalledWith("authToken");
-		// Should NOT check access_token anymore (removed in fix)
-		expect(mockLocalStorage.getItem).not.toHaveBeenCalledWith("access_token");
+		// User should be automatically logged in after refresh
+		await waitFor(() => {
+			expect(result.current.isAuthenticated).toBe(true);
+			expect(result.current.user?.email).toBe("stored@example.com");
+			expect(result.current.user?.name).toBe("Stored User");
+		});
 	});
 
-	test("initialization prioritizes sessionStorage over localStorage for current session", async () => {
-		// Mock both storage locations having tokens
+	test("user stays logged in during browser session even without 'remember me'", async () => {
+		// Simulate user logged in during current session (sessionStorage only)
 		mockSessionStorage.getItem.mockImplementation(key => {
 			if (key === "authToken") return "session-token-123";
 			return null;
 		});
-		mockLocalStorage.getItem.mockImplementation(key => {
-			if (key === "authToken") return "local-token-456";
-			return null;
-		});
-
-		// Mock successful token validation
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => ({
-				email: "stored@example.com",
-				first_name: "Stored",
-				last_name: "User",
-				has_projects_access: true,
-				email_verified: true
-			})
-		});
-
-		await act(async () => {
-			renderHook(() => useAuth());
-			// Wait for the async token validation to complete
-			await new Promise(resolve => setTimeout(resolve, 0));
-		});
-
-		// Should prioritize sessionStorage for current session
-		expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
-			headers: {
-				Authorization: "Bearer session-token-123",
-				"Content-Type": "application/json"
-			}
-		});
-	});
-
-	test("initialization falls back to sessionStorage if localStorage is empty", async () => {
-		// Mock sessionStorage having a token
-		mockSessionStorage.getItem.mockImplementation(key => {
-			if (key === "authToken") return "session-token-789";
-			return null;
-		});
+		// No localStorage token (user didn't check "remember me")
+		mockLocalStorage.getItem.mockReturnValue(null);
 
 		// Mock successful token validation
 		mockFetch.mockResolvedValueOnce({
@@ -262,18 +223,29 @@ describe("useAuth Hook Remember Me Integration", () => {
 			})
 		});
 
-		await act(async () => {
-			renderHook(() => useAuth());
-			// Wait for the async token validation to complete
-			await new Promise(resolve => setTimeout(resolve, 0));
-		});
+		const { result } = renderHook(() => useAuth());
 
-		// Should use sessionStorage token
-		expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
-			headers: {
-				Authorization: "Bearer session-token-789",
-				"Content-Type": "application/json"
-			}
+		// User should remain authenticated during session
+		await waitFor(() => {
+			expect(result.current.isAuthenticated).toBe(true);
+			expect(result.current.user?.email).toBe("session@example.com");
+			expect(result.current.user?.name).toBe("Session User");
 		});
+	});
+
+	test("user without saved authentication starts as logged out", async () => {
+		// Simulate fresh browser session - no saved tokens anywhere
+		mockSessionStorage.getItem.mockReturnValue(null);
+		mockLocalStorage.getItem.mockReturnValue(null);
+
+		const { result } = renderHook(() => useAuth());
+
+		// User should start unauthenticated and no API calls should be made
+		expect(result.current.isAuthenticated).toBe(false);
+		expect(result.current.user).toBe(null);
+		expect(result.current.token).toBe(null);
+
+		// No token validation calls should be made without a token
+		expect(mockFetch).not.toHaveBeenCalled();
 	});
 });

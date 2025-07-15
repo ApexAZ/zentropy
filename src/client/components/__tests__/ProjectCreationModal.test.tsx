@@ -417,7 +417,7 @@ describe("ProjectCreationModal", () => {
 			const mockUseProjectLoading = {
 				...mockUseProject,
 				isLoading: true,
-				createProject: vi.fn().mockReturnValue(new Promise(resolve => setTimeout(resolve, 100)))
+				createProject: vi.fn().mockResolvedValue(undefined)
 			};
 			(useProject as any).mockReturnValue(mockUseProjectLoading);
 

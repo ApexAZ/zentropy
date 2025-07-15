@@ -186,10 +186,15 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		vi.clearAllMocks();
 		// Reset auth state using centralized helper
 		resetAuthMock();
+		// Reset global fetch mock
+		global.fetch = vi.fn();
 	});
 
 	afterEach(() => {
+		cleanup();
 		vi.restoreAllMocks();
+		// Ensure global fetch is reset
+		global.fetch = vi.fn();
 	});
 
 	describe("Google OAuth Registration Flow", () => {
@@ -505,15 +510,19 @@ describe("App - Google OAuth Integration (TDD)", () => {
 });
 
 describe("App - General Rendering and Routing Logic", () => {
-	beforeEach(async () => {
+	beforeEach(() => {
 		vi.clearAllMocks();
 		// Reset auth state using centralized helper
 		resetAuthMock();
+		// Reset global fetch mock
+		global.fetch = vi.fn();
 	});
 
 	afterEach(() => {
 		cleanup();
 		vi.restoreAllMocks();
+		// Ensure global fetch is reset
+		global.fetch = vi.fn();
 	});
 
 	describe("Basic Component Rendering", () => {

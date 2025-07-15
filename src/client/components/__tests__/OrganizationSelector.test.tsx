@@ -180,15 +180,24 @@ describe("OrganizationSelector", () => {
 			});
 		});
 
-		it("should show loading state during domain check", async () => {
-			// Mock a delayed resolution
-			mockUseOrganization.checkDomain.mockReturnValue(
-				new Promise(resolve => setTimeout(() => resolve(mockDomainCheckResult), 100))
-			);
+		it("should show loading state while checking user's email domain", async () => {
+			// Mock checkDomain to return a promise that we control
+			let resolvePromise: (value: any) => void;
+			const domainCheckPromise = new Promise(resolve => {
+				resolvePromise = resolve;
+			});
+			mockUseOrganization.checkDomain.mockReturnValue(domainCheckPromise);
 
 			render(<OrganizationSelector {...mockProps} />);
 
+			// User should see loading message while domain is being checked
 			expect(screen.getByText("Checking domain...")).toBeInTheDocument();
+
+			// Resolve the promise to complete the test
+			resolvePromise!(mockDomainCheckResult);
+			await waitFor(() => {
+				expect(screen.queryByText("Checking domain...")).not.toBeInTheDocument();
+			});
 		});
 	});
 

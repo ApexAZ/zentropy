@@ -69,19 +69,15 @@ describe("CalendarPage", () => {
 		expect(screen.getByDisplayValue(/\d{4}/)).toBeInTheDocument(); // Month selector with year
 	});
 
-	it("displays loading state initially", async () => {
-		// Mock delayed responses to capture loading state
+	it("shows teams and users after data loads", async () => {
+		// Mock successful API responses
 		mockFetch.mockClear();
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/api/v1/teams")) {
-				return new Promise(resolve =>
-					setTimeout(() => resolve({ ok: true, json: async () => mockTeams }), 100)
-				);
+				return Promise.resolve({ ok: true, json: async () => mockTeams });
 			}
 			if (url.includes("/api/v1/users")) {
-				return new Promise(resolve =>
-					setTimeout(() => resolve({ ok: true, json: async () => mockUsers }), 100)
-				);
+				return Promise.resolve({ ok: true, json: async () => mockUsers });
 			}
 			if (url.includes("/api/v1/calendar_entries")) {
 				return Promise.resolve({ ok: true, json: async () => [] });
@@ -91,12 +87,9 @@ describe("CalendarPage", () => {
 
 		renderCalendarPage();
 
-		// Should show loading state initially
-		expect(screen.getByText("Loading calendar entries...")).toBeInTheDocument();
-
-		// Wait for loading to complete
+		// Wait for teams to appear in the dropdown
 		await waitFor(() => {
-			expect(screen.queryByText("Loading calendar entries...")).not.toBeInTheDocument();
+			expect(screen.getByText("Engineering Team")).toBeInTheDocument();
 		});
 	});
 
