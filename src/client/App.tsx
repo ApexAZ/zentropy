@@ -11,6 +11,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
 import EmailVerificationModal from "./components/EmailVerificationModal";
 import { useAuth } from "./hooks/useAuth";
+import { ToastProvider } from "./contexts/ToastContext";
 
 type Page = "home" | "about" | "contact" | "profile" | "teams" | "calendar" | "dashboard" | "team-configuration";
 
@@ -20,7 +21,6 @@ function App(): React.JSX.Element {
 	const [authModalMode, setAuthModalMode] = useState<"signin" | "signup">("signin");
 	const [showVerificationPage, setShowVerificationPage] = useState(false);
 	const [verificationEmail, setVerificationEmail] = useState<string>("");
-	const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 	const auth = useAuth();
 
 	// Check for legacy email verification URL on app load and redirect
@@ -33,15 +33,6 @@ function App(): React.JSX.Element {
 			window.history.pushState({}, "", "/");
 		}
 	}, []);
-
-	// Auto-hide toast after 5 seconds
-	useEffect(() => {
-		if (toast) {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast]);
 
 	const handleShowRegistration = (): void => {
 		setAuthModalMode("signup");
@@ -114,59 +105,39 @@ function App(): React.JSX.Element {
 	};
 
 	return (
-		<div className="flex min-h-screen flex-col">
-			<Header
-				currentPage={currentPage}
-				onPageChange={setCurrentPage}
-				onShowRegistration={handleShowRegistration}
-				onShowSignIn={handleShowSignIn}
-				onShowVerification={handleShowVerification}
-				auth={auth}
-			/>
-			{renderPage()}
-			<footer className="border-layout-background bg-layout-background text-text-primary mt-auto border-t px-8 py-6 text-center text-sm">
-				<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
-			</footer>
+		<ToastProvider>
+			<div className="flex min-h-screen flex-col">
+				<Header
+					currentPage={currentPage}
+					onPageChange={setCurrentPage}
+					onShowRegistration={handleShowRegistration}
+					onShowSignIn={handleShowSignIn}
+					onShowVerification={handleShowVerification}
+					auth={auth}
+				/>
+				{renderPage()}
+				<footer className="border-layout-background bg-layout-background text-text-primary mt-auto border-t px-8 py-6 text-center text-sm">
+					<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
+				</footer>
 
-			<AuthModal
-				isOpen={showAuthModal}
-				onClose={handleCloseAuth}
-				onSuccess={handleAuthSuccess}
-				auth={auth}
-				initialMode={authModalMode}
-				onShowVerification={handleShowVerification}
-			/>
+				<AuthModal
+					isOpen={showAuthModal}
+					onClose={handleCloseAuth}
+					onSuccess={handleAuthSuccess}
+					auth={auth}
+					initialMode={authModalMode}
+					onShowVerification={handleShowVerification}
+				/>
 
-			{/* Email Verification Modal */}
-			<EmailVerificationModal
-				isOpen={showVerificationPage}
-				onClose={handleCloseVerification}
-				onSuccess={handleAuthSuccess}
-				initialEmail={verificationEmail}
-			/>
-
-			{/* Toast Notification */}
-			{toast && (
-				<div className="animate-slide-in fixed top-5 right-5 z-[1100] min-w-[300px] rounded-md shadow-lg">
-					<div
-						className={`flex items-center justify-between gap-2 p-4 ${
-							toast.type === "success"
-								? "border-layout-background bg-layout-background text-text-primary border"
-								: "border border-red-200 bg-red-50 text-red-700"
-						}`}
-					>
-						<div className="flex-1 text-sm leading-5">{toast.message}</div>
-						<button
-							onClick={() => setToast(null)}
-							className="opacity-80 transition-opacity duration-200 hover:opacity-100"
-							aria-label="Close notification"
-						>
-							&times;
-						</button>
-					</div>
-				</div>
-			)}
-		</div>
+				{/* Email Verification Modal */}
+				<EmailVerificationModal
+					isOpen={showVerificationPage}
+					onClose={handleCloseVerification}
+					onSuccess={handleAuthSuccess}
+					initialEmail={verificationEmail}
+				/>
+			</div>
+		</ToastProvider>
 	);
 }
 

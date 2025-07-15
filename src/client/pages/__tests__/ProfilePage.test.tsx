@@ -3,6 +3,7 @@ import { render, screen, waitFor, act, fireEvent } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import ProfilePage from "../ProfilePage";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -18,6 +19,15 @@ const mockUser = {
 	role: "team_member",
 	created_at: "2025-01-01T00:00:00Z",
 	updated_at: "2025-01-01T00:00:00Z"
+};
+
+// Helper function to render ProfilePage with required providers
+const renderProfilePage = () => {
+	return render(
+		<ToastProvider>
+			<ProfilePage />
+		</ToastProvider>
+	);
 };
 
 describe("ProfilePage", () => {
@@ -57,7 +67,7 @@ describe("ProfilePage", () => {
 
 	it("renders profile page with main elements", async () => {
 		await act(async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 		});
 
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
@@ -81,14 +91,14 @@ describe("ProfilePage", () => {
 		);
 
 		await act(async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 		});
 
 		expect(screen.getByText("Loading profile...")).toBeInTheDocument();
 	});
 
 	it("loads and displays user profile", async () => {
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Profile Information")).toBeInTheDocument();
@@ -104,7 +114,7 @@ describe("ProfilePage", () => {
 	it("handles API errors gracefully", async () => {
 		mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Unable to Load Profile")).toBeInTheDocument();
@@ -121,7 +131,7 @@ describe("ProfilePage", () => {
 			json: async () => adminUser
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getAllByText("Administrator")).toHaveLength(2); // Role label and badge
@@ -130,7 +140,7 @@ describe("ProfilePage", () => {
 
 	it("opens profile edit form when Edit Profile button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -148,7 +158,7 @@ describe("ProfilePage", () => {
 
 	it("validates profile form fields", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -188,7 +198,7 @@ describe("ProfilePage", () => {
 
 	it("validates profile field length limits", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -233,7 +243,7 @@ describe("ProfilePage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -288,7 +298,7 @@ describe("ProfilePage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -305,7 +315,7 @@ describe("ProfilePage", () => {
 
 	it("cancels profile edit and restores original data", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -330,7 +340,7 @@ describe("ProfilePage", () => {
 
 	it("opens password change form when Change Password button is clicked", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -355,7 +365,7 @@ describe("ProfilePage", () => {
 
 	it("validates password change form", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -385,7 +395,7 @@ describe("ProfilePage", () => {
 
 	it("validates new password requirements", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -421,7 +431,7 @@ describe("ProfilePage", () => {
 
 	it("validates password confirmation match", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -460,7 +470,7 @@ describe("ProfilePage", () => {
 			json: async () => ({ message: "Password updated successfully" })
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -516,7 +526,7 @@ describe("ProfilePage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -544,7 +554,7 @@ describe("ProfilePage", () => {
 
 	it("cancels password change and clears form", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -575,7 +585,7 @@ describe("ProfilePage", () => {
 
 	it("toggles password visibility", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -616,7 +626,7 @@ describe("ProfilePage", () => {
 
 	it("displays password requirements help text", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Navigate to Security tab first
 		await waitFor(() => {
@@ -648,7 +658,7 @@ describe("ProfilePage", () => {
 
 	it("displays security status and account information", async () => {
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Check Account Information in Profile tab
 		await waitFor(() => {
@@ -693,7 +703,7 @@ describe("ProfilePage", () => {
 			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Profile Information")).toBeInTheDocument();
@@ -719,7 +729,7 @@ describe("ProfilePage", () => {
 		}) as any;
 
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Wait for component to load
 		await waitFor(() => {
@@ -775,7 +785,7 @@ describe("ProfilePage", () => {
 		});
 
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		await waitFor(() => {
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -817,7 +827,7 @@ describe("ProfilePage", () => {
 		});
 
 		const user = userEvent.setup();
-		render(<ProfilePage />);
+		renderProfilePage();
 
 		// Wait for error state to appear
 		await waitFor(() => {
@@ -842,7 +852,7 @@ describe("ProfilePage", () => {
 	// Tab Interface Tests
 	describe("Tabbed Interface", () => {
 		it("should render tab navigation with Profile and Security tabs", async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("tablist")).toBeInTheDocument();
@@ -853,7 +863,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile tab as active by default", async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("aria-selected", "true");
@@ -864,7 +874,7 @@ describe("ProfilePage", () => {
 
 		it("should switch to Security tab when clicked", async () => {
 			const user = userEvent.setup();
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
@@ -878,7 +888,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile content in Profile tab", async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByText("Profile Information")).toBeInTheDocument();
@@ -890,7 +900,7 @@ describe("ProfilePage", () => {
 
 		it("should show Security content in Security tab", async () => {
 			const user = userEvent.setup();
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			// Switch to Security tab
 			await waitFor(() => {
@@ -911,7 +921,7 @@ describe("ProfilePage", () => {
 
 		it("should hide Profile content when Security tab is active", async () => {
 			const user = userEvent.setup();
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			// Initially shows Profile content
 			await waitFor(() => {
@@ -928,7 +938,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should support keyboard navigation between tabs", async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("tablist")).toBeInTheDocument();
@@ -954,7 +964,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should maintain correct tabIndex for accessibility", async () => {
-			render(<ProfilePage />);
+			renderProfilePage();
 
 			await waitFor(() => {
 				expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("tabIndex", "0");

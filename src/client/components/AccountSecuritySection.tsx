@@ -5,6 +5,7 @@ import { useAccountSecurity } from "../hooks/useAccountSecurity";
 import { AuthenticationStatusDisplay } from "./AuthenticationStatusDisplay";
 import { SecurityActions } from "./SecurityActions";
 import { PasswordConfirmationModal } from "./PasswordConfirmationModal";
+import { SecurityStatusSkeleton } from "./SecurityStatusSkeleton";
 
 interface AccountSecuritySectionProps {
 	/** Callback when security status is updated */
@@ -29,14 +30,19 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		securityStatus,
 		loading,
 		error,
+		errorResolution,
 		linkingLoading,
 		unlinkingLoading,
 		googleOAuthReady,
 		oauthLoading,
+		optimisticSecurityStatus,
 		loadSecurityStatus,
 		handleLinkGoogle,
 		handleUnlinkGoogle: hookHandleUnlinkGoogle
 	} = useAccountSecurity({ onSecurityUpdate, onError });
+
+	// Use optimistic security status if available, otherwise use actual status
+	const displaySecurityStatus = optimisticSecurityStatus || securityStatus;
 
 	/**
 	 * Handle showing password modal for unlinking
@@ -71,17 +77,11 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		setPasswordError(null);
 	}, []);
 
-	// Loading state
+	// Loading state with skeleton
 	if (loading) {
 		return (
-			<Card>
-				<div className="flex items-center justify-center py-8">
-					<div role="status" aria-label="Loading security status">
-						<div className="border-interactive h-8 w-8 animate-spin rounded-full border-b-2"></div>
-						<span className="sr-only">Loading security status...</span>
-					</div>
-					<span className="text-primary ml-3">Loading...</span>
-				</div>
+			<Card title="Account Security" data-testid="account-security-container">
+				<SecurityStatusSkeleton />
 			</Card>
 		);
 	}
@@ -91,7 +91,8 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		return (
 			<Card>
 				<div className="py-8 text-center">
-					<p className="text-error mb-4">Failed to load security information</p>
+					<p className="text-error mb-2">{error}</p>
+					{errorResolution && <p className="text-secondary mb-4 text-sm">{errorResolution}</p>}
 					<Button onClick={loadSecurityStatus} variant="secondary">
 						Retry
 					</Button>
@@ -104,14 +105,14 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	return (
 		<>
 			<Card title="Account Security" data-testid="account-security-container">
-				{securityStatus && (
+				{displaySecurityStatus && (
 					<div className="space-y-6">
 						{/* Authentication Status Display */}
-						<AuthenticationStatusDisplay securityStatus={securityStatus} />
+						<AuthenticationStatusDisplay securityStatus={displaySecurityStatus} />
 
 						{/* Security Actions */}
 						<SecurityActions
-							securityStatus={securityStatus}
+							securityStatus={displaySecurityStatus}
 							linkingLoading={linkingLoading}
 							unlinkingLoading={unlinkingLoading}
 							googleOAuthReady={googleOAuthReady}

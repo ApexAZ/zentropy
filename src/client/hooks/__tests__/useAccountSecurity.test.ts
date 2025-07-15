@@ -19,6 +19,18 @@ vi.mock("../useGoogleOAuth", () => ({
 	useGoogleOAuth: vi.fn()
 }));
 
+// Mock useToast hook
+vi.mock("../../contexts/ToastContext", () => ({
+	useToast: vi.fn(() => ({
+		showSuccess: vi.fn(),
+		showError: vi.fn(),
+		showInfo: vi.fn(),
+		showWarning: vi.fn(),
+		dismissToast: vi.fn(),
+		dismissAllToasts: vi.fn()
+	}))
+}));
+
 describe("useAccountSecurity", () => {
 	const mockOnSecurityUpdate = vi.fn();
 	const mockOnError = vi.fn();
@@ -62,6 +74,7 @@ describe("useAccountSecurity", () => {
 		// Initially loading
 		expect(result.current.loading).toBe(true);
 		expect(result.current.securityStatus).toBeNull();
+		expect(result.current.optimisticSecurityStatus).toBeNull();
 
 		// Wait for loading to complete
 		await waitFor(() => {
@@ -132,8 +145,8 @@ describe("useAccountSecurity", () => {
 		expect(result.current.unlinkingLoading).toBe(false);
 	});
 
-	it("should handle security status loading errors", async () => {
-		const errorMessage = "Failed to load security status";
+	it("should handle security status loading errors with resolution guidance", async () => {
+		const errorMessage = "Network error";
 		(UserService.getAccountSecurity as any).mockRejectedValue(new Error(errorMessage));
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
@@ -142,12 +155,31 @@ describe("useAccountSecurity", () => {
 			expect(result.current.loading).toBe(false);
 		});
 
-		expect(result.current.error).toBe(errorMessage);
+		expect(result.current.error).toBe("Connection problem. Please check your internet connection and try again.");
+		expect(result.current.errorResolution).toBe("Check your internet connection and try again in a moment.");
 		expect(result.current.securityStatus).toBeNull();
-		expect(mockOnError).toHaveBeenCalledWith(errorMessage);
+		expect(mockOnError).toHaveBeenCalledWith(
+			"Connection problem. Please check your internet connection and try again."
+		);
 	});
 
-	it("should handle Google linking errors", async () => {
+	it("should handle security status loading errors without resolution guidance", async () => {
+		const errorMessage = "Unknown error";
+		(UserService.getAccountSecurity as any).mockRejectedValue(new Error(errorMessage));
+
+		const { result } = renderHook(() => useAccountSecurity(defaultProps));
+
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
+
+		expect(result.current.error).toBe("Unable to load account security information.");
+		expect(result.current.errorResolution).toBe("Please try again. If the problem persists, contact support.");
+		expect(result.current.securityStatus).toBeNull();
+		expect(mockOnError).toHaveBeenCalledWith("Unable to load account security information.");
+	});
+
+	it("should handle Google linking errors with enhanced error messages", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
 		(UserService.linkGoogleAccount as any).mockRejectedValue(
 			new Error("Google email does not match account email")
@@ -171,11 +203,11 @@ describe("useAccountSecurity", () => {
 			await oauthHook.onSuccess("real-google-credential-token");
 		});
 
-		expect(mockOnError).toHaveBeenCalledWith("Google email does not match account email");
+		expect(mockOnError).toHaveBeenCalledWith("The Google account email doesn't match your account email.");
 		expect(result.current.linkingLoading).toBe(false);
 	});
 
-	it("should handle Google unlinking errors", async () => {
+	it("should handle Google unlinking errors with enhanced error messages", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockHybridResponse);
 		(UserService.unlinkGoogleAccount as any).mockRejectedValue(new Error("Incorrect password"));
 
@@ -186,20 +218,20 @@ describe("useAccountSecurity", () => {
 			expect(result.current.loading).toBe(false);
 		});
 
-		// Trigger unlinking - should throw error
+		// Trigger unlinking - should throw error with enhanced message
 		await act(async () => {
 			try {
 				await result.current.handleUnlinkGoogle("wrong-password");
 			} catch (error) {
 				expect(error).toBeInstanceOf(Error);
-				expect((error as Error).message).toBe("Incorrect password");
+				expect((error as Error).message).toBe("The password you entered is incorrect.");
 			}
 		});
 
 		expect(result.current.unlinkingLoading).toBe(false);
 	});
 
-	it("should handle OAuth errors", async () => {
+	it("should handle OAuth errors with enhanced error messages", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
@@ -220,8 +252,35 @@ describe("useAccountSecurity", () => {
 			oauthHook.onError("Google Sign-In was cancelled");
 		});
 
-		expect(mockOnError).toHaveBeenCalledWith("Google Sign-In was cancelled");
+		expect(mockOnError).toHaveBeenCalledWith("Google sign-in was cancelled.");
 		expect(result.current.linkingLoading).toBe(false);
+	});
+
+	it("should set optimistic update during Google linking", async () => {
+		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
+
+		const { result } = renderHook(() => useAccountSecurity(defaultProps));
+
+		// Wait for initial load
+		await waitFor(() => {
+			expect(result.current.loading).toBe(false);
+		});
+
+		// Should initially have no optimistic update
+		expect(result.current.optimisticSecurityStatus).toBeNull();
+
+		// Trigger Google linking
+		act(() => {
+			result.current.handleLinkGoogle();
+		});
+
+		// Should set optimistic update
+		expect(result.current.optimisticSecurityStatus).toEqual({
+			...mockEmailOnlyResponse,
+			google_auth_linked: true,
+			google_email: "linking..."
+		});
+		expect(result.current.linkingLoading).toBe(true);
 	});
 
 	it("should expose OAuth state correctly", async () => {

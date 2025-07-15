@@ -42,8 +42,8 @@ describe("AccountSecuritySection", () => {
 		cleanup();
 	});
 
-	// Test loading state
-	it("should show loading state while fetching security status", () => {
+	// Test skeleton loading state
+	it("should show skeleton loading state while fetching security status", () => {
 		// Mock hook to return loading state
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: null,
@@ -53,6 +53,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
@@ -60,9 +61,15 @@ describe("AccountSecuritySection", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		expect(screen.getByText("Loading security status...")).toBeInTheDocument();
-		expect(screen.getByText("Loading...")).toBeInTheDocument();
-		expect(screen.getByRole("status")).toBeInTheDocument();
+		// Should show skeleton loading elements instead of simple spinner
+		const skeletonElements = screen.getAllByRole("status");
+		expect(skeletonElements.length).toBeGreaterThan(0);
+
+		// Should show Account Security title
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
+
+		// Should show test container
+		expect(screen.getByTestId("account-security-container")).toBeInTheDocument();
 	});
 
 	// Test email-only authentication display
@@ -76,6 +83,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
@@ -100,6 +108,47 @@ describe("AccountSecuritySection", () => {
 		expect(screen.queryByRole("button", { name: "Unlink Google Account" })).not.toBeInTheDocument();
 	});
 
+	// Test optimistic updates
+	it("should display optimistic linked state during Google linking", async () => {
+		const mockOptimisticResponse = {
+			email_auth_linked: true,
+			google_auth_linked: true,
+			google_email: "linking..."
+		};
+
+		// Mock hook to return optimistic state
+		(useAccountSecurity as any).mockReturnValue({
+			securityStatus: mockEmailOnlyResponse,
+			loading: false,
+			error: null,
+			linkingLoading: true,
+			unlinkingLoading: false,
+			googleOAuthReady: true,
+			oauthLoading: false,
+			optimisticSecurityStatus: mockOptimisticResponse,
+			loadSecurityStatus: vi.fn(),
+			handleLinkGoogle: vi.fn(),
+			handleUnlinkGoogle: vi.fn()
+		});
+
+		render(<AccountSecuritySection {...defaultProps} />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+		});
+
+		// Should show optimistic Google authentication as linked
+		expect(screen.getByText("Google Authentication")).toBeInTheDocument();
+		expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
+
+		// Should show linking email placeholder
+		expect(screen.getByText("linking...")).toBeInTheDocument();
+
+		// Should show "Unlink Google Account" button (optimistic state)
+		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
+	});
+
 	// Test hybrid authentication display
 	it("should display hybrid authentication status correctly", async () => {
 		// Mock hook to return hybrid status
@@ -111,6 +160,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
@@ -145,6 +195,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
@@ -300,7 +351,8 @@ describe("AccountSecuritySection", () => {
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: null,
 			loading: false,
-			error: "Failed to load security status",
+			error: "Connection problem. Please check your internet connection and try again.",
+			errorResolution: "Check your internet connection and try again in a moment.",
 			linkingLoading: false,
 			unlinkingLoading: false,
 			googleOAuthReady: true,
@@ -312,7 +364,36 @@ describe("AccountSecuritySection", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		expect(screen.getByText("Failed to load security information")).toBeInTheDocument();
+		expect(
+			screen.getByText("Connection problem. Please check your internet connection and try again.")
+		).toBeInTheDocument();
+		expect(screen.getByText("Check your internet connection and try again in a moment.")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+	});
+
+	// Test error handling without resolution guidance
+	it("should handle API errors without resolution guidance", async () => {
+		const mockLoadSecurityStatus = vi.fn();
+
+		// Mock hook to return error state without resolution
+		(useAccountSecurity as any).mockReturnValue({
+			securityStatus: null,
+			loading: false,
+			error: "Unable to load account security information.",
+			errorResolution: null,
+			linkingLoading: false,
+			unlinkingLoading: false,
+			googleOAuthReady: true,
+			oauthLoading: false,
+			loadSecurityStatus: mockLoadSecurityStatus,
+			handleLinkGoogle: vi.fn(),
+			handleUnlinkGoogle: vi.fn()
+		});
+
+		render(<AccountSecuritySection {...defaultProps} />);
+
+		expect(screen.getByText("Unable to load account security information.")).toBeInTheDocument();
+		expect(screen.queryByText("Check your internet connection and try again in a moment.")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 	});
 
@@ -325,7 +406,8 @@ describe("AccountSecuritySection", () => {
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: null,
 			loading: false,
-			error: "Network error",
+			error: "Connection problem. Please check your internet connection and try again.",
+			errorResolution: "Check your internet connection and try again in a moment.",
 			linkingLoading: false,
 			unlinkingLoading: false,
 			googleOAuthReady: true,
@@ -339,7 +421,9 @@ describe("AccountSecuritySection", () => {
 
 		// Wait for error state
 		await waitFor(() => {
-			expect(screen.getByText("Failed to load security information")).toBeInTheDocument();
+			expect(
+				screen.getByText("Connection problem. Please check your internet connection and try again.")
+			).toBeInTheDocument();
 		});
 
 		// Click retry button
@@ -438,6 +522,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
@@ -472,6 +557,7 @@ describe("AccountSecuritySection", () => {
 			unlinkingLoading: false,
 			googleOAuthReady: true,
 			oauthLoading: false,
+			optimisticSecurityStatus: null,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()

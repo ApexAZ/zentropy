@@ -720,22 +720,36 @@ describe("UserService", () => {
 			expect(result.google_email).toBe("john@gmail.com");
 		});
 
-		it("should handle unauthorized error when getting security status", async () => {
+		it("should handle unauthorized error with user-friendly message", async () => {
 			mockErrorResponse(401, "Unauthorized");
 
-			await expect(UserService.getAccountSecurity()).rejects.toThrow("Unauthorized");
+			await expect(UserService.getAccountSecurity()).rejects.toThrow(
+				"Your session has expired. Please sign in again."
+			);
 		});
 
-		it("should handle API errors when getting security status", async () => {
+		it("should handle API errors with user-friendly message", async () => {
 			mockErrorResponse(500, "Internal server error");
 
-			await expect(UserService.getAccountSecurity()).rejects.toThrow("Internal server error");
+			await expect(UserService.getAccountSecurity()).rejects.toThrow(
+				"A server error occurred. Please try again."
+			);
 		});
 
-		it("should handle network errors when getting security status", async () => {
+		it("should handle network errors with user-friendly message", async () => {
 			mockNetworkError();
 
-			await expect(UserService.getAccountSecurity()).rejects.toThrow("Network error");
+			await expect(UserService.getAccountSecurity()).rejects.toThrow(
+				"Connection problem. Please check your internet connection and try again."
+			);
+		});
+
+		it("should handle unknown errors with fallback message", async () => {
+			mockErrorResponse(400, "Some unknown error");
+
+			await expect(UserService.getAccountSecurity()).rejects.toThrow(
+				"Unable to load account security information."
+			);
 		});
 	});
 
@@ -772,44 +786,58 @@ describe("UserService", () => {
 			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
 		});
 
-		it("should handle email mismatch error during linking", async () => {
+		it("should handle email mismatch error with user-friendly message", async () => {
 			mockErrorResponse(400, "Google email does not match account email");
 
 			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
-				"Google email does not match account email"
+				"The Google account email doesn't match your account email."
 			);
 		});
 
-		it("should handle already linked error", async () => {
+		it("should handle already linked error with user-friendly message", async () => {
 			mockErrorResponse(409, "Google account already linked to another user");
 
 			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
-				"Google account already linked to another user"
+				"This Google account is already linked to another user."
 			);
 		});
 
-		it("should handle invalid Google credential error", async () => {
+		it("should handle invalid Google credential error with user-friendly message", async () => {
 			mockErrorResponse(400, "Invalid Google credential");
 
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Invalid Google credential");
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"Google sign-in was not completed successfully."
+			);
 		});
 
-		it("should handle unauthorized error during linking", async () => {
+		it("should handle unauthorized error with user-friendly message", async () => {
 			mockErrorResponse(401, "Unauthorized");
 
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Unauthorized");
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"Your session has expired. Please sign in again."
+			);
 		});
 
-		it("should handle API errors during linking", async () => {
+		it("should handle API errors with user-friendly message", async () => {
 			mockErrorResponse(500, "Internal server error");
 
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Internal server error");
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"A server error occurred. Please try again."
+			);
 		});
 
-		it("should handle network errors during linking", async () => {
+		it("should handle network errors with user-friendly message", async () => {
 			mockNetworkError();
 
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Network error");
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
+				"Connection problem. Please check your internet connection and try again."
+			);
+		});
+
+		it("should handle unknown errors with fallback message", async () => {
+			mockErrorResponse(400, "Some unknown error");
+
+			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Unable to link Google account.");
 		});
 	});
 
@@ -844,44 +872,60 @@ describe("UserService", () => {
 			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
 		});
 
-		it("should handle incorrect password error during unlinking", async () => {
+		it("should handle incorrect password error with user-friendly message", async () => {
 			mockErrorResponse(400, "Incorrect password");
 
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Incorrect password");
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"The password you entered is incorrect."
+			);
 		});
 
-		it("should handle no Google account linked error", async () => {
+		it("should handle no Google account linked error with user-friendly message", async () => {
 			mockErrorResponse(400, "No Google account is currently linked");
 
 			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"No Google account is currently linked"
+				"No Google account is currently linked to your account."
 			);
 		});
 
-		it("should handle last authentication method error", async () => {
+		it("should handle last authentication method error with user-friendly message", async () => {
 			mockErrorResponse(400, "Cannot remove last authentication method");
 
 			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"Cannot remove last authentication method"
+				"You can't remove your last authentication method."
 			);
 		});
 
-		it("should handle unauthorized error during unlinking", async () => {
+		it("should handle unauthorized error with user-friendly message", async () => {
 			mockErrorResponse(401, "Unauthorized");
 
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Unauthorized");
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"Your session has expired. Please sign in again."
+			);
 		});
 
-		it("should handle API errors during unlinking", async () => {
+		it("should handle API errors with user-friendly message", async () => {
 			mockErrorResponse(500, "Internal server error");
 
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Internal server error");
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"A server error occurred. Please try again."
+			);
 		});
 
-		it("should handle network errors during unlinking", async () => {
+		it("should handle network errors with user-friendly message", async () => {
 			mockNetworkError();
 
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow("Network error");
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"Connection problem. Please check your internet connection and try again."
+			);
+		});
+
+		it("should handle unknown errors with fallback message", async () => {
+			mockErrorResponse(400, "Some unknown error");
+
+			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
+				"Unable to unlink Google account."
+			);
 		});
 	});
 });

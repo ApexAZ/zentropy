@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import { AuthService } from "./AuthService";
 import { createAuthHeaders } from "../utils/auth";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 export class UserService {
 	/**
@@ -166,42 +167,55 @@ export class UserService {
 	 * Get current user's account security status
 	 */
 	static async getAccountSecurity(): Promise<AccountSecurityResponse> {
-		const response = await fetch(this.SECURITY_ENDPOINTS.GET_STATUS, {
-			headers: createAuthHeaders()
-		});
-		return this.handleResponse<AccountSecurityResponse>(response);
+		try {
+			const response = await fetch(this.SECURITY_ENDPOINTS.GET_STATUS, {
+				headers: createAuthHeaders()
+			});
+			return await this.handleResponse<AccountSecurityResponse>(response);
+		} catch (error) {
+			const transformedMessage = AccountSecurityErrorHandler.getDisplayMessage(error as Error, "loading");
+			throw new Error(transformedMessage);
+		}
 	}
 
 	/**
 	 * Link Google OAuth account to current user
 	 */
 	static async linkGoogleAccount(linkData: LinkGoogleAccountRequest): Promise<LinkAccountResponse> {
-		const response = await fetch(this.SECURITY_ENDPOINTS.LINK_GOOGLE, {
-			method: "POST",
-			headers: createAuthHeaders(),
-			body: JSON.stringify(linkData)
-		});
-		const result = await this.handleResponse<{ message: string; google_email: string }>(response);
-		return {
-			message: result.message,
-			google_email: result.google_email,
-			success: true
-		};
+		try {
+			const response = await fetch(this.SECURITY_ENDPOINTS.LINK_GOOGLE, {
+				method: "POST",
+				headers: createAuthHeaders(),
+				body: JSON.stringify(linkData)
+			});
+			const result = await this.handleResponse<{ message: string; google_email: string }>(response);
+			return {
+				message: result.message,
+				google_email: result.google_email,
+				success: true
+			};
+		} catch (error) {
+			throw new Error(AccountSecurityErrorHandler.getDisplayMessage(error as Error, "linking"));
+		}
 	}
 
 	/**
 	 * Unlink Google OAuth account from current user
 	 */
 	static async unlinkGoogleAccount(unlinkData: UnlinkGoogleAccountRequest): Promise<UnlinkAccountResponse> {
-		const response = await fetch(this.SECURITY_ENDPOINTS.UNLINK_GOOGLE, {
-			method: "POST",
-			headers: createAuthHeaders(),
-			body: JSON.stringify(unlinkData)
-		});
-		const result = await this.handleResponse<{ message: string }>(response);
-		return {
-			message: result.message,
-			success: true
-		};
+		try {
+			const response = await fetch(this.SECURITY_ENDPOINTS.UNLINK_GOOGLE, {
+				method: "POST",
+				headers: createAuthHeaders(),
+				body: JSON.stringify(unlinkData)
+			});
+			const result = await this.handleResponse<{ message: string }>(response);
+			return {
+				message: result.message,
+				success: true
+			};
+		} catch (error) {
+			throw new Error(AccountSecurityErrorHandler.getDisplayMessage(error as Error, "unlinking"));
+		}
 	}
 }

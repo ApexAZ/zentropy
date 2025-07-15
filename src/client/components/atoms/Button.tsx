@@ -1,4 +1,5 @@
 import React from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
 type ButtonVariant = "primary" | "secondary" | "danger" | "icon";
 
@@ -46,7 +47,7 @@ const Button: React.FC<ButtonProps> = ({
 
 	return (
 		<button className={allClasses} disabled={disabled || isLoading} {...props}>
-			{isLoading ? loadingText : children}
+			{isLoading ? <LoadingSpinner size="small" text={loadingText} /> : children}
 		</button>
 	);
 };
