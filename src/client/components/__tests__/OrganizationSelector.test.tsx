@@ -650,8 +650,12 @@ describe("OrganizationSelector", () => {
 			// Continue tabbing should wrap back
 			await user.tab();
 
-			// Should cycle back to dialog or first button
-			expect(document.activeElement).toBeTruthy();
+			// Tab navigation should maintain focus on interactive elements or body
+			const activeElement = document.activeElement;
+			expect(activeElement).not.toBe(null);
+			expect(activeElement).toBeInstanceOf(HTMLElement);
+			// Focus should be on an element that exists in DOM
+			expect(document.contains(activeElement)).toBe(true);
 		});
 
 		it("should support keyboard navigation", async () => {

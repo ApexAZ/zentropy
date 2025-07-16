@@ -384,7 +384,12 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				expect(screen.getByText(/registration.*failed/i)).toBeInTheDocument();
 			});
 
+			// Should specifically report missing user data
+			expect(screen.getByText(/missing required user data/i)).toBeInTheDocument();
+			// Should not proceed with authentication
 			expect(mockLogin).not.toHaveBeenCalled();
+			// Modal should remain open to show error
+			expect(screen.getByText("Create Your Account")).toBeInTheDocument();
 		});
 
 		it("should handle Google OAuth credential parameter correctly", async () => {

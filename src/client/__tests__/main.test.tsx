@@ -225,8 +225,9 @@ describe("main.tsx Entry Point Functionality", () => {
 		it("should handle DOM environment properly", () => {
 			// Arrange - Verify DOM is set up correctly
 			document.getElementById = vi.fn().mockReturnValue(mockRootElement);
-			expect(mockRootElement).toBeTruthy();
+			expect(mockRootElement).not.toBe(null);
 			expect(mockRootElement.id).toBe("root");
+			expect(mockRootElement.tagName).toBe("DIV");
 
 			// Act - Simulate main.tsx DOM interaction
 			const rootElement = document.getElementById("root");

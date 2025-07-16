@@ -53,7 +53,8 @@ describe("useGoogleOAuth", () => {
 
 			// Should eventually become ready (assuming environment is properly configured)
 			await waitFor(() => {
-				expect(result.current.isReady || result.current.error).toBeTruthy();
+				// Hook should either be ready for use or show a specific error
+				expect(result.current.isReady || result.current.error !== null).toBe(true);
 			});
 
 			// If there's no error, the hook should be ready
@@ -191,7 +192,8 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should have error after trigger attempt
-			expect(result.current.error).toBeTruthy();
+			expect(result.current.error).toContain("not available");
+			expect(result.current.error).not.toBe(null);
 
 			// User can clear the error
 			act(() => {
@@ -330,7 +332,7 @@ describe("useGoogleOAuth", () => {
 	});
 
 	describe("Optional onError callback", () => {
-		it("should work gracefully without onError callback", () => {
+		it("should work gracefully without onError callback", async () => {
 			// Start with no Google SDK
 			delete (window as any).google;
 
@@ -347,8 +349,12 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should still set error state even without callback
-			expect(result.current.error).toBeTruthy();
+			await waitFor(() => {
+				expect(result.current.error).toContain("not available");
+			});
 			expect(result.current.isReady).toBe(false);
+			// Should not crash when onError callback is missing
+			expect(() => result.current.triggerOAuth()).not.toThrow();
 		});
 	});
 });

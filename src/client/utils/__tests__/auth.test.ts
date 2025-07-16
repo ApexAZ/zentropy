@@ -341,7 +341,11 @@ describe("Auth Utilities", () => {
 			const result = await fetchPromise;
 
 			expect(mockFetch).toHaveBeenCalledTimes(2);
+			// Should succeed after retry
 			expect(result.status).toBe(200);
+			expect(result.ok).toBe(true);
+			// Should contain response body
+			expect(await result.text()).toBe("success");
 		});
 
 		it("should use exponential backoff for retries", async () => {

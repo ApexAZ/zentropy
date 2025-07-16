@@ -292,7 +292,8 @@ describe("EmailVerificationResendButton", () => {
 
 			// Check that rate limit data is saved to localStorage
 			const storedData = localStorage.getItem("emailResendRateLimit");
-			expect(storedData).toBeTruthy();
+			expect(storedData).not.toBe(null);
+			expect(storedData).toMatch(/^\{.*\}$/);
 
 			const parsedData = JSON.parse(storedData!);
 			expect(parsedData.email).toBe(mockEmail);
@@ -363,7 +364,8 @@ describe("EmailVerificationResendButton", () => {
 			// Should save rate limit data to localStorage after successful send
 			await waitFor(() => {
 				const storedData = localStorage.getItem("emailResendRateLimit");
-				expect(storedData).toBeTruthy();
+				expect(storedData).not.toBe(null);
+				expect(storedData).toMatch(/^\{.*\}$/);
 
 				const parsedData = JSON.parse(storedData!);
 				expect(parsedData.email).toBe(mockEmail);
