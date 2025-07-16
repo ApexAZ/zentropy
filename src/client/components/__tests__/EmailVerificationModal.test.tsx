@@ -126,18 +126,22 @@ describe("EmailVerificationModal", () => {
 		const emailInput = screen.getByLabelText("Email Address");
 		await user.clear(emailInput);
 
-		// Fill complete code
-		const codeInputs = screen
+		// Use paste to fill complete code (avoids race condition with sequential typing)
+		const firstCodeInput = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
+			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
 
-		for (let i = 0; i < 6; i++) {
-			await user.type(codeInputs[i], (i + 1).toString());
-		}
+		await user.click(firstCodeInput);
+		await user.paste("123456");
 
 		// Button should be disabled when email is empty even with complete code
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
-		expect(verifyButton).toBeDisabled();
+		await waitFor(
+			() => {
+				expect(verifyButton).toBeDisabled();
+			},
+			{ timeout: 1000 }
+		);
 	});
 
 	it("should successfully verify code", async () => {
@@ -156,21 +160,23 @@ describe("EmailVerificationModal", () => {
 
 		render(<EmailVerificationModal {...defaultProps} />);
 
-		// Fill in complete code
-		const codeInputs = screen
+		// Use paste to fill complete code (avoids race condition with sequential typing)
+		const firstCodeInput = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
+			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
 
-		for (let i = 0; i < 6; i++) {
-			await user.type(codeInputs[i], (i + 1).toString());
-		}
+		await user.click(firstCodeInput);
+		await user.paste("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 
-		// Wait for button to be enabled
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
-		});
+		// Wait for button to be enabled by checking the actual state condition
+		await waitFor(
+			() => {
+				expect(verifyButton).not.toBeDisabled();
+			},
+			{ timeout: 1000 }
+		);
 
 		await user.click(verifyButton);
 
@@ -224,29 +230,23 @@ describe("EmailVerificationModal", () => {
 
 		render(<EmailVerificationModal {...defaultProps} />);
 
-		// Fill in complete code with proper async handling
-		const codeInputs = screen
+		// Use paste to fill complete code (avoids race condition with sequential typing)
+		const firstCodeInput = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
+			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
 
-		// Use act() to ensure React state updates are processed
-		await act(async () => {
-			for (let i = 0; i < 6; i++) {
-				await user.type(codeInputs[i], (i + 1).toString());
-			}
-		});
-
-		// Wait for all code inputs to be filled before proceeding
-		await waitFor(() => {
-			expect(codeInputs[5]).toHaveValue("6");
-		});
+		await user.click(firstCodeInput);
+		await user.paste("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 
 		// Ensure button is enabled before clicking
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
-		});
+		await waitFor(
+			() => {
+				expect(verifyButton).not.toBeDisabled();
+			},
+			{ timeout: 1000 }
+		);
 
 		await user.click(verifyButton);
 
