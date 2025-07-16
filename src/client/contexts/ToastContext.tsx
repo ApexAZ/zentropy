@@ -1,16 +1,31 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { Toast } from "../components/atoms/Toast";
 
+export interface ToastActionLink {
+	text: string;
+	onClick: () => void;
+}
+
 export interface ToastMessage {
 	id: string;
 	message: string;
-	type: "success" | "error" | "info" | "warning";
+	type: "success" | "error" | "info" | "warning" | "critical-error";
 	autoDissmissTimeout?: number;
+	persistent?: boolean;
+	actionLink?: ToastActionLink;
 }
 
 export interface ToastContextType {
 	/** Show a toast notification */
-	showToast: (message: string, type: ToastMessage["type"], autoDissmissTimeout?: number) => void;
+	showToast: (
+		message: string,
+		type: ToastMessage["type"],
+		options?: {
+			autoDissmissTimeout?: number;
+			persistent?: boolean;
+			actionLink?: ToastActionLink;
+		}
+	) => void;
 	/** Show a success toast */
 	showSuccess: (message: string, autoDissmissTimeout?: number) => void;
 	/** Show an error toast */
@@ -19,6 +34,10 @@ export interface ToastContextType {
 	showInfo: (message: string, autoDissmissTimeout?: number) => void;
 	/** Show a warning toast */
 	showWarning: (message: string, autoDissmissTimeout?: number) => void;
+	/** Show a critical error toast (persistent by default) */
+	showCriticalError: (message: string, actionLink?: ToastActionLink) => void;
+	/** Show a persistent toast (doesn't auto-dismiss) */
+	showPersistent: (message: string, type: ToastMessage["type"], actionLink?: ToastActionLink) => void;
 	/** Dismiss a specific toast */
 	dismissToast: (id: string) => void;
 	/** Dismiss all toasts */
@@ -49,12 +68,22 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 
 	// Add a new toast
 	const showToast = useCallback(
-		(message: string, type: ToastMessage["type"], autoDissmissTimeout?: number) => {
+		(
+			message: string,
+			type: ToastMessage["type"],
+			options?: {
+				autoDissmissTimeout?: number;
+				persistent?: boolean;
+				actionLink?: ToastActionLink;
+			}
+		) => {
 			const newToast: ToastMessage = {
 				id: generateId(),
 				message,
 				type,
-				...(autoDissmissTimeout !== undefined && { autoDissmissTimeout })
+				...(options?.autoDissmissTimeout !== undefined && { autoDissmissTimeout: options.autoDissmissTimeout }),
+				...(options?.persistent && { persistent: options.persistent }),
+				...(options?.actionLink && { actionLink: options.actionLink })
 			};
 
 			setToasts(prev => {
@@ -69,28 +98,50 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 	// Convenience methods for different toast types
 	const showSuccess = useCallback(
 		(message: string, autoDissmissTimeout?: number) => {
-			showToast(message, "success", autoDissmissTimeout);
+			showToast(message, "success", autoDissmissTimeout !== undefined ? { autoDissmissTimeout } : undefined);
 		},
 		[showToast]
 	);
 
 	const showError = useCallback(
 		(message: string, autoDissmissTimeout?: number) => {
-			showToast(message, "error", autoDissmissTimeout);
+			showToast(message, "error", autoDissmissTimeout !== undefined ? { autoDissmissTimeout } : undefined);
 		},
 		[showToast]
 	);
 
 	const showInfo = useCallback(
 		(message: string, autoDissmissTimeout?: number) => {
-			showToast(message, "info", autoDissmissTimeout);
+			showToast(message, "info", autoDissmissTimeout !== undefined ? { autoDissmissTimeout } : undefined);
 		},
 		[showToast]
 	);
 
 	const showWarning = useCallback(
 		(message: string, autoDissmissTimeout?: number) => {
-			showToast(message, "warning", autoDissmissTimeout);
+			showToast(message, "warning", autoDissmissTimeout !== undefined ? { autoDissmissTimeout } : undefined);
+		},
+		[showToast]
+	);
+
+	// Critical error toast (persistent by default)
+	const showCriticalError = useCallback(
+		(message: string, actionLink?: ToastActionLink) => {
+			showToast(message, "critical-error", {
+				persistent: true,
+				...(actionLink && { actionLink })
+			});
+		},
+		[showToast]
+	);
+
+	// Persistent toast (doesn't auto-dismiss)
+	const showPersistent = useCallback(
+		(message: string, type: ToastMessage["type"], actionLink?: ToastActionLink) => {
+			showToast(message, type, {
+				persistent: true,
+				...(actionLink && { actionLink })
+			});
 		},
 		[showToast]
 	);
@@ -111,6 +162,8 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 		showError,
 		showInfo,
 		showWarning,
+		showCriticalError,
+		showPersistent,
 		dismissToast,
 		dismissAllToasts
 	};
@@ -133,7 +186,8 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 						type={toast.type}
 						isVisible={true}
 						onDismiss={() => dismissToast(toast.id)}
-						autoDissmissTimeout={toast.autoDissmissTimeout || 5000}
+						autoDissmissTimeout={toast.persistent ? 0 : toast.autoDissmissTimeout || 5000}
+						{...(toast.actionLink && { actionLink: toast.actionLink })}
 					/>
 				</div>
 			))}

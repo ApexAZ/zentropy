@@ -1,265 +1,370 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Zentropy - Product Management platform: Python FastAPI + React + PostgreSQL
 
-## Project Overview
+## 🚨 ARCHITECTURE RULES (NON-NEGOTIABLE)
 
-Zentropy - A comprehensive Product Management platform with project workflows, team collaboration, and capacity planning built with Python FastAPI backend, React frontend, and PostgreSQL database.
+1. **No Layer Bypassing**: Components → Hooks → Services → API
+2. **No Direct API Calls**: Always use services through hooks
+3. **No Test Database Pollution**: Use provided test fixtures only
+4. **No Error Swallowing**: Implement three-layer error handling
+5. **No Hardcoded Colors**: Use semantic color system (`bg-interactive`)
+6. **No Quality Bypasses**: Zero tolerance for warnings/errors
 
-## Technology Stack & Architecture
+## 🏗️ CRITICAL ARCHITECTURE PATTERNS
 
-@README.md
+### **Layered Architecture (MANDATORY)**
+```
+Components → Hooks → Services → API → Database
+```
+- **Service**: Static classes, consistent error handling
+- **Hook**: Business logic, loading/error states  
+- **Component**: UI rendering, user-friendly errors
 
-For a high-level overview of the project's architecture and tech stack, refer to the main `README.md`. For a detailed analysis of the technology stack and architectural patterns, refer to `docs/architecture/README.md`.
+### **Three-Layer Error Propagation**
+```typescript
+// Service: HTTP → JS errors | Hook: Catch/state | Component: User display
+```
 
-### Key Technologies
-
-- **Backend**: Python (FastAPI, SQLAlchemy, PostgreSQL, Uvicorn)
-- **Frontend**: TypeScript (React, Vite, TailwindCSS)
-- **Authentication**: JWT tokens, Google OAuth
-- **Quality Tools**: flake8, black, pyright, ESLint, Prettier, TypeScript Compiler, Husky, pytest, Vitest, Playwright
-
-For more specific details on each module, refer to their respective `README.md` files:
-
-- `api/README.md` (Backend API)
-- `src/client/components/README.md` (React Components)
-- `src/client/hooks/README.md` (React Hooks)
-- `src/client/services/README.md` (Frontend Services)
-- `tests/README.md` (Unit & Integration Testing)
-- `tests-e2e/README.md` (End-to-End Testing with Playwright)
-- `performance/README.md` (Performance Testing)
-
-## Development Workflow
-
-For a comprehensive overview of the development workflow and core commands, refer to the main `README.md`.
-
-### Core Commands (Summary)
-
-- `npm run dev`: Starts the full development environment.
-- `npm run quality`: Runs the full quality pipeline (format, lint, type-check, test) with zero tolerance for errors and warnings.
-- `npm run test`: Runs both backend and frontend tests (complete test suite).
-- `npm run test:backend`: Runs backend tests only (Python/pytest).
-- `npm run test:frontend`: Runs frontend tests only (TypeScript/vitest).
-- `npm run test:e2e`: Runs end-to-end tests with Playwright.
-- `npm run fix`: Auto-fixes formatting and linting issues.
-
-### Environment Variables (Summary)
-
-- **Backend**: `.env` in the project root.
-- **Frontend**: `src/client/.env.local`.
-- For multi-machine setup, refer to `MULTIDEV.md`.
-
-### SECRET_KEY Configuration
-
-The `SECRET_KEY` environment variable is crucial for JWT token security.
-
-- **Production Requirement**: `SECRET_KEY` MUST be explicitly set in production environments. If not set, the application will raise a `ValueError` and refuse to start.
-- **Development Behavior**: In development, a random `SECRET_KEY` will be generated if not set, but a warning will be issued. This is acceptable for local development but **not** for production.
-- **Generating a Secure Key**:
-    ```bash
-    python -c "import secrets; print(secrets.token_urlsafe(32))"
-    ```
-    Add the output to your `.env` file (or production environment configuration).
-
-### Quality Process
-
-- **Quality Obsessed MANDATORY TDD Practices - TESTS FIRST**: Write tests before code, every time, no exceptions.
-- **Zero Tolerance for Warnings**: The quality pipeline is configured to fail on any warnings (e.g., deprecation notices) to ensure code is always up-to-date and following best practices.
-- **Three-Layer Testing Strategy**: Comprehensive testing across unit, integration, and end-to-end layers for maximum confidence.
-
-For full details on our quality process, including specific tooling and configurations:
-- **Unit & Integration Testing**: `tests/README.md` - Backend (pytest) and frontend (vitest) testing strategies
-- **End-to-End Testing**: `tests-e2e/README.md` - Playwright browser testing for complete user workflows
-- **Test Coverage Matrix**: `docs/testing/TestCoverage.md` - Cross-layer test coverage relationships
-
-### 🔒 TEST ISOLATION STANDARD (MANDATORY)
-
-**CRITICAL**: All tests MUST use isolated test databases to prevent main database pollution.
-
-#### **Problem Solved**
-
-- **Database Pollution**: Integration tests were creating real users in the main PostgreSQL database
-- **Test Contamination**: Tests affected each other through shared database state
-- **Production Risk**: Main database mixed with test data, causing user cleanup issues
-
-#### **Solution: Explicit Test Database System**
-
-- **Central Configuration**: `tests/conftest.py` provides isolated test database fixtures.
-- **In-Memory SQLite**: Each test gets a fresh, isolated in-memory database.
-- **Automatic Cleanup**: Database created/destroyed per test function.
-- **FastAPI Integration**: Database dependency injection for API endpoint testing.
-
-#### **Implementation Requirements**
-
+### **Test Isolation Pattern**
 ```python
-# tests/conftest.py - Central test configuration
+# ✅ Fresh database per test
 @pytest.fixture(scope="function")
-def test_db_engine():
-    """Create isolated test database engine using in-memory SQLite."""
-    test_database_url = "sqlite:///:memory:"
-    engine = create_engine(test_database_url, connect_args={"check_same_thread": False})
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
-
-@pytest.fixture(scope="function")
-def test_db_session(test_db_engine):
-    """Create isolated database session for each test."""
-    SessionLocal = sessionmaker(bind=test_db_engine)
-    session = SessionLocal()
-    yield session
-    session.close()
-
-@pytest.fixture(scope="function")
-def client(test_db_session):
-    """Create test client with isolated database."""
-    def override_get_db():
-        yield test_db_session
-
+def client(test_db_engine):
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
 ```
 
-#### **MANDATORY Usage Pattern**
+## 📁 DIRECTORY STRUCTURE
 
-```python
-# ✅ CORRECT - Uses isolated test database
-def test_user_creation(client, db):
-    """Test user creation with isolated database."""
-    response = client.post("/api/auth/register", json=user_data)
-    assert response.status_code == 201
+```
+src/client/
+├── components/          # UI components + tests
+│   ├── atoms/          # Basic building blocks
+│   └── __tests__/      # Co-located tests
+├── hooks/              # Business logic hooks
+├── pages/              # Top-level pages
+├── services/           # API communication
+└── contexts/           # React providers
 
-    # Safe to query - isolated database
-    user = db.query(User).filter(User.email == "test@example.com").first()
-    assert user is not None
+api/
+├── models/             # SQLAlchemy models
+├── routers/            # FastAPI endpoints
+└── schemas/            # Pydantic schemas
 
-# ❌ INCORRECT - Uses main database (FORBIDDEN)
-def test_user_creation_wrong():
-    """DON'T DO THIS - pollutes main database."""
-    with next(get_db()) as db:  # ❌ Uses main database
-        user = User(email="test@example.com")
-        db.add(user)
-        db.commit()
+tests/                  # Backend tests
+└── conftest.py         # Test fixtures
 ```
 
-#### **Test Categories & Requirements**
+## 🎨 CODE STYLE PREFERENCES
 
-- **Unit Tests**: Always use isolated fixtures from `conftest.py`
-- **Integration Tests**: Must use `client` fixture with database dependency override
-- **API Tests**: Use `TestClient` with isolated database session
-- **Database Tests**: Use `db` fixture for direct database operations
+**Format**: Tabs, double quotes, semicolons, trailing commas  
+**Naming**: camelCase (TS), snake_case (Python), kebab-case (files)  
+**Booleans**: `isLoading`, `showModal`, `hasError`  
+**Handlers**: `handleSubmit`, `handleClose`  
+**TypeScript**: Explicit types, no `any`, use `??` not `||`
 
-#### **Enforcement**
+### Import Organization
 
-- **Code Review**: All new tests must follow isolation pattern
-- **No Main Database**: Tests using `get_db()` directly are forbidden
-- **Fixture Usage**: All database tests must use fixtures from `conftest.py`
-- **Documentation**: This standard must be followed without exception
+```typescript
+import React, { useState, useEffect, useCallback } from "react";
+import { AuthService } from "../services/AuthService";
+import type { AuthUser, SignInCredentials } from "../types";
+import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
+import RequiredAsterisk from "./RequiredAsterisk";
+```
 
-## Documentation Files
+## 🔧 ESSENTIAL PATTERNS
 
-For deeper dives, refer to these files. They are the project's memory.
+### **Centralized Toast System**
+```typescript
+// ✅ User feedback via toast context
+const { showSuccess, showError } = useToast();
+// ❌ Never use alert() or console.log()
 
-### Task and Session Management
+// ✅ Tests: renderWithToast(ui)
+const renderWithToast = (ui) => render(<ToastProvider>{ui}</ToastProvider>);
+```
 
-- **Timestamp Format**: "YYYY-MM-DD HH:MM:SS (timezone)" for all tasks and session recaps
-- **Completion Tracking**: Include start/completion timestamps and duration calculations
-- **Session Continuity**: Timestamps enable seamless session resumption and progress measurement
-- **Documentation**: Maintain task progression history in CLAUDETasks.md for planning and retrospectives
+### **Hook-Driven State Management**
+```typescript
+export function useAuth() {
+	const [user, setUser] = useState<AuthUser | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-#### Session Recap Management
+	const signIn = useCallback(async credentials => {
+		try {
+			setLoading(true);
+			const result = await AuthService.signIn(credentials);
+			setUser(result.user);
+		} catch (err) {
+			setError(err.message);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
-- **Archive Workflow**: When adding new session recaps to CLAUDE.md, automatically move previous session recaps to CLAUDETaskArchive.md
-- **Compaction Pattern**: Convert detailed session recaps to compact ✅ completed format following established archive structure
-- **Retention Policy**: Keep only current session recap in CLAUDE.md, archive all previous sessions
-- **Format Consistency**: Use "✅ **Session Name** (Date) - Brief achievement summary" pattern for archived sessions
+	return { user, signIn, loading, error };
+}
+```
 
-## Current Session Recap
+### **Component Composition**
+```typescript
+// ✅ Small, focused components
+const AuthModal = ({ isOpen, onClose }) => (
+  <Modal isOpen={isOpen} onClose={onClose}>
+    <Card><AuthForm onSuccess={onSuccess} /></Card>
+  </Modal>
+);
+// ❌ Monolithic components (500+ lines)
+```
 
-### **Rate Limiting Security & Email Verification Enhancement Session** (2025-07-13 06:30:00 UTC - Completed 2025-07-13 23:59:00 UTC)
+### **Form Validation**
+```typescript
+const { values, errors, handleChange, handleSubmit, isValid } = useFormValidation({
+	initialValues: { email: "", password: "" },
+	validationRules: {
+		email: value => (AuthService.validateEmail(value) ? null : "Invalid email")
+	}
+});
+```
 
-- ✅ **Multi-Layer Rate Limiting Implementation** - Added comprehensive rate limiting across email verification system: hourly limits (6 emails/hour per user), 1-minute rate limits between requests, and IP-based rate limiting (5 attempts per 15 minutes) for verification code endpoint
-- ✅ **Verification Code Security Enhancement** - Protected `/verify-code` endpoint with rate limiting to prevent brute force attacks on 6-digit verification codes, following security best practices with `RateLimitType.AUTH` configuration  
-- ✅ **Email Verification UX Improvements** - Enhanced success message persistence across page refreshes with localStorage synchronization, improved countdown timer display, and refined button state management
-- ✅ **OAuth Session Duration Fix** - Resolved Google OAuth users having to re-authenticate on app restart by implementing 30-day tokens with `remember_me=True` for OAuth endpoints, aligning with email login behavior
-- ✅ **Test Infrastructure Stability** - Fixed EmailVerificationModal focus test timing issues by replacing focus-dependent assertions with sequential input testing, ensuring reliable test execution in CI/CD environment
-- ✅ **Production Quality Compliance** - Achieved zero errors, warnings, or linting issues with all 957 frontend tests and 601 backend tests passing, maintaining 92.65% frontend and 91.77% backend coverage
+### **Environment Configuration**
+```bash
+# Backend: .env
+SECRET_KEY=your-secret-key
+DATABASE_URL=postgresql://...
 
-### **Security Implementation Details**
+# Frontend: src/client/.env.local  
+VITE_GOOGLE_CLIENT_ID=your-client-id
+```
 
-- **Rate Limiting Architecture**: Three-layer protection with Redis-based IP limiting, database-based user limiting, and time-based request throttling
-- **Verification Code Protection**: Prevents attackers from brute forcing 1,000,000 possible 6-digit combinations with multi-layer rate limiting  
-- **OAuth Security Alignment**: Google OAuth users now maintain persistent sessions like email users with "remember me" functionality
-- **Email Verification Flow**: Enhanced user experience with persistent success messages and cross-tab synchronization
+### **Semantic Color System (MANDATORY)**
+```css
+/* Single source: src/client/styles.css */
+--color-interactive: #6A8BA7;            /* Buttons, links */
+--color-interactive-hover: #B8D4F0;      /* Hover states */
+--color-content-background: #FFFFFF;     /* Cards, forms */
+--color-layout-background: #F0F0F0;      /* Backgrounds */
+```
+```typescript
+// ✅ Semantic classes | ❌ Hardcoded colors
+className="bg-interactive hover:bg-interactive-hover"
+className="bg-blue-600 hover:bg-blue-700"  // FORBIDDEN
+```
 
-### **Technical Architecture**
+### **Centralized Utilities Pattern**
+```typescript
+// formatters.ts - Data presentation
+export const formatDate = (dateString: string, monthFormat: "short" | "long"): string
+export const getRoleLabel = (role: string): string
+export const getVelocityStatus = (velocity: number): { label: string; color: string }
 
-- **Backend Security**: Rate limiting implemented across `/send-verification` (EMAIL type: 3 per 5 min) and `/verify-code` (AUTH type: 5 per 15 min) endpoints
-- **Frontend Persistence**: LocalStorage-based success message state with automatic cleanup and cross-tab synchronization  
-- **OAuth Token Management**: Consistent 30-day expiration for both email login (with remember me) and Google OAuth authentication
-- **Test Reliability**: Replaced DOM focus testing with functional input testing to eliminate timing-dependent test failures
+// errorHandling.ts - Error mapping  
+export function mapAccountSecurityError(error: Error, context: string): ErrorDetails
 
-### **System State**: ✅ **PRODUCTION-READY SECURITY ENHANCEMENT** - Comprehensive rate limiting protection, enhanced email verification UX, OAuth session persistence, and test stability achieved with zero-tolerance quality standards
+// logger.ts - Environment-aware logging
+export const logger = new Logger();
+```
 
-### **Quality Metrics**
-- **Test Coverage**: 91.77% backend, 92.65% frontend (both above 80% threshold)  
-- **Test Results**: All quality pipeline checks pass (957 frontend + 601 backend tests)
-- **Security Coverage**: All authentication endpoints protected with appropriate rate limiting
-- **Production Readiness**: Zero errors, warnings, or linting issues across entire codebase
+### **Performance Memoization**
+```typescript
+// Prevent re-renders
+const handleSubmit = useCallback(async (values) => {
+  // Implementation  
+}, [dependency]);
 
-### **Available Next Steps**
-- 🔲 **Rate Limit UX Enhancement** - Improve button states and messaging when hourly limits are exceeded to provide clearer user feedback
-- 🔲 **Additional Security Endpoints** - Apply similar rate limiting patterns to other sensitive endpoints like password reset
-- 🔲 **Enhanced Monitoring** - Add rate limiting metrics and alerting for production monitoring
+const expensiveComputation = useMemo(() => {
+  return AuthService.validatePassword(password);
+}, [password]);
+
+// Component memoization
+export const ExpensiveComponent = React.memo(({ data }) => {
+  // Implementation
+}, (prevProps, nextProps) => prevProps.data.id === nextProps.data.id);
+```
+
+### **Rate Limiting with Graceful Degradation**
+```python
+@rate_limit(max_requests=5, window_seconds=300, limit_type=RateLimitType.AUTH)
+async def verify_code():
+    # Redis → in-memory fallback
+```
+
+## 🏛️ ARCHITECTURAL ENFORCEMENT PATTERNS
+
+### **Organization-First Development (MANDATORY)**
+```typescript
+// ✅ All features require organization scoping
+interface ProjectService {
+  createProject(data: CreateProjectData, organizationId: string): Promise<Project>;
+  getProjects(organizationId: string): Promise<Project[]>;
+  // ❌ Never: getProjects(): Promise<Project[]> // Missing org scope
+}
+
+// ✅ Database models include organization relationships
+class Project extends Base {
+  organization_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id"))
+  organization_rel: Mapped["Organization"] = relationship("Organization")
+}
+```
+
+### **UUID Primary Keys (MANDATORY)**
+```python
+# ✅ All entities use UUIDs for distributed system compatibility
+class User(Base):
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+# ❌ Never use auto-incrementing integers
+# id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+```
+
+### **Enum-Driven Constraints**
+```python
+# ✅ Business logic on enums with DB constraints
+class OrganizationScope(PyEnum):
+    PERSONAL = "personal"
+    SHARED = "shared"
+    
+    @classmethod
+    def get_default_max_users(cls, scope: "OrganizationScope") -> Optional[int]:
+        # Centralized business rules
+```
+
+### **Security-First API Design**
+```python
+# ✅ Always require auth + organization context
+async def get_projects(
+    organization_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    verify_organization_access(current_user, organization_id, db)
+```
+
+## 🚨 ANTI-PATTERNS (FORBIDDEN)
+
+### **❌ Direct API Calls in Components**
+```typescript
+// ❌ FORBIDDEN: Components bypassing service layer
+const MyComponent = () => {
+  useEffect(() => {
+    fetch('/api/v1/teams'); // Direct API call
+  }, []);
+};
+
+// ✅ CORRECT: Use service through hook
+const MyComponent = () => {
+  const { teams } = useTeams(); // Service abstraction
+};
+```
+
+### **❌ Missing Organization Scoping**
+```python
+# ❌ FORBIDDEN: Global operations without organization context
+def get_all_projects():
+    return db.query(Project).all()
+
+# ✅ CORRECT: Organization-scoped operations
+def get_projects_for_organization(organization_id: UUID):
+    return db.query(Project).filter(Project.organization_id == organization_id).all()
+```
+
+### **❌ Implementation Testing**
+```typescript
+// ❌ FORBIDDEN: Testing implementation details
+expect(AuthService.signIn).toHaveBeenCalled();
+
+// ✅ CORRECT: Testing user behavior
+expect(mockOnSuccess).toHaveBeenCalled();
+```
+
+### **❌ Main Database in Tests**
+```python
+# ❌ FORBIDDEN: Tests using production database
+def test_user_creation():
+    with next(get_db()) as db:  # Uses main database
+
+# ✅ CORRECT: Isolated test database
+def test_user_creation(client, db):  # Uses test fixtures
+```
+
+## 🧪 TESTING PATTERNS
+
+### **Behavior-Focused Testing**
+```typescript
+// ✅ Test user outcomes
+it("should allow user to sign in with valid credentials", async () => {
+  const user = userEvent.setup();
+  renderWithToast(<AuthModal />);
+
+  await user.type(screen.getByLabelText(/email/i), "test@example.com");
+  await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+  await waitFor(() => expect(mockOnSuccess).toHaveBeenCalled());
+});
+// ❌ Test implementation details
+```
+
+### **Robust Mocking**
+```typescript
+// ✅ Handles React StrictMode double renders
+mockFetch.mockImplementation(url => {
+	if (url.includes("/api/v1/teams")) {
+		return Promise.resolve({ ok: true, json: async () => mockTeams });
+	}
+	return Promise.reject(new Error(`Unhandled: ${url}`));
+});
+```
+
+## ⚡ TDD WORKFLOW (MANDATORY)
+
+1. Write failing test (behavior-focused)
+2. Write minimal code to pass test  
+3. Run test (should pass)
+4. Refactor for quality, security, performance
+5. Run `npm run quality` (must pass)
+6. Repeat until robust
+7. Document status in docs/status.md
+8. Pause for user feedback
+
+## 🛠️ COMMANDS
+
+- `npm run quality`: Full pipeline (format, lint, type-check, test) - **zero tolerance**
+- `npm run test`: All tests (backend + frontend)
+- `npm run fix`: Auto-fix formatting/linting
+- `npm run dev`: Development environment (user must initiate)
+
+## 📚 ESSENTIAL DOCUMENTATION
+
+- `README.md` - Project overview
+- `docs/architecture/README.md` - Architecture deep dive  
+- `tests/README.md` - Testing strategies
+- `docs/testing/TestCoverage.md` - Test coverage matrix
+- `docs/status.md` - TODO list and project status
+
+## 📋 CURRENT TODO LIST
+
+**See `docs/status.md` for detailed tracking**
+
+### High Priority
+1. **Eliminate Legacy Code** 🔴 - Remove `useFormValidationLegacy`
+2. **Simplify Google OAuth** 🔴 - Replace with `@react-oauth/google`  
+3. **State Management** 🔴 - Replace prop drilling with Zustand
+4. **Routing Library** 🔴 - Replace manual routing with `react-router-dom`
+5. **Refactor AuthModal** 🟡 - Break into smaller components
+
+**Timestamps**: "YYYY-MM-DD HH:MM:SS (timezone)"
 
 ---
 
-## TODO List
+## 🎯 KEY PRINCIPLES
 
-### Code Quality & Technical Debt
-
-1. **Eliminate Legacy Code**
-   * Status: 🔴 Not Corrected
-   * Specifics: The file src/client/hooks/useFormValidation.ts still contains the function useFormValidationLegacy. This function represents technical debt and creates two different ways of handling forms in the codebase.
-   * Impact: This leads to inconsistent form behavior and creates confusion for developers on which hook to use.
-   * Proposed Solution: Migrate any components still using useFormValidationLegacy to the modern useFormValidation hook and delete the legacy code.
-
-2. **Simplify Google OAuth**
-   * Status: 🔴 Not Corrected
-   * Specifics: The src/client/hooks/useGoogleOAuth.ts hook still contains a complex, manual implementation that uses setInterval and setTimeout to poll for the existence of the window.google object. The package.json file confirms that a dedicated library like @react-oauth/google has not been added.
-   * Impact: This manual approach is brittle, harder to maintain, and reinvents functionality that is handled more robustly by specialized libraries.
-   * Proposed Solution: Replace the custom hook with a well-maintained library like @react-oauth/google to simplify the code and improve reliability.
-
-3. **Refactor AuthModal.tsx**
-   * Status: 🟡 Partially Corrected
-   * Specifics: The AuthModal.tsx component was simplified by removing the method-selection mode. However, it remains a large, monolithic component that still contains the full logic and JSX for both renderSignIn and renderSignUp. The useEffect hooks still contain eslint-disable-next-line comments to avoid infinite loops, which is a sign of overly complex state interactions.
-   * Impact: The component is still difficult to modify and debug. A change to the sign-in form could unintentionally affect the sign-up form.
-   * Proposed Solution: Break the component into smaller, single-responsibility components: AuthModal (as the shell), SignInForm, and SignUpForm.
-
-4. **Adopt a State Management Library**
-   * Status: 🔴 Not Corrected
-   * Specifics: The main App.tsx component still manages a large amount of global state using useState, including currentPage, showAuthModal, authModalMode, showVerificationPage, and verificationEmail. These state variables and their setters are passed down as props to child components (Header, AuthModal, etc.), which is a pattern known as prop drilling.
-   * Impact: App.tsx is a bottleneck for state, making it complex and hard to maintain. Adding new global features will further bloat this component.
-   * Proposed Solution: Introduce a lightweight state management library like Zustand to create a central store for this global state, which will significantly simplify App.tsx and decouple the components.
-
-5. **Introduce a Routing Library**
-   * Status: 🔴 Not Corrected
-   * Specifics: In App.tsx, navigation is handled by a renderPage function that uses a switch statement based on the currentPage state variable.
-   * Impact: This manual routing system is not scalable and does not support standard web application features like nested routes, URL parameters (e.g., /teams/:id), or a declarative API.
-   * Proposed Solution: Replace the manual switch-based routing with the industry-standard react-router-dom library for a more robust and scalable navigation architecture.
-
-### Feature Enhancements
-
-6. **Add password reset functionality to profile page** (how should user information be organized? Security, personal information, etc?)
-
-7. **User name and Password recovery functions** (use our centralized code system??)
-
-8. **How to use the account merge function if a user starts with email registration, but wants to start using OAuth instead?** See docs/Org
-
-9. **Add another state to disable resend verification button completely with a new label indicating the lockout**
-
----
-
-_Previous session recaps have been moved to [docs/archive/SessionArchive.md](docs/archive/SessionArchive.md) for historical reference._
+**Quality First**: Zero tolerance for warnings, TDD workflow mandatory
+**Type Safety**: Explicit types, no `any`, comprehensive interfaces  
+**Test Isolation**: Fresh database per test, no pollution
+**User Focus**: Behavior-driven tests, excellent error handling
+**Composition**: Small, focused components over monoliths
+**Security**: Multi-layer protection with graceful degradation

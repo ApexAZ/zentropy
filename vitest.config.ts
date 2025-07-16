@@ -5,6 +5,9 @@ export default defineConfig({
 	plugins: [react()],
 	test: {
 		globals: true,
+		typecheck: {
+			tsconfig: './tsconfig.test.json'
+		},
 		environment: "jsdom",
 		setupFiles: ["./src/test-setup.ts"],
 		// Only include React component tests

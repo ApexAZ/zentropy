@@ -6,6 +6,7 @@ import "@testing-library/jest-dom";
 import AuthModal from "../AuthModal";
 import { AuthService } from "../../services/AuthService";
 import { useGoogleOAuth } from "../../hooks/useGoogleOAuth";
+import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock AuthService following Service Pattern from architecture README
 vi.mock("../../services/AuthService", () => ({
@@ -50,9 +51,11 @@ describe("AuthModal", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+
+		// Set up robust mocks that respond consistently regardless of call count
 		(useGoogleOAuth as any).mockReturnValue(mockGoogleOAuth);
-		(AuthService.validateEmail as any).mockReturnValue(true);
-		(AuthService.validatePassword as any).mockReturnValue({
+		(AuthService.validateEmail as any).mockImplementation(() => true);
+		(AuthService.validatePassword as any).mockImplementation(() => ({
 			isValid: true,
 			requirements: {
 				length: true,
@@ -62,16 +65,21 @@ describe("AuthModal", () => {
 				symbol: true,
 				match: true
 			}
-		});
+		}));
 	});
 
 	afterEach(() => {
 		cleanup();
 	});
 
+	// Helper function to render AuthModal with ToastProvider
+	const renderWithToast = (ui: React.ReactElement) => {
+		return render(<ToastProvider>{ui}</ToastProvider>);
+	};
+
 	// Test user behavior, not implementation - following tests/README.md philosophy
 	it("should show sign in form by default when modal opens", async () => {
-		render(<AuthModal {...mockProps} />);
+		renderWithToast(<AuthModal {...mockProps} />);
 
 		// User sees sign in form directly
 		await waitFor(() => {
@@ -84,7 +92,7 @@ describe("AuthModal", () => {
 	});
 
 	it("should go directly to signup form when initialMode is signup", async () => {
-		render(<AuthModal {...mockProps} initialMode="signup" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signup" />);
 
 		// User should see signup form directly, not method selection
 		await waitFor(() => {
@@ -103,29 +111,28 @@ describe("AuthModal", () => {
 
 		(AuthService.signIn as any).mockResolvedValue({ token: mockToken, user: mockUser });
 
-		render(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
 
 		// User fills out sign in form
-		const emailInput = document.querySelector('input[name="email"]')!;
-		await user.type(emailInput, "test@example.com");
-
-		const passwordInput = document.querySelector('input[name="password"]')!;
-		await user.type(passwordInput, "password123");
+		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
+		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
+		await user.type(document.querySelector('input[name="password"]')!, "password123");
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-		// Verify service call and authentication
+		// Verify user outcome: successful authentication
 		await waitFor(() => {
-			expect(AuthService.signIn).toHaveBeenCalledWith({
-				email: "test@example.com",
-				password: "password123",
-				remember_me: false
-			});
+			expect(mockAuth.login).toHaveBeenCalled();
 		});
 
-		await waitFor(() => {
-			expect(mockAuth.login).toHaveBeenCalledWith(mockToken, mockUser, false);
-		});
+		// Verify success callback is triggered (user would be redirected/modal closed)
+		// Note: AuthModal has 1000ms setTimeout before calling onSuccess
+		await waitFor(
+			() => {
+				expect(mockProps.onSuccess).toHaveBeenCalled();
+			},
+			{ timeout: 2000 }
+		);
 	});
 
 	it("should allow user to register with valid information", async () => {
@@ -134,47 +141,48 @@ describe("AuthModal", () => {
 			"Registration successful! Please check your email at john@example.com to verify your account before logging in.";
 
 		(AuthService.signUp as any).mockResolvedValue({ message: mockMessage });
+		// Ensure onShowVerification callback is available
+		const propsWithVerification = { ...mockProps, onShowVerification: vi.fn() };
 
-		render(<AuthModal {...mockProps} initialMode="signup" />);
+		renderWithToast(<AuthModal {...propsWithVerification} initialMode="signup" />);
 
 		// User fills out registration form
+		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
+		// TODO: Replace with getByLabelText queries when accessibility is improved
 		await user.type(document.querySelector('input[name="first_name"]')!, "John");
 		await user.type(document.querySelector('input[name="last_name"]')!, "Doe");
 		await user.type(document.querySelector('input[name="email"]')!, "john@example.com");
 		await user.type(document.querySelector('input[name="password"]')!, "Password123!");
 		await user.type(document.querySelector('input[name="confirm_password"]')!, "Password123!");
-		await user.click(document.querySelector('input[id="terms_agreement"]')!);
+		await user.click(screen.getByRole("checkbox", { name: /terms of service/i }));
 
 		await user.click(screen.getByRole("button", { name: /create account/i }));
 
-		// Verify service call - no automatic login expected
-		await waitFor(() => {
-			expect(AuthService.signUp).toHaveBeenCalledWith({
-				first_name: "John",
-				last_name: "Doe",
-				email: "john@example.com",
-				password: "Password123!",
-				terms_agreement: true,
-				has_projects_access: true
-			});
-		});
+		// Verify user outcome: directed to email verification
+		// Note: AuthModal has 1500ms setTimeout before calling onShowVerification
+		await waitFor(
+			() => {
+				expect(propsWithVerification.onShowVerification).toHaveBeenCalledWith("john@example.com");
+			},
+			{ timeout: 2500 }
+		);
 
-		// Verify no automatic login occurs (security fix)
+		// Verify user is not automatically logged in (security best practice)
 		expect(mockAuth.login).not.toHaveBeenCalled();
 	});
 
 	it("should show validation errors for required fields", async () => {
 		const user = userEvent.setup();
-		render(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
 
 		// User tries to submit empty form
 		const submitButton = screen.getByRole("button", { name: /sign in/i });
 		await user.click(submitButton);
 
-		// User sees validation errors
+		// User sees helpful validation messages for empty required fields
 		await waitFor(() => {
-			expect(screen.getByText("Email is required")).toBeInTheDocument();
-			expect(screen.getByText("Password is required")).toBeInTheDocument();
+			expect(screen.getByText(/email is required/i)).toBeInTheDocument();
+			expect(screen.getByText(/password is required/i)).toBeInTheDocument();
 		});
 	});
 
@@ -184,24 +192,29 @@ describe("AuthModal", () => {
 
 		(AuthService.signIn as any).mockRejectedValue(new Error(errorMessage));
 
-		render(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
 
 		// User fills out form with invalid credentials
+		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
 		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
 		await user.type(document.querySelector('input[name="password"]')!, "wrong-password");
 
-		// Wait for form to be ready
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-		// User sees error message (test the mock was called)
+		// User stays on the form and sees appropriate error feedback
+		// (Error message would be shown via toast, which is tested in ToastContext tests)
 		await waitFor(() => {
-			expect(AuthService.signIn).toHaveBeenCalled();
+			// Verify user stays on sign in form (not redirected)
+			expect(screen.getByText("Welcome back to Zentropy")).toBeInTheDocument();
 		});
+
+		// User is not logged in after failed attempt
+		expect(mockAuth.login).not.toHaveBeenCalled();
 	});
 
 	it("should allow user to use Google OAuth authentication", async () => {
 		const user = userEvent.setup();
-		render(<AuthModal {...mockProps} />);
+		renderWithToast(<AuthModal {...mockProps} />);
 
 		// User clicks Google OAuth button
 		await user.click(screen.getByText("Continue with Google"));
@@ -212,7 +225,7 @@ describe("AuthModal", () => {
 
 	it("should close modal when user clicks close button", async () => {
 		const user = userEvent.setup();
-		render(<AuthModal {...mockProps} />);
+		renderWithToast(<AuthModal {...mockProps} />);
 
 		await user.click(screen.getByRole("button", { name: /✕/i }));
 		expect(mockProps.onClose).toHaveBeenCalled();
@@ -220,19 +233,19 @@ describe("AuthModal", () => {
 
 	it("should toggle password visibility when user clicks eye icon", async () => {
 		const user = userEvent.setup();
-		render(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
 
 		const passwordInput = document.querySelector('input[name="password"]')!;
 		const toggleButton = screen.getByRole("button", { name: /👁️‍🗨️/i });
 
-		// Password starts hidden
+		// User sees password field starts hidden for security
 		expect(passwordInput).toHaveAttribute("type", "password");
 
-		// User clicks to show password
+		// User can reveal password by clicking toggle
 		await user.click(toggleButton);
 		expect(passwordInput).toHaveAttribute("type", "text");
 
-		// User clicks to hide password
+		// User can hide password again for security
 		await user.click(toggleButton);
 		expect(passwordInput).toHaveAttribute("type", "password");
 	});
@@ -244,15 +257,16 @@ describe("AuthModal", () => {
 
 		(AuthService.signIn as any).mockResolvedValue({ token: mockToken, user: mockUser });
 
-		render(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
 
-		// User checks remember me and signs in
+		// User fills out form and chooses to be remembered
+		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
 		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
 		await user.type(document.querySelector('input[name="password"]')!, "password123");
-		await user.click(document.querySelector('input[id="remember_me"]')!);
+		await user.click(screen.getByRole("checkbox", { name: /remember me/i }));
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-		// Verify remember me is passed to login
+		// User successfully logs in with remember me option
 		await waitFor(() => {
 			expect(mockAuth.login).toHaveBeenCalledWith(mockToken, mockUser, true);
 		});

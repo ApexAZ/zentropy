@@ -1,16 +1,23 @@
 import React, { useEffect, useCallback } from "react";
 
+export interface ToastActionLink {
+	text: string;
+	onClick: () => void;
+}
+
 export interface ToastProps {
 	/** Message to display */
 	message: string;
 	/** Toast type for styling */
-	type: "success" | "error" | "info" | "warning";
+	type: "success" | "error" | "info" | "warning" | "critical-error";
 	/** Whether the toast is visible */
 	isVisible: boolean;
 	/** Function to dismiss the toast */
 	onDismiss: () => void;
 	/** Auto-dismiss timeout in milliseconds (default: 5000) */
 	autoDissmissTimeout?: number;
+	/** Optional action link for user interaction */
+	actionLink?: ToastActionLink;
 	/** Custom CSS classes */
 	className?: string;
 }
@@ -27,6 +34,7 @@ export function Toast({
 	isVisible,
 	onDismiss,
 	autoDissmissTimeout = 5000,
+	actionLink,
 	className = ""
 }: ToastProps): React.JSX.Element | null {
 	// Auto-dismiss toast after timeout
@@ -58,7 +66,8 @@ export function Toast({
 		success: "border-green-200 bg-green-50 text-green-700",
 		error: "border-red-200 bg-red-50 text-red-700",
 		info: "border-blue-200 bg-blue-50 text-blue-700",
-		warning: "border-yellow-200 bg-yellow-50 text-yellow-700"
+		warning: "border-yellow-200 bg-yellow-50 text-yellow-700",
+		"critical-error": "border-red-500 bg-red-100 text-red-800"
 	};
 
 	// Icon for each type
@@ -66,7 +75,8 @@ export function Toast({
 		success: "✓",
 		error: "✕",
 		info: "ℹ",
-		warning: "⚠"
+		warning: "⚠",
+		"critical-error": "🚨"
 	};
 
 	return (
@@ -84,8 +94,24 @@ export function Toast({
 					{typeIcons[type]}
 				</div>
 
-				{/* Message Content */}
-				<div className="flex-1 text-sm leading-5">{message}</div>
+				{/* Message Content and Action Link */}
+				<div className="flex-1">
+					<div className="text-sm leading-5">{message}</div>
+					{actionLink && (
+						<div className="mt-2">
+							<button
+								onClick={() => {
+									actionLink.onClick();
+									onDismiss(); // Auto-dismiss after action
+								}}
+								className="text-sm font-medium underline transition-opacity duration-200 hover:opacity-80 focus:opacity-80"
+								type="button"
+							>
+								{actionLink.text}
+							</button>
+						</div>
+					)}
+				</div>
 
 				{/* Dismiss Button */}
 				<button

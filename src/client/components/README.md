@@ -9,16 +9,29 @@ The Zentropy component library follows atomic design principles with a focus on 
 ```
 components/
 ├── atoms/                    # Atomic components (buttons, inputs, cards)
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Input.tsx
+│   ├── Button.tsx           # Interactive buttons with variants
+│   ├── Card.tsx             # Content containers
+│   ├── Input.tsx            # Form inputs and textareas
+│   ├── LoadingSpinner.tsx   # Loading indicators
+│   ├── Skeleton.tsx         # Loading placeholders
+│   ├── Tab.tsx              # Tabbed navigation
+│   ├── Toast.tsx            # Notification messages
 │   └── __tests__/          # Atomic component tests
 ├── AuthModal.tsx            # Authentication flow modal
 ├── NavigationPanel.tsx      # Slide-out navigation menu
 ├── Header.tsx              # Main application header
 ├── OAuthProviders.tsx      # OAuth provider selection
-├── EmailVerificationResendButton.tsx
-├── RequiredAsterisk.tsx
+├── EmailVerificationModal.tsx        # Email verification flow
+├── EmailVerificationResendButton.tsx # Resend verification emails
+├── AccountSecuritySection.tsx        # Account security management
+├── SecurityActions.tsx              # Security-related actions
+├── SecurityStatusSkeleton.tsx       # Security section loading state
+├── OrganizationSelector.tsx         # Organization selection
+├── PasswordConfirmationModal.tsx    # Password confirmation dialog
+├── ProjectCreationModal.tsx         # Project creation form
+├── FlyoutNavigation.tsx            # Enhanced navigation panel
+├── AuthenticationStatusDisplay.tsx  # Auth status indicator
+├── RequiredAsterisk.tsx            # Required field indicator
 └── __tests__/              # Component tests
 ```
 
@@ -185,6 +198,93 @@ import { Card } from './atoms/Card';
 - `footer`: ReactNode - Footer content
 - `children`: ReactNode - Main card content
 
+### LoadingSpinner Component
+
+Animated loading indicator for async operations:
+
+```typescript
+import { LoadingSpinner } from './atoms/LoadingSpinner';
+
+// Basic spinner
+<LoadingSpinner />
+
+// With custom size
+<LoadingSpinner size="small" />
+<LoadingSpinner size="large" />
+
+// With text
+<LoadingSpinner>Loading data...</LoadingSpinner>
+```
+
+**Props:**
+- `size`: 'small' | 'medium' | 'large'
+- `children`: ReactNode - Optional loading text
+
+### Skeleton Component
+
+Loading placeholders for content areas:
+
+```typescript
+import { Skeleton } from './atoms/Skeleton';
+
+// Text skeleton
+<Skeleton type="text" />
+
+// Avatar skeleton
+<Skeleton type="avatar" />
+
+// Custom dimensions
+<Skeleton width="100%" height="200px" />
+```
+
+**Props:**
+- `type`: 'text' | 'avatar' | 'button' | 'card'
+- `width`: string - Custom width
+- `height`: string - Custom height
+
+### Tab Component
+
+Tabbed navigation interface:
+
+```typescript
+import { Tab } from './atoms/Tab';
+
+<Tab
+  tabs={[
+    { id: 'overview', label: 'Overview', content: <OverviewPanel /> },
+    { id: 'settings', label: 'Settings', content: <SettingsPanel /> }
+  ]}
+  activeTab={activeTab}
+  onTabChange={setActiveTab}
+/>
+```
+
+**Props:**
+- `tabs`: Array<{id: string, label: string, content: ReactNode}>
+- `activeTab`: string
+- `onTabChange`: (tabId: string) => void
+
+### Toast Component
+
+Notification message component (used internally by ToastContext):
+
+```typescript
+import { Toast } from './atoms/Toast';
+
+<Toast
+  type="success"
+  message="Action completed successfully!"
+  onDismiss={handleDismiss}
+  autoDissmissTimeout={5000}
+/>
+```
+
+**Props:**
+- `type`: 'success' | 'error' | 'warning' | 'info'
+- `message`: string
+- `onDismiss`: () => void
+- `autoDissmissTimeout`: number (optional)
+
 ## Application Components
 
 ### AuthModal
@@ -288,6 +388,120 @@ import { OAuthProviders } from './OAuthProviders';
 - Visual grid layout
 - Loading states
 - Error handling
+
+### EmailVerificationModal
+
+Email verification flow with resend functionality:
+
+```typescript
+import { EmailVerificationModal } from './EmailVerificationModal';
+
+<EmailVerificationModal
+  isOpen={showVerification}
+  email="user@example.com"
+  onClose={() => setShowVerification(false)}
+  onSuccess={() => {
+    // Handle successful verification
+    setShowVerification(false);
+  }}
+/>
+```
+
+**Features:**
+- 6-digit verification code input
+- Automatic code submission
+- Resend functionality with rate limiting
+- Success/error feedback via toasts
+
+### AccountSecuritySection
+
+Account security management interface:
+
+```typescript
+import { AccountSecuritySection } from './AccountSecuritySection';
+
+<AccountSecuritySection
+  user={currentUser}
+  onSecurityUpdate={(updates) => {
+    // Handle security changes
+  }}
+/>
+```
+
+**Features:**
+- Google account linking/unlinking
+- Security status display
+- Two-factor authentication setup
+- Account recovery options
+
+### OrganizationSelector
+
+Organization selection and management:
+
+```typescript
+import { OrganizationSelector } from './OrganizationSelector';
+
+<OrganizationSelector
+  organizations={availableOrgs}
+  currentOrganization={activeOrg}
+  onOrganizationChange={(org) => setActiveOrg(org)}
+  onCreateOrganization={() => setShowCreateModal(true)}
+/>
+```
+
+**Features:**
+- Organization switching
+- Create new organization
+- Organization member counts
+- Permission-based access
+
+### ProjectCreationModal
+
+Project creation form with validation:
+
+```typescript
+import { ProjectCreationModal } from './ProjectCreationModal';
+
+<ProjectCreationModal
+  isOpen={showCreateProject}
+  organization={currentOrg}
+  onClose={() => setShowCreateProject(false)}
+  onSuccess={(project) => {
+    // Handle new project
+    navigate(`/projects/${project.id}`);
+  }}
+/>
+```
+
+**Features:**
+- Project name and description validation
+- Organization association
+- Real-time validation feedback
+- Success/error handling
+
+### PasswordConfirmationModal
+
+Password confirmation for sensitive operations:
+
+```typescript
+import { PasswordConfirmationModal } from './PasswordConfirmationModal';
+
+<PasswordConfirmationModal
+  isOpen={showPasswordConfirm}
+  onClose={() => setShowPasswordConfirm(false)}
+  onConfirm={(password) => {
+    // Proceed with sensitive operation
+    handleSecurityAction(password);
+  }}
+  purpose="delete your account"
+/>
+```
+
+**Features:**
+- Secure password input
+- Purpose-specific messaging
+- Form validation
+- Keyboard support
 
 ## Design Patterns
 

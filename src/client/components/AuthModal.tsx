@@ -5,6 +5,7 @@ import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
 import { setPendingVerification } from "../utils/pendingVerification";
+import { useToast } from "../contexts/ToastContext";
 
 type AuthMode = "signin" | "signup";
 
@@ -60,15 +61,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
 	const [mode, setMode] = useState<AuthMode>(initialMode);
 	const [isLoading, setIsLoading] = useState(false);
-	const [toast, setToast] = useState<{
-		message: string;
-		type: "success" | "error" | "info" | "critical-error";
-		actionLink?: { text: string; onClick: () => void };
-	} | null>(null);
 	const [showPasswords, setShowPasswords] = useState({
 		password: false,
 		confirm: false
 	});
+
+	// Centralized toast notifications
+	const { showSuccess, showError, showInfo, showCriticalError } = useToast();
 
 	// Sign In Form with useFormValidation
 	const signInForm = useFormValidation<SignInFormData>({
@@ -105,7 +104,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			const { token, user } = await AuthService.signIn(credentials);
 			auth.login(token, user, values.remember_me);
 
-			setToast({ message: "Successfully signed in!", type: "success" });
+			showSuccess("Successfully signed in!");
 			setTimeout(() => {
 				onSuccess();
 				onClose();
@@ -177,7 +176,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 			const { message } = await AuthService.signUp(userData);
 
-			setToast({ message, type: "success" });
+			showSuccess(message);
 
 			// Show verification page after successful registration
 			setTimeout(() => {
@@ -198,7 +197,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 	// Google OAuth
 	const { isReady: isGoogleReady, triggerOAuth } = useGoogleOAuth({
 		onSuccess: handleGoogleSuccess,
-		onError: error => setToast({ message: error, type: "error" })
+		onError: error => showError(error)
 	});
 
 	// Reset form helper function - stable reference to avoid infinite loops
@@ -209,21 +208,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Remove form dependencies to prevent infinite loop
 
-	// Auto-hide toast (but not for critical errors)
-	useEffect(() => {
-		if (toast && toast.type !== "critical-error") {
-			const timer = setTimeout(() => setToast(null), 5000);
-			return () => clearTimeout(timer);
-		}
-		return undefined;
-	}, [toast]);
+	// Toast auto-dismiss is now handled by the centralized ToastProvider
 
 	// Reset form when modal opens/closes
 	useEffect(() => {
 		if (!isOpen) {
 			setMode(initialMode);
 			resetForms();
-			setToast(null);
+			// Toast cleanup is now handled by the centralized ToastProvider
 		} else {
 			// When modal opens, ensure mode matches initialMode
 			setMode(initialMode);
@@ -233,7 +225,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 	const handleSignIn = async (e: React.FormEvent) => {
 		setIsLoading(true);
-		setToast(null);
 
 		try {
 			await signInForm.handleSubmit(e);
@@ -252,18 +243,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 				// Show verification modal if handler is available
 				if (onShowVerification) {
-					setToast({
-						message: "Please verify your email to sign in",
-						type: "info"
-					});
+					showInfo("Please verify your email to sign in");
 					setTimeout(() => {
 						onShowVerification(signInForm.values.email);
 					}, 1500);
 				} else {
-					setToast({ message, type: "error" });
+					showError(message);
 				}
 			} else {
-				setToast({ message, type: "error" });
+				showError(message);
 			}
 		} finally {
 			setIsLoading(false);
@@ -272,7 +260,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 	const handleSignUp = async (e: React.FormEvent) => {
 		setIsLoading(true);
-		setToast(null);
 
 		try {
 			await signUpForm.handleSubmit(e);
@@ -286,23 +273,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				const errorType = (error as CustomError).type;
 				if (errorType === "email_already_exists") {
 					// For duplicate email, show persistent error with sign-in link
-					setToast({
-						message: error.message,
-						type: "critical-error",
-						actionLink: {
-							text: "Sign in",
-							onClick: () => {
-								setToast(null); // Clear the toast FIRST
-								setMode("signin");
-								signInForm.setFieldValue("email", signUpForm.values.email);
-							}
+					showCriticalError(error.message, {
+						text: "Sign in",
+						onClick: () => {
+							setMode("signin");
+							signInForm.setFieldValue("email", signUpForm.values.email);
 						}
 					});
 					return; // Exit early to avoid setting the regular toast
 				}
 			}
 
-			setToast({ message, type: "error" });
+			showError(message);
 		} finally {
 			setIsLoading(false);
 		}
@@ -310,20 +292,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 	async function handleGoogleSuccess(credential: string) {
 		setIsLoading(true);
-		setToast(null);
 
 		try {
 			const { token, user } = await AuthService.oauthSignIn("google", credential);
 			auth.login(token, user, false);
 
-			setToast({ message: "Successfully signed in with Google!", type: "success" });
+			showSuccess("Successfully signed in with Google!");
 			setTimeout(() => {
 				onSuccess();
 				onClose();
 			}, 1000);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Google sign in failed";
-			setToast({ message, type: "error" });
+			showError(message);
 		} finally {
 			setIsLoading(false);
 		}
@@ -686,41 +667,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					</div>
 
 					{/* Toast notification */}
-					{toast && (
-						<div
-							className={`mb-4 rounded-lg p-3 ${
-								toast.type === "success"
-									? "bg-green-100 text-green-800"
-									: toast.type === "error" || toast.type === "critical-error"
-										? "bg-red-100 text-red-800"
-										: "bg-blue-100 text-blue-800"
-							}`}
-						>
-							<div className="flex items-start justify-between">
-								<div className="flex-1 text-center">
-									<div>{toast.message}</div>
-									{toast.actionLink && (
-										<div className="mt-3">
-											<button
-												onClick={toast.actionLink.onClick}
-												className="text-base font-medium text-red-700 underline hover:text-red-900 hover:no-underline"
-											>
-												{toast.actionLink.text}
-											</button>
-										</div>
-									)}
-								</div>
-								{toast.type === "critical-error" && (
-									<button
-										onClick={() => setToast(null)}
-										className="ml-2 text-red-600 hover:text-red-800"
-									>
-										✕
-									</button>
-								)}
-							</div>
-						</div>
-					)}
+					{/* Toast notifications are now handled by the centralized ToastProvider */}
 
 					{/* Content based on mode */}
 					{mode === "signin" && renderSignIn()}

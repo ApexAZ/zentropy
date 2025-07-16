@@ -8,9 +8,16 @@ The Zentropy service layer provides a clean abstraction over API calls with cons
 
 ```
 services/
-├── AuthService.ts    # Authentication operations
-├── TeamService.ts    # Team management operations
-└── README.md        # This documentation
+├── AuthService.ts              # Authentication operations
+├── CalendarService.ts          # Calendar and PTO management
+├── DashboardService.ts         # Dashboard data aggregation
+├── OAuthProviderService.ts     # OAuth provider management
+├── OrganizationService.ts      # Organization operations
+├── ProjectService.ts           # Project management
+├── TeamService.ts              # Team management operations
+├── UserService.ts              # User profile operations
+├── index.ts                    # Service exports
+└── __tests__/                  # Service tests
 ```
 
 ## Service Pattern
@@ -224,6 +231,186 @@ if (!validation.isValid) {
 - **Client-side validation**: Data validation before API calls
 - **Error handling**: Consistent error processing with `handleResponse`
 - **Type safety**: Strongly typed interfaces for all operations
+
+### OrganizationService
+
+Organization management and multi-tenancy:
+
+```typescript
+import { OrganizationService } from './OrganizationService';
+
+// Get all organizations for current user
+const organizations = await OrganizationService.getOrganizations();
+
+// Create new organization
+const org = await OrganizationService.createOrganization({
+  name: 'My Company',
+  scope: 'shared'
+});
+
+// Switch current organization
+await OrganizationService.switchOrganization('org-id');
+
+// Get organization members
+const members = await OrganizationService.getMembers('org-id');
+```
+
+**OrganizationService Features:**
+- **Multi-tenant support**: Organization switching and scoping
+- **Member management**: Invite, remove, update member roles
+- **Organization settings**: Configuration and preferences
+- **Scope validation**: Personal, shared, enterprise organization types
+
+### ProjectService
+
+Project lifecycle management:
+
+```typescript
+import { ProjectService } from './ProjectService';
+
+// Create new project
+const project = await ProjectService.createProject({
+  name: 'New Project',
+  description: 'Project description',
+  organization_id: 'org-123'
+});
+
+// Get projects for organization
+const projects = await ProjectService.getProjects('org-123');
+
+// Update project
+await ProjectService.updateProject('project-id', {
+  name: 'Updated Project Name'
+});
+
+// Archive project
+await ProjectService.archiveProject('project-id');
+```
+
+**ProjectService Features:**
+- **Project lifecycle**: Create, update, archive, restore projects
+- **Organization scoping**: Projects belong to organizations
+- **Status management**: Active, archived, completed states
+- **Member assignment**: Project team management
+
+### UserService
+
+User profile and preferences management:
+
+```typescript
+import { UserService } from './UserService';
+
+// Get current user profile
+const profile = await UserService.getCurrentUser();
+
+// Update user profile
+await UserService.updateProfile({
+  first_name: 'John',
+  last_name: 'Doe'
+});
+
+// Change password
+await UserService.changePassword({
+  current_password: 'oldpass',
+  new_password: 'newpass123!'
+});
+
+// Get user preferences
+const preferences = await UserService.getPreferences();
+```
+
+**UserService Features:**
+- **Profile management**: Update name, email, preferences
+- **Password management**: Secure password changes
+- **Account settings**: User preferences and configuration
+- **Avatar management**: Profile picture upload and management
+
+### CalendarService
+
+Calendar and time-off management:
+
+```typescript
+import { CalendarService } from './CalendarService';
+
+// Get calendar entries for date range
+const entries = await CalendarService.getCalendarEntries({
+  start_date: '2024-01-01',
+  end_date: '2024-01-31',
+  team_id: 'team-123'
+});
+
+// Create PTO request
+await CalendarService.createEntry({
+  title: 'Vacation',
+  start_date: '2024-06-15',
+  end_date: '2024-06-20',
+  type: 'pto'
+});
+
+// Get team availability
+const availability = await CalendarService.getTeamAvailability('team-123');
+```
+
+**CalendarService Features:**
+- **PTO management**: Request and approve time off
+- **Team calendars**: View team availability and schedules
+- **Entry types**: PTO, holidays, meetings, sprints
+- **Availability calculation**: Team capacity planning
+
+### DashboardService
+
+Dashboard data aggregation and analytics:
+
+```typescript
+import { DashboardService } from './DashboardService';
+
+// Get dashboard statistics
+const stats = await DashboardService.getDashboardStats();
+
+// Get recent activity
+const activity = await DashboardService.getRecentActivity({
+  limit: 10,
+  days: 7
+});
+
+// Get team performance metrics
+const metrics = await DashboardService.getTeamMetrics('team-123');
+```
+
+**DashboardService Features:**
+- **Aggregated statistics**: Cross-team and cross-project metrics
+- **Activity feeds**: Recent user and team activities
+- **Performance analytics**: Velocity, completion rates, trends
+- **Data visualization**: Metrics formatted for charts and graphs
+
+### OAuthProviderService
+
+OAuth integration management:
+
+```typescript
+import { OAuthProviderService } from './OAuthProviderService';
+
+// Get available OAuth providers
+const providers = await OAuthProviderService.getProviders();
+
+// Link OAuth account
+await OAuthProviderService.linkAccount({
+  provider: 'google',
+  credential: googleCredential
+});
+
+// Unlink OAuth account
+await OAuthProviderService.unlinkAccount('google');
+
+// Get linked accounts
+const linked = await OAuthProviderService.getLinkedAccounts();
+```
+
+**OAuthProviderService Features:**
+- **Provider management**: Google, GitHub, Microsoft, Apple
+- **Account linking**: Connect/disconnect OAuth accounts
+- **Status checking**: Verify OAuth account status
+- **Provider configuration**: Dynamic provider availability
 
 ## Error Handling
 

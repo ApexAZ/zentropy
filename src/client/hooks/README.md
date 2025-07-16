@@ -244,6 +244,152 @@ function ContactForm() {
 - Field-level error handling
 - Integration with Yup schemas
 
+### `useAccountSecurity` - Account Security Management
+
+Manages account security features and linking:
+
+```typescript
+const {
+  securityStatus,     // Current security status
+  linkedAccounts,     // Connected OAuth accounts
+  isLoading,          // Loading state
+  error,              // Any errors
+  linkGoogleAccount,  // Link Google account
+  unlinkAccount,      // Unlink OAuth account
+  refreshStatus       // Refresh security data
+} = useAccountSecurity();
+```
+
+**Example Usage:**
+```typescript
+function SecuritySettings() {
+  const { 
+    securityStatus, 
+    linkedAccounts, 
+    linkGoogleAccount, 
+    unlinkAccount,
+    isLoading 
+  } = useAccountSecurity();
+  
+  if (isLoading) return <SecurityStatusSkeleton />;
+  
+  return (
+    <div>
+      <h3>Account Security</h3>
+      <p>Status: {securityStatus}</p>
+      
+      {linkedAccounts.map(account => (
+        <div key={account.provider}>
+          {account.provider}: {account.email}
+          <button onClick={() => unlinkAccount(account.provider)}>
+            Unlink
+          </button>
+        </div>
+      ))}
+      
+      <button onClick={linkGoogleAccount}>
+        Link Google Account
+      </button>
+    </div>
+  );
+}
+```
+
+### `useOrganization` - Organization Management
+
+Handles organization switching and management:
+
+```typescript
+const {
+  organizations,      // Available organizations
+  currentOrg,         // Currently selected organization
+  isLoading,          // Loading state
+  error,              // Any errors
+  switchOrganization, // Switch to different org
+  createOrganization, // Create new organization
+  updateOrganization  // Update organization details
+} = useOrganization();
+```
+
+**Example Usage:**
+```typescript
+function OrganizationSelector() {
+  const { 
+    organizations, 
+    currentOrg, 
+    switchOrganization, 
+    isLoading 
+  } = useOrganization();
+  
+  return (
+    <select 
+      value={currentOrg?.id || ''} 
+      onChange={(e) => switchOrganization(e.target.value)}
+      disabled={isLoading}
+    >
+      {organizations.map(org => (
+        <option key={org.id} value={org.id}>
+          {org.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### `useProject` - Project Management
+
+Manages project operations within organizations:
+
+```typescript
+const {
+  projects,           // Projects in current organization
+  currentProject,     // Selected project
+  isLoading,          // Loading state
+  error,              // Any errors
+  createProject,      // Create new project
+  updateProject,      // Update project details
+  archiveProject,     // Archive project
+  selectProject       // Switch current project
+} = useProject();
+```
+
+**Example Usage:**
+```typescript
+function ProjectList() {
+  const { 
+    projects, 
+    createProject, 
+    updateProject, 
+    isLoading, 
+    error 
+  } = useProject();
+  
+  const handleCreateProject = async (data) => {
+    await createProject({
+      name: data.name,
+      description: data.description,
+      organization_id: currentOrg.id
+    });
+  };
+  
+  if (error) return <ErrorMessage>{error}</ErrorMessage>;
+  
+  return (
+    <div>
+      {projects.map(project => (
+        <ProjectCard 
+          key={project.id} 
+          project={project}
+          onUpdate={updateProject}
+        />
+      ))}
+      <ProjectCreationModal onSubmit={handleCreateProject} />
+    </div>
+  );
+}
+```
+
 ## Creating Custom Hooks
 
 ### Hook Naming Convention
