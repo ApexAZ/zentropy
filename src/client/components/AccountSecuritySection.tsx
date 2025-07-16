@@ -4,8 +4,10 @@ import Button from "./atoms/Button";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
 import { AuthenticationStatusDisplay } from "./AuthenticationStatusDisplay";
 import { SecurityActions } from "./SecurityActions";
-import { PasswordConfirmationModal } from "./PasswordConfirmationModal";
+import { EnhancedConfirmationModal } from "./EnhancedConfirmationModal";
 import { SecurityStatusSkeleton } from "./SecurityStatusSkeleton";
+import { SecurityRecommendations } from "./SecurityRecommendations";
+import { AccountSecurityHelp } from "./AccountSecurityHelp";
 
 interface AccountSecuritySectionProps {
 	/** Callback when security status is updated */
@@ -21,9 +23,13 @@ interface AccountSecuritySectionProps {
  * Google OAuth authentication following atomic design patterns.
  */
 export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSecuritySectionProps) {
-	// Password modal state (kept in component since it's UI-specific)
-	const [showPasswordModal, setShowPasswordModal] = useState(false);
+	// Enhanced confirmation modal state
+	const [showEnhancedConfirmation, setShowEnhancedConfirmation] = useState(false);
 	const [passwordError, setPasswordError] = useState<string | null>(null);
+
+	// Security recommendations state
+	const [dismissedRecommendations, setDismissedRecommendations] = useState<Set<string>>(new Set());
+	const [postponedRecommendations, setPostponedRecommendations] = useState<Set<string>>(new Set());
 
 	// Use the custom hook for all business logic
 	const {
@@ -45,10 +51,10 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	const displaySecurityStatus = optimisticSecurityStatus || securityStatus;
 
 	/**
-	 * Handle showing password modal for unlinking
+	 * Handle showing enhanced confirmation modal for unlinking
 	 */
 	const handleUnlinkGoogle = useCallback(() => {
-		setShowPasswordModal(true);
+		setShowEnhancedConfirmation(true);
 		setPasswordError(null);
 	}, []);
 
@@ -56,11 +62,13 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	 * Confirm Google account unlinking with password
 	 */
 	const handleConfirmUnlink = useCallback(
-		async (password: string) => {
+		async (password?: string) => {
 			try {
 				setPasswordError(null);
-				await hookHandleUnlinkGoogle(password);
-				setShowPasswordModal(false);
+				if (password) {
+					await hookHandleUnlinkGoogle(password);
+					setShowEnhancedConfirmation(false);
+				}
 			} catch (err) {
 				const errorMessage = err instanceof Error ? err.message : "Failed to unlink Google account";
 				setPasswordError(errorMessage);
@@ -70,11 +78,30 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	);
 
 	/**
-	 * Close password modal
+	 * Close enhanced confirmation modal
 	 */
-	const handleClosePasswordModal = useCallback(() => {
-		setShowPasswordModal(false);
+	const handleCloseConfirmationModal = useCallback(() => {
+		setShowEnhancedConfirmation(false);
 		setPasswordError(null);
+	}, []);
+
+	/**
+	 * Handle dismissing security recommendations
+	 */
+	const handleDismissRecommendation = useCallback((recommendationType: string, postpone?: boolean) => {
+		if (postpone) {
+			setPostponedRecommendations(prev => new Set(prev).add(recommendationType));
+			// For Phase 3, could implement reminder logic here
+		} else {
+			setDismissedRecommendations(prev => new Set(prev).add(recommendationType));
+		}
+	}, []);
+
+	/**
+	 * Handle when user wants to learn more about security recommendations
+	 */
+	const handleLearnMore = useCallback(() => {
+		// For Phase 3, could track analytics or provide additional guidance
 	}, []);
 
 	// Loading state with skeleton
@@ -110,6 +137,18 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 						{/* Authentication Status Display */}
 						<AuthenticationStatusDisplay securityStatus={displaySecurityStatus} />
 
+						{/* Security Recommendations (only show if not dismissed and security isn't strong) */}
+						{!dismissedRecommendations.has("email-only-mfa") &&
+							!dismissedRecommendations.has("no-auth-critical") &&
+							!postponedRecommendations.has("email-only-mfa") &&
+							!postponedRecommendations.has("no-auth-critical") && (
+								<SecurityRecommendations
+									securityStatus={displaySecurityStatus}
+									onDismiss={handleDismissRecommendation}
+									onLearnMore={handleLearnMore}
+								/>
+							)}
+
 						{/* Security Actions */}
 						<SecurityActions
 							securityStatus={displaySecurityStatus}
@@ -120,17 +159,40 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 							onLinkGoogle={handleLinkGoogle}
 							onUnlinkGoogle={handleUnlinkGoogle}
 						/>
+
+						{/* Contextual Help Section */}
+						<AccountSecurityHelp
+							securityStatus={displaySecurityStatus}
+							expandableHelp
+							showFAQ
+							showContactSupport
+							showDocumentationLinks
+							showContextualLinks
+						/>
 					</div>
 				)}
 			</Card>
 
-			{/* Password Confirmation Modal */}
-			<PasswordConfirmationModal
-				isOpen={showPasswordModal}
-				onClose={handleClosePasswordModal}
+			{/* Enhanced Confirmation Modal for Google Account Unlinking */}
+			<EnhancedConfirmationModal
+				isOpen={showEnhancedConfirmation}
+				onClose={handleCloseConfirmationModal}
 				onConfirm={handleConfirmUnlink}
 				loading={unlinkingLoading}
-				error={passwordError}
+				title="Unlink Google Account"
+				message="Are you sure you want to unlink your Google account from Zentropy?"
+				actionType="destructive"
+				impactDescription="After unlinking, you will:"
+				consequences={[
+					"Only be able to sign in with email and password",
+					"Lose the convenience of one-click Google sign-in",
+					"Need to remember your password for account access"
+				]}
+				recoveryGuidance="You can re-link your Google account anytime by going to Security Settings and clicking 'Link Google Account'."
+				confirmText="Yes, Unlink Account"
+				loadingText="Unlinking account..."
+				requiresPasswordConfirmation={true}
+				{...(passwordError && { passwordError })}
 			/>
 		</>
 	);

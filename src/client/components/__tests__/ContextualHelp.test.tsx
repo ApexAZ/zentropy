@@ -1,0 +1,114 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
+import { ContextualHelp } from "../ContextualHelp";
+
+describe("ContextualHelp Component", () => {
+	describe("Help Tooltips", () => {
+		it("should display help tooltip for OAuth concept", async () => {
+			const user = userEvent.setup();
+			render(<ContextualHelp concept="oauth" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
+			expect(helpIcon).toBeInTheDocument();
+
+			await user.hover(helpIcon);
+			expect(
+				await screen.findByText(/OAuth allows you to sign in using your Google account/i)
+			).toBeInTheDocument();
+		});
+
+		it("should display help tooltip for Multi-Factor Authentication concept", async () => {
+			const user = userEvent.setup();
+			render(<ContextualHelp concept="mfa" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*multi-factor authentication/i });
+			expect(helpIcon).toBeInTheDocument();
+
+			await user.hover(helpIcon);
+			expect(
+				await screen.findByText(/Multi-factor authentication adds an extra layer of security/i)
+			).toBeInTheDocument();
+		});
+
+		it("should display help tooltip for Account Linking concept", async () => {
+			const user = userEvent.setup();
+			render(<ContextualHelp concept="account-linking" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*account linking/i });
+			expect(helpIcon).toBeInTheDocument();
+
+			await user.hover(helpIcon);
+			expect(
+				await screen.findByText(/Account linking connects your Google account to your Zentropy account/i)
+			).toBeInTheDocument();
+		});
+
+		it("should show accessible tooltip with proper ARIA attributes", async () => {
+			render(<ContextualHelp concept="oauth" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
+			expect(helpIcon).toHaveAttribute("aria-describedby");
+			expect(helpIcon).toHaveAttribute("title");
+		});
+
+		it("should show no help icon for unknown concepts", () => {
+			const { container } = render(<ContextualHelp concept="unknown-concept" />);
+
+			// Component should render nothing for unknown concepts
+			expect(container.firstChild).toBeNull();
+		});
+	});
+
+	describe("Documentation Links", () => {
+		it("should provide contextual documentation link for security topics", () => {
+			render(<ContextualHelp concept="oauth" showDocumentationLink />);
+
+			const docLink = screen.getByRole("link", { name: /learn more about oauth/i });
+			expect(docLink).toBeInTheDocument();
+			expect(docLink).toHaveAttribute("href", expect.stringContaining("oauth"));
+			expect(docLink).toHaveAttribute("target", "_blank");
+			expect(docLink).toHaveAttribute("rel", "noopener noreferrer");
+		});
+
+		it("should provide contextual documentation link for MFA topics", () => {
+			render(<ContextualHelp concept="mfa" showDocumentationLink />);
+
+			const docLink = screen.getByRole("link", { name: /learn more about multi-factor authentication/i });
+			expect(docLink).toBeInTheDocument();
+			expect(docLink).toHaveAttribute("href", expect.stringContaining("multi-factor"));
+		});
+
+		it("should not show documentation link when showDocumentationLink is false", () => {
+			render(<ContextualHelp concept="oauth" showDocumentationLink={false} />);
+
+			const docLink = screen.queryByRole("link", { name: /learn more/i });
+			expect(docLink).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Accessibility", () => {
+		it("should support keyboard navigation for help tooltips", async () => {
+			const user = userEvent.setup();
+			render(<ContextualHelp concept="oauth" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
+
+			await user.tab();
+			expect(helpIcon).toHaveFocus();
+
+			await user.keyboard("{Enter}");
+			expect(
+				await screen.findByText(/OAuth allows you to sign in using your Google account/i)
+			).toBeInTheDocument();
+		});
+
+		it("should provide proper screen reader support", () => {
+			render(<ContextualHelp concept="mfa" />);
+
+			const helpIcon = screen.getByRole("button", { name: /help.*multi-factor authentication/i });
+			expect(helpIcon).toHaveAttribute("aria-label");
+			expect(helpIcon).toHaveAttribute("aria-describedby");
+		});
+	});
+});

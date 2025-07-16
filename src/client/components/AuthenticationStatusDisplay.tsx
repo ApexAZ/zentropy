@@ -1,4 +1,5 @@
 import type { AccountSecurityResponse } from "../types";
+import { ContextualHelp } from "./ContextualHelp";
 
 interface AuthenticationStatusDisplayProps {
 	/** Current security status from API */
@@ -144,7 +145,10 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 						title={`Google authentication is ${securityStatus.google_auth_linked ? "enabled" : "disabled"}`}
 					/>
 					<div>
-						<h4 className="text-primary font-medium">Google Authentication</h4>
+						<div className="flex items-center space-x-2">
+							<h4 className="text-primary font-medium">Google Authentication</h4>
+							<ContextualHelp concept="oauth" />
+						</div>
 						<p className="text-secondary text-sm">
 							{securityStatus.google_auth_linked && securityStatus.google_email
 								? securityStatus.google_email

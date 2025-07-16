@@ -279,10 +279,10 @@ describe("AccountSecuritySection", () => {
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		await user.click(unlinkButton);
 
-		// Should show password confirmation dialog
+		// Should show enhanced confirmation dialog
 		await waitFor(() => {
 			expect(screen.getByRole("dialog")).toBeInTheDocument();
-			expect(screen.getByText("Confirm Password")).toBeInTheDocument();
+			expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
 		});
 
 		// Enter password and confirm
@@ -292,7 +292,7 @@ describe("AccountSecuritySection", () => {
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
 		await user.type(passwordInput, "current-password");
 
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
+		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
 		// Should call the hook's handleUnlinkGoogle with password
@@ -335,11 +335,11 @@ describe("AccountSecuritySection", () => {
 		});
 
 		// Try to confirm without password
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
+		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
 		// Should show validation error
-		expect(screen.getByText("Password is required")).toBeInTheDocument();
+		expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 		expect(mockHandleUnlinkGoogle).not.toHaveBeenCalled();
 	});
 
@@ -502,7 +502,7 @@ describe("AccountSecuritySection", () => {
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
 		await user.type(passwordInput, "wrong-password");
 
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
+		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
 		// Should show error in dialog
