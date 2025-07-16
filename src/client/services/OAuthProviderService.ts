@@ -29,9 +29,13 @@ export class OAuthProviderService {
 			displayName: "Microsoft",
 			iconClass: "fab fa-microsoft",
 			brandColor: "#0078d4"
+		},
+		github: {
+			name: "github",
+			displayName: "GitHub",
+			iconClass: "fab fa-github",
+			brandColor: "#333"
 		}
-		// Future providers can be added here:
-		// github: { name: "github", displayName: "GitHub", iconClass: "fab fa-github", brandColor: "#333" }
 	};
 
 	/**
@@ -133,6 +137,8 @@ export class OAuthProviderService {
 				return this.linkGoogleProvider(request);
 			case "microsoft":
 				return this.linkMicrosoftProvider(request);
+			case "github":
+				return this.linkGitHubProvider(request);
 			default:
 				throw new Error(`Unsupported provider: ${request.provider}`);
 		}
@@ -189,6 +195,31 @@ export class OAuthProviderService {
 	}
 
 	/**
+	 * Link GitHub provider
+	 */
+	private static async linkGitHubProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
+		const response = await fetch("/api/v1/users/me/link-github", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...createAuthHeaders()
+			},
+			body: JSON.stringify({
+				github_credential: request.credential
+			})
+		});
+
+		const result = await this.handleResponse<{ message: string; github_email?: string }>(response);
+
+		return {
+			message: result.message,
+			success: true,
+			provider: request.provider,
+			provider_identifier: result.github_email ?? ""
+		};
+	}
+
+	/**
 	 * Generic unlink provider method
 	 * Routes to provider-specific implementations based on provider name
 	 */
@@ -205,6 +236,8 @@ export class OAuthProviderService {
 				return this.unlinkGoogleProvider(request);
 			case "microsoft":
 				return this.unlinkMicrosoftProvider(request);
+			case "github":
+				return this.unlinkGitHubProvider(request);
 			default:
 				throw new Error(`Unsupported provider: ${request.provider}`);
 		}
@@ -239,6 +272,30 @@ export class OAuthProviderService {
 	 */
 	private static async unlinkMicrosoftProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
 		const response = await fetch("/api/v1/users/me/unlink-microsoft", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...createAuthHeaders()
+			},
+			body: JSON.stringify({
+				password: request.password
+			})
+		});
+
+		const result = await this.handleResponse<{ message: string }>(response);
+
+		return {
+			message: result.message,
+			success: true,
+			provider: request.provider
+		};
+	}
+
+	/**
+	 * Unlink GitHub provider
+	 */
+	private static async unlinkGitHubProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
+		const response = await fetch("/api/v1/users/me/unlink-github", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -359,9 +416,11 @@ export class GoogleOAuthIntegration {
 // Export utilities for easy future migration
 export const OAuthProviders = {
 	GOOGLE: "google",
-	MICROSOFT: "microsoft"
-	// Future providers:
-	// GITHUB: "github"
+	MICROSOFT: "microsoft",
+	GITHUB: "github"
 } as const;
 
-export type SupportedOAuthProvider = typeof OAuthProviders.GOOGLE | typeof OAuthProviders.MICROSOFT;
+export type SupportedOAuthProvider =
+	| typeof OAuthProviders.GOOGLE
+	| typeof OAuthProviders.MICROSOFT
+	| typeof OAuthProviders.GITHUB;

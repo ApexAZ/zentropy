@@ -14,6 +14,8 @@ from ..schemas import (
     UnlinkGoogleAccountRequest,
     LinkMicrosoftAccountRequest,
     UnlinkMicrosoftAccountRequest,
+    LinkGitHubAccountRequest,
+    UnlinkGitHubAccountRequest,
     AccountSecurityResponse,
 )
 from ..auth import (
@@ -429,3 +431,34 @@ def unlink_microsoft_account(
     _ = current_user  # Avoid unused parameter warning
 
     return MessageResponse(message="Microsoft account unlinked successfully")
+
+
+@router.post("/me/link-github", response_model=MessageResponse)
+def link_github_account(
+    request: LinkGitHubAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Link GitHub account to current user account"""
+    # TODO: Implement GitHub OAuth verification
+    # For now, return success for testing
+    _ = request  # Avoid unused parameter warning
+    _ = db  # Avoid unused parameter warning
+    _ = current_user  # Avoid unused parameter warning
+
+    return MessageResponse(message="GitHub account linked successfully")
+
+
+@router.post("/me/unlink-github", response_model=MessageResponse)
+def unlink_github_account(
+    request: UnlinkGitHubAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Unlink GitHub account from current user account"""
+    # TODO: Implement GitHub unlinking
+    _ = request  # Avoid unused parameter warning
+    _ = db  # Avoid unused parameter warning
+    _ = current_user  # Avoid unused parameter warning
+
+    return MessageResponse(message="GitHub account unlinked successfully")

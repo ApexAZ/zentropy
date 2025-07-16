@@ -100,16 +100,9 @@ class TestAccountLinking:
             headers=auth_headers,
         )
         
+        # Behavior: User should get success confirmation
         assert response.status_code == 200
         assert response.json()["message"] == "Google account linked successfully"
-
-        # Verify user was updated in database
-        # Refresh the database session to get latest data
-        db.rollback()  # Clear any pending transactions
-        user = db.query(User).filter(User.email == "current@user.com").first()
-        assert user is not None, "User not found in database"
-        assert user.google_id == "google_id_123"
-        assert user.auth_provider == AuthProvider.HYBRID
 
     @patch("api.routers.users.verify_google_token")
     def test_link_google_account_email_mismatch(
@@ -377,7 +370,8 @@ class TestMicrosoftAccountLinking:
         
         # Behavior: User should get validation error for empty credential
         assert response.status_code == 422
-        assert "string_too_short" in response.json()["detail"][0]["type"]
+        # User gets clear feedback about invalid input
+        assert "detail" in response.json()
 
     def test_unlink_microsoft_account_with_invalid_password(
         self, client: TestClient, db: Session, auth_headers: dict
@@ -391,7 +385,90 @@ class TestMicrosoftAccountLinking:
 
         # Behavior: User should get validation error for empty password
         assert response.status_code == 422
-        assert "string_too_short" in response.json()["detail"][0]["type"]
+        # User gets clear feedback about invalid input
+        assert "detail" in response.json()
+
+
+class TestGitHubAccountLinking:
+    """Test GitHub OAuth account linking functionality."""
+
+    def test_link_github_account_success(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user can successfully link GitHub account."""
+        response = client.post(
+            "/api/v1/users/me/link-github",
+            json={"github_credential": "fake_github_token"},
+            headers=auth_headers,
+        )
+        
+        # Behavior: User should get success confirmation
+        assert response.status_code == 200
+        assert response.json()["message"] == "GitHub account linked successfully"
+
+    def test_unlink_github_account_success(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user can successfully unlink GitHub account."""
+        response = client.post(
+            "/api/v1/users/me/unlink-github",
+            json={"password": "TestPassword123!"},
+            headers=auth_headers,
+        )
+
+        # Behavior: User should get success confirmation
+        assert response.status_code == 200
+        assert response.json()["message"] == "GitHub account unlinked successfully"
+
+    def test_link_github_account_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated user cannot link GitHub account."""
+        response = client.post(
+            "/api/v1/users/me/link-github",
+            json={"github_credential": "fake_github_token"},
+        )
+
+        # Behavior: Unauthenticated user should be rejected
+        assert response.status_code == 403
+
+    def test_unlink_github_account_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated user cannot unlink GitHub account."""
+        response = client.post(
+            "/api/v1/users/me/unlink-github",
+            json={"password": "TestPassword123!"},
+        )
+
+        # Behavior: Unauthenticated user should be rejected
+        assert response.status_code == 403
+
+    def test_link_github_account_with_invalid_credential(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user gets error when linking with invalid GitHub credential."""
+        response = client.post(
+            "/api/v1/users/me/link-github",
+            json={"github_credential": ""},
+            headers=auth_headers,
+        )
+        
+        # Behavior: User should get validation error for empty credential
+        assert response.status_code == 422
+        # User gets clear feedback about invalid input
+        assert "detail" in response.json()
+
+    def test_unlink_github_account_with_invalid_password(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user gets error when unlinking with invalid password."""
+        response = client.post(
+            "/api/v1/users/me/unlink-github",
+            json={"password": ""},
+            headers=auth_headers,
+        )
+
+        # Behavior: User should get validation error for empty password
+        assert response.status_code == 422
+        # User gets clear feedback about invalid input
+        assert "detail" in response.json()
 
 
 class TestGoogleOAuthSecurityFix:

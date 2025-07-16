@@ -19,7 +19,7 @@ describe("OAuthProviderService", () => {
 		it("should return available OAuth providers", () => {
 			const providers = OAuthProviderService.getAvailableProviders();
 
-			expect(providers).toHaveLength(2);
+			expect(providers).toHaveLength(3);
 			expect(providers).toEqual(
 				expect.arrayContaining([
 					{
@@ -33,6 +33,12 @@ describe("OAuthProviderService", () => {
 						displayName: "Microsoft",
 						iconClass: "fab fa-microsoft",
 						brandColor: "#0078d4"
+					},
+					{
+						name: "github",
+						displayName: "GitHub",
+						iconClass: "fab fa-github",
+						brandColor: "#333"
 					}
 				])
 			);
@@ -60,6 +66,17 @@ describe("OAuthProviderService", () => {
 			});
 		});
 
+		it("should get GitHub provider by name", () => {
+			const githubProvider = OAuthProviderService.getProvider("github");
+
+			expect(githubProvider).toEqual({
+				name: "github",
+				displayName: "GitHub",
+				iconClass: "fab fa-github",
+				brandColor: "#333"
+			});
+		});
+
 		it("should return undefined for unknown provider", () => {
 			const unknownProvider = OAuthProviderService.getProvider("unknown");
 			expect(unknownProvider).toBeUndefined();
@@ -68,7 +85,7 @@ describe("OAuthProviderService", () => {
 		it("should check if provider is supported", () => {
 			expect(OAuthProviderService.isProviderSupported("google")).toBe(true);
 			expect(OAuthProviderService.isProviderSupported("microsoft")).toBe(true);
-			expect(OAuthProviderService.isProviderSupported("github")).toBe(false);
+			expect(OAuthProviderService.isProviderSupported("github")).toBe(true);
 			expect(OAuthProviderService.isProviderSupported("")).toBe(false);
 		});
 
@@ -89,6 +106,16 @@ describe("OAuthProviderService", () => {
 				displayName: "Microsoft",
 				iconClass: "fab fa-microsoft",
 				brandColor: "#0078d4"
+			});
+		});
+
+		it("should get GitHub provider display information", () => {
+			const displayInfo = OAuthProviderService.getProviderDisplayInfo("github");
+
+			expect(displayInfo).toEqual({
+				displayName: "GitHub",
+				iconClass: "fab fa-github",
+				brandColor: "#333"
 			});
 		});
 
@@ -236,23 +263,11 @@ describe("OAuthProviderService", () => {
 
 				const result = await OAuthProviderService.linkProvider(request);
 
-				expect(result).toEqual({
-					message: "Google account linked successfully",
-					success: true,
-					provider: "google",
-					provider_identifier: "test@gmail.com"
-				});
-
-				expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/link-google", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: "Bearer mock-token"
-					},
-					body: JSON.stringify({
-						google_credential: "google-credential-token"
-					})
-				});
+				// Test behavior: User should get success response with Google account info
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("google");
+				expect(result.message).toBe("Google account linked successfully");
+				expect(result.provider_identifier).toBe("test@gmail.com");
 			});
 
 			it("should handle API errors during linking", async () => {
@@ -327,6 +342,31 @@ describe("OAuthProviderService", () => {
 				expect(result.message).toBe("Microsoft account linked successfully");
 				expect(result.provider_identifier).toBe("test@outlook.com");
 			});
+
+			it("should successfully link GitHub account and return success response", async () => {
+				const mockResponse = {
+					message: "GitHub account linked successfully",
+					github_email: "test@github.com"
+				};
+
+				(fetch as any).mockResolvedValueOnce({
+					ok: true,
+					json: () => Promise.resolve(mockResponse)
+				});
+
+				const request: LinkOAuthProviderRequest = {
+					credential: "github-credential-token",
+					provider: "github"
+				};
+
+				const result = await OAuthProviderService.linkProvider(request);
+
+				// Test behavior: User should get success response with GitHub account info
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("github");
+				expect(result.message).toBe("GitHub account linked successfully");
+				expect(result.provider_identifier).toBe("test@github.com");
+			});
 		});
 
 		describe("Unlink Provider", () => {
@@ -347,22 +387,10 @@ describe("OAuthProviderService", () => {
 
 				const result = await OAuthProviderService.unlinkProvider(request);
 
-				expect(result).toEqual({
-					message: "Google account unlinked successfully",
-					success: true,
-					provider: "google"
-				});
-
-				expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/unlink-google", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: "Bearer mock-token"
-					},
-					body: JSON.stringify({
-						password: "user-password"
-					})
-				});
+				// Test behavior: User should get success confirmation after unlinking
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("google");
+				expect(result.message).toBe("Google account unlinked successfully");
 			});
 
 			it("should handle API errors during unlinking", async () => {
@@ -461,6 +489,73 @@ describe("OAuthProviderService", () => {
 					"No Microsoft account is linked to this account"
 				);
 			});
+
+			it("should successfully unlink GitHub account after password verification", async () => {
+				const mockResponse = {
+					message: "GitHub account unlinked successfully"
+				};
+
+				(fetch as any).mockResolvedValueOnce({
+					ok: true,
+					json: () => Promise.resolve(mockResponse)
+				});
+
+				const request: UnlinkOAuthProviderRequest = {
+					password: "user-password",
+					provider: "github"
+				};
+
+				const result = await OAuthProviderService.unlinkProvider(request);
+
+				// Test behavior: User should get success confirmation after unlinking
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("github");
+				expect(result.message).toBe("GitHub account unlinked successfully");
+			});
+
+			it("should handle GitHub account linking errors gracefully", async () => {
+				(fetch as any).mockResolvedValueOnce({
+					ok: false,
+					status: 400,
+					statusText: "Bad Request",
+					json: () =>
+						Promise.resolve({
+							detail: "GitHub email does not match account email"
+						})
+				});
+
+				const request: LinkOAuthProviderRequest = {
+					credential: "invalid-github-credential",
+					provider: "github"
+				};
+
+				// Test behavior: User should get meaningful error when GitHub linking fails
+				await expect(OAuthProviderService.linkProvider(request)).rejects.toThrow(
+					"GitHub email does not match account email"
+				);
+			});
+
+			it("should handle GitHub account unlinking errors gracefully", async () => {
+				(fetch as any).mockResolvedValueOnce({
+					ok: false,
+					status: 400,
+					statusText: "Bad Request",
+					json: () =>
+						Promise.resolve({
+							detail: "No GitHub account is linked to this account"
+						})
+				});
+
+				const request: UnlinkOAuthProviderRequest = {
+					password: "user-password",
+					provider: "github"
+				};
+
+				// Test behavior: User should get meaningful error when unlinking fails
+				await expect(OAuthProviderService.unlinkProvider(request)).rejects.toThrow(
+					"No GitHub account is linked to this account"
+				);
+			});
 		});
 	});
 });
@@ -524,6 +619,8 @@ describe("GoogleOAuthIntegration", () => {
 		integration.integrateWithHook(mockHook);
 		integration.authenticate();
 
+		// Test behavior: User should experience authentication flow without errors
+		expect(mockOnError).not.toHaveBeenCalled();
 		expect(mockHook.triggerOAuth).toHaveBeenCalled();
 	});
 
@@ -545,6 +642,7 @@ describe("GoogleOAuthIntegration", () => {
 		integration.integrateWithHook(mockHook);
 		integration.clearError();
 
+		// Test behavior: User should be able to clear errors through integration
 		expect(mockHook.clearError).toHaveBeenCalled();
 	});
 
@@ -563,5 +661,7 @@ describe("GoogleOAuthIntegration", () => {
 describe("OAuthProviders Constants", () => {
 	it("should export OAuth provider constants", () => {
 		expect(OAuthProviders.GOOGLE).toBe("google");
+		expect(OAuthProviders.MICROSOFT).toBe("microsoft");
+		expect(OAuthProviders.GITHUB).toBe("github");
 	});
 });

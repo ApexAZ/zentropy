@@ -272,6 +272,18 @@ class UnlinkMicrosoftAccountRequest(BaseModel):
     )
 
 
+class LinkGitHubAccountRequest(BaseModel):
+    github_credential: str = Field(
+        ..., min_length=1, description="GitHub OAuth credential token"
+    )
+
+
+class UnlinkGitHubAccountRequest(BaseModel):
+    password: str = Field(
+        ..., min_length=1, description="User password for security verification"
+    )
+
+
 class AccountSecurityResponse(BaseModel):
     email_auth_linked: bool
     google_auth_linked: bool
