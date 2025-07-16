@@ -440,7 +440,7 @@ class TestCalendarEntryRetrieval:
 class TestCalendarEntryUpdate:
     """Test PUT /api/v1/calendar_entries/{entry_id} - Updating calendar entries"""
     
-    def test_update_calendar_entry_success(self, client, db, auth_headers, current_user):
+    def test_update_calendar_entry_success(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test updating own calendar entry"""
         # Arrange: Create a calendar entry
         entry = CalendarEntry(
@@ -482,7 +482,7 @@ class TestCalendarEntryUpdate:
         assert entry.description == "Updated description"
         assert entry.all_day is True
     
-    def test_update_calendar_entry_dates_success(self, client, db, auth_headers, current_user):
+    def test_update_calendar_entry_dates_success(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test updating calendar entry dates"""
         # Arrange: Create a calendar entry
         entry = CalendarEntry(
@@ -516,7 +516,7 @@ class TestCalendarEntryUpdate:
         assert "2024-01-16T14:00:00" in data["start_date"]
         assert "2024-01-16T15:30:00" in data["end_date"]
     
-    def test_update_calendar_entry_invalid_dates(self, client, db, auth_headers, current_user):
+    def test_update_calendar_entry_invalid_dates(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test updating calendar entry with invalid dates fails"""
         # Arrange: Create a calendar entry
         entry = CalendarEntry(
@@ -565,7 +565,7 @@ class TestCalendarEntryUpdate:
         assert response.status_code == 404
         assert "Calendar entry not found" in response.json()["detail"]
     
-    def test_update_calendar_entry_unauthorized(self, client, db, auth_headers, current_user):
+    def test_update_calendar_entry_unauthorized(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test updating another user's calendar entry fails"""
         # Arrange: Create another user and their calendar entry
         other_user = create_test_user(db, email="other@example.com")
@@ -723,7 +723,7 @@ class TestCalendarEntryEdgeCases:
         assert response.status_code == 400
         assert "End date must be after start date" in response.json()["detail"]
     
-    def test_calendar_entry_partial_update(self, client, db, auth_headers, current_user):
+    def test_calendar_entry_partial_update(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test partial update of calendar entry fields"""
         # Arrange: Create a calendar entry
         entry = CalendarEntry(

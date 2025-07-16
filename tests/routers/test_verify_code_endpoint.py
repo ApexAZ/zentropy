@@ -19,7 +19,7 @@ from api.verification_service import VerificationCode, VerificationType, Verific
 class TestVerifyCodeEndpoint:
     """Test the /api/v1/auth/verify-code endpoint."""
 
-    def test_verify_code_success(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_success(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test successful email verification with valid code."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -78,7 +78,7 @@ class TestVerifyCodeEndpoint:
         data = verify_response.json()
         assert "Invalid email address" in data["detail"]
 
-    def test_verify_code_invalid_code(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_invalid_code(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test verification with invalid code."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -108,7 +108,7 @@ class TestVerifyCodeEndpoint:
         data = verify_response.json()
         assert "Invalid verification code" in data["detail"]
 
-    def test_verify_code_expired(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_expired(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test verification with expired code."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -150,7 +150,7 @@ class TestVerifyCodeEndpoint:
         data = verify_response.json()
         assert "expired" in data["detail"].lower()
 
-    def test_verify_code_already_used(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_already_used(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test verification with already used code."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -195,7 +195,7 @@ class TestVerifyCodeEndpoint:
         data = verify_response2.json()
         assert "already been used" in data["detail"]
 
-    def test_verify_code_max_attempts(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_max_attempts(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test verification with too many failed attempts."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -241,7 +241,7 @@ class TestVerifyCodeEndpoint:
         data = verify_response.json()
         assert "maximum" in data["detail"].lower() and "attempts" in data["detail"].lower()
 
-    def test_verify_code_wrong_verification_type(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_wrong_verification_type(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test verification with wrong verification type."""
         # Create a test user
         random_id = random.randint(1000, 9999)
@@ -310,7 +310,7 @@ class TestVerifyCodeEndpoint:
         })
         assert response.status_code == 422
 
-    def test_verify_code_integrates_with_login(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_integrates_with_login(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test that verified users can successfully log in."""
         # Create and verify a user
         random_id = random.randint(1000, 9999)
@@ -355,7 +355,7 @@ class TestVerifyCodeEndpoint:
         assert "access_token" in login_data
         assert login_data["user"]["email_verified"] is True
 
-    def test_verify_code_case_insensitive_email(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_case_insensitive_email(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test that email verification is case insensitive."""
         # Create a test user with lowercase email
         random_id = random.randint(1000, 9999)
@@ -411,7 +411,7 @@ class TestVerifyCodeEndpointSecurity:
         data = verify_response.json()
         assert "detail" in data  # Pydantic validation error structure
 
-    def test_verify_code_different_users_isolated(self, client: TestClient, db: Session, test_rate_limits):
+    def test_verify_code_different_users_isolated(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test that verification codes are isolated between users."""
         # Create two users
         random_id1 = random.randint(1000, 9999)

@@ -457,7 +457,7 @@ class TestTeamMemberManagement:
         assert response.status_code == 404
         assert "User not found" in response.json()["detail"]
     
-    def test_add_team_member_already_member(self, client, db, auth_headers, current_user):
+    def test_add_team_member_already_member(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test adding user who is already a team member"""
         # Arrange: Create team and user, then add user as member
         team = create_test_team(db, name="Duplicate Team")
@@ -529,7 +529,7 @@ class TestTeamMemberManagement:
         assert response.status_code == 404
         assert "User is not a team member" in response.json()["detail"]
     
-    def test_member_operations_no_projects_access(self, client, db):
+    def test_member_operations_no_projects_access(self, client, db, test_rate_limits):
         """Test member operations fail without projects access"""
         # Arrange: User without projects access and test data
         user_no_access = create_test_user(
@@ -632,7 +632,7 @@ class TestTeamWorkflows:
         assert len(final_team_data["members"]) == 1  # Only creator remains
         assert final_team_data["members"][0]["email"] == current_user.email
     
-    def test_permission_escalation_workflow(self, client, db, current_user):
+    def test_permission_escalation_workflow(self, client, db, current_user, test_rate_limits):
         """Test workflow: basic user → team admin → system admin permissions"""
         # Arrange: Create team and multiple users with different roles
         team = create_test_team(db, name="Permission Team")

@@ -340,7 +340,8 @@ def db(test_db_engine):
 # ✅ Opt-in fixtures for expensive operations
 @pytest.fixture(scope="function")  # Not autouse=True
 def test_rate_limits():
-    # Only use for tests that need rate limiting protection
+    # For tests making multiple API calls (register, login, etc.)
+    # Prevents 429 errors during parallel execution
     
 @pytest.fixture(scope="function")  # Not autouse=True  
 def auto_clean_mailpit():
@@ -348,6 +349,17 @@ def auto_clean_mailpit():
     
 # ✅ Parallel execution by default
 "test:backend": "python3 -m pytest -n auto"
+```
+
+### **Rate Limiting in Parallel Tests**
+```python
+# ✅ Add test_rate_limits for API-intensive tests
+def test_user_registration_flow(client, test_rate_limits):
+    # Multiple API calls: register + login + create_project
+    
+# ❌ Missing fixture causes 429 errors in parallel execution
+def test_user_registration_flow(client):
+    # Will fail with "Rate limit exceeded" when run with -n auto
 ```
 
 ### **Robust Mocking**

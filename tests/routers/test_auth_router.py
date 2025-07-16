@@ -27,7 +27,7 @@ class TestGoogleOAuthEndpoint:
     """Critical tests for Google OAuth login endpoint."""
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_endpoint_exists(self, mock_verify_google_token, client):
+    def test_google_login_endpoint_exists(self, mock_verify_google_token, client, test_rate_limits):
         """Test that /auth/google-login endpoint exists and works properly."""
         # Mock invalid token verification (raises exception)
         from api.google_oauth import GoogleTokenInvalidError
@@ -40,7 +40,7 @@ class TestGoogleOAuthEndpoint:
         assert "Google token verification failed" in response.json()["detail"]
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_new_user_creation(self, mock_verify_google_token, client, db):
+    def test_google_login_new_user_creation(self, mock_verify_google_token, client, db, test_rate_limits):
         """Test Google login creates new user when user doesn't exist."""
         # Mock Google token verification response
         mock_google_user_info = {
@@ -74,7 +74,7 @@ class TestGoogleOAuthEndpoint:
         assert response_data["user"]["has_projects_access"] is True
     
     @patch('api.routers.auth.verify_google_token')  
-    def test_google_login_existing_user_authentication(self, mock_verify_google_token, client, db):
+    def test_google_login_existing_user_authentication(self, mock_verify_google_token, client, db, test_rate_limits):
         """Test Google login authenticates existing Google user."""
         # Create existing Google user in the test database
         existing_user = User(
@@ -113,7 +113,7 @@ class TestGoogleOAuthEndpoint:
         assert data["user"]["email"] == "existing@gmail.com"
     
     @patch('api.routers.auth.verify_google_token')
-    def test_google_login_invalid_token(self, mock_verify_google_token, client):
+    def test_google_login_invalid_token(self, mock_verify_google_token, client, test_rate_limits):
         """Test Google login with invalid Google token."""
         # Mock invalid token verification
         from api.google_oauth import GoogleTokenInvalidError

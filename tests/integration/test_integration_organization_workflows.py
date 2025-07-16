@@ -142,7 +142,7 @@ class TestRegistrationWithOrganizationDiscovery:
 class TestProjectCreationWithOrganizationWorkflow:
     """Test project creation with just-in-time organization assignment."""
 
-    def test_project_creation_with_organization_assignment(self, client: TestClient, db: Session):
+    def test_project_creation_with_organization_assignment(self, client: TestClient, db: Session, test_rate_limits):
         """Test project creation that assigns user to organization."""
         # Create organization
         org = Organization(
@@ -208,7 +208,7 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project is not None
         assert project.organization_id == org.id
 
-    def test_project_creation_personal_without_organization(self, client: TestClient, db: Session):
+    def test_project_creation_personal_without_organization(self, client: TestClient, db: Session, test_rate_limits):
         """Test creating personal project without organization assignment."""
         # Create user without organization
         user_data = {
@@ -255,7 +255,7 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project.organization_id is None
         assert project.visibility.value == "personal"
 
-    def test_project_creation_with_organization_discovery_and_joining(self, client: TestClient, db: Session):
+    def test_project_creation_with_organization_discovery_and_joining(self, client: TestClient, db: Session, test_rate_limits):
         """Test complete workflow: registration -> organization discovery -> project creation -> organization joining."""
         # Create organization
         org = Organization(

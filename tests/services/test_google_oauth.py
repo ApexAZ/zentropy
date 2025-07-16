@@ -51,7 +51,7 @@ class TestGoogleOAuthEndpoint:
         assert "credential" in str(error_data)
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_successful_registration(self, mock_verify, mock_google_token, client):
+    def test_google_oauth_successful_registration(self, mock_verify, mock_google_token, client, test_rate_limits):
         """Test successful Google OAuth registration flow"""
         # This test will FAIL initially - Google OAuth flow not implemented
         mock_verify.return_value = mock_google_token
@@ -88,7 +88,7 @@ class TestGoogleOAuthEndpoint:
         assert "Invalid token" in error_data["detail"]
 
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_existing_user_login(self, mock_verify, mock_google_token, client):
+    def test_google_oauth_existing_user_login(self, mock_verify, mock_google_token, client, test_rate_limits):
         """Test Google OAuth with existing user (login instead of registration)"""
         # This test will FAIL initially - existing user handling not implemented
         mock_verify.return_value = mock_google_token
@@ -168,7 +168,7 @@ class TestGoogleOAuthEndpoint:
 
     @patch('api.google_oauth.verify_google_token')
     @patch('api.google_oauth.check_rate_limit')
-    def test_google_oauth_rate_limiting(self, mock_rate_limit, mock_verify, mock_google_token, client):
+    def test_google_oauth_rate_limiting(self, mock_rate_limit, mock_verify, mock_google_token, client, test_rate_limits):
         """Test that Google OAuth respects rate limiting"""
         # This test will FAIL initially - rate limiting not implemented
         mock_verify.return_value = mock_google_token

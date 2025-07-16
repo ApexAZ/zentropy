@@ -136,7 +136,7 @@ class TestEmailVerificationEndpoints:
 class TestEmailVerificationFlow:
     """Test complete email verification flow."""
     
-    def test_complete_verification_flow(self, client: TestClient, test_rate_limits):
+    def test_complete_verification_flow(self, client: TestClient, test_rate_limits, auto_clean_mailpit):
         """Test complete flow: register -> verify with code."""
         # 1. Register user
         random_id = random.randint(1000, 9999)
@@ -167,7 +167,7 @@ class TestEmailVerificationFlow:
         # so this test validates the verification endpoint works
         # Real verification would use the 6-digit code from email
         
-    def test_login_requires_verified_email(self, client: TestClient):
+    def test_login_requires_verified_email(self, client: TestClient, auto_clean_mailpit):
         """Test that login is rejected for unverified users."""
         # Register user (unverified)
         random_id = random.randint(1000, 9999)
@@ -197,7 +197,7 @@ class TestEmailVerificationFlow:
         assert "detail" in data
         assert "verify your email" in data["detail"].lower()
         
-    def test_login_succeeds_after_email_verification(self, client: TestClient, db: Session, test_rate_limits):
+    def test_login_succeeds_after_email_verification(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test that login succeeds after email verification."""
         # Register user
         random_id = random.randint(1000, 9999)
@@ -250,7 +250,7 @@ class TestEmailVerificationFlow:
         assert "user" in data
         assert data["user"]["email_verified"] is True
         
-    def test_oauth_login_endpoint_requires_verified_email(self, client: TestClient, test_rate_limits):
+    def test_oauth_login_endpoint_requires_verified_email(self, client: TestClient, test_rate_limits, auto_clean_mailpit):
         """Test that OAuth login endpoint also requires verified email."""
         # Register user (unverified)
         random_id = random.randint(1000, 9999)
@@ -284,23 +284,23 @@ class TestEmailVerificationFlow:
 class TestEmailVerificationSecurity:
     """Test security aspects of email verification."""
     
-    def test_verification_token_is_secure(self, db: Session, client):
+    def test_verification_token_is_secure(self, db: Session, client, mailpit_disabled):
         """Test that verification tokens are cryptographically secure."""
         # Should generate unique, unpredictable tokens
         # This will be implemented in the email verification service
         pass
         
-    def test_verification_token_expires(self, db: Session, client):
+    def test_verification_token_expires(self, db: Session, client, mailpit_disabled):
         """Test that verification tokens have expiration."""
         # Tokens should expire after 24 hours by default
         pass
         
-    def test_verification_token_single_use(self, db: Session, client):
+    def test_verification_token_single_use(self, db: Session, client, mailpit_disabled):
         """Test that verification tokens can only be used once."""
         # Once verified, token should be invalidated
         pass
         
-    def test_rate_limiting_still_works(self, client: TestClient):
+    def test_rate_limiting_still_works(self, client: TestClient, mailpit_disabled):
         """Test that rate limiting logic still functions when limits are exceeded."""
         # Use production rate limits for this specific test
         import os
@@ -346,12 +346,12 @@ class TestEmailVerificationSecurity:
 class TestEmailVerificationNotifications:
     """Test email sending functionality."""
     
-    def test_verification_email_contains_token(self, client):
+    def test_verification_email_contains_token(self, client, auto_clean_mailpit):
         """Test that verification email contains the correct token."""
         # This will test the email template and sending service
         pass
         
-    def test_verification_email_format(self, client):
+    def test_verification_email_format(self, client, auto_clean_mailpit):
         """Test that verification email has proper format."""
         # Should have proper HTML/text format, links, etc.
         pass

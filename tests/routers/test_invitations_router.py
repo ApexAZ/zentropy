@@ -441,7 +441,7 @@ class TestInvitationRetrieval:
 class TestInvitationAcceptance:
     """Test POST /api/v1/invitations/{invitation_id}/accept endpoint"""
     
-    def test_accept_invitation_success(self, client, db, auth_headers, current_user):
+    def test_accept_invitation_success(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test successful invitation acceptance with membership creation"""
         # Arrange: Create team and invitation for current user
         team = create_test_team(db, name="Test Team")
@@ -492,7 +492,7 @@ class TestInvitationAcceptance:
         assert response.status_code == 404
         assert "not found or expired" in response.json()["detail"]
     
-    def test_accept_invitation_wrong_user(self, client, db, auth_headers, current_user):
+    def test_accept_invitation_wrong_user(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test accepting invitation meant for different user"""
         # Arrange: Create invitation for different user
         team = create_test_team(db, name="Test Team")
@@ -544,7 +544,7 @@ class TestInvitationAcceptance:
         assert response.status_code == 404
         assert "not found or expired" in response.json()["detail"]
     
-    def test_accept_invitation_already_member(self, client, db, auth_headers, current_user):
+    def test_accept_invitation_already_member(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test accepting invitation when already a team member"""
         # Arrange: Create team, invitation, and existing membership
         team = create_test_team(db, name="Test Team")
@@ -709,7 +709,7 @@ class TestInvitationDecline:
 class TestInvitationWorkflows:
     """Test complete invitation workflows end-to-end"""
     
-    def test_complete_invitation_workflow_accept(self, client, db, auth_headers, current_user):
+    def test_complete_invitation_workflow_accept(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test complete workflow: create → retrieve → accept"""
         # Arrange: Create team and make current_user admin
         team = create_test_team(db, name="Workflow Team")
@@ -787,7 +787,7 @@ class TestInvitationWorkflows:
         assert final_get_response.status_code == 200
         assert len(final_get_response.json()) == 0
     
-    def test_complete_invitation_workflow_decline(self, client, db, auth_headers, current_user):
+    def test_complete_invitation_workflow_decline(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test complete workflow: create → retrieve → decline"""
         # Arrange: Create team and make current_user admin
         team = create_test_team(db, name="Workflow Team")

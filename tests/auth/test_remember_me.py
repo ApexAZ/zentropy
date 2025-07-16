@@ -48,7 +48,7 @@ class TestRememberMeBackend:
         user_login = UserLogin(**login_data)
         assert user_login.remember_me is False
 
-    def test_login_with_remember_me_true_creates_extended_token(self, client):
+    def test_login_with_remember_me_true_creates_extended_token(self, client, test_rate_limits):
         """Test that remember_me=True creates token with extended expiration."""
         # Create test user first
         with patch('api.routers.auth.authenticate_user') as mock_auth:
@@ -87,7 +87,7 @@ class TestRememberMeBackend:
             # Token should expire much later than normal token
             assert payload["exp"] > (datetime.utcnow() + timedelta(minutes=normal_minutes * 2)).timestamp()
 
-    def test_login_with_remember_me_false_creates_normal_token(self, client):
+    def test_login_with_remember_me_false_creates_normal_token(self, client, test_rate_limits):
         """Test that remember_me=False creates token with normal expiration."""
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user
@@ -125,7 +125,7 @@ class TestRememberMeBackend:
             token_exp = datetime.utcfromtimestamp(payload["exp"])  # Use UTC for consistency
             assert abs(token_exp - expected_exp) < margin
 
-    def test_login_without_remember_me_defaults_to_normal_token(self, client):
+    def test_login_without_remember_me_defaults_to_normal_token(self, client, test_rate_limits):
         """Test that login without remember_me field defaults to normal token expiration."""
         with patch('api.routers.auth.authenticate_user') as mock_auth:
             # Mock authenticated user

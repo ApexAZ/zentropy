@@ -64,7 +64,7 @@ class TestUserRegistrationWithoutOrganization:
         assert user is not None
         assert user.organization_id is None
     
-    def test_multiple_users_registration_without_organization(self, client, db):
+    def test_multiple_users_registration_without_organization(self, client, db, test_rate_limits):
         """Test that multiple users can register without organizations."""
         users_data = [
             {

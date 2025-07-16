@@ -49,7 +49,7 @@ class TestVerificationCodeGeneration:
 class TestVerificationCodeCreation:
     """Test verification code creation and database operations."""
 
-    def test_create_verification_code_email_type(self, db: Session):
+    def test_create_verification_code_email_type(self, db: Session, mailpit_disabled):
         """Test creating an email verification code."""
         user_id = uuid.uuid4()
         
@@ -81,7 +81,7 @@ class TestVerificationCodeCreation:
         assert db_code.is_used is False
         assert db_code.used_at is None
 
-    def test_create_verification_code_different_types(self, db: Session):
+    def test_create_verification_code_different_types(self, db: Session, mailpit_disabled):
         """Test creating codes for different verification types."""
         user_id = uuid.uuid4()
         
@@ -114,7 +114,7 @@ class TestVerificationCodeCreation:
             time_diff = abs((db_code.expires_at - expected_expiration).total_seconds())
             assert time_diff < 60  # Within 1 minute
 
-    def test_rate_limiting_prevents_frequent_requests(self, db: Session):
+    def test_rate_limiting_prevents_frequent_requests(self, db: Session, mailpit_disabled):
         """Test that rate limiting prevents too frequent code generation."""
         user_id = uuid.uuid4()
         
@@ -130,7 +130,7 @@ class TestVerificationCodeCreation:
                 db=db, user_id=user_id, verification_type=VerificationType.EMAIL_VERIFICATION
             )
 
-    def test_hourly_rate_limiting_prevents_abuse(self, db: Session):
+    def test_hourly_rate_limiting_prevents_abuse(self, db: Session, mailpit_disabled):
         """Test that hourly rate limiting prevents too many verification requests."""
         user_id = uuid.uuid4()
         now = datetime.now(timezone.utc)
@@ -164,7 +164,7 @@ class TestVerificationCodeCreation:
                 db=db, user_id=user_id, verification_type=VerificationType.EMAIL_VERIFICATION
             )
 
-    def test_invalidates_existing_codes_on_new_creation(self, db: Session):
+    def test_invalidates_existing_codes_on_new_creation(self, db: Session, mailpit_disabled):
         """Test that creating a new code invalidates existing unused codes."""
         user_id = uuid.uuid4()
         
@@ -198,7 +198,7 @@ class TestVerificationCodeCreation:
         ).first()
         assert second_code_record.is_used is False
 
-    def test_code_uniqueness_within_active_codes(self, db: Session):
+    def test_code_uniqueness_within_active_codes(self, db: Session, mailpit_disabled):
         """Test that codes are unique among active codes of the same type."""
         # This test verifies the uniqueness check in the creation process
         # It's hard to test directly, but we can test that different users
@@ -222,7 +222,7 @@ class TestVerificationCodeCreation:
 class TestVerificationCodeValidation:
     """Test verification code validation."""
 
-    def test_verify_valid_code(self, db: Session):
+    def test_verify_valid_code(self, db: Session, mailpit_disabled):
         """Test successful code verification."""
         user_id = uuid.uuid4()
         
@@ -248,7 +248,7 @@ class TestVerificationCodeValidation:
         assert db_code.is_used is True
         assert db_code.used_at is not None
 
-    def test_verify_invalid_code(self, db: Session):
+    def test_verify_invalid_code(self, db: Session, mailpit_disabled):
         """Test verification with invalid code."""
         user_id = uuid.uuid4()
         
@@ -261,7 +261,7 @@ class TestVerificationCodeValidation:
         assert result["verification_id"] is None
         assert result["attempts_remaining"] is None
 
-    def test_verify_expired_code(self, db: Session):
+    def test_verify_expired_code(self, db: Session, mailpit_disabled):
         """Test verification with expired code."""
         user_id = uuid.uuid4()
         
@@ -292,7 +292,7 @@ class TestVerificationCodeValidation:
         assert result["valid"] is False
         assert result["message"] == "Verification code has expired"
 
-    def test_verify_already_used_code(self, db: Session):
+    def test_verify_already_used_code(self, db: Session, mailpit_disabled):
         """Test verification with already used code."""
         user_id = uuid.uuid4()
         
@@ -315,7 +315,7 @@ class TestVerificationCodeValidation:
         assert result2["valid"] is False
         assert result2["message"] == "Verification code has already been used"
 
-    def test_verify_max_attempts_exceeded(self, db: Session):
+    def test_verify_max_attempts_exceeded(self, db: Session, mailpit_disabled):
         """Test verification with too many failed attempts."""
         user_id = uuid.uuid4()
         
@@ -343,7 +343,7 @@ class TestVerificationCodeValidation:
 class TestVerificationCodeUtilities:
     """Test utility functions for verification codes."""
 
-    def test_cleanup_expired_codes(self, db: Session):
+    def test_cleanup_expired_codes(self, db: Session, mailpit_disabled):
         """Test cleanup of expired and used codes."""
         user_id = uuid.uuid4()
         
@@ -404,7 +404,7 @@ class TestVerificationCodeUtilities:
         assert len(active_codes) == 1
         assert active_codes[0].code == code1
 
-    def test_get_user_code_status_with_active_code(self, db: Session):
+    def test_get_user_code_status_with_active_code(self, db: Session, mailpit_disabled):
         """Test getting status for user with active code."""
         user_id = uuid.uuid4()
         
@@ -427,7 +427,7 @@ class TestVerificationCodeUtilities:
         assert status["attempts_used"] == 0
         assert status["attempts_remaining"] == 3
 
-    def test_get_user_code_status_no_active_code(self, db: Session):
+    def test_get_user_code_status_no_active_code(self, db: Session, mailpit_disabled):
         """Test getting status for user with no active code."""
         user_id = uuid.uuid4()
         
@@ -437,7 +437,7 @@ class TestVerificationCodeUtilities:
         
         assert status is None
 
-    def test_get_user_code_status_after_attempts(self, db: Session):
+    def test_get_user_code_status_after_attempts(self, db: Session, mailpit_disabled):
         """Test getting status after some verification attempts."""
         user_id = uuid.uuid4()
         
@@ -462,7 +462,7 @@ class TestVerificationCodeUtilities:
 class TestVerificationCodeSecurity:
     """Test security aspects of the verification code system."""
 
-    def test_different_users_different_codes(self, db: Session):
+    def test_different_users_different_codes(self, db: Session, mailpit_disabled):
         """Test that different users get different codes."""
         user1_id = uuid.uuid4()
         user2_id = uuid.uuid4()
@@ -477,7 +477,7 @@ class TestVerificationCodeSecurity:
         
         assert code1 != code2
 
-    def test_different_types_isolated(self, db: Session):
+    def test_different_types_isolated(self, db: Session, mailpit_disabled):
         """Test that different verification types are isolated."""
         user_id = uuid.uuid4()
         

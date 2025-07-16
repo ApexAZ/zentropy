@@ -266,7 +266,7 @@ class TestRegistrationTypeInResponses:
 class TestRegistrationTypeImmutable:
     """Test that registration_type cannot be changed after user creation."""
 
-    def test_registration_type_is_immutable_via_api(self, client):
+    def test_registration_type_is_immutable_via_api(self, client, test_rate_limits):
         """Test that registration_type cannot be updated via user update API."""
         # Create user with email registration
         user_data = {

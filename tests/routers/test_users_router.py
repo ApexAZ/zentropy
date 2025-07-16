@@ -164,7 +164,7 @@ class TestUserProfileUpdate:
         db.refresh(current_user)
         assert current_user.email == "new.email@example.com"
     
-    def test_update_current_user_email_already_exists(self, client, db, auth_headers, current_user):
+    def test_update_current_user_email_already_exists(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test email update with duplicate email"""
         # Arrange: Create another user with target email
         existing_user = create_test_user(db, email="existing@example.com")
@@ -229,7 +229,7 @@ class TestUserProfileUpdate:
 class TestAdminUserOperations:
     """Test PUT /{id} and DELETE /{id} - admin operations"""
     
-    def test_update_user_as_admin_success(self, client, db, admin_user):
+    def test_update_user_as_admin_success(self, client, db, admin_user, test_rate_limits):
         """Test admin updating another user"""
         # Arrange: Create target user and admin auth headers
         target_user = create_test_user(db, email="target@example.com")
@@ -267,7 +267,7 @@ class TestAdminUserOperations:
         assert target_user.role == UserRole.BASIC_USER
         assert target_user.is_active is False
     
-    def test_update_user_as_team_lead_success(self, client, db):
+    def test_update_user_as_team_lead_success(self, client, db, test_rate_limits):
         """Test team lead updating another user"""
         # Arrange: Create team lead user and target user
         team_lead = create_test_user(
@@ -531,7 +531,7 @@ class TestPasswordManagement:
         assert response.status_code == 400
         assert "Password has been used recently" in response.json()["detail"]
     
-    def test_change_password_creates_history_and_prevents_reuse(self, client, user_with_known_password, db):
+    def test_change_password_creates_history_and_prevents_reuse(self, client, user_with_known_password, db, test_rate_limits):
         """Test that password changes create history entries and prevent immediate reuse"""
         # Arrange: Create auth headers for user with known password
         from api.auth import create_access_token
@@ -574,7 +574,7 @@ class TestPasswordManagement:
         # TODO: Add a test to verify that the password history cleanup logic
         # correctly removes old entries, keeping only the 5 most recent.
     
-    def test_password_history_cleanup(self, client, db, user_with_known_password):
+    def test_password_history_cleanup(self, client, db, user_with_known_password, test_rate_limits):
         """Test that password history is cleaned up, keeping only the 5 most recent."""
         # Arrange: Create auth headers for user with known password
         from api.auth import create_access_token
@@ -697,7 +697,7 @@ class TestUserWorkflows:
         deleted_user = db.query(User).filter(User.id == target_user.id).first()
         assert deleted_user is None
     
-    def test_complete_profile_management_workflow(self, client, db, auth_headers, current_user):
+    def test_complete_profile_management_workflow(self, client, db, auth_headers, current_user, test_rate_limits):
         """Test complete workflow: profile update → password change"""
         original_email = current_user.email
         

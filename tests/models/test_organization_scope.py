@@ -69,7 +69,7 @@ class TestOrganizationScope:
 class TestOrganizationModel:
     """Test cases for enhanced Organization model with just-in-time features."""
     
-    def test_organization_creation_with_scope(self, db):
+    def test_organization_creation_with_scope(self, db, mailpit_disabled):
         """Test creating an organization with scope field."""
         # Create a user to be the organization creator
         user = User(
@@ -99,7 +99,7 @@ class TestOrganizationModel:
         assert org.max_users == 50
         assert org.created_by == user.id
     
-    def test_organization_default_scope(self, db):
+    def test_organization_default_scope(self, db, mailpit_disabled):
         """Test that organization has default scope when not specified."""
         # Create a user to be the organization creator
         user = User(
@@ -125,7 +125,7 @@ class TestOrganizationModel:
         
         assert org.scope == OrganizationScope.SHARED  # Default value
     
-    def test_organization_max_users_validation(self, db):
+    def test_organization_max_users_validation(self, db, mailpit_disabled):
         """Test that max_users field behaves correctly and enforces constraints."""
         # Create a user to be the organization creator
         user = User(
@@ -199,7 +199,7 @@ class TestOrganizationModel:
             db.add(negative_max_users)
             db.commit()
     
-    def test_organization_created_by_relationship(self, db):
+    def test_organization_created_by_relationship(self, db, mailpit_disabled):
         """Test that organization creator relationship works correctly."""
         # Create a user to be the organization creator
         creator = User(
@@ -233,7 +233,7 @@ class TestOrganizationModel:
         assert org_with_creator.created_by == creator.id
         # The creator_rel relationship should be available if properly configured
     
-    def test_organization_domain_based_lookup(self, db):
+    def test_organization_domain_based_lookup(self, db, mailpit_disabled):
         """Test domain-based organization lookup functionality."""
         # Create a user to be the organization creator
         user = User(
@@ -268,7 +268,7 @@ class TestOrganizationModel:
         assert found_org.name == "Example Corp"
         assert found_org.domain == "example.com"
     
-    def test_organization_scope_personal_for_individual_users(self, db):
+    def test_organization_scope_personal_for_individual_users(self, db, mailpit_disabled):
         """Test that personal scope organizations work for individual users."""
         # Create a user to be the organization creator
         user = User(
@@ -298,7 +298,7 @@ class TestOrganizationModel:
         assert personal_org.max_users == 1
         assert personal_org.created_by == user.id
     
-    def test_organization_scope_enterprise_for_large_teams(self, db):
+    def test_organization_scope_enterprise_for_large_teams(self, db, mailpit_disabled):
         """Test that enterprise scope organizations work for large teams."""
         # Create a user to be the organization creator
         user = User(
@@ -333,7 +333,7 @@ class TestOrganizationModel:
 class TestOrganizationValidation:
     """Test cases for organization validation methods."""
     
-    def test_validate_scope_and_max_users_valid(self, db):
+    def test_validate_scope_and_max_users_valid(self, db, mailpit_disabled):
         """Test that valid scope and max_users combinations pass validation."""
         # Create a user to be the organization creator
         user = User(
@@ -373,7 +373,7 @@ class TestOrganizationValidation:
         )
         assert enterprise_org.validate_scope_and_max_users() == []
     
-    def test_validate_scope_and_max_users_invalid(self, db):
+    def test_validate_scope_and_max_users_invalid(self, db, mailpit_disabled):
         """Test that invalid scope and max_users combinations fail validation."""
         # Create a user to be the organization creator
         user = User(
@@ -413,7 +413,7 @@ class TestOrganizationValidation:
 class TestOrganizationFactoryMethods:
     """Test cases for organization factory methods."""
     
-    def test_create_personal_workspace(self, db):
+    def test_create_personal_workspace(self, db, mailpit_disabled):
         """Test creating a personal workspace."""
         # Create a user
         user = User(
@@ -437,7 +437,7 @@ class TestOrganizationFactoryMethods:
         assert personal_org.created_by == user.id
         assert personal_org.validate_scope_and_max_users() == []
     
-    def test_create_shared_workspace(self, db):
+    def test_create_shared_workspace(self, db, mailpit_disabled):
         """Test creating a shared workspace."""
         # Create a user
         user = User(
@@ -470,7 +470,7 @@ class TestOrganizationFactoryMethods:
         assert custom_shared_org.created_by == user.id
         assert custom_shared_org.validate_scope_and_max_users() == []
     
-    def test_create_enterprise_workspace(self, db):
+    def test_create_enterprise_workspace(self, db, mailpit_disabled):
         """Test creating an enterprise workspace."""
         # Create a user
         user = User(
@@ -499,7 +499,7 @@ class TestOrganizationFactoryMethods:
 class TestOrganizationUserCapacity:
     """Test cases for organization user capacity management."""
     
-    def test_can_add_user_unlimited(self, db):
+    def test_can_add_user_unlimited(self, db, mailpit_disabled):
         """Test that unlimited organizations can always add users."""
         # Create a user and organization
         user = User(
@@ -527,7 +527,7 @@ class TestOrganizationUserCapacity:
         # Should always be able to add users
         assert org.can_add_user(db) == True
     
-    def test_can_add_user_with_limit(self, db):
+    def test_can_add_user_with_limit(self, db, mailpit_disabled):
         """Test user capacity checking for limited organizations."""
         # Create users
         creator = User(

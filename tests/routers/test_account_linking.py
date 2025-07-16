@@ -260,7 +260,7 @@ class TestAccountLinking:
         assert "no password set" in response.json()["detail"]
 
     def test_unlink_google_account_wrong_password(
-        self, client: TestClient, db: Session, user_with_known_password: User
+        self, client: TestClient, db: Session, user_with_known_password: User, test_rate_limits
     ):
         """Test unlinking fails with wrong password."""
         # Set up user with Google account linked

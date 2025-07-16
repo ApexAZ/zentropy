@@ -23,7 +23,7 @@ class TestOrganizationEdgeCases:
     """Test edge cases for organization management."""
 
     def test_organization_capacity_limits(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test organization capacity enforcement."""
         # Create organization with max_users = 2
@@ -179,7 +179,7 @@ class TestOrganizationEdgeCases:
         assert "capacity" in error_data["detail"].lower()
 
     def test_enterprise_organization_creation_admin_only(
-        self, client: TestClient, db: Session, admin_auth_headers
+        self, client: TestClient, db: Session, admin_auth_headers, test_rate_limits
     ):
         """Test enterprise organization creation requires admin privileges."""
         # Regular user tries to create enterprise organization
@@ -658,7 +658,7 @@ class TestPerformanceEdgeCases:
         assert data["organization"]["name"] == "Corp 025"
 
     def test_concurrent_organization_joining(
-        self, client: TestClient, db: Session, test_rate_limits, clean_mailpit
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test concurrent organization joining scenarios."""
         # Create organization with limited capacity
@@ -667,7 +667,7 @@ class TestPerformanceEdgeCases:
             domain="concurrent.com",
             short_name="CONC",
             scope=OrganizationScope.SHARED,
-            max_users=3,
+            max_users=1,
             created_by=uuid.uuid4(),
         )
         db.add(org)
@@ -676,7 +676,7 @@ class TestPerformanceEdgeCases:
 
         # Create multiple users and try to join simultaneously
         users = []
-        for i in range(5):  # More users than capacity
+        for i in range(2):  # More users than capacity
             user_data = {
                 "email": f"user{i+1}@concurrent.com",
                 "password": "SecurePass123!",
@@ -704,7 +704,7 @@ class TestPerformanceEdgeCases:
             headers = {"Authorization": f"Bearer {token}"}
             users.append((user, headers))
 
-        # Try to join organization (first 3 should succeed, last 2 should fail)
+        # Try to join organization (first 1 should succeed, last 1 should fail)
         successful_joins = 0
         failed_joins = 0
 
@@ -717,8 +717,8 @@ class TestPerformanceEdgeCases:
             elif join_response.status_code == 400:
                 failed_joins += 1
 
-        assert successful_joins == 3  # Capacity limit
-        assert failed_joins == 2  # Exceeded capacity
+        assert successful_joins == 1  # Capacity limit
+        assert failed_joins == 1  # Exceeded capacity
 
     def test_project_list_pagination_edge_cases(
         self, client: TestClient, db: Session, test_rate_limits

@@ -157,7 +157,7 @@ class TestProjectCreationAPI:
 class TestProjectJustInTimeOrganizationWorkflow:
     """Test project creation workflows that trigger organization decisions."""
     
-    def test_personal_to_team_project_upgrade_workflow(self, client, auth_headers, db, current_user):
+    def test_personal_to_team_project_upgrade_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test upgrading personal project to team project with organization creation."""
         # Start with user without organization
         current_user.organization_id = None
@@ -212,7 +212,7 @@ class TestProjectJustInTimeOrganizationWorkflow:
         assert data["visibility"] == "team"
         assert data["organization_id"] == org_id
     
-    def test_project_creation_with_organization_suggestion(self, client, auth_headers, db):
+    def test_project_creation_with_organization_suggestion(self, client, auth_headers, db, test_rate_limits):
         """Test project creation with organization domain suggestion workflow."""
         # Step 1: Check if organization exists for user's email domain
         domain_response = client.get(
@@ -260,7 +260,7 @@ class TestProjectJustInTimeOrganizationWorkflow:
         assert data["organization_id"] == org_id
         assert data["visibility"] == "team"
     
-    def test_project_creation_triggers_user_organization_assignment(self, client, auth_headers, db, current_user):
+    def test_project_creation_triggers_user_organization_assignment(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test that project creation can trigger user organization assignment."""
         # Create organization
         org = Organization(
@@ -683,7 +683,7 @@ class TestProjectAPIErrorHandling:
 class TestProjectAPIIntegration:
     """Test project API integration scenarios."""
     
-    def test_complete_project_lifecycle_workflow(self, client, auth_headers, db, current_user):
+    def test_complete_project_lifecycle_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test complete project lifecycle from creation to completion."""
         # Step 1: Create personal project
         project_data = {
@@ -734,7 +734,7 @@ class TestProjectAPIIntegration:
         data = response.json()
         assert data["status"] == "archived"
     
-    def test_project_organization_migration_workflow(self, client, auth_headers, db, current_user):
+    def test_project_organization_migration_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test migrating project from personal to organization scope."""
         # Step 1: Create personal project
         project_data = {
@@ -873,7 +873,7 @@ class TestProjectValidationEdgeCases:
         assert response.status_code == 404
         assert "Organization not found" in response.json()["detail"]
     
-    def test_create_project_organization_at_capacity_fails(self, client, auth_headers, db, current_user):
+    def test_create_project_organization_at_capacity_fails(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test creating project when organization is at maximum capacity."""
         # Create organization with max_users=1
         org = Organization(
@@ -1509,7 +1509,7 @@ class TestJustInTimeOrganizationAssignment:
         db.refresh(current_user)
         assert current_user.organization_id == org.id
     
-    def test_just_in_time_assignment_blocked_by_capacity(self, client, auth_headers, db, current_user):
+    def test_just_in_time_assignment_blocked_by_capacity(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test JIT assignment blocked by organization capacity."""
         # Create organization at capacity
         org = Organization(
@@ -1560,7 +1560,7 @@ class TestJustInTimeOrganizationAssignment:
 class TestAdminProjectAccess:
     """Test admin access to all projects."""
     
-    def test_admin_can_modify_any_project(self, client, db, admin_auth_headers, admin_user):
+    def test_admin_can_modify_any_project(self, client, db, admin_auth_headers, admin_user, test_rate_limits):
         """Test that admin can modify any project."""
         # Create regular user
         regular_user = User(
@@ -1604,7 +1604,7 @@ class TestAdminProjectAccess:
         assert data["name"] == "Modified by Admin"
         assert data["description"] == "Updated by admin user"
     
-    def test_admin_can_delete_any_project(self, client, db, admin_auth_headers, admin_user):
+    def test_admin_can_delete_any_project(self, client, db, admin_auth_headers, admin_user, test_rate_limits):
         """Test that admin can delete any project."""
         # Create regular user
         regular_user = User(
@@ -1641,7 +1641,7 @@ class TestAdminProjectAccess:
         data = response.json()
         assert "deleted successfully" in data["message"]
     
-    def test_admin_can_archive_any_project(self, client, db, admin_auth_headers, admin_user):
+    def test_admin_can_archive_any_project(self, client, db, admin_auth_headers, admin_user, test_rate_limits):
         """Test that admin can archive any project."""
         # Create regular user
         regular_user = User(

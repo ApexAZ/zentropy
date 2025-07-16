@@ -388,7 +388,7 @@ class TestOrganizationJoinWorkflowAPI:
         assert response.status_code == 400
         assert "already a member" in response.json()["detail"].lower()
     
-    def test_join_organization_capacity_full(self, client, auth_headers, db):
+    def test_join_organization_capacity_full(self, client, auth_headers, db, test_rate_limits):
         """Test joining organization when at capacity."""
         # Create organization with max 1 user
         org = Organization(
@@ -587,7 +587,7 @@ class TestOrganizationErrorHandling:
 class TestOrganizationAPIIntegration:
     """Test organization API integration scenarios."""
     
-    def test_organization_creation_and_user_assignment_workflow(self, client, auth_headers, db, current_user):
+    def test_organization_creation_and_user_assignment_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test complete workflow of creating organization and verifying user assignment."""
         # Step 1: Create organization
         org_data = {
@@ -618,7 +618,7 @@ class TestOrganizationAPIIntegration:
         assert response.status_code == 400
         assert "already a member" in response.json()["detail"]
     
-    def test_organization_domain_checking_to_creation_workflow(self, client, auth_headers):
+    def test_organization_domain_checking_to_creation_workflow(self, client, auth_headers, test_rate_limits):
         """Test workflow from domain checking to organization creation."""
         # Step 1: Check domain that doesn't exist
         response = client.get("/api/v1/organizations/check-domain?email=user@neworg.com")
