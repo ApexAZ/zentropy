@@ -75,26 +75,28 @@ describe("ProfilePage", () => {
 	});
 
 	it("displays loading state initially", async () => {
-		// Add a delay to the mock to see loading state
-		mockFetch.mockImplementationOnce(
-			() =>
-				new Promise(resolve =>
-					setTimeout(
-						() =>
-							resolve({
-								ok: true,
-								json: async () => mockUser
-							}),
-						100
-					)
-				)
-		);
+		// Setup controlled promise to capture loading state
+		let resolveProfile: (value: any) => void;
+		const profilePromise = new Promise(resolve => {
+			resolveProfile = resolve;
+		});
+
+		mockFetch.mockReturnValueOnce(profilePromise);
 
 		await act(async () => {
 			renderProfilePage();
 		});
 
+		// Loading state should be visible immediately
 		expect(screen.getByText("Loading profile...")).toBeInTheDocument();
+
+		// Resolve promise to complete loading (cleanup)
+		await act(async () => {
+			resolveProfile!({
+				ok: true,
+				json: async () => mockUser
+			});
+		});
 	});
 
 	it("loads and displays user profile", async () => {

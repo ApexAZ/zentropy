@@ -94,52 +94,45 @@ describe("TeamConfigurationPage", () => {
 
 	describe("loading state", () => {
 		it("should display loading spinner while fetching team configuration", async () => {
-			// Setup delayed responses to capture loading state
+			// Setup controlled promises to capture loading state
+			let resolveTeam: (value: any) => void;
+			let resolveMembers: (value: any) => void;
+			let resolveSprints: (value: any) => void;
+
+			const teamPromise = new Promise(resolve => {
+				resolveTeam = resolve;
+			});
+			const membersPromise = new Promise(resolve => {
+				resolveMembers = resolve;
+			});
+			const sprintsPromise = new Promise(resolve => {
+				resolveSprints = resolve;
+			});
+
 			mockFetch
-				.mockImplementationOnce(
-					() =>
-						new Promise(resolve =>
-							setTimeout(
-								() =>
-									resolve({
-										ok: true,
-										json: async () => mockTeam
-									}),
-								100
-							)
-						)
-				)
-				.mockImplementationOnce(
-					() =>
-						new Promise(resolve =>
-							setTimeout(
-								() =>
-									resolve({
-										ok: true,
-										json: async () => mockTeamMembers
-									}),
-								100
-							)
-						)
-				)
-				.mockImplementationOnce(
-					() =>
-						new Promise(resolve =>
-							setTimeout(
-								() =>
-									resolve({
-										ok: true,
-										json: async () => mockSprints
-									}),
-								100
-							)
-						)
-				);
+				.mockReturnValueOnce(teamPromise)
+				.mockReturnValueOnce(membersPromise)
+				.mockReturnValueOnce(sprintsPromise);
 
 			renderTeamConfigurationPage();
 
+			// Loading state should be visible immediately
 			expect(screen.getByText(/loading team configuration/i)).toBeInTheDocument();
 			expect(screen.getByRole("heading", { name: /team configuration/i })).toBeInTheDocument();
+
+			// Resolve promises to complete loading
+			resolveTeam!({
+				ok: true,
+				json: async () => mockTeam
+			});
+			resolveMembers!({
+				ok: true,
+				json: async () => mockTeamMembers
+			});
+			resolveSprints!({
+				ok: true,
+				json: async () => mockSprints
+			});
 
 			// Wait for loading to complete
 			await waitFor(() => {

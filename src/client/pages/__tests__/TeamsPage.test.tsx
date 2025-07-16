@@ -85,26 +85,28 @@ describe("TeamsPage", () => {
 	});
 
 	it("displays loading state initially", async () => {
-		// Add a delay to the mock to see loading state
-		mockFetch.mockImplementationOnce(
-			() =>
-				new Promise(resolve =>
-					setTimeout(
-						() =>
-							resolve({
-								ok: true,
-								json: async () => []
-							}),
-						100
-					)
-				)
-		);
+		// Setup controlled promise to capture loading state
+		let resolveTeams: (value: any) => void;
+		const teamsPromise = new Promise(resolve => {
+			resolveTeams = resolve;
+		});
+
+		mockFetch.mockReturnValueOnce(teamsPromise);
 
 		await act(async () => {
 			render(<TeamsPage />, { wrapper: TestWrapper });
 		});
 
+		// Loading state should be visible immediately
 		expect(screen.getByText("Loading teams...")).toBeInTheDocument();
+
+		// Resolve promise to complete loading (cleanup)
+		await act(async () => {
+			resolveTeams!({
+				ok: true,
+				json: async () => []
+			});
+		});
 	});
 
 	it("loads and displays teams", async () => {

@@ -310,7 +310,9 @@ describe("AccountSecurityErrorHandler", () => {
 			expect(mockOnError).not.toHaveBeenCalled();
 		});
 
-		it("should retry network errors", async () => {
+		it("should retry network errors with exponential backoff", async () => {
+			vi.useFakeTimers();
+
 			const mockOperation = vi
 				.fn()
 				.mockRejectedValueOnce(new Error("Network error"))
@@ -318,26 +320,19 @@ describe("AccountSecurityErrorHandler", () => {
 				.mockResolvedValueOnce("success");
 			const mockOnError = vi.fn();
 
-			// Mock setTimeout to execute immediately
-			const originalSetTimeout = global.setTimeout;
-			global.setTimeout = (fn: any) => {
-				fn();
-				return 1 as any;
-			};
+			const retryPromise = AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError);
 
-			try {
-				const result = await AccountSecurityErrorHandler.executeWithRetry(
-					mockOperation,
-					"loading",
-					mockOnError
-				);
+			// Advance time to trigger retries
+			await vi.advanceTimersByTimeAsync(1000); // First retry delay
+			await vi.advanceTimersByTimeAsync(2000); // Second retry delay
 
-				expect(result).toBe("success");
-				expect(mockOperation).toHaveBeenCalledTimes(3);
-				expect(mockOnError).toHaveBeenCalledTimes(2);
-			} finally {
-				global.setTimeout = originalSetTimeout;
-			}
+			const result = await retryPromise;
+
+			expect(result).toBe("success");
+			expect(mockOperation).toHaveBeenCalledTimes(3);
+			expect(mockOnError).toHaveBeenCalledTimes(2);
+
+			vi.useRealTimers();
 		});
 
 		it("should not retry validation errors", async () => {
@@ -356,23 +351,13 @@ describe("AccountSecurityErrorHandler", () => {
 			const mockOperation = vi.fn().mockRejectedValue(new Error("Network error"));
 			const mockOnError = vi.fn();
 
-			// Mock setTimeout to execute immediately
-			const originalSetTimeout = global.setTimeout;
-			global.setTimeout = (fn: any) => {
-				fn();
-				return 1 as any;
-			};
+			// Use real timers but with short delays to test retry behavior
+			await expect(
+				AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError)
+			).rejects.toThrow("Network error");
 
-			try {
-				await expect(
-					AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError)
-				).rejects.toThrow("Network error");
-
-				expect(mockOperation).toHaveBeenCalledTimes(3);
-				expect(mockOnError).toHaveBeenCalledTimes(3);
-			} finally {
-				global.setTimeout = originalSetTimeout;
-			}
+			expect(mockOperation).toHaveBeenCalledTimes(3);
+			expect(mockOnError).toHaveBeenCalledTimes(3);
 		});
 	});
 });
