@@ -12,6 +12,7 @@ import pytest
 from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 import httpx
 import os
@@ -20,9 +21,9 @@ from api.main import app
 from api.database import Base, get_db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def test_db_engine():
-    """Create isolated test database engine using temporary SQLite file."""
+    """Create shared test database engine for the entire test session."""
     import tempfile
     import os
     
@@ -35,10 +36,11 @@ def test_db_engine():
     engine = create_engine(
         test_database_url,
         connect_args={"check_same_thread": False},  # Required for SQLite
-        echo=False  # Set to True for SQL debugging
+        echo=False,  # Set to True for SQL debugging
+        poolclass=StaticPool  # Use static pool for better connection reuse
     )
     
-    # Create all tables in the test database
+    # Create all tables in the test database once
     Base.metadata.create_all(bind=engine)
     
     yield engine
@@ -55,28 +57,41 @@ def test_db_engine():
 @pytest.fixture(scope="function") 
 def db(test_db_engine) -> Generator[Session, None, None]:
     """
-    Provides a clean test database session for each test.
+    Provides a clean test database session for each test using transaction rollback.
+    
+    This fixture uses transaction rollback for fast test isolation:
+    - Creates a connection with a transaction
+    - Commits within the test work normally
+    - Transaction is rolled back at the end for cleanup
     
     Use this fixture when your test needs to interact with the database directly.
     Example:
         def test_user_creation(db):
             user = User(email="test@example.com")
             db.add(user)
-            db.commit()
+            db.commit()  # Works normally within the test
     """
-    SessionLocal = sessionmaker(bind=test_db_engine)
-    session = SessionLocal()
+    connection = test_db_engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
     
     try:
         yield session
     finally:
         session.close()
+        # Only rollback if transaction is still active
+        if transaction.is_active:
+            transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(scope="function")
 def client(test_db_engine) -> Generator[TestClient, None, None]:
     """
-    Provides a FastAPI test client with isolated database.
+    Provides a FastAPI test client with isolated database using transaction rollback.
+    
+    This fixture uses the same transaction rollback approach as the db fixture
+    for fast test isolation and consistency.
     
     Use this fixture when testing API endpoints.
     Example:
@@ -84,9 +99,11 @@ def client(test_db_engine) -> Generator[TestClient, None, None]:
             response = client.post("/api/v1/auth/register", json={...})
             assert response.status_code == 201
     """
+    connection = test_db_engine.connect()
+    transaction = connection.begin()
+    
     def override_get_db():
-        SessionLocal = sessionmaker(bind=test_db_engine)
-        session = SessionLocal()
+        session = Session(bind=connection)
         try:
             yield session
         finally:
@@ -100,6 +117,10 @@ def client(test_db_engine) -> Generator[TestClient, None, None]:
     finally:
         # Clear overrides after test
         app.dependency_overrides.clear()
+        # Only rollback if transaction is still active
+        if transaction.is_active:
+            transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(scope="function")
@@ -131,17 +152,21 @@ def clean_mailpit():
         pass  # Mailpit might not be running
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function")
 def auto_clean_mailpit():
     """
-    Automatically cleans Mailpit after each test.
+    Cleans Mailpit after each test that uses this fixture.
     
-    This fixture runs automatically for all tests to prevent email accumulation.
-    Individual tests can still use clean_mailpit for pre-test cleanup if needed.
+    Use this fixture for email-related tests to prevent email accumulation.
+    Most tests don't need this overhead.
+    
+    Example:
+        def test_email_sending(client, auto_clean_mailpit):
+            # Test email functionality
     """
     yield
     
-    # Clean after every test to prevent accumulation
+    # Clean after test to prevent accumulation
     try:
         httpx.delete("http://localhost:8025/api/v1/messages", timeout=5.0)
     except Exception:
@@ -170,7 +195,7 @@ def mailpit_disabled():
         os.environ.pop("EMAIL_ENABLED", None)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function")
 def test_rate_limits():
     """
     Configures realistic but generous rate limits for testing.
@@ -180,6 +205,9 @@ def test_rate_limits():
     actual rate limiting bugs if they occur.
     
     Use this for integration tests that make multiple API calls.
+    Example:
+        def test_multiple_api_calls(client, test_rate_limits):
+            # Test that makes many API calls
     """
     original_values = {}
     
@@ -204,8 +232,12 @@ def test_rate_limits():
         from api.rate_limiter import rate_limiter
         # Clear Redis and memory stores for clean test state
         if hasattr(rate_limiter, 'redis_client') and rate_limiter.redis_client:
-            # Clear any test-related rate limit keys
-            rate_limiter.redis_client.flushdb()
+            try:
+                # Clear any test-related rate limit keys
+                rate_limiter.redis_client.flushdb()
+            except Exception:
+                # If Redis is rate limited, force use of memory store
+                rate_limiter.redis_client = None
         if hasattr(rate_limiter, '_memory_store'):
             rate_limiter._memory_store.clear()
     except Exception:
@@ -219,6 +251,14 @@ def test_rate_limits():
             os.environ[key] = original_value
         else:
             os.environ.pop(key, None)
+    
+    # Clear rate limiter state on teardown
+    try:
+        from api.rate_limiter import rate_limiter
+        if hasattr(rate_limiter, '_memory_store'):
+            rate_limiter._memory_store.clear()
+    except Exception:
+        pass
 
 
 def create_test_user(db, **kwargs):

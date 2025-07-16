@@ -658,7 +658,7 @@ class TestPerformanceEdgeCases:
         assert data["organization"]["name"] == "Corp 025"
 
     def test_concurrent_organization_joining(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, clean_mailpit
     ):
         """Test concurrent organization joining scenarios."""
         # Create organization with limited capacity
@@ -857,7 +857,8 @@ class TestDataIntegrityEdgeCases:
             assert project is not None  # Project should exist
         except Exception:
             # If FK constraint prevents deletion, that's also valid behavior
-            db.rollback()
+            # Don't call db.rollback() - let the test framework handle transaction cleanup
+            pass
 
     def test_user_organization_consistency(
         self, client: TestClient, db: Session, test_rate_limits

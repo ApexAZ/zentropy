@@ -177,7 +177,7 @@ This project uses a modern, decoupled architecture with a Python backend and a R
 
 - **Backend**: Python, FastAPI, SQLAlchemy, PostgreSQL, Redis
 - **Frontend**: React, TypeScript, Vite, TailwindCSS
-- **Development & Testing**: Docker, Three-layer testing with `pytest`, `vitest`, and `Playwright`
+- **Development & Testing**: Docker, High-performance three-layer testing with `pytest`, `vitest`, and `Playwright`
 
 ### High-Level Architecture
 
@@ -194,7 +194,7 @@ The codebase is organized into distinct directories with clear responsibilities:
 ```
 /api/           # Python FastAPI backend
 /src/client/    # React TypeScript frontend
-/tests/         # Unit and integration tests
+/tests/         # Unit and integration tests (high-performance)
 /tests-e2e/     # End-to-end tests with Playwright
 /scripts/       # Development and utility scripts
 /docs/          # Project-wide documentation
@@ -212,9 +212,9 @@ This project includes extensive documentation to help you understand the archite
 - **[API Routers](./api/routers/README.md)**: RESTful endpoint documentation with authentication and validation patterns.
 
 ### Testing Documentation
-- **[Unit & Integration Testing](./tests/README.md)**: Comprehensive guide to backend (pytest) and frontend (vitest) testing strategies, quality pipeline, and TDD practices.
+- **[Unit & Integration Testing](./tests/README.md)**: Comprehensive guide to high-performance backend (pytest) and frontend (vitest) testing strategies, quality pipeline, and TDD practices.
 - **[End-to-End Testing](./tests-e2e/README.md)**: Playwright browser testing for complete user workflows and cross-system validation.
-- **[Test Coverage Matrix](./docs/testing/TestCoverage.md)**: Cross-layer test coverage mapping showing relationships between unit, integration, and E2E tests.
+- **[Test Coverage Matrix](./docs/testing/TestCoverage.md)**: Cross-layer test coverage mapping with performance metrics across unit, integration, and E2E tests.
 
 ### Frontend Development
 - **[UI Components](./src/client/components/README.md)**: A guide to the reusable React components and design system.
@@ -225,4 +225,4 @@ This project includes extensive documentation to help you understand the archite
 - **[Examples Overview](./examples/README.md)**: Complete working examples of extending the Zentropy application.
 - **[Adding New Features](./examples/adding-new-feature/README.md)**: A step-by-step guide to adding a new CRUD feature from the database to the UI.
 - **[Creating UI Components](./examples/ui-component/README.md)**: Learn how to build reusable components that follow our design system.
-- **[Performance Testing](./performance/README.md)**: Performance testing tools and configurations for load testing and optimization.
+- **[Performance Testing](./performance/README.md)**: Performance testing tools and configurations for load testing, optimization, and high-performance test execution.

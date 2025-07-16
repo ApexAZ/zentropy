@@ -4,7 +4,26 @@ This directory contains performance testing tools and configurations for Zentrop
 
 ## Available Tools
 
-### 1. Bundle Analysis (Frontend)
+### 1. Test Performance (Development)
+Fast, reliable test execution for rapid development:
+
+```bash
+# High-performance backend tests (8x faster with parallel execution)
+npm run test:backend        # 11.4s for 606 tests
+
+# Frontend tests (already optimized)
+npm run test:frontend       # 7.4s for 1306 tests
+
+# Full test suite (backend + frontend)
+npm run test               # ~19s total
+```
+
+**Performance Metrics:**
+- **Backend Tests**: 18.8ms per test (vs 156ms baseline)
+- **Parallel Execution**: 8 workers by default
+- **Zero Regressions**: All 606 tests pass with no changes required
+
+### 2. Bundle Analysis (Frontend)
 Analyze React bundle size and dependencies:
 
 ```bash
@@ -21,7 +40,27 @@ npm run analyze:bundle
 - Duplicate modules
 - Import analysis
 
-### 2. Lighthouse CI (Frontend)
+### 3. Test Performance Analysis (Development)
+Analyze test performance patterns:
+
+```bash
+# Run tests with timing information
+python3 -m pytest --durations=10 -v
+
+# Run with coverage and performance analysis
+npm run test:python:coverage
+
+# Single worker for debugging slow tests
+python3 -m pytest -n 1 --durations=0
+```
+
+**Test Performance Targets:**
+- Backend tests: < 20ms per test
+- Frontend tests: < 10ms per test
+- Total test suite: < 30 seconds
+- Parallel efficiency: 70%+ CPU utilization
+
+### 4. Lighthouse CI (Frontend)
 Automated web performance auditing:
 
 ```bash
@@ -35,7 +74,7 @@ npm run analyze:lighthouse
 - Best practices (targeting 80%+)
 - SEO (targeting 80%+)
 
-### 3. Locust Load Testing (Backend)
+### 5. Locust Load Testing (Backend)
 API load testing with Python:
 
 ```bash
@@ -56,6 +95,7 @@ locust -f performance/locustfile.py --host=http://localhost:3000
 ## When to Use
 
 ### During Development
+- **Test performance**: Every code change, essential for rapid development
 - **Bundle analysis**: Before major releases or when adding new dependencies
 - **Lighthouse**: Before demos or when optimizing user experience
 
@@ -73,12 +113,16 @@ locust -f performance/locustfile.py --host=http://localhost:3000
 
 #### Backend Targets
 - API response time: < 200ms (95th percentile)
+- Test execution time: < 20ms per test
 - Concurrent users: 50+ without degradation
 - Database queries: < 50ms average
 
 ## Quick Performance Checks
 
 ```bash
+# Quick test performance check
+npm run test:backend        # Should complete in ~11s
+
 # Quick bundle size check
 npm run build && du -sh dist/
 

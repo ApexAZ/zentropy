@@ -22,7 +22,7 @@
 		"db:find": "python3 scripts/db_utils.py find",
 		"db:delete": "python3 scripts/db_utils.py delete",
 		"// === TESTING (Advanced) ===": "",
-		"test:backend": "python3 -m pytest",
+		"test:backend": "python3 -m pytest -n auto",
 		"test:frontend": "vitest run",
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
