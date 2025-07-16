@@ -23,10 +23,15 @@ export class OAuthProviderService {
 			displayName: "Google",
 			iconClass: "fab fa-google",
 			brandColor: "#4285f4"
+		},
+		microsoft: {
+			name: "microsoft",
+			displayName: "Microsoft",
+			iconClass: "fab fa-microsoft",
+			brandColor: "#0078d4"
 		}
 		// Future providers can be added here:
-		// github: { name: "github", displayName: "GitHub", iconClass: "fab fa-github", brandColor: "#333" },
-		// microsoft: { name: "microsoft", displayName: "Microsoft", iconClass: "fab fa-microsoft", brandColor: "#0078d4" }
+		// github: { name: "github", displayName: "GitHub", iconClass: "fab fa-github", brandColor: "#333" }
 	};
 
 	/**
@@ -112,9 +117,8 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * FUTURE: Generic link provider method
-	 * Currently delegates to existing Google-specific implementation in UserService
-	 * When adding new providers, this will route to provider-specific implementations
+	 * Generic link provider method
+	 * Routes to provider-specific implementations based on provider name
 	 */
 	static async linkProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
 		// Validate request first
@@ -123,8 +127,21 @@ export class OAuthProviderService {
 			throw new Error(`Invalid link request: ${validation.errors.join(", ")}`);
 		}
 
-		// For now, all linking goes through the existing Google endpoint
-		// This maintains compatibility while providing a future abstraction point
+		// Route based on provider
+		switch (request.provider) {
+			case "google":
+				return this.linkGoogleProvider(request);
+			case "microsoft":
+				return this.linkMicrosoftProvider(request);
+			default:
+				throw new Error(`Unsupported provider: ${request.provider}`);
+		}
+	}
+
+	/**
+	 * Link Google provider
+	 */
+	private static async linkGoogleProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
 		const response = await fetch("/api/v1/users/me/link-google", {
 			method: "POST",
 			headers: {
@@ -138,7 +155,6 @@ export class OAuthProviderService {
 
 		const result = await this.handleResponse<{ message: string; google_email: string }>(response);
 
-		// Transform to generic format for consistency
 		return {
 			message: result.message,
 			success: true,
@@ -148,9 +164,33 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * FUTURE: Generic unlink provider method
-	 * Currently delegates to existing Google-specific implementation in UserService
-	 * When adding new providers, this will route to provider-specific implementations
+	 * Link Microsoft provider
+	 */
+	private static async linkMicrosoftProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
+		const response = await fetch("/api/v1/users/me/link-microsoft", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...createAuthHeaders()
+			},
+			body: JSON.stringify({
+				microsoft_credential: request.credential
+			})
+		});
+
+		const result = await this.handleResponse<{ message: string; microsoft_email?: string }>(response);
+
+		return {
+			message: result.message,
+			success: true,
+			provider: request.provider,
+			provider_identifier: result.microsoft_email ?? ""
+		};
+	}
+
+	/**
+	 * Generic unlink provider method
+	 * Routes to provider-specific implementations based on provider name
 	 */
 	static async unlinkProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
 		// Validate request first
@@ -159,8 +199,21 @@ export class OAuthProviderService {
 			throw new Error(`Invalid unlink request: ${validation.errors.join(", ")}`);
 		}
 
-		// For now, all unlinking goes through the existing Google endpoint
-		// This maintains compatibility while providing a future abstraction point
+		// Route based on provider
+		switch (request.provider) {
+			case "google":
+				return this.unlinkGoogleProvider(request);
+			case "microsoft":
+				return this.unlinkMicrosoftProvider(request);
+			default:
+				throw new Error(`Unsupported provider: ${request.provider}`);
+		}
+	}
+
+	/**
+	 * Unlink Google provider
+	 */
+	private static async unlinkGoogleProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
 		const response = await fetch("/api/v1/users/me/unlink-google", {
 			method: "POST",
 			headers: {
@@ -174,7 +227,30 @@ export class OAuthProviderService {
 
 		const result = await this.handleResponse<{ message: string }>(response);
 
-		// Transform to generic format for consistency
+		return {
+			message: result.message,
+			success: true,
+			provider: request.provider
+		};
+	}
+
+	/**
+	 * Unlink Microsoft provider
+	 */
+	private static async unlinkMicrosoftProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
+		const response = await fetch("/api/v1/users/me/unlink-microsoft", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...createAuthHeaders()
+			},
+			body: JSON.stringify({
+				password: request.password
+			})
+		});
+
+		const result = await this.handleResponse<{ message: string }>(response);
+
 		return {
 			message: result.message,
 			success: true,
@@ -282,10 +358,10 @@ export class GoogleOAuthIntegration {
 
 // Export utilities for easy future migration
 export const OAuthProviders = {
-	GOOGLE: "google"
+	GOOGLE: "google",
+	MICROSOFT: "microsoft"
 	// Future providers:
-	// GITHUB: "github",
-	// MICROSOFT: "microsoft"
+	// GITHUB: "github"
 } as const;
 
-export type SupportedOAuthProvider = typeof OAuthProviders.GOOGLE;
+export type SupportedOAuthProvider = typeof OAuthProviders.GOOGLE | typeof OAuthProviders.MICROSOFT;

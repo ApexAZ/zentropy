@@ -2,15 +2,22 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useAccountSecurity } from "../useAccountSecurity";
 import { UserService } from "../../services/UserService";
+import { OAuthProviderService } from "../../services/OAuthProviderService";
 import { useGoogleOAuth } from "../useGoogleOAuth";
 import type { AccountSecurityResponse } from "../../types";
 
 // Mock UserService
 vi.mock("../../services/UserService", () => ({
 	UserService: {
-		getAccountSecurity: vi.fn(),
-		linkGoogleAccount: vi.fn(),
-		unlinkGoogleAccount: vi.fn()
+		getAccountSecurity: vi.fn()
+	}
+}));
+
+// Mock OAuthProviderService
+vi.mock("../../services/OAuthProviderService", () => ({
+	OAuthProviderService: {
+		linkProvider: vi.fn(),
+		unlinkProvider: vi.fn()
 	}
 }));
 
@@ -87,9 +94,11 @@ describe("useAccountSecurity", () => {
 
 	it("should handle Google account linking successfully", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
-		(UserService.linkGoogleAccount as any).mockResolvedValue({
+		(OAuthProviderService.linkProvider as any).mockResolvedValue({
 			message: "Google account linked successfully",
-			google_email: "john@gmail.com"
+			success: true,
+			provider: "google",
+			provider_identifier: "john@gmail.com"
 		});
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
@@ -113,8 +122,9 @@ describe("useAccountSecurity", () => {
 			await oauthHook.onSuccess("real-google-credential-token");
 		});
 
-		expect(UserService.linkGoogleAccount).toHaveBeenCalledWith({
-			google_credential: "real-google-credential-token"
+		expect(OAuthProviderService.linkProvider).toHaveBeenCalledWith({
+			credential: "real-google-credential-token",
+			provider: "google"
 		});
 		expect(mockOnSecurityUpdate).toHaveBeenCalled();
 		expect(result.current.linkingLoading).toBe(false);
@@ -122,8 +132,10 @@ describe("useAccountSecurity", () => {
 
 	it("should handle Google account unlinking successfully", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockHybridResponse);
-		(UserService.unlinkGoogleAccount as any).mockResolvedValue({
-			message: "Google account unlinked successfully"
+		(OAuthProviderService.unlinkProvider as any).mockResolvedValue({
+			message: "Google account unlinked successfully",
+			success: true,
+			provider: "google"
 		});
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
@@ -138,8 +150,9 @@ describe("useAccountSecurity", () => {
 			await result.current.handleUnlinkGoogle("current-password");
 		});
 
-		expect(UserService.unlinkGoogleAccount).toHaveBeenCalledWith({
-			password: "current-password"
+		expect(OAuthProviderService.unlinkProvider).toHaveBeenCalledWith({
+			password: "current-password",
+			provider: "google"
 		});
 		expect(mockOnSecurityUpdate).toHaveBeenCalled();
 		expect(result.current.unlinkingLoading).toBe(false);
@@ -181,7 +194,7 @@ describe("useAccountSecurity", () => {
 
 	it("should handle Google linking errors with enhanced error messages", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockEmailOnlyResponse);
-		(UserService.linkGoogleAccount as any).mockRejectedValue(
+		(OAuthProviderService.linkProvider as any).mockRejectedValue(
 			new Error("Google email does not match account email")
 		);
 
@@ -209,7 +222,7 @@ describe("useAccountSecurity", () => {
 
 	it("should handle Google unlinking errors with enhanced error messages", async () => {
 		(UserService.getAccountSecurity as any).mockResolvedValue(mockHybridResponse);
-		(UserService.unlinkGoogleAccount as any).mockRejectedValue(new Error("Incorrect password"));
+		(OAuthProviderService.unlinkProvider as any).mockRejectedValue(new Error("Incorrect password"));
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 

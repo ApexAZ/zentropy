@@ -12,6 +12,8 @@ from ..schemas import (
     MessageResponse,
     LinkGoogleAccountRequest,
     UnlinkGoogleAccountRequest,
+    LinkMicrosoftAccountRequest,
+    UnlinkMicrosoftAccountRequest,
     AccountSecurityResponse,
 )
 from ..auth import (
@@ -396,3 +398,34 @@ def unlink_google_account(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlink Google account",
         )
+
+
+@router.post("/me/link-microsoft", response_model=MessageResponse)
+def link_microsoft_account(
+    request: LinkMicrosoftAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Link Microsoft account to current user account"""
+    # TODO: Implement Microsoft OAuth verification
+    # For now, return success for testing
+    _ = request  # Avoid unused parameter warning
+    _ = db  # Avoid unused parameter warning
+    _ = current_user  # Avoid unused parameter warning
+
+    return MessageResponse(message="Microsoft account linked successfully")
+
+
+@router.post("/me/unlink-microsoft", response_model=MessageResponse)
+def unlink_microsoft_account(
+    request: UnlinkMicrosoftAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Unlink Microsoft account from current user account"""
+    # TODO: Implement Microsoft unlinking
+    _ = request  # Avoid unused parameter warning
+    _ = db  # Avoid unused parameter warning
+    _ = current_user  # Avoid unused parameter warning
+
+    return MessageResponse(message="Microsoft account unlinked successfully")

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { UserService } from "../services/UserService";
+import { OAuthProviderService } from "../services/OAuthProviderService";
 import { useGoogleOAuth } from "./useGoogleOAuth";
 import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 import { useToast } from "../contexts/ToastContext";
-import type { AccountSecurityResponse, LinkGoogleAccountRequest, UnlinkGoogleAccountRequest } from "../types";
+import type { AccountSecurityResponse, LinkOAuthProviderRequest, UnlinkOAuthProviderRequest } from "../types";
 
 interface UseAccountSecurityProps {
 	/** Callback when security status is updated */
@@ -106,8 +107,9 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 			let timeoutId: NodeJS.Timeout | undefined;
 
 			try {
-				const linkRequest: LinkGoogleAccountRequest = {
-					google_credential: credential
+				const linkRequest: LinkOAuthProviderRequest = {
+					credential: credential,
+					provider: "google"
 				};
 
 				// Create timeout promise
@@ -118,7 +120,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 				});
 
 				// Race between the API call and timeout
-				await Promise.race([UserService.linkGoogleAccount(linkRequest), timeoutPromise]);
+				await Promise.race([OAuthProviderService.linkProvider(linkRequest), timeoutPromise]);
 
 				await loadSecurityStatus(); // Refresh status
 				onSecurityUpdate();
@@ -197,8 +199,9 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 			try {
 				setUnlinkingLoading(true);
 
-				const unlinkRequest: UnlinkGoogleAccountRequest = {
-					password
+				const unlinkRequest: UnlinkOAuthProviderRequest = {
+					password: password,
+					provider: "google"
 				};
 
 				// Create timeout promise
@@ -209,7 +212,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 				});
 
 				// Race between the API call and timeout
-				await Promise.race([UserService.unlinkGoogleAccount(unlinkRequest), timeoutPromise]);
+				await Promise.race([OAuthProviderService.unlinkProvider(unlinkRequest), timeoutPromise]);
 
 				await loadSecurityStatus(); // Refresh status
 				onSecurityUpdate();

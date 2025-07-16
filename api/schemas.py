@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -258,6 +258,18 @@ class LinkGoogleAccountRequest(BaseModel):
 
 class UnlinkGoogleAccountRequest(BaseModel):
     password: str
+
+
+class LinkMicrosoftAccountRequest(BaseModel):
+    microsoft_credential: str = Field(
+        ..., min_length=1, description="Microsoft OAuth credential token"
+    )
+
+
+class UnlinkMicrosoftAccountRequest(BaseModel):
+    password: str = Field(
+        ..., min_length=1, description="User password for security verification"
+    )
 
 
 class AccountSecurityResponse(BaseModel):

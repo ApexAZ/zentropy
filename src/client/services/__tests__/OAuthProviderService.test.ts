@@ -19,13 +19,23 @@ describe("OAuthProviderService", () => {
 		it("should return available OAuth providers", () => {
 			const providers = OAuthProviderService.getAvailableProviders();
 
-			expect(providers).toHaveLength(1);
-			expect(providers[0]).toEqual({
-				name: "google",
-				displayName: "Google",
-				iconClass: "fab fa-google",
-				brandColor: "#4285f4"
-			});
+			expect(providers).toHaveLength(2);
+			expect(providers).toEqual(
+				expect.arrayContaining([
+					{
+						name: "google",
+						displayName: "Google",
+						iconClass: "fab fa-google",
+						brandColor: "#4285f4"
+					},
+					{
+						name: "microsoft",
+						displayName: "Microsoft",
+						iconClass: "fab fa-microsoft",
+						brandColor: "#0078d4"
+					}
+				])
+			);
 		});
 
 		it("should get specific provider by name", () => {
@@ -39,6 +49,17 @@ describe("OAuthProviderService", () => {
 			});
 		});
 
+		it("should get Microsoft provider by name", () => {
+			const microsoftProvider = OAuthProviderService.getProvider("microsoft");
+
+			expect(microsoftProvider).toEqual({
+				name: "microsoft",
+				displayName: "Microsoft",
+				iconClass: "fab fa-microsoft",
+				brandColor: "#0078d4"
+			});
+		});
+
 		it("should return undefined for unknown provider", () => {
 			const unknownProvider = OAuthProviderService.getProvider("unknown");
 			expect(unknownProvider).toBeUndefined();
@@ -46,6 +67,7 @@ describe("OAuthProviderService", () => {
 
 		it("should check if provider is supported", () => {
 			expect(OAuthProviderService.isProviderSupported("google")).toBe(true);
+			expect(OAuthProviderService.isProviderSupported("microsoft")).toBe(true);
 			expect(OAuthProviderService.isProviderSupported("github")).toBe(false);
 			expect(OAuthProviderService.isProviderSupported("")).toBe(false);
 		});
@@ -57,6 +79,16 @@ describe("OAuthProviderService", () => {
 				displayName: "Google",
 				iconClass: "fab fa-google",
 				brandColor: "#4285f4"
+			});
+		});
+
+		it("should get Microsoft provider display information", () => {
+			const displayInfo = OAuthProviderService.getProviderDisplayInfo("microsoft");
+
+			expect(displayInfo).toEqual({
+				displayName: "Microsoft",
+				iconClass: "fab fa-microsoft",
+				brandColor: "#0078d4"
 			});
 		});
 
@@ -270,6 +302,31 @@ describe("OAuthProviderService", () => {
 					"Invalid link request: OAuth credential is required"
 				);
 			});
+
+			it("should successfully link Microsoft account and return success response", async () => {
+				const mockResponse = {
+					message: "Microsoft account linked successfully",
+					microsoft_email: "test@outlook.com"
+				};
+
+				(fetch as any).mockResolvedValueOnce({
+					ok: true,
+					json: () => Promise.resolve(mockResponse)
+				});
+
+				const request: LinkOAuthProviderRequest = {
+					credential: "microsoft-credential-token",
+					provider: "microsoft"
+				};
+
+				const result = await OAuthProviderService.linkProvider(request);
+
+				// Test behavior: User should get success response with Microsoft account info
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("microsoft");
+				expect(result.message).toBe("Microsoft account linked successfully");
+				expect(result.provider_identifier).toBe("test@outlook.com");
+			});
 		});
 
 		describe("Unlink Provider", () => {
@@ -335,6 +392,73 @@ describe("OAuthProviderService", () => {
 
 				await expect(OAuthProviderService.unlinkProvider(request)).rejects.toThrow(
 					"Invalid unlink request: Password is required for security verification"
+				);
+			});
+
+			it("should successfully unlink Microsoft account after password verification", async () => {
+				const mockResponse = {
+					message: "Microsoft account unlinked successfully"
+				};
+
+				(fetch as any).mockResolvedValueOnce({
+					ok: true,
+					json: () => Promise.resolve(mockResponse)
+				});
+
+				const request: UnlinkOAuthProviderRequest = {
+					password: "user-password",
+					provider: "microsoft"
+				};
+
+				const result = await OAuthProviderService.unlinkProvider(request);
+
+				// Test behavior: User should get success confirmation after unlinking
+				expect(result.success).toBe(true);
+				expect(result.provider).toBe("microsoft");
+				expect(result.message).toBe("Microsoft account unlinked successfully");
+			});
+
+			it("should handle Microsoft account linking errors gracefully", async () => {
+				(fetch as any).mockResolvedValueOnce({
+					ok: false,
+					status: 400,
+					statusText: "Bad Request",
+					json: () =>
+						Promise.resolve({
+							detail: "Microsoft email does not match account email"
+						})
+				});
+
+				const request: LinkOAuthProviderRequest = {
+					credential: "invalid-microsoft-credential",
+					provider: "microsoft"
+				};
+
+				// Test behavior: User should get meaningful error when Microsoft linking fails
+				await expect(OAuthProviderService.linkProvider(request)).rejects.toThrow(
+					"Microsoft email does not match account email"
+				);
+			});
+
+			it("should handle Microsoft account unlinking errors gracefully", async () => {
+				(fetch as any).mockResolvedValueOnce({
+					ok: false,
+					status: 400,
+					statusText: "Bad Request",
+					json: () =>
+						Promise.resolve({
+							detail: "No Microsoft account is linked to this account"
+						})
+				});
+
+				const request: UnlinkOAuthProviderRequest = {
+					password: "user-password",
+					provider: "microsoft"
+				};
+
+				// Test behavior: User should get meaningful error when unlinking fails
+				await expect(OAuthProviderService.unlinkProvider(request)).rejects.toThrow(
+					"No Microsoft account is linked to this account"
 				);
 			});
 		});

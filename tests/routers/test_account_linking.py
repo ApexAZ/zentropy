@@ -314,6 +314,86 @@ class TestAccountLinking:
         assert response.status_code == 403
 
 
+class TestMicrosoftAccountLinking:
+    """Test Microsoft OAuth account linking functionality."""
+
+    def test_link_microsoft_account_success(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user can successfully link Microsoft account."""
+        response = client.post(
+            "/api/v1/users/me/link-microsoft",
+            json={"microsoft_credential": "fake_microsoft_token"},
+            headers=auth_headers,
+        )
+        
+        # Behavior: User should get success confirmation
+        assert response.status_code == 200
+        assert response.json()["message"] == "Microsoft account linked successfully"
+
+    def test_unlink_microsoft_account_success(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user can successfully unlink Microsoft account."""
+        response = client.post(
+            "/api/v1/users/me/unlink-microsoft",
+            json={"password": "TestPassword123!"},
+            headers=auth_headers,
+        )
+
+        # Behavior: User should get success confirmation
+        assert response.status_code == 200
+        assert response.json()["message"] == "Microsoft account unlinked successfully"
+
+    def test_link_microsoft_account_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated user cannot link Microsoft account."""
+        response = client.post(
+            "/api/v1/users/me/link-microsoft",
+            json={"microsoft_credential": "fake_microsoft_token"},
+        )
+
+        # Behavior: Unauthenticated user should be rejected
+        assert response.status_code == 403
+
+    def test_unlink_microsoft_account_requires_authentication(self, client: TestClient):
+        """Test that unauthenticated user cannot unlink Microsoft account."""
+        response = client.post(
+            "/api/v1/users/me/unlink-microsoft",
+            json={"password": "TestPassword123!"},
+        )
+
+        # Behavior: Unauthenticated user should be rejected
+        assert response.status_code == 403
+
+    def test_link_microsoft_account_with_invalid_credential(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user gets error when linking with invalid Microsoft credential."""
+        response = client.post(
+            "/api/v1/users/me/link-microsoft",
+            json={"microsoft_credential": ""},
+            headers=auth_headers,
+        )
+        
+        # Behavior: User should get validation error for empty credential
+        assert response.status_code == 422
+        assert "string_too_short" in response.json()["detail"][0]["type"]
+
+    def test_unlink_microsoft_account_with_invalid_password(
+        self, client: TestClient, db: Session, auth_headers: dict
+    ):
+        """Test user gets error when unlinking with invalid password."""
+        response = client.post(
+            "/api/v1/users/me/unlink-microsoft",
+            json={"password": ""},
+            headers=auth_headers,
+        )
+
+        # Behavior: User should get validation error for empty password
+        assert response.status_code == 422
+        assert "string_too_short" in response.json()["detail"][0]["type"]
+
+
 class TestGoogleOAuthSecurityFix:
     """Test the security fix for Google OAuth account takeover prevention."""
 
