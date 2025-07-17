@@ -1,5 +1,5 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from "vitest";
 import "@testing-library/jest-dom";
 import { useAuth } from "../useAuth";
 
@@ -29,6 +29,10 @@ Object.defineProperty(window, "sessionStorage", {
 	value: mockSessionStorage
 });
 
+// Mock console.warn to silence session timeout logs
+const originalWarn = console.warn;
+console.warn = vi.fn();
+
 describe("useAuth", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -42,6 +46,10 @@ describe("useAuth", () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	afterAll(() => {
+		console.warn = originalWarn;
 	});
 
 	describe("Initial State", () => {

@@ -349,12 +349,16 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should still set error state even without callback
-			await waitFor(() => {
-				expect(result.current.error).toContain("not available");
+			await act(async () => {
+				await waitFor(() => {
+					expect(result.current.error).toContain("not available");
+				});
 			});
 			expect(result.current.isReady).toBe(false);
 			// Should not crash when onError callback is missing
-			expect(() => result.current.triggerOAuth()).not.toThrow();
+			act(() => {
+				expect(() => result.current.triggerOAuth()).not.toThrow();
+			});
 		});
 	});
 });

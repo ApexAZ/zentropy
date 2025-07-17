@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterAll } from "vitest";
 import { DashboardService } from "../DashboardService";
 import { TeamService } from "../TeamService";
 import { CalendarService } from "../CalendarService";
@@ -8,9 +8,17 @@ import type { DashboardStats, Team, TeamMember, Sprint, CalendarEntry } from "..
 vi.mock("../TeamService");
 vi.mock("../CalendarService");
 
+// Mock console.warn to silence intentional error logging
+const originalWarn = console.warn;
+console.warn = vi.fn();
+
 describe("DashboardService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+	});
+
+	afterAll(() => {
+		console.warn = originalWarn;
 	});
 
 	// Test data
