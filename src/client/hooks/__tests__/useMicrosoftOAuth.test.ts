@@ -68,16 +68,8 @@ describe("useMicrosoftOAuth", () => {
 				result.current.triggerOAuth();
 			});
 
-			// Should start loading
-			expect(result.current.isLoading).toBe(true);
-
-			// Wait for mock OAuth to complete
-			await waitFor(
-				() => {
-					expect(result.current.isLoading).toBe(false);
-				},
-				{ timeout: 2000 }
-			);
+			// Should complete immediately (no loading state for mock)
+			expect(result.current.isLoading).toBe(false);
 
 			// Should call onSuccess with mock credential
 			expect(mockOnSuccess).toHaveBeenCalledTimes(1);

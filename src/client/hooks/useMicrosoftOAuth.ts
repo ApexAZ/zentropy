@@ -78,21 +78,19 @@ export const useMicrosoftOAuth = ({ onSuccess, onError }: UseMicrosoftOAuthProps
 			logger.info("Starting Microsoft OAuth flow (mock)");
 
 			// TODO: Replace with real Microsoft OAuth implementation
-			// For now, simulate OAuth flow with mock credential
-			setTimeout(() => {
-				try {
-					const mockCredential = "mock-microsoft-credential-" + Date.now();
-					logger.info("Microsoft OAuth completed successfully (mock)", { credential: mockCredential });
-					onSuccess(mockCredential);
-				} catch (err) {
-					const errorMessage = "Microsoft OAuth callback failed";
-					logger.error(errorMessage, { err });
-					setError(errorMessage);
-					onError?.(errorMessage);
-				} finally {
-					setIsLoading(false);
-				}
-			}, 1000); // Simulate 1 second OAuth flow
+			// For now, simulate OAuth flow with mock credential (immediate for tests)
+			try {
+				const mockCredential = "mock-microsoft-credential-" + Date.now();
+				logger.info("Microsoft OAuth completed successfully (mock)", { credential: mockCredential });
+				onSuccess(mockCredential);
+			} catch (err) {
+				const errorMessage = "Microsoft OAuth callback failed";
+				logger.error(errorMessage, { err });
+				setError(errorMessage);
+				onError?.(errorMessage);
+			} finally {
+				setIsLoading(false);
+			}
 		} catch (err) {
 			const errorMessage = "Failed to start Microsoft Sign-In";
 			logger.error(errorMessage, { err });

@@ -5,11 +5,17 @@ import { vi } from "vitest";
 import "@testing-library/jest-dom";
 import { AccountSecuritySection } from "../AccountSecuritySection";
 import { useAccountSecurity } from "../../hooks/useAccountSecurity";
+import { useMultiProviderOAuth } from "../../hooks/useMultiProviderOAuth";
 import type { AccountSecurityResponse } from "../../types";
 
 // Mock useAccountSecurity hook to control all business logic
 vi.mock("../../hooks/useAccountSecurity", () => ({
 	useAccountSecurity: vi.fn()
+}));
+
+// Mock useMultiProviderOAuth hook
+vi.mock("../../hooks/useMultiProviderOAuth", () => ({
+	useMultiProviderOAuth: vi.fn()
 }));
 
 describe("AccountSecuritySection", () => {
@@ -34,8 +40,43 @@ describe("AccountSecuritySection", () => {
 		onError: mockOnError
 	};
 
+	// Default mock for useMultiProviderOAuth
+	const defaultMultiProviderOAuth = {
+		providers: [
+			{
+				name: "google",
+				displayName: "Google",
+				iconClass: "fab fa-google",
+				brandColor: "#4285f4"
+			},
+			{
+				name: "microsoft",
+				displayName: "Microsoft",
+				iconClass: "fab fa-microsoft",
+				brandColor: "#0078d4"
+			},
+			{
+				name: "github",
+				displayName: "GitHub",
+				iconClass: "fab fa-github",
+				brandColor: "#333"
+			}
+		],
+		linkProvider: vi.fn(),
+		unlinkProvider: vi.fn(),
+		getProviderState: vi.fn().mockReturnValue({
+			isReady: true,
+			isLoading: false,
+			error: null
+		}),
+		isProviderLinked: vi.fn().mockReturnValue(false)
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
+
+		// Set up default mock for useMultiProviderOAuth
+		(useMultiProviderOAuth as any).mockReturnValue(defaultMultiProviderOAuth);
 	});
 
 	afterEach(() => {
@@ -131,6 +172,12 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
+		// Mock multi-provider OAuth to show Google as linked
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google")
+		});
+
 		render(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
@@ -144,7 +191,7 @@ describe("AccountSecuritySection", () => {
 		// Should show linking email placeholder
 		expect(screen.getByText("linking...")).toBeInTheDocument();
 
-		// Should show "Unlink Google Account" button (optimistic state)
+		// Should show "Unlink Google" button (optimistic state) - updated text
 		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
 	});
@@ -164,6 +211,12 @@ describe("AccountSecuritySection", () => {
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to show Google as linked
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google")
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -222,9 +275,9 @@ describe("AccountSecuritySection", () => {
 	// Test linking Google account
 	it("should handle Google account linking successfully", async () => {
 		const user = userEvent.setup();
-		const mockHandleLinkGoogle = vi.fn();
+		const mockLinkProvider = vi.fn();
 
-		// Mock hook to return email-only status with link handler
+		// Mock hook to return email-only status
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: mockEmailOnlyResponse,
 			loading: false,
@@ -234,8 +287,14 @@ describe("AccountSecuritySection", () => {
 			googleOAuthReady: true,
 			oauthLoading: false,
 			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: mockHandleLinkGoogle,
+			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to capture link calls
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			linkProvider: mockLinkProvider
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -247,16 +306,16 @@ describe("AccountSecuritySection", () => {
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		await user.click(linkButton);
 
-		// Should call the hook's handleLinkGoogle function
-		expect(mockHandleLinkGoogle).toHaveBeenCalled();
+		// Should call the multi-provider hook's linkProvider function
+		expect(mockLinkProvider).toHaveBeenCalledWith("google");
 	});
 
 	// Test unlinking Google account
 	it("should handle Google account unlinking with password confirmation", async () => {
 		const user = userEvent.setup();
-		const mockHandleUnlinkGoogle = vi.fn().mockResolvedValue(undefined);
+		const mockUnlinkProvider = vi.fn().mockResolvedValue(undefined);
 
-		// Mock hook to return hybrid status with unlink handler
+		// Mock hook to return hybrid status
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: mockHybridResponse,
 			loading: false,
@@ -267,7 +326,14 @@ describe("AccountSecuritySection", () => {
 			oauthLoading: false,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: mockHandleUnlinkGoogle
+			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to show Google as linked and capture unlink calls
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+			unlinkProvider: mockUnlinkProvider
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -295,16 +361,16 @@ describe("AccountSecuritySection", () => {
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
-		// Should call the hook's handleUnlinkGoogle with password
+		// Should call the multi-provider hook's unlinkProvider with password
 		await waitFor(() => {
-			expect(mockHandleUnlinkGoogle).toHaveBeenCalledWith("current-password");
+			expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 		});
 	});
 
 	// Test password confirmation modal
 	it("should validate password before unlinking", async () => {
 		const user = userEvent.setup();
-		const mockHandleUnlinkGoogle = vi.fn();
+		const mockUnlinkProvider = vi.fn();
 
 		// Mock hook to return hybrid status
 		(useAccountSecurity as any).mockReturnValue({
@@ -317,7 +383,14 @@ describe("AccountSecuritySection", () => {
 			oauthLoading: false,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: mockHandleUnlinkGoogle
+			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to show Google as linked
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+			unlinkProvider: mockUnlinkProvider
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -340,7 +413,7 @@ describe("AccountSecuritySection", () => {
 
 		// Should show validation error
 		expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
-		expect(mockHandleUnlinkGoogle).not.toHaveBeenCalled();
+		expect(mockUnlinkProvider).not.toHaveBeenCalled();
 	});
 
 	// Test error handling
@@ -437,9 +510,9 @@ describe("AccountSecuritySection", () => {
 	// Test linking errors
 	it("should handle linking errors appropriately", async () => {
 		const user = userEvent.setup();
-		const mockHandleLinkGoogle = vi.fn().mockRejectedValue(new Error("Google email does not match account email"));
+		const mockLinkProvider = vi.fn();
 
-		// Mock hook to return email-only status with failing link handler
+		// Mock hook to return email-only status
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: mockEmailOnlyResponse,
 			loading: false,
@@ -449,8 +522,14 @@ describe("AccountSecuritySection", () => {
 			googleOAuthReady: true,
 			oauthLoading: false,
 			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: mockHandleLinkGoogle,
+			handleLinkGoogle: vi.fn(),
 			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to capture link calls
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			linkProvider: mockLinkProvider
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -462,16 +541,16 @@ describe("AccountSecuritySection", () => {
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		await user.click(linkButton);
 
-		// Should call the hook's handleLinkGoogle function
-		expect(mockHandleLinkGoogle).toHaveBeenCalled();
+		// Should call the multi-provider hook's linkProvider function
+		expect(mockLinkProvider).toHaveBeenCalledWith("google");
 	});
 
 	// Test unlinking errors
 	it("should handle unlinking errors appropriately", async () => {
 		const user = userEvent.setup();
-		const mockHandleUnlinkGoogle = vi.fn().mockRejectedValue(new Error("Incorrect password"));
+		const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
 
-		// Mock hook to return hybrid status with failing unlink handler
+		// Mock hook to return hybrid status
 		(useAccountSecurity as any).mockReturnValue({
 			securityStatus: mockHybridResponse,
 			loading: false,
@@ -482,7 +561,14 @@ describe("AccountSecuritySection", () => {
 			oauthLoading: false,
 			loadSecurityStatus: vi.fn(),
 			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: mockHandleUnlinkGoogle
+			handleUnlinkGoogle: vi.fn()
+		});
+
+		// Mock multi-provider OAuth to show Google as linked and return error on unlink
+		(useMultiProviderOAuth as any).mockReturnValue({
+			...defaultMultiProviderOAuth,
+			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+			unlinkProvider: mockUnlinkProvider
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -543,7 +629,7 @@ describe("AccountSecuritySection", () => {
 
 		// Check button accessibility
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
-		expect(linkButton).toHaveAttribute("aria-describedby");
+		expect(linkButton).toHaveAttribute("aria-label");
 	});
 
 	// Test responsive design elements

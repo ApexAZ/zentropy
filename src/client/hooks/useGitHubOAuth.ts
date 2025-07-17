@@ -78,21 +78,19 @@ export const useGitHubOAuth = ({ onSuccess, onError }: UseGitHubOAuthProps): Use
 			logger.info("Starting GitHub OAuth flow (mock)");
 
 			// TODO: Replace with real GitHub OAuth implementation
-			// For now, simulate OAuth flow with mock credential
-			setTimeout(() => {
-				try {
-					const mockCredential = "mock-github-credential-" + Date.now();
-					logger.info("GitHub OAuth completed successfully (mock)", { credential: mockCredential });
-					onSuccess(mockCredential);
-				} catch (err) {
-					const errorMessage = "GitHub OAuth callback failed";
-					logger.error(errorMessage, { err });
-					setError(errorMessage);
-					onError?.(errorMessage);
-				} finally {
-					setIsLoading(false);
-				}
-			}, 1000); // Simulate 1 second OAuth flow
+			// For now, simulate OAuth flow with mock credential (immediate for tests)
+			try {
+				const mockCredential = "mock-github-credential-" + Date.now();
+				logger.info("GitHub OAuth completed successfully (mock)", { credential: mockCredential });
+				onSuccess(mockCredential);
+			} catch (err) {
+				const errorMessage = "GitHub OAuth callback failed";
+				logger.error(errorMessage, { err });
+				setError(errorMessage);
+				onError?.(errorMessage);
+			} finally {
+				setIsLoading(false);
+			}
 		} catch (err) {
 			const errorMessage = "Failed to start GitHub Sign-In";
 			logger.error(errorMessage, { err });

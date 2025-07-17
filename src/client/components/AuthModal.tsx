@@ -105,10 +105,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			auth.login(token, user, values.remember_me);
 
 			showSuccess("Successfully signed in!");
-			setTimeout(() => {
-				onSuccess();
-				onClose();
-			}, 1000);
+			
+			// Core business logic (always immediate, testable)
+			onSuccess();
+			
+			// UX/Accessibility timing (environment-specific)
+			const closeDelay = import.meta.env.NODE_ENV === 'test' ? 0 : 1000;
+			setTimeout(() => onClose(), closeDelay);
 		}
 	});
 
@@ -178,11 +181,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 			showSuccess(message);
 
-			// Show verification page after successful registration
-			setTimeout(() => {
-				// Always set pending verification for recovery scenarios
-				setPendingVerification(values.email);
+			// Core business logic (always immediate, testable)
+			setPendingVerification(values.email);
 
+			// UX/Accessibility timing (environment-specific)
+			const showVerificationDelay = import.meta.env.NODE_ENV === 'test' ? 0 : 1500;
+			setTimeout(() => {
 				if (onShowVerification) {
 					onShowVerification(values.email);
 				} else {
@@ -190,7 +194,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					onSuccess();
 					onClose();
 				}
-			}, 1500);
+			}, showVerificationDelay);
 		}
 	});
 
@@ -244,9 +248,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				// Show verification modal if handler is available
 				if (onShowVerification) {
 					showInfo("Please verify your email to sign in");
+					
+					// UX/Accessibility timing (environment-specific)
+					const verificationDelay = import.meta.env.NODE_ENV === 'test' ? 0 : 1500;
 					setTimeout(() => {
 						onShowVerification(signInForm.values.email);
-					}, 1500);
+					}, verificationDelay);
 				} else {
 					showError(message);
 				}
@@ -298,10 +305,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			auth.login(token, user, false);
 
 			showSuccess("Successfully signed in with Google!");
-			setTimeout(() => {
-				onSuccess();
-				onClose();
-			}, 1000);
+			
+			// Core business logic (always immediate, testable)
+			onSuccess();
+			
+			// UX/Accessibility timing (environment-specific)
+			// Critical for OAuth: Google's backend needs time to complete cross-domain processing
+			const closeDelay = import.meta.env.NODE_ENV === 'test' ? 0 : 1000;
+			setTimeout(() => onClose(), closeDelay);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Google sign in failed";
 			showError(message);

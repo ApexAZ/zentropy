@@ -2,12 +2,13 @@ import { useState, useCallback } from "react";
 import Card from "./atoms/Card";
 import Button from "./atoms/Button";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
+import { useMultiProviderOAuth } from "../hooks/useMultiProviderOAuth";
 import { AuthenticationStatusDisplay } from "./AuthenticationStatusDisplay";
-import { SecurityActions } from "./SecurityActions";
 import { EnhancedConfirmationModal } from "./EnhancedConfirmationModal";
 import { SecurityStatusSkeleton } from "./SecurityStatusSkeleton";
 import { SecurityRecommendations } from "./SecurityRecommendations";
 import { AccountSecurityHelp } from "./AccountSecurityHelp";
+import ProviderStatusCard from "./ProviderStatusCard";
 
 interface AccountSecuritySectionProps {
 	/** Callback when security status is updated */
@@ -26,6 +27,7 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	// Enhanced confirmation modal state
 	const [showEnhancedConfirmation, setShowEnhancedConfirmation] = useState(false);
 	const [passwordError, setPasswordError] = useState<string | null>(null);
+	const [currentUnlinkingProvider, setCurrentUnlinkingProvider] = useState<string | null>(null);
 
 	// Security recommendations state
 	const [dismissedRecommendations, setDismissedRecommendations] = useState<Set<string>>(new Set());
@@ -37,44 +39,64 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		loading,
 		error,
 		errorResolution,
-		linkingLoading,
 		unlinkingLoading,
-		googleOAuthReady,
-		oauthLoading,
 		optimisticSecurityStatus,
-		loadSecurityStatus,
-		handleLinkGoogle,
-		handleUnlinkGoogle: hookHandleUnlinkGoogle
+		loadSecurityStatus
 	} = useAccountSecurity({ onSecurityUpdate, onError });
+
+	// Multi-provider OAuth hook for new functionality
+	const { providers, linkProvider, unlinkProvider, getProviderState, isProviderLinked } = useMultiProviderOAuth({
+		onSuccess: () => {
+			// Handle successful OAuth linking
+			onSecurityUpdate();
+		},
+		onError: error => {
+			// Handle OAuth errors
+			onError(error);
+		}
+	});
 
 	// Use optimistic security status if available, otherwise use actual status
 	const displaySecurityStatus = optimisticSecurityStatus || securityStatus;
 
 	/**
+	 * Handle provider linking
+	 */
+	const handleLinkProvider = useCallback(
+		(providerName: string) => {
+			linkProvider(providerName);
+		},
+		[linkProvider]
+	);
+
+	/**
 	 * Handle showing enhanced confirmation modal for unlinking
 	 */
-	const handleUnlinkGoogle = useCallback(() => {
+	const handleUnlinkProvider = useCallback((providerName: string) => {
+		setCurrentUnlinkingProvider(providerName);
 		setShowEnhancedConfirmation(true);
 		setPasswordError(null);
 	}, []);
 
 	/**
-	 * Confirm Google account unlinking with password
+	 * Confirm provider account unlinking with password
 	 */
 	const handleConfirmUnlink = useCallback(
 		async (password?: string) => {
 			try {
 				setPasswordError(null);
-				if (password) {
-					await hookHandleUnlinkGoogle(password);
+				if (password && currentUnlinkingProvider) {
+					await unlinkProvider(currentUnlinkingProvider, password);
 					setShowEnhancedConfirmation(false);
+					setCurrentUnlinkingProvider(null);
 				}
 			} catch (err) {
-				const errorMessage = err instanceof Error ? err.message : "Failed to unlink Google account";
+				const errorMessage =
+					err instanceof Error ? err.message : `Failed to unlink ${currentUnlinkingProvider} account`;
 				setPasswordError(errorMessage);
 			}
 		},
-		[hookHandleUnlinkGoogle]
+		[unlinkProvider, currentUnlinkingProvider]
 	);
 
 	/**
@@ -83,6 +105,7 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	const handleCloseConfirmationModal = useCallback(() => {
 		setShowEnhancedConfirmation(false);
 		setPasswordError(null);
+		setCurrentUnlinkingProvider(null);
 	}, []);
 
 	/**
@@ -149,16 +172,30 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 								/>
 							)}
 
-						{/* Security Actions */}
-						<SecurityActions
-							securityStatus={displaySecurityStatus}
-							linkingLoading={linkingLoading}
-							unlinkingLoading={unlinkingLoading}
-							googleOAuthReady={googleOAuthReady}
-							oauthLoading={oauthLoading}
-							onLinkGoogle={handleLinkGoogle}
-							onUnlinkGoogle={handleUnlinkGoogle}
-						/>
+						{/* OAuth Provider Cards */}
+						<div className="space-y-4">
+							{providers.map(provider => {
+								const providerState = getProviderState(provider.name);
+								const isLinked = isProviderLinked(provider.name);
+								const providerEmail =
+									provider.name === "google" ? displaySecurityStatus?.google_email : undefined;
+
+								return (
+									<ProviderStatusCard
+										key={provider.name}
+										provider={provider}
+										isLinked={isLinked}
+										providerEmail={providerEmail || ""}
+										onLink={() => handleLinkProvider(provider.name)}
+										onUnlink={() => handleUnlinkProvider(provider.name)}
+										linkingLoading={providerState.isLoading}
+										unlinkingLoading={
+											currentUnlinkingProvider === provider.name && unlinkingLoading
+										}
+									/>
+								);
+							})}
+						</div>
 
 						{/* Contextual Help Section */}
 						<AccountSecurityHelp
@@ -173,27 +210,29 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 				)}
 			</Card>
 
-			{/* Enhanced Confirmation Modal for Google Account Unlinking */}
-			<EnhancedConfirmationModal
-				isOpen={showEnhancedConfirmation}
-				onClose={handleCloseConfirmationModal}
-				onConfirm={handleConfirmUnlink}
-				loading={unlinkingLoading}
-				title="Unlink Google Account"
-				message="Are you sure you want to unlink your Google account from Zentropy?"
-				actionType="destructive"
-				impactDescription="After unlinking, you will:"
-				consequences={[
-					"Only be able to sign in with email and password",
-					"Lose the convenience of one-click Google sign-in",
-					"Need to remember your password for account access"
-				]}
-				recoveryGuidance="You can re-link your Google account anytime by going to Security Settings and clicking 'Link Google Account'."
-				confirmText="Yes, Unlink Account"
-				loadingText="Unlinking account..."
-				requiresPasswordConfirmation={true}
-				{...(passwordError && { passwordError })}
-			/>
+			{/* Enhanced Confirmation Modal for Provider Account Unlinking */}
+			{currentUnlinkingProvider && (
+				<EnhancedConfirmationModal
+					isOpen={showEnhancedConfirmation}
+					onClose={handleCloseConfirmationModal}
+					onConfirm={handleConfirmUnlink}
+					loading={unlinkingLoading}
+					title={`Unlink ${providers.find(p => p.name === currentUnlinkingProvider)?.displayName || currentUnlinkingProvider} Account`}
+					message={`Are you sure you want to unlink your ${providers.find(p => p.name === currentUnlinkingProvider)?.displayName || currentUnlinkingProvider} account from Zentropy?`}
+					actionType="destructive"
+					impactDescription="After unlinking, you will:"
+					consequences={[
+						"Only be able to sign in with email and password",
+						`Lose the convenience of one-click ${providers.find(p => p.name === currentUnlinkingProvider)?.displayName || currentUnlinkingProvider} sign-in`,
+						"Need to remember your password for account access"
+					]}
+					recoveryGuidance={`You can re-link your ${providers.find(p => p.name === currentUnlinkingProvider)?.displayName || currentUnlinkingProvider} account anytime by going to Security Settings and clicking 'Link ${providers.find(p => p.name === currentUnlinkingProvider)?.displayName || currentUnlinkingProvider} Account'.`}
+					confirmText="Yes, Unlink Account"
+					loadingText="Unlinking account..."
+					requiresPasswordConfirmation={true}
+					{...(passwordError && { passwordError })}
+				/>
+			)}
 		</>
 	);
 }

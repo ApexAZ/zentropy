@@ -12,14 +12,14 @@ export default defineConfig({
 		setupFiles: ["./src/test-setup.ts"],
 		// Only include React component tests
 		include: ["src/client/**/*.{test,spec}.{js,ts,tsx}"],
-		// Increase timeout for async operations
-		testTimeout: 15000,
+		// Aggressive timeout for fast failure detection
+		testTimeout: 300,
 		// Suppress React act() warnings in test environment
 		silent: false,
 		logHeapUsage: false,
 		// Standard configuration for React component tests
 		pool: 'threads',
-		maxConcurrency: 1,
+		maxConcurrency: 5,
 		// Environment variables for tests
 		env: {
 			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"
