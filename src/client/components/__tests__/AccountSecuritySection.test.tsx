@@ -1,12 +1,18 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { screen, cleanup, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { AccountSecuritySection } from "../AccountSecuritySection";
 import { useAccountSecurity } from "../../hooks/useAccountSecurity";
 import { useMultiProviderOAuth } from "../../hooks/useMultiProviderOAuth";
-import type { AccountSecurityResponse } from "../../types";
+import {
+	AccountSecurityFactory,
+	TestPropsFactory,
+	MockUseAccountSecurityFactory,
+	MockUseMultiProviderOAuthFactory,
+	renderWithToast
+} from "../../__tests__/utils";
 
 // Mock useAccountSecurity hook to control all business logic
 vi.mock("../../hooks/useAccountSecurity", () => ({
@@ -20,61 +26,13 @@ vi.mock("../../hooks/useMultiProviderOAuth", () => ({
 
 describe("AccountSecuritySection", () => {
 	// Following User-Focused Testing pattern from tests/README.md
-	const mockOnSecurityUpdate = vi.fn();
-	const mockOnError = vi.fn();
-
-	const mockEmailOnlyResponse: AccountSecurityResponse = {
-		email_auth_linked: true,
-		google_auth_linked: false,
-		google_email: undefined
-	};
-
-	const mockHybridResponse: AccountSecurityResponse = {
-		email_auth_linked: true,
-		google_auth_linked: true,
-		google_email: "john@gmail.com"
-	};
-
-	const defaultProps = {
-		onSecurityUpdate: mockOnSecurityUpdate,
-		onError: mockOnError
-	};
-
-	// Default mock for useMultiProviderOAuth
-	const defaultMultiProviderOAuth = {
-		providers: [
-			{
-				name: "google",
-				displayName: "Google",
-				iconClass: "fab fa-google",
-				brandColor: "#4285f4"
-			},
-			{
-				name: "microsoft",
-				displayName: "Microsoft",
-				iconClass: "fab fa-microsoft",
-				brandColor: "#0078d4"
-			},
-			{
-				name: "github",
-				displayName: "GitHub",
-				iconClass: "fab fa-github",
-				brandColor: "#333"
-			}
-		],
-		linkProvider: vi.fn(),
-		unlinkProvider: vi.fn(),
-		getProviderState: vi.fn().mockReturnValue({
-			isReady: true,
-			isLoading: false,
-			error: null
-		}),
-		isProviderLinked: vi.fn().mockReturnValue(false)
-	};
+	const defaultProps = TestPropsFactory.createAccountSecurityProps();
+	const mockEmailOnlyResponse = AccountSecurityFactory.createEmailOnly();
+	const mockHybridResponse = AccountSecurityFactory.createHybrid();
+	const defaultMultiProviderOAuth = MockUseMultiProviderOAuthFactory.create();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
 		// Set up default mock for useMultiProviderOAuth
 		(useMultiProviderOAuth as any).mockReturnValue(defaultMultiProviderOAuth);
 	});
@@ -86,21 +44,11 @@ describe("AccountSecuritySection", () => {
 	// Test skeleton loading state
 	it("should show skeleton loading state while fetching security status", () => {
 		// Mock hook to return loading state
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: null,
-			loading: true,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
+		(useAccountSecurity as any).mockReturnValue(
+			MockUseAccountSecurityFactory.createLoading()
+		);
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		// Should show skeleton loading elements instead of simple spinner
 		const skeletonElements = screen.getAllByRole("status");
@@ -116,25 +64,16 @@ describe("AccountSecuritySection", () => {
 	// Test email-only authentication display
 	it("should display email-only authentication status correctly", async () => {
 		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
+		(useAccountSecurity as any).mockReturnValue(
+			MockUseAccountSecurityFactory.create({
+				securityStatus: mockEmailOnlyResponse
+			})
+		);
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Should show email authentication as linked
 		expect(screen.getByText("Email Authentication")).toBeInTheDocument();
@@ -151,38 +90,28 @@ describe("AccountSecuritySection", () => {
 
 	// Test optimistic updates
 	it("should display optimistic linked state during Google linking", async () => {
-		const mockOptimisticResponse = {
-			email_auth_linked: true,
-			google_auth_linked: true,
+		const mockOptimisticResponse = AccountSecurityFactory.createHybrid({
 			google_email: "linking..."
-		};
+		});
 
 		// Mock hook to return optimistic state
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: true,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: mockOptimisticResponse,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
+		(useAccountSecurity as any).mockReturnValue(
+			MockUseAccountSecurityFactory.create({
+				securityStatus: mockEmailOnlyResponse,
+				linkingLoading: true,
+				optimisticSecurityStatus: mockOptimisticResponse
+			})
+		);
 
 		// Mock multi-provider OAuth to show Google as linked
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google")
-		});
+		(useMultiProviderOAuth as any).mockReturnValue(
+			MockUseMultiProviderOAuthFactory.createWithLinkedProvider("google")
+		);
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Should show optimistic Google authentication as linked
 		expect(screen.getByText("Google Authentication")).toBeInTheDocument();
@@ -219,11 +148,10 @@ describe("AccountSecuritySection", () => {
 			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google")
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Should show both authentication methods as active
 		expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
@@ -240,25 +168,16 @@ describe("AccountSecuritySection", () => {
 	// Test visual indicators and status badges
 	it("should display correct status badges and indicators", async () => {
 		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
+		(useAccountSecurity as any).mockReturnValue(
+			MockUseAccountSecurityFactory.create({
+				securityStatus: mockEmailOnlyResponse
+			})
+		);
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Check for visual status indicators
 		expect(screen.getByTestId("email-auth-indicator")).toHaveClass("bg-success");
@@ -297,7 +216,7 @@ describe("AccountSecuritySection", () => {
 			linkProvider: mockLinkProvider
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
@@ -336,7 +255,7 @@ describe("AccountSecuritySection", () => {
 			unlinkProvider: mockUnlinkProvider
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
@@ -361,10 +280,9 @@ describe("AccountSecuritySection", () => {
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
-		// Should call the multi-provider hook's unlinkProvider with password
-		await waitFor(() => {
-			expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
-		});
+		// Should call the multi-provider hook's unlinkProvider with password  
+		// Direct assertion for synchronous mock call after user click
+		expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 	});
 
 	// Test password confirmation modal
@@ -393,7 +311,7 @@ describe("AccountSecuritySection", () => {
 			unlinkProvider: mockUnlinkProvider
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
@@ -435,7 +353,7 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		expect(
 			screen.getByText("Connection problem. Please check your internet connection and try again.")
@@ -463,7 +381,7 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		expect(screen.getByText("Unable to load account security information.")).toBeInTheDocument();
 		expect(screen.queryByText("Check your internet connection and try again in a moment.")).not.toBeInTheDocument();
@@ -490,7 +408,7 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		// Wait for error state
 		await waitFor(() => {
@@ -532,7 +450,7 @@ describe("AccountSecuritySection", () => {
 			linkProvider: mockLinkProvider
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
@@ -571,7 +489,7 @@ describe("AccountSecuritySection", () => {
 			unlinkProvider: mockUnlinkProvider
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
@@ -614,11 +532,10 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Check heading structure
 		expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
@@ -649,11 +566,10 @@ describe("AccountSecuritySection", () => {
 			handleUnlinkGoogle: vi.fn()
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-		});
+		// Direct assertion for synchronous rendering with mocked data
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Check that the container exists and has the Card component styling
 		const container = screen.getByTestId("account-security-container");
