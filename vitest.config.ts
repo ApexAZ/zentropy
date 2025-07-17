@@ -20,6 +20,16 @@ export default defineConfig({
 		// Standard configuration for React component tests
 		pool: 'threads',
 		maxConcurrency: 5,
+		// Performance monitoring
+		reporters: ['default', 'json'],
+		outputFile: {
+			json: './test-results.json'
+		},
+		// Add performance monitoring
+		benchmark: {
+			include: ['**/*.{benchmark,perf}.{js,ts}'],
+			reporters: ['default']
+		},
 		// Environment variables for tests
 		env: {
 			VITE_GOOGLE_CLIENT_ID: "test-google-client-id"
