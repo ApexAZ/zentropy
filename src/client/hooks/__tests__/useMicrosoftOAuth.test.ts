@@ -12,20 +12,21 @@ vi.mock("../../utils/logger", () => ({
 	}
 }));
 
+// Module-level environment setup for default test configuration
+vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
+
 describe("useMicrosoftOAuth", () => {
 	const mockOnSuccess = vi.fn();
 	const mockOnError = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// Reset environment variables for each test
-		vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
+		// Remove expensive environment stubbing from beforeEach
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-		vi.unstubAllEnvs();
+		// Remove expensive environment cleanup from afterEach
 	});
 
 	describe("User Workflow: Successful OAuth Flow", () => {
@@ -99,6 +100,9 @@ describe("useMicrosoftOAuth", () => {
 			});
 
 			expect(result.current.error).toBeNull();
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
 	});
 
@@ -123,6 +127,9 @@ describe("useMicrosoftOAuth", () => {
 			expect(mockOnError).toHaveBeenCalledWith(
 				"VITE_MICROSOFT_CLIENT_ID is not configured in environment variables"
 			);
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
 
 		it("should handle OAuth trigger when not ready", async () => {
@@ -147,6 +154,9 @@ describe("useMicrosoftOAuth", () => {
 
 			expect(mockOnError).toHaveBeenCalledWith("Microsoft Sign-In not available");
 			expect(result.current.error).toBe("Microsoft Sign-In not available");
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
 	});
 

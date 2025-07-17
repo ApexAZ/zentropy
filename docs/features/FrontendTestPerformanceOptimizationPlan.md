@@ -560,14 +560,15 @@ afterEach(() => {
 - **After**: Module-level setup only = <1 second total
 - **Improvement**: 3-6 seconds saved per test run
 
-**Status**: ❌ **Pending**
+**Status**: ✅ **Completed**
 
 **Actions Taken**:
-- [ ] Optimize useMicrosoftOAuth.test.ts mock setup
-- [ ] Optimize useGitHubOAuth.test.ts mock setup
-- [ ] Review other test files for similar patterns
-- [ ] Implement module-level environment setup where appropriate
-- [ ] Validate all tests pass with optimized setup
+- [x] Optimize useMicrosoftOAuth.test.ts mock setup (moved vi.stubEnv to module level)
+- [x] Optimize useGitHubOAuth.test.ts mock setup (moved vi.stubEnv to module level)
+- [x] Review other test files for similar patterns (only Microsoft and GitHub OAuth tests had the issue)
+- [x] Implement module-level environment setup where appropriate (both OAuth test files updated)
+- [x] Validate all tests pass with optimized setup (both OAuth test files passing, 6 tests each)
+- [x] Add targeted cleanup for tests that dynamically change environment values (6 tests updated with restore logic)
 
 ---
 
@@ -653,14 +654,14 @@ await waitFor(() => {
 - **After**: Fake timer control = <1ms per timing test
 - **Improvement**: 2-5 seconds saved per test run
 
-**Status**: ❌ **Pending**
+**Status**: ✅ **Completed** (2025-07-17 15:40 UTC)
 
 **Actions Taken**:
-- [ ] Implement fake timers in useAuth.test.ts
-- [ ] Optimize AuthModal.test.tsx async patterns
-- [ ] Review other test files for setTimeout patterns
-- [ ] Add proper timer management to timing-dependent tests
-- [ ] Validate all timing tests pass with optimized patterns
+- [x] Implement fake timers in useAuth.test.ts - Optimized 3 setTimeout patterns with selective fake timer usage
+- [x] Optimize AuthModal.test.tsx async patterns - Already optimized by Phase 1.3 conditional timing
+- [x] Review other test files for setTimeout patterns - No additional optimization needed (production retry logic)
+- [x] Add proper timer management to timing-dependent tests - Scoped fake timers to session timeout tests only
+- [x] Validate all timing tests pass with optimized patterns - All 16 useAuth tests passing, performance improved
 
 ---
 

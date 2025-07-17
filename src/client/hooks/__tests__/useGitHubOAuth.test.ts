@@ -12,20 +12,21 @@ vi.mock("../../utils/logger", () => ({
 	}
 }));
 
+// Module-level environment setup for default test configuration
+vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
+
 describe("useGitHubOAuth", () => {
 	const mockOnSuccess = vi.fn();
 	const mockOnError = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// Reset environment variables for each test
-		vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
+		// Remove expensive environment stubbing from beforeEach
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-		vi.unstubAllEnvs();
+		// Remove expensive environment cleanup from afterEach
 	});
 
 	describe("User Workflow: Successful OAuth Flow", () => {
@@ -99,6 +100,9 @@ describe("useGitHubOAuth", () => {
 			});
 
 			expect(result.current.error).toBeNull();
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
 	});
 
@@ -121,6 +125,9 @@ describe("useGitHubOAuth", () => {
 			expect(mockOnError).toHaveBeenCalledWith(
 				"VITE_GITHUB_CLIENT_ID is not configured in environment variables"
 			);
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
 
 		it("should handle OAuth trigger when not ready", async () => {
@@ -145,6 +152,9 @@ describe("useGitHubOAuth", () => {
 
 			expect(mockOnError).toHaveBeenCalledWith("GitHub Sign-In not available");
 			expect(result.current.error).toBe("GitHub Sign-In not available");
+			
+			// Restore default client ID for subsequent tests
+			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
 	});
 

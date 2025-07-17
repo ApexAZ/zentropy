@@ -461,14 +461,21 @@ describe("useAuth", () => {
 				json: async () => ({ message: "Logged out successfully" })
 			});
 
-			// Wait for the timeout to fire (200ms in test environment)
-			// Using real timeout since this is testing actual timing behavior
-			await waitFor(
-				() => {
-					expect(result.current.isAuthenticated).toBe(false);
-				},
-				{ timeout: 1000 } // Allow up to 1 second for 200ms timeout + async operations
-			);
+			// Enable fake timers after authentication is complete
+			vi.useFakeTimers();
+			
+			// Advance time to trigger the timeout (200ms in test environment)
+			await act(async () => {
+				vi.advanceTimersByTime(200);
+			});
+			
+			// Restore real timers
+			vi.useRealTimers();
+			
+			// Wait for async logout operations to complete
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(false);
+			});
 
 			// Verify logout API was called
 			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/logout", {
@@ -505,8 +512,13 @@ describe("useAuth", () => {
 				expect(result.current.isAuthenticated).toBe(true);
 			});
 
-			// Wait for half the timeout period (100ms), then trigger activity
-			await new Promise(resolve => setTimeout(resolve, 100));
+			// Enable fake timers after authentication is complete
+			vi.useFakeTimers();
+
+			// Advance time by half the timeout period (100ms), then trigger activity
+			await act(async () => {
+				vi.advanceTimersByTime(100);
+			});
 
 			// User should still be authenticated at this point
 			expect(result.current.isAuthenticated).toBe(true);
@@ -516,8 +528,10 @@ describe("useAuth", () => {
 				document.dispatchEvent(new Event("click"));
 			});
 
-			// Wait another 150ms (total 250ms, would have been past original 200ms timeout)
-			await new Promise(resolve => setTimeout(resolve, 150));
+			// Advance time by another 150ms (total 250ms, would have been past original 200ms timeout)
+			await act(async () => {
+				vi.advanceTimersByTime(150);
+			});
 
 			// Should still be authenticated because activity reset the timer
 			expect(result.current.isAuthenticated).toBe(true);
@@ -529,13 +543,18 @@ describe("useAuth", () => {
 				json: async () => ({ message: "Logged out successfully" })
 			});
 
-			// Now wait for the full timeout period without activity (200ms from last activity)
-			await waitFor(
-				() => {
-					expect(result.current.isAuthenticated).toBe(false);
-				},
-				{ timeout: 500 } // Allow time for timeout + async operations
-			);
+			// Now advance time for the full timeout period without activity (200ms from last activity)
+			await act(async () => {
+				vi.advanceTimersByTime(200);
+			});
+			
+			// Restore real timers
+			vi.useRealTimers();
+			
+			// Wait for async logout operations to complete
+			await waitFor(() => {
+				expect(result.current.isAuthenticated).toBe(false);
+			});
 		});
 
 		it("should not start timeout for unauthenticated users", async () => {
@@ -547,8 +566,16 @@ describe("useAuth", () => {
 			// User is not authenticated
 			expect(result.current.isAuthenticated).toBe(false);
 
-			// Wait longer than the timeout period (300ms > 200ms)
-			await new Promise(resolve => setTimeout(resolve, 300));
+			// Enable fake timers for timing control
+			vi.useFakeTimers();
+			
+			// Advance time longer than the timeout period (300ms > 200ms)
+			await act(async () => {
+				vi.advanceTimersByTime(300);
+			});
+			
+			// Restore real timers
+			vi.useRealTimers();
 
 			// User should still not be authenticated (no timeout started)
 			expect(result.current.isAuthenticated).toBe(false);
