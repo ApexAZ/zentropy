@@ -198,7 +198,9 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
@@ -209,7 +211,9 @@ describe("ProjectCreationModal", () => {
 			const user = userEvent.setup();
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
 
 			// When personal is selected, organization section should be hidden
@@ -224,8 +228,12 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
+				target: { value: "Test description" }
+			});
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 
 			await user.click(screen.getByRole("button", { name: /create project/i }));
@@ -244,7 +252,9 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Personal Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Personal Project" }
+			});
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
 
 			await user.click(screen.getByRole("button", { name: /create project/i }));
@@ -262,7 +272,9 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			await waitFor(() => {
@@ -278,7 +290,9 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject but not close modal due to error
@@ -383,7 +397,9 @@ describe("ProjectCreationModal", () => {
 			const user = userEvent.setup();
 			render(<ProjectCreationModal {...mockProps} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 
 			expect(screen.getByText("An organization is required for team projects")).toBeInTheDocument();
@@ -455,8 +471,12 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
+				target: { value: "Test description" }
+			});
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject with the provided data
@@ -490,8 +510,12 @@ describe("ProjectCreationModal", () => {
 		it("should reset form when modal is closed", async () => {
 			const { rerender } = render(<ProjectCreationModal {...mockProps} />);
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
+				target: { value: "Test description" }
+			});
 
 			// Close modal
 			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);
@@ -595,7 +619,9 @@ describe("ProjectCreationModal", () => {
 				wrapper: TestWrapper
 			});
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
+				target: { value: "Test Project" }
+			});
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject and handle error gracefully

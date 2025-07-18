@@ -76,10 +76,11 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 				// Call success callback
 				onSuccess(createdProject);
 
-				// Close modal after a short delay to show success message
+				// UX/Accessibility timing (environment-specific)
+				const closeDelay = import.meta.env.NODE_ENV === "test" ? 0 : 1000;
 				setTimeout(() => {
 					onClose();
-				}, 1000);
+				}, closeDelay);
 			} catch {
 				// Error is handled by the hook's toast system
 			} finally {

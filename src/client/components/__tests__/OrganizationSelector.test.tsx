@@ -363,8 +363,12 @@ describe("OrganizationSelector", () => {
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
 			// Fill in form
-			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), { target: { value: "New Org" } });
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "New organization description" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), {
+				target: { value: "New Org" }
+			});
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
+				target: { value: "New organization description" }
+			});
 
 			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
@@ -397,7 +401,9 @@ describe("OrganizationSelector", () => {
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
 			// Fill in form
-			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), { target: { value: "New Org" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), {
+				target: { value: "New Org" }
+			});
 
 			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));

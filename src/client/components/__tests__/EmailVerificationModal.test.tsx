@@ -1,7 +1,7 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import EmailVerificationModal from "../EmailVerificationModal";
 import { clearPendingVerification } from "../../utils/pendingVerification";
@@ -126,13 +126,18 @@ describe("EmailVerificationModal", () => {
 		const emailInput = screen.getByLabelText("Email Address");
 		await user.clear(emailInput);
 
-		// Use paste to fill complete code (avoids race condition with sequential typing)
-		const firstCodeInput = screen
+		// Use fireEvent.change for faster input
+		const codeInputs = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
+			.filter(input => input.getAttribute("inputMode") === "numeric");
 
-		await user.click(firstCodeInput);
-		await user.paste("123456");
+		// Fill code inputs directly
+		fireEvent.change(codeInputs[0], { target: { value: "1" } });
+		fireEvent.change(codeInputs[1], { target: { value: "2" } });
+		fireEvent.change(codeInputs[2], { target: { value: "3" } });
+		fireEvent.change(codeInputs[3], { target: { value: "4" } });
+		fireEvent.change(codeInputs[4], { target: { value: "5" } });
+		fireEvent.change(codeInputs[5], { target: { value: "6" } });
 
 		// Button should be disabled when email is empty even with complete code
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
@@ -160,23 +165,25 @@ describe("EmailVerificationModal", () => {
 
 		render(<EmailVerificationModal {...defaultProps} />);
 
-		// Use paste to fill complete code (avoids race condition with sequential typing)
-		const firstCodeInput = screen
+		// Use fireEvent.change for faster input (instead of user.paste which is slower)
+		const codeInputs = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
+			.filter(input => input.getAttribute("inputMode") === "numeric");
 
-		await user.click(firstCodeInput);
-		await user.paste("123456");
+		// Fill code inputs directly
+		fireEvent.change(codeInputs[0], { target: { value: "1" } });
+		fireEvent.change(codeInputs[1], { target: { value: "2" } });
+		fireEvent.change(codeInputs[2], { target: { value: "3" } });
+		fireEvent.change(codeInputs[3], { target: { value: "4" } });
+		fireEvent.change(codeInputs[4], { target: { value: "5" } });
+		fireEvent.change(codeInputs[5], { target: { value: "6" } });
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 
-		// Wait for button to be enabled by checking the actual state condition
-		await waitFor(
-			() => {
-				expect(verifyButton).not.toBeDisabled();
-			},
-			{ timeout: 1000 }
-		);
+		// Wait for button to be enabled
+		await waitFor(() => {
+			expect(verifyButton).not.toBeDisabled();
+		});
 
 		await user.click(verifyButton);
 
@@ -205,7 +212,7 @@ describe("EmailVerificationModal", () => {
 			expect(vi.mocked(clearPendingVerification)).toHaveBeenCalled();
 		});
 
-		// Should call onSuccess and onClose after delay
+		// Should call onSuccess and onClose after delay (2 seconds)
 		await waitFor(
 			() => {
 				expect(mockOnSuccess).toHaveBeenCalled();
@@ -213,7 +220,7 @@ describe("EmailVerificationModal", () => {
 			},
 			{ timeout: 3000 }
 		);
-	});
+	}, 4000);
 
 	it("should handle verification failure gracefully", async () => {
 		const user = userEvent.setup();
@@ -230,23 +237,25 @@ describe("EmailVerificationModal", () => {
 
 		render(<EmailVerificationModal {...defaultProps} />);
 
-		// Use paste to fill complete code (avoids race condition with sequential typing)
-		const firstCodeInput = screen
+		// Use fireEvent.change for faster input
+		const codeInputs = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
+			.filter(input => input.getAttribute("inputMode") === "numeric");
 
-		await user.click(firstCodeInput);
-		await user.paste("123456");
+		// Fill code inputs directly
+		fireEvent.change(codeInputs[0], { target: { value: "1" } });
+		fireEvent.change(codeInputs[1], { target: { value: "2" } });
+		fireEvent.change(codeInputs[2], { target: { value: "3" } });
+		fireEvent.change(codeInputs[3], { target: { value: "4" } });
+		fireEvent.change(codeInputs[4], { target: { value: "5" } });
+		fireEvent.change(codeInputs[5], { target: { value: "6" } });
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 
 		// Ensure button is enabled before clicking
-		await waitFor(
-			() => {
-				expect(verifyButton).not.toBeDisabled();
-			},
-			{ timeout: 1000 }
-		);
+		await waitFor(() => {
+			expect(verifyButton).not.toBeDisabled();
+		});
 
 		await user.click(verifyButton);
 
@@ -381,30 +390,29 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should enable verify button when code is complete and email is provided", async () => {
-		const user = userEvent.setup();
 		render(<EmailVerificationModal {...defaultProps} />);
 
 		// Verify initial email is present (from defaultProps.initialEmail)
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
 		expect(emailInput.value).toBe("test@example.com");
 
-		// Instead of typing into individual inputs, use paste to fill the complete code
-		// This avoids race conditions with the auto-focus logic
-		const firstCodeInput = screen
+		// Use fireEvent.change for faster input
+		const codeInputs = screen
 			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
+			.filter(input => input.getAttribute("inputMode") === "numeric");
 
-		// Use paste to fill all 6 digits at once, which the component handles properly
-		await user.click(firstCodeInput);
-		await user.paste("123456");
+		// Fill code inputs directly
+		fireEvent.change(codeInputs[0], { target: { value: "1" } });
+		fireEvent.change(codeInputs[1], { target: { value: "2" } });
+		fireEvent.change(codeInputs[2], { target: { value: "3" } });
+		fireEvent.change(codeInputs[3], { target: { value: "4" } });
+		fireEvent.change(codeInputs[4], { target: { value: "5" } });
+		fireEvent.change(codeInputs[5], { target: { value: "6" } });
 
 		// Wait for React state to stabilize and button to be enabled
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
-		await waitFor(
-			() => {
-				expect(verifyButton).not.toBeDisabled();
-			},
-			{ timeout: 1000 }
-		);
+		await waitFor(() => {
+			expect(verifyButton).not.toBeDisabled();
+		});
 	});
 });

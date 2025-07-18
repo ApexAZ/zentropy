@@ -1,6 +1,6 @@
 /**
  * Mock Hook Factories
- * 
+ *
  * Provides consistent, reusable mock implementations for common hooks.
  * Following CLAUDE.md principles for shared test utilities.
  */

@@ -463,15 +463,15 @@ describe("useAuth", () => {
 
 			// Enable fake timers after authentication is complete
 			vi.useFakeTimers();
-			
+
 			// Advance time to trigger the timeout (200ms in test environment)
 			await act(async () => {
 				vi.advanceTimersByTime(200);
 			});
-			
+
 			// Restore real timers
 			vi.useRealTimers();
-			
+
 			// Wait for async logout operations to complete
 			await waitFor(() => {
 				expect(result.current.isAuthenticated).toBe(false);
@@ -547,10 +547,10 @@ describe("useAuth", () => {
 			await act(async () => {
 				vi.advanceTimersByTime(200);
 			});
-			
+
 			// Restore real timers
 			vi.useRealTimers();
-			
+
 			// Wait for async logout operations to complete
 			await waitFor(() => {
 				expect(result.current.isAuthenticated).toBe(false);
@@ -568,12 +568,12 @@ describe("useAuth", () => {
 
 			// Enable fake timers for timing control
 			vi.useFakeTimers();
-			
+
 			// Advance time longer than the timeout period (300ms > 200ms)
 			await act(async () => {
 				vi.advanceTimersByTime(300);
 			});
-			
+
 			// Restore real timers
 			vi.useRealTimers();
 

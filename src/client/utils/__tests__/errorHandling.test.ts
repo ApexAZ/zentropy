@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mapAccountSecurityError, shouldAutoRetry, getRetryDelay, AccountSecurityErrorHandler } from "../errorHandling";
 
 describe("mapAccountSecurityError", () => {
@@ -351,13 +351,23 @@ describe("AccountSecurityErrorHandler", () => {
 			const mockOperation = vi.fn().mockRejectedValue(new Error("Network error"));
 			const mockOnError = vi.fn();
 
-			// Use real timers but with short delays to test retry behavior
-			await expect(
-				AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError)
-			).rejects.toThrow("Network error");
+			// Mock the setTimeout to avoid real delays
+			const originalSetTimeout = global.setTimeout;
+			global.setTimeout = vi.fn().mockImplementation((callback: () => void) => {
+				callback(); // Execute immediately
+				return 1 as any;
+			});
 
-			expect(mockOperation).toHaveBeenCalledTimes(3);
-			expect(mockOnError).toHaveBeenCalledTimes(3);
+			try {
+				await expect(
+					AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError)
+				).rejects.toThrow("Network error");
+
+				expect(mockOperation).toHaveBeenCalledTimes(3);
+				expect(mockOnError).toHaveBeenCalledTimes(3);
+			} finally {
+				global.setTimeout = originalSetTimeout;
+			}
 		});
 	});
 });

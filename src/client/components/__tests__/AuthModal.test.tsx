@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import AuthModal from "../AuthModal";
 import { AuthService } from "../../services/AuthService";
@@ -126,13 +126,10 @@ describe("AuthModal", () => {
 		});
 
 		// Verify success callback is triggered (user would be redirected/modal closed)
-		// Note: AuthModal has 1000ms setTimeout before calling onSuccess
-		await waitFor(
-			() => {
-				expect(mockProps.onSuccess).toHaveBeenCalled();
-			},
-			{ timeout: 2000 }
-		);
+		// Note: AuthModal calls onSuccess immediately, only onClose is delayed
+		await waitFor(() => {
+			expect(mockProps.onSuccess).toHaveBeenCalled();
+		});
 	});
 
 	it("should allow user to register with valid information", async () => {
@@ -153,19 +150,18 @@ describe("AuthModal", () => {
 		fireEvent.change(document.querySelector('input[name="last_name"]')!, { target: { value: "Doe" } });
 		fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: "john@example.com" } });
 		fireEvent.change(document.querySelector('input[name="password"]')!, { target: { value: "Password123!" } });
-		fireEvent.change(document.querySelector('input[name="confirm_password"]')!, { target: { value: "Password123!" } });
+		fireEvent.change(document.querySelector('input[name="confirm_password"]')!, {
+			target: { value: "Password123!" }
+		});
 		await user.click(screen.getByRole("checkbox", { name: /terms of service/i }));
 
 		await user.click(screen.getByRole("button", { name: /create account/i }));
 
 		// Verify user outcome: directed to email verification
-		// Note: AuthModal has 1500ms setTimeout before calling onShowVerification
-		await waitFor(
-			() => {
-				expect(propsWithVerification.onShowVerification).toHaveBeenCalledWith("john@example.com");
-			},
-			{ timeout: 2500 }
-		);
+		// Note: AuthModal has 0ms delay in test environment
+		await waitFor(() => {
+			expect(propsWithVerification.onShowVerification).toHaveBeenCalledWith("john@example.com");
+		});
 
 		// Verify user is not automatically logged in (security best practice)
 		expect(mockAuth.login).not.toHaveBeenCalled();

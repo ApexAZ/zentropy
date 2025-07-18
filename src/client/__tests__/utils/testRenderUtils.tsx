@@ -1,6 +1,6 @@
 /**
  * Test Rendering Utilities
- * 
+ *
  * Provides consistent test wrappers and rendering utilities.
  * Following CLAUDE.md principles for shared test utilities.
  */
@@ -14,20 +14,13 @@ import { ToastProvider } from "../../contexts/ToastContext";
  * Test wrapper component that provides all necessary contexts
  */
 export const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	return (
-		<ToastProvider>
-			{children}
-		</ToastProvider>
-	);
+	return <ToastProvider>{children}</ToastProvider>;
 };
 
 /**
  * Custom render function that wraps components with necessary providers
  */
-export function renderWithProviders(
-	ui: React.ReactElement,
-	options?: Omit<RenderOptions, "wrapper">
-) {
+export function renderWithProviders(ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) {
 	return render(ui, { wrapper: TestWrapper, ...options });
 }
 
@@ -47,7 +40,7 @@ export function setupModalTest() {
 		writable: true,
 		value: ""
 	});
-	
+
 	// Mock window.HTMLElement.prototype.scrollIntoView for accessibility
 	window.HTMLElement.prototype.scrollIntoView = vi.fn();
 }

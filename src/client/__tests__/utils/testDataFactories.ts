@@ -1,6 +1,6 @@
 /**
  * Test Data Factories
- * 
+ *
  * Provides consistent, reusable test data builders for common entities.
  * Following CLAUDE.md principles for shared test utilities.
  */
@@ -41,7 +41,7 @@ export class OrganizationFactory {
 	}
 
 	static createMultiple(count: number = 2): Organization[] {
-		return Array.from({ length: count }, (_, index) => 
+		return Array.from({ length: count }, (_, index) =>
 			this.create({
 				id: `org-${index + 1}`,
 				name: `Organization ${index + 1}`,
@@ -74,7 +74,7 @@ export class ProjectFactory {
 	}
 
 	static createMultiple(count: number = 3, organizationId: string = "org-1"): Project[] {
-		return Array.from({ length: count }, (_, index) => 
+		return Array.from({ length: count }, (_, index) =>
 			this.create({
 				id: `proj-${index + 1}`,
 				name: `Project ${index + 1}`,

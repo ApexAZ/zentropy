@@ -1,6 +1,6 @@
 /**
  * Test Utilities Index
- * 
+ *
  * Centralized exports for all test utilities.
  */
 
@@ -23,10 +23,4 @@ export {
 } from "./mockHookFactories";
 
 // Render Utilities
-export {
-	TestWrapper,
-	renderWithProviders,
-	renderWithToast,
-	setupModalTest,
-	cleanupModalTest
-} from "./testRenderUtils";
+export { TestWrapper, renderWithProviders, renderWithToast, setupModalTest, cleanupModalTest } from "./testRenderUtils";

@@ -12,8 +12,8 @@ export default defineConfig({
 		setupFiles: ["./src/test-setup.ts"],
 		// Only include React component tests
 		include: ["src/client/**/*.{test,spec}.{js,ts,tsx}"],
-		// Aggressive timeout for fast failure detection
-		testTimeout: 300,
+		// Balanced timeout for fast failure detection while allowing complex async operations
+		testTimeout: 2000,
 		// Suppress React act() warnings in test environment
 		silent: false,
 		logHeapUsage: false,

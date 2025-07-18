@@ -44,9 +44,7 @@ describe("AccountSecuritySection", () => {
 	// Test skeleton loading state
 	it("should show skeleton loading state while fetching security status", () => {
 		// Mock hook to return loading state
-		(useAccountSecurity as any).mockReturnValue(
-			MockUseAccountSecurityFactory.createLoading()
-		);
+		(useAccountSecurity as any).mockReturnValue(MockUseAccountSecurityFactory.createLoading());
 
 		renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
@@ -280,7 +278,7 @@ describe("AccountSecuritySection", () => {
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
 
-		// Should call the multi-provider hook's unlinkProvider with password  
+		// Should call the multi-provider hook's unlinkProvider with password
 		// Direct assertion for synchronous mock call after user click
 		expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 	});
