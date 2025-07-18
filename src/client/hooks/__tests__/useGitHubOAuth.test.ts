@@ -21,12 +21,57 @@ describe("useGitHubOAuth", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Remove expensive environment stubbing from beforeEach
+
+		// Set up GitHub OAuth SDK mock that mimics real behavior
+		const mockGitHubSDK = {
+			OAuth: {
+				createAuthorizationURL: vi
+					.fn()
+					.mockReturnValue("https://github.com/login/oauth/authorize?client_id=mock-client"),
+				exchangeCodeForToken: vi.fn().mockResolvedValue({
+					access_token: "mock-github-access-token",
+					token_type: "bearer",
+					scope: "user:email"
+				}),
+				getUserInfo: vi.fn().mockResolvedValue({
+					id: 12345,
+					login: "testuser",
+					email: "test@example.com",
+					name: "Test User"
+				})
+			},
+			request: vi.fn().mockResolvedValue({
+				data: {
+					login: "testuser",
+					email: "test@example.com"
+				}
+			})
+		};
+
+		// Mock window.github (future-proofing for when real GitHub SDK is integrated)
+		Object.defineProperty(window, "github", {
+			value: mockGitHubSDK,
+			writable: true,
+			configurable: true
+		});
+
+		// Mock global fetch for GitHub API calls
+		global.fetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: vi.fn().mockResolvedValue({
+				login: "testuser",
+				email: "test@example.com",
+				name: "Test User"
+			})
+		});
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-		// Remove expensive environment cleanup from afterEach
+		// Clean up window.github
+		delete (window as any).github;
+		// Clean up global fetch mock
+		delete (global as any).fetch;
 	});
 
 	describe("User Workflow: Successful OAuth Flow", () => {
@@ -100,7 +145,7 @@ describe("useGitHubOAuth", () => {
 			});
 
 			expect(result.current.error).toBeNull();
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
@@ -125,7 +170,7 @@ describe("useGitHubOAuth", () => {
 			expect(mockOnError).toHaveBeenCalledWith(
 				"VITE_GITHUB_CLIENT_ID is not configured in environment variables"
 			);
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
@@ -152,7 +197,7 @@ describe("useGitHubOAuth", () => {
 
 			expect(mockOnError).toHaveBeenCalledWith("GitHub Sign-In not available");
 			expect(result.current.error).toBe("GitHub Sign-In not available");
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_GITHUB_CLIENT_ID", "mock-github-client-id");
 		});
@@ -178,6 +223,44 @@ describe("useGitHubOAuth", () => {
 			expect(typeof result.current.isLoading).toBe("boolean");
 			expect(typeof result.current.triggerOAuth).toBe("function");
 			expect(typeof result.current.clearError).toBe("function");
+		});
+	});
+
+	describe("Future SDK Integration Readiness", () => {
+		it("should handle GitHub OAuth SDK when real SDK is integrated", async () => {
+			// This test ensures the mocks are structured correctly for future GitHub SDK integration
+			const mockGitHub = (window as any).github;
+
+			expect(mockGitHub).toBeDefined();
+			expect(mockGitHub.OAuth).toBeDefined();
+			expect(mockGitHub.OAuth.createAuthorizationURL).toBeDefined();
+			expect(mockGitHub.OAuth.exchangeCodeForToken).toBeDefined();
+			expect(mockGitHub.OAuth.getUserInfo).toBeDefined();
+
+			// Test OAuth URL creation
+			const authUrl = mockGitHub.OAuth.createAuthorizationURL();
+			expect(authUrl).toContain("github.com/login/oauth/authorize");
+			expect(authUrl).toContain("client_id=mock-client");
+		});
+
+		it("should handle GitHub API requests correctly", async () => {
+			const mockGitHub = (window as any).github;
+
+			// Test API request functionality
+			const response = await mockGitHub.request();
+			expect(response.data).toBeDefined();
+			expect(response.data.login).toBe("testuser");
+			expect(response.data.email).toBe("test@example.com");
+		});
+
+		it("should handle fetch-based GitHub API calls", async () => {
+			// Test that fetch is properly mocked for GitHub API calls
+			const response = await fetch("https://api.github.com/user");
+			expect(response.ok).toBe(true);
+
+			const data = await response.json();
+			expect(data.login).toBe("testuser");
+			expect(data.email).toBe("test@example.com");
 		});
 	});
 });

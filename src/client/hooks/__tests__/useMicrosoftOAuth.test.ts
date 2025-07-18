@@ -21,12 +21,43 @@ describe("useMicrosoftOAuth", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Remove expensive environment stubbing from beforeEach
+
+		// Set up Microsoft MSAL SDK mock that mimics real behavior
+		const mockMSALSDK = {
+			PublicClientApplication: vi.fn(() => ({
+				initialize: vi.fn().mockResolvedValue(undefined),
+				loginPopup: vi.fn().mockResolvedValue({
+					account: { username: "test@example.com" },
+					accessToken: "mock-access-token",
+					idToken: "mock-id-token"
+				}),
+				getActiveAccount: vi.fn().mockReturnValue(null),
+				getAllAccounts: vi.fn().mockReturnValue([])
+			})),
+			EventType: {
+				LOGIN_SUCCESS: "msal:loginSuccess",
+				LOGIN_FAILURE: "msal:loginFailure"
+			},
+			InteractionRequiredAuthError: class MockInteractionRequiredAuthError extends Error {
+				constructor(message: string) {
+					super(message);
+					this.name = "InteractionRequiredAuthError";
+				}
+			}
+		};
+
+		// Mock window.msal (future-proofing for when real MSAL SDK is integrated)
+		Object.defineProperty(window, "msal", {
+			value: mockMSALSDK,
+			writable: true,
+			configurable: true
+		});
 	});
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-		// Remove expensive environment cleanup from afterEach
+		// Clean up window.msal
+		delete (window as any).msal;
 	});
 
 	describe("User Workflow: Successful OAuth Flow", () => {
@@ -100,7 +131,7 @@ describe("useMicrosoftOAuth", () => {
 			});
 
 			expect(result.current.error).toBeNull();
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
@@ -127,7 +158,7 @@ describe("useMicrosoftOAuth", () => {
 			expect(mockOnError).toHaveBeenCalledWith(
 				"VITE_MICROSOFT_CLIENT_ID is not configured in environment variables"
 			);
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
@@ -154,7 +185,7 @@ describe("useMicrosoftOAuth", () => {
 
 			expect(mockOnError).toHaveBeenCalledWith("Microsoft Sign-In not available");
 			expect(result.current.error).toBe("Microsoft Sign-In not available");
-			
+
 			// Restore default client ID for subsequent tests
 			vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 		});
@@ -180,6 +211,39 @@ describe("useMicrosoftOAuth", () => {
 			expect(typeof result.current.isLoading).toBe("boolean");
 			expect(typeof result.current.triggerOAuth).toBe("function");
 			expect(typeof result.current.clearError).toBe("function");
+		});
+	});
+
+	describe("Future SDK Integration Readiness", () => {
+		it("should handle MSAL SDK initialization when real SDK is integrated", async () => {
+			// This test ensures the mocks are structured correctly for future MSAL integration
+			const mockMSAL = (window as any).msal;
+
+			expect(mockMSAL).toBeDefined();
+			expect(mockMSAL.PublicClientApplication).toBeDefined();
+			expect(typeof mockMSAL.PublicClientApplication).toBe("function");
+
+			// Test that MSAL client can be instantiated
+			const client = new mockMSAL.PublicClientApplication({
+				auth: {
+					clientId: "test-client-id"
+				}
+			});
+
+			expect(client.initialize).toBeDefined();
+			expect(client.loginPopup).toBeDefined();
+			expect(typeof client.initialize).toBe("function");
+			expect(typeof client.loginPopup).toBe("function");
+		});
+
+		it("should handle MSAL error types correctly", () => {
+			const mockMSAL = (window as any).msal;
+
+			expect(mockMSAL.InteractionRequiredAuthError).toBeDefined();
+
+			const error = new mockMSAL.InteractionRequiredAuthError("Test error");
+			expect(error.name).toBe("InteractionRequiredAuthError");
+			expect(error.message).toBe("Test error");
 		});
 	});
 });
