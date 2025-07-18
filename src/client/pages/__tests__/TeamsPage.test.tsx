@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import TeamsPage from "../TeamsPage";
@@ -245,9 +245,10 @@ describe("TeamsPage", () => {
 			expect(screen.getByText("Basic Information")).toBeInTheDocument();
 		});
 
-		// Fill form with too long name using placeholder selector
+		// Fill form with too long name - PERFORMANCE FIX: use fireEvent instead of typing 101 chars
 		const nameInput = screen.getByPlaceholderText("e.g., Frontend Development Team");
-		await user.type(nameInput, "a".repeat(101)); // Too long
+		fireEvent.change(nameInput, { target: { value: "a".repeat(101) } });
+		fireEvent.blur(nameInput); // Trigger validation
 
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
@@ -262,11 +263,12 @@ describe("TeamsPage", () => {
 		const user = userEvent.setup();
 		render(<TeamsPage />, { wrapper: TestWrapper });
 
+		// Wait for loading to complete
 		await waitFor(() => {
 			expect(screen.queryByText("Loading teams...")).not.toBeInTheDocument();
 		});
 
-		// Open create modal using header button
+		// Open create modal
 		const headerButton = screen.getByRole("button", { name: "Create New Team" });
 		await user.click(headerButton);
 
@@ -275,12 +277,16 @@ describe("TeamsPage", () => {
 			expect(screen.getByText("Basic Information")).toBeInTheDocument();
 		});
 
-		// Fill form with valid name but too long description using placeholder selectors
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "Valid Team Name");
-		await user.type(
-			screen.getByPlaceholderText("Brief description of the team's focus and responsibilities"),
-			"a".repeat(501)
-		); // Too long
+		// Fill form with valid name but too long description - use fast direct input setting
+		const nameInput = screen.getByPlaceholderText("e.g., Frontend Development Team");
+		const descInput = screen.getByPlaceholderText("Brief description of the team's focus and responsibilities");
+		
+		// Fast typing for name
+		fireEvent.change(nameInput, { target: { value: "Valid Team Name" } });
+		
+		// PERFORMANCE FIX: Use fireEvent.change instead of typing 501 characters
+		fireEvent.change(descInput, { target: { value: "a".repeat(501) } });
+		fireEvent.blur(descInput); // Trigger validation
 
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
@@ -324,10 +330,10 @@ describe("TeamsPage", () => {
 		});
 
 		// Fill form with valid name but negative velocity using placeholder selectors
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "Valid Team Name");
+		fireEvent.change(screen.getByPlaceholderText("e.g., Frontend Development Team"), { target: { value: "Valid Team Name" } });
 		const velocityInput = screen.getByPlaceholderText("Story points per sprint");
 		await user.clear(velocityInput);
-		await user.type(velocityInput, "-5");
+		fireEvent.change(velocityInput, { target: { value: "-5" } });
 
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
@@ -389,14 +395,14 @@ describe("TeamsPage", () => {
 		});
 
 		// Fill form with valid data using placeholder selectors
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "New Team");
-		await user.type(
+		fireEvent.change(screen.getByPlaceholderText("e.g., Frontend Development Team"), { target: { value: "New Team" } });
+		fireEvent.change(
 			screen.getByPlaceholderText("Brief description of the team's focus and responsibilities"),
-			"Test team"
+			{ target: { value: "Test team" } }
 		);
 		const velocityInput = screen.getByPlaceholderText("Story points per sprint");
 		await user.clear(velocityInput);
-		await user.type(velocityInput, "25");
+		fireEvent.change(velocityInput, { target: { value: "25" } });
 		// Select options using IDs since they're more reliable for select elements
 		await user.selectOptions(screen.getByDisplayValue("2 Weeks"), "14");
 		await user.selectOptions(screen.getByDisplayValue("5 Days (Standard)"), "5");
@@ -500,7 +506,7 @@ describe("TeamsPage", () => {
 		// Update name
 		const nameInput = screen.getByDisplayValue("Original Team");
 		await user.clear(nameInput);
-		await user.type(nameInput, "Updated Team");
+		fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 		const updateButton = screen.getByText("Update Team");
 		await user.click(updateButton);
@@ -687,7 +693,7 @@ describe("TeamsPage", () => {
 			expect(screen.getByText("Basic Information")).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "Test Team");
+		fireEvent.change(screen.getByPlaceholderText("e.g., Frontend Development Team"), { target: { value: "Test Team" } });
 
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
@@ -833,7 +839,7 @@ describe("TeamsPage", () => {
 			expect(screen.getByText("Basic Information")).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "New Team");
+		fireEvent.change(screen.getByPlaceholderText("e.g., Frontend Development Team"), { target: { value: "New Team" } });
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
 		await user.click(modalSubmitButton);
@@ -908,7 +914,7 @@ describe("TeamsPage", () => {
 			expect(screen.getByText("Basic Information")).toBeInTheDocument();
 		});
 
-		await user.type(screen.getByPlaceholderText("e.g., Frontend Development Team"), "New Team");
+		fireEvent.change(screen.getByPlaceholderText("e.g., Frontend Development Team"), { target: { value: "New Team" } });
 		const submitButtons = screen.getAllByRole("button", { name: "Create Team" });
 		const modalSubmitButton = submitButtons.find(button => button.getAttribute("type") === "submit")!;
 		await user.click(modalSubmitButton);

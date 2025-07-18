@@ -44,8 +44,6 @@
 		"quality": "npm run format && npm run lint && npm run type-check && npm run test",
 		"quality:pre-commit": "npm run quality",
 		"// === PERFORMANCE (Advanced) ===": "",
-		"test:performance": "node scripts/test-performance.cjs",
-		"test:dashboard": "node scripts/performance-dashboard.cjs",
 		"analyze:bundle": "echo '📊 Bundle Size Analysis:' && du -sh src/client/dist/ && echo '📁 Bundle Contents:' && ls -la src/client/dist/ && echo '📁 Assets:' && ls -lah src/client/dist/assets/",
 		"analyze:lighthouse": "lhci autorun",
 		"perf:build-analyze": "npm run build && npm run analyze:bundle",

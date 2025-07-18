@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -218,7 +218,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		// Enter password and confirm
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "user-password");
+		fireEvent.change(passwordInput, { target: { value: "user-password" } });
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
@@ -400,7 +400,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		// Try with wrong password
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "wrong-password");
+		fireEvent.change(passwordInput, { target: { value: "wrong-password" } });
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);

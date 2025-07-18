@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -120,7 +120,7 @@ describe("EnhancedConfirmationModal", () => {
 			expect(mockOnConfirm).not.toHaveBeenCalled();
 
 			// Should confirm with valid password
-			await user.type(passwordInput, "validpassword");
+			fireEvent.change(passwordInput, { target: { value: "validpassword" } });
 			await user.click(confirmButton);
 			expect(mockOnConfirm).toHaveBeenCalledWith("validpassword");
 		});
@@ -139,13 +139,13 @@ describe("EnhancedConfirmationModal", () => {
 			const confirmButton = screen.getByRole("button", { name: "Confirm Action" });
 
 			// Test whitespace-only password
-			await user.type(passwordInput, "   ");
+			fireEvent.change(passwordInput, { target: { value: "   " } });
 			await user.click(confirmButton);
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 
 			// Clear and test valid password
 			await user.clear(passwordInput);
-			await user.type(passwordInput, "validpassword");
+			fireEvent.change(passwordInput, { target: { value: "validpassword" } });
 			await user.click(confirmButton);
 			expect(mockOnConfirm).toHaveBeenCalledWith("validpassword");
 		});
@@ -312,7 +312,7 @@ describe("EnhancedConfirmationModal", () => {
 			);
 
 			const passwordInput = screen.getByLabelText(/password/i);
-			await user.type(passwordInput, "somepassword");
+			fireEvent.change(passwordInput, { target: { value: "somepassword" } });
 
 			const cancelButton = screen.getByRole("button", { name: "Cancel" });
 			await user.click(cancelButton);
@@ -360,7 +360,7 @@ describe("EnhancedConfirmationModal", () => {
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 
 			// Clear error by typing password
-			await user.type(passwordInput, "password");
+			fireEvent.change(passwordInput, { target: { value: "password" } });
 			expect(screen.queryByText("Password is required to confirm this action")).not.toBeInTheDocument();
 		});
 

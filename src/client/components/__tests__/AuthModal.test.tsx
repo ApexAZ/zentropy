@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -115,8 +115,8 @@ describe("AuthModal", () => {
 
 		// User fills out sign in form
 		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
-		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
-		await user.type(document.querySelector('input[name="password"]')!, "password123");
+		fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: "test@example.com" } });
+		fireEvent.change(document.querySelector('input[name="password"]')!, { target: { value: "password123" } });
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -149,11 +149,11 @@ describe("AuthModal", () => {
 		// User fills out registration form
 		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
 		// TODO: Replace with getByLabelText queries when accessibility is improved
-		await user.type(document.querySelector('input[name="first_name"]')!, "John");
-		await user.type(document.querySelector('input[name="last_name"]')!, "Doe");
-		await user.type(document.querySelector('input[name="email"]')!, "john@example.com");
-		await user.type(document.querySelector('input[name="password"]')!, "Password123!");
-		await user.type(document.querySelector('input[name="confirm_password"]')!, "Password123!");
+		fireEvent.change(document.querySelector('input[name="first_name"]')!, { target: { value: "John" } });
+		fireEvent.change(document.querySelector('input[name="last_name"]')!, { target: { value: "Doe" } });
+		fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: "john@example.com" } });
+		fireEvent.change(document.querySelector('input[name="password"]')!, { target: { value: "Password123!" } });
+		fireEvent.change(document.querySelector('input[name="confirm_password"]')!, { target: { value: "Password123!" } });
 		await user.click(screen.getByRole("checkbox", { name: /terms of service/i }));
 
 		await user.click(screen.getByRole("button", { name: /create account/i }));
@@ -196,8 +196,8 @@ describe("AuthModal", () => {
 
 		// User fills out form with invalid credentials
 		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
-		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
-		await user.type(document.querySelector('input[name="password"]')!, "wrong-password");
+		fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: "test@example.com" } });
+		fireEvent.change(document.querySelector('input[name="password"]')!, { target: { value: "wrong-password" } });
 
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -261,8 +261,8 @@ describe("AuthModal", () => {
 
 		// User fills out form and chooses to be remembered
 		// Note: Using direct DOM queries temporarily due to missing htmlFor attributes in AuthModal
-		await user.type(document.querySelector('input[name="email"]')!, "test@example.com");
-		await user.type(document.querySelector('input[name="password"]')!, "password123");
+		fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: "test@example.com" } });
+		fireEvent.change(document.querySelector('input[name="password"]')!, { target: { value: "password123" } });
 		await user.click(screen.getByRole("checkbox", { name: /remember me/i }));
 		await user.click(screen.getByRole("button", { name: /sign in/i }));
 

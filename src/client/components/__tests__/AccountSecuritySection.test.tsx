@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, cleanup, waitFor } from "@testing-library/react";
+import { screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -275,7 +275,7 @@ describe("AccountSecuritySection", () => {
 			expect(document.getElementById("password")).toBeInTheDocument();
 		});
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "current-password");
+		fireEvent.change(passwordInput, { target: { value: "current-password" } });
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
@@ -504,7 +504,7 @@ describe("AccountSecuritySection", () => {
 		});
 
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "wrong-password");
+		fireEvent.change(passwordInput, { target: { value: "wrong-password" } });
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);

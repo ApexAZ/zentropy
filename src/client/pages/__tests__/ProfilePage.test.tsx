@@ -183,7 +183,8 @@ describe("ProfilePage", () => {
 		// Make email invalid too
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
 		await user.clear(emailInput);
-		await user.type(emailInput, "invalid-email");
+		fireEvent.change(emailInput, { target: { value: "invalid-email" } });
+		fireEvent.blur(emailInput); // Trigger validation
 		expect(emailInput.value).toBe("invalid-email");
 
 		// Submit the form by triggering the form submit event
@@ -209,10 +210,11 @@ describe("ProfilePage", () => {
 		// Open edit form
 		await user.click(screen.getByText("Edit Profile"));
 
-		// Test first name too long
+		// Test first name too long - PERFORMANCE FIX: use fireEvent instead of typing 101 chars
 		const firstNameInput = screen.getByLabelText("First Name");
 		await user.clear(firstNameInput);
-		await user.type(firstNameInput, "a".repeat(101)); // Too long
+		fireEvent.change(firstNameInput, { target: { value: "a".repeat(101) } });
+		fireEvent.blur(firstNameInput); // Trigger validation
 
 		const submitButton = screen.getByText("Save Changes");
 		await user.click(submitButton);
@@ -257,11 +259,11 @@ describe("ProfilePage", () => {
 		// Update name
 		const firstNameInput = screen.getByLabelText("First Name");
 		await user.clear(firstNameInput);
-		await user.type(firstNameInput, "Updated");
+		fireEvent.change(firstNameInput, { target: { value: "Updated" } });
 
 		const lastNameInput = screen.getByLabelText("Last Name");
 		await user.clear(lastNameInput);
-		await user.type(lastNameInput, "Name");
+		fireEvent.change(lastNameInput, { target: { value: "Name" } });
 
 		const submitButton = screen.getByText("Save Changes");
 		await user.click(submitButton);
@@ -329,7 +331,7 @@ describe("ProfilePage", () => {
 		// Make changes
 		const firstNameInput = screen.getByLabelText("First Name");
 		await user.clear(firstNameInput);
-		await user.type(firstNameInput, "Changed");
+		fireEvent.change(firstNameInput, { target: { value: "Changed" } });
 
 		// Cancel
 		const cancelButton = screen.getByText("Cancel");
@@ -415,9 +417,10 @@ describe("ProfilePage", () => {
 		await user.click(screen.getByText("Change Password"));
 
 		// Fill with weak password
-		await user.type(screen.getByLabelText("Current Password"), "current123");
-		await user.type(screen.getByLabelText("New Password"), "weak");
-		await user.type(screen.getByLabelText("Confirm New Password"), "weak");
+		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
+		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "weak" } });
+		fireEvent.blur(screen.getByLabelText("New Password"));
+		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "weak" } });
 
 		const submitButton = screen.getByText("Update Password");
 		await user.click(submitButton);
@@ -451,9 +454,9 @@ describe("ProfilePage", () => {
 		await user.click(screen.getByText("Change Password"));
 
 		// Fill with mismatched passwords
-		await user.type(screen.getByLabelText("Current Password"), "current123");
-		await user.type(screen.getByLabelText("New Password"), "StrongPass123!");
-		await user.type(screen.getByLabelText("Confirm New Password"), "DifferentPass123!");
+		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
+		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "StrongPass123!" } });
+		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "DifferentPass123!" } });
 
 		const submitButton = screen.getByText("Update Password");
 		await user.click(submitButton);
@@ -490,9 +493,9 @@ describe("ProfilePage", () => {
 		await user.click(screen.getByText("Change Password"));
 
 		// Fill with valid data
-		await user.type(screen.getByLabelText("Current Password"), "current123");
-		await user.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
-		await user.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
+		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
+		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
+		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewStrongPass123!" } });
 
 		const submitButton = screen.getByText("Update Password");
 		await user.click(submitButton);
@@ -544,9 +547,9 @@ describe("ProfilePage", () => {
 
 		// Open password change form and submit
 		await user.click(screen.getByText("Change Password"));
-		await user.type(screen.getByLabelText("Current Password"), "wrong123");
-		await user.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
-		await user.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
+		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "wrong123" } });
+		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
+		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewStrongPass123!" } });
 		await user.click(screen.getByText("Update Password"));
 
 		await waitFor(() => {
@@ -574,8 +577,8 @@ describe("ProfilePage", () => {
 		await user.click(screen.getByText("Change Password"));
 
 		// Fill form
-		await user.type(screen.getByLabelText("Current Password"), "current123");
-		await user.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
+		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
+		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
 
 		// Cancel
 		const cancelButton = screen.getByText("Cancel");

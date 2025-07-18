@@ -17,9 +17,9 @@ export default defineConfig({
 		// Suppress React act() warnings in test environment
 		silent: false,
 		logHeapUsage: false,
-		// Standard configuration for React component tests
+		// Optimized parallel execution
 		pool: 'threads',
-		maxConcurrency: 5,
+		maxConcurrency: 8,
 		// Performance monitoring
 		reporters: ['default', 'json'],
 		outputFile: {

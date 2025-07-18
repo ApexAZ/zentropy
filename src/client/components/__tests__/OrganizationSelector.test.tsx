@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -363,8 +363,8 @@ describe("OrganizationSelector", () => {
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
 			// Fill in form
-			await user.type(screen.getByRole("textbox", { name: /organization name/i }), "New Org");
-			await user.type(screen.getByRole("textbox", { name: /description/i }), "New organization description");
+			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), { target: { value: "New Org" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "New organization description" } });
 
 			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
@@ -397,7 +397,7 @@ describe("OrganizationSelector", () => {
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
 			// Fill in form
-			await user.type(screen.getByRole("textbox", { name: /organization name/i }), "New Org");
+			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), { target: { value: "New Org" } });
 
 			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
@@ -592,8 +592,8 @@ describe("OrganizationSelector", () => {
 				expect(screen.getByLabelText("Organization Name")).toBeInTheDocument();
 			});
 
-			await user.type(screen.getByLabelText("Organization Name"), "New Org");
-			await user.type(screen.getByLabelText("Description"), "New organization");
+			fireEvent.change(screen.getByLabelText("Organization Name"), { target: { value: "New Org" } });
+			fireEvent.change(screen.getByLabelText("Description"), { target: { value: "New organization" } });
 
 			// Step 3: Submit the form
 			const submitButton = screen.getByRole("button", { name: /create organization/i });

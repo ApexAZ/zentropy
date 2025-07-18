@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -36,11 +36,10 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should handle password input", async () => {
-		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "mypassword");
+		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
 
 		expect(passwordInput).toHaveValue("mypassword");
 	});
@@ -52,7 +51,7 @@ describe("PasswordConfirmationModal", () => {
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
 		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
 
-		await user.type(passwordInput, "mypassword");
+		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
 		await user.click(confirmButton);
 
 		expect(mockOnConfirm).toHaveBeenCalledWith("mypassword");
@@ -76,7 +75,7 @@ describe("PasswordConfirmationModal", () => {
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
 		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
 
-		await user.type(passwordInput, "   ");
+		fireEvent.change(passwordInput, { target: { value: "   " } });
 		await user.click(confirmButton);
 
 		expect(screen.getByText("Password is required")).toBeInTheDocument();
@@ -105,7 +104,7 @@ describe("PasswordConfirmationModal", () => {
 		expect(screen.getByText("Password is required")).toBeInTheDocument();
 
 		// Enter password and submit again
-		await user.type(passwordInput, "mypassword");
+		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
 		await user.click(confirmButton);
 
 		expect(screen.queryByText("Password is required")).not.toBeInTheDocument();
@@ -151,7 +150,7 @@ describe("PasswordConfirmationModal", () => {
 		const { rerender } = render(<PasswordConfirmationModal {...defaultProps} />);
 
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		await user.type(passwordInput, "mypassword");
+		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
 
 		// Trigger validation error
 		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { SecurityHelpFAQ } from "../SecurityHelpFAQ";
@@ -151,23 +151,21 @@ describe("SecurityHelpFAQ Component", () => {
 
 	describe("Search and Filtering", () => {
 		it("should allow searching through FAQ content", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
 			expect(searchInput).toBeInTheDocument();
 
-			await user.type(searchInput, "multi-factor");
+			fireEvent.change(searchInput, { target: { value: "multi-factor" } });
 			expect(screen.getByText(/what is multi-factor authentication/i)).toBeInTheDocument();
 			expect(screen.queryByText(/why should i link my google account/i)).not.toBeInTheDocument();
 		});
 
 		it("should show no results message when search finds nothing", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
-			await user.type(searchInput, "nonexistent topic");
+			fireEvent.change(searchInput, { target: { value: "nonexistent topic" } });
 
 			expect(screen.getByText(/no matching questions found/i)).toBeInTheDocument();
 		});

@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -221,7 +221,7 @@ describe("TeamConfigurationPage", () => {
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			await user.clear(nameInput);
-			await user.type(nameInput, "Updated Team");
+			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 			const saveButton = screen.getByRole("button", { name: /save team information/i });
 			await user.click(saveButton);
@@ -280,7 +280,7 @@ describe("TeamConfigurationPage", () => {
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			await user.clear(nameInput);
-			await user.type(nameInput, "Updated Team");
+			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 			const saveButton = screen.getByRole("button", { name: /save team information/i });
 			await user.click(saveButton);
@@ -328,7 +328,7 @@ describe("TeamConfigurationPage", () => {
 
 			const velocityInput = screen.getByLabelText(/story points per sprint/i);
 			await user.clear(velocityInput);
-			await user.type(velocityInput, "60");
+			fireEvent.change(velocityInput, { target: { value: "60" } });
 
 			const saveButton = screen.getByRole("button", { name: /save velocity settings/i });
 			await user.click(saveButton);
@@ -427,7 +427,7 @@ describe("TeamConfigurationPage", () => {
 
 			// Fill form
 			const emailInput = screen.getByLabelText(/email address/i);
-			await user.type(emailInput, "new.member@example.com");
+			fireEvent.change(emailInput, { target: { value: "new.member@example.com" } });
 
 			const roleSelect = screen.getByLabelText(/role/i);
 			await user.selectOptions(roleSelect, "member");
@@ -569,13 +569,13 @@ describe("TeamConfigurationPage", () => {
 
 			// Fill form
 			const nameInput = screen.getByLabelText(/sprint name/i);
-			await user.type(nameInput, "Sprint 3");
+			fireEvent.change(nameInput, { target: { value: "Sprint 3" } });
 
 			const startDateInput = screen.getByLabelText(/start date/i);
-			await user.type(startDateInput, "2025-02-01");
+			fireEvent.change(startDateInput, { target: { value: "2025-02-01" } });
 
 			const endDateInput = screen.getByLabelText(/end date/i);
-			await user.type(endDateInput, "2025-02-14");
+			fireEvent.change(endDateInput, { target: { value: "2025-02-14" } });
 
 			const submitButton = screen.getByRole("button", { name: /create sprint/i });
 			await user.click(submitButton);
@@ -613,13 +613,13 @@ describe("TeamConfigurationPage", () => {
 
 			// Fill form with invalid dates (end date before start date)
 			const nameInput = screen.getByLabelText(/sprint name/i);
-			await user.type(nameInput, "Sprint 3");
+			fireEvent.change(nameInput, { target: { value: "Sprint 3" } });
 
 			const startDateInput = screen.getByLabelText(/start date/i);
-			await user.type(startDateInput, "2025-02-14");
+			fireEvent.change(startDateInput, { target: { value: "2025-02-14" } });
 
 			const endDateInput = screen.getByLabelText(/end date/i);
-			await user.type(endDateInput, "2025-02-01");
+			fireEvent.change(endDateInput, { target: { value: "2025-02-01" } });
 
 			const submitButton = screen.getByRole("button", { name: /create sprint/i });
 			await user.click(submitButton);
@@ -670,7 +670,7 @@ describe("TeamConfigurationPage", () => {
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			await user.clear(nameInput);
-			await user.type(nameInput, "Updated Team");
+			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 			const saveButton = screen.getByRole("button", { name: /save team information/i });
 			await user.click(saveButton);

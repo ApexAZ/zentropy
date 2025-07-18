@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import CalendarPage from "../CalendarPage";
@@ -213,9 +213,9 @@ describe("CalendarPage", () => {
 		});
 
 		// Fill form with invalid date range (end before start)
-		await user.type(screen.getByLabelText("Title *"), "Test Entry");
-		await user.type(screen.getByLabelText("Start Date *"), "2025-07-20");
-		await user.type(screen.getByLabelText("End Date *"), "2025-07-15");
+		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "Test Entry" } });
+		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-20" } });
+		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
 
 		const submitButton = screen.getByText("Add Entry");
 		await user.click(submitButton);
@@ -275,10 +275,10 @@ describe("CalendarPage", () => {
 		});
 
 		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
-		await user.type(screen.getByLabelText("Title *"), "New Entry");
-		await user.type(screen.getByLabelText("Description"), "Test description");
-		await user.type(screen.getByLabelText("Start Date *"), "2025-07-15");
-		await user.type(screen.getByLabelText("End Date *"), "2025-07-15");
+		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "New Entry" } });
+		fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Test description" } });
+		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-15" } });
+		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
 		await user.selectOptions(screen.getByLabelText("Entry Type *"), "pto");
 
 		const submitButton = screen.getByText("Add Entry");
@@ -338,9 +338,9 @@ describe("CalendarPage", () => {
 		});
 
 		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
-		await user.type(screen.getByLabelText("Title *"), "Test Entry");
-		await user.type(screen.getByLabelText("Start Date *"), "2025-07-15");
-		await user.type(screen.getByLabelText("End Date *"), "2025-07-15");
+		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "Test Entry" } });
+		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-15" } });
+		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
 
 		const submitButton = screen.getByText("Add Entry");
 		await user.click(submitButton);
@@ -527,7 +527,7 @@ describe("CalendarPage", () => {
 		// Update title
 		const titleInput = screen.getByDisplayValue("Original Entry");
 		await user.clear(titleInput);
-		await user.type(titleInput, "Updated Entry");
+		fireEvent.change(titleInput, { target: { value: "Updated Entry" } });
 
 		const updateButton = screen.getByText("Update Entry");
 		await user.click(updateButton);

@@ -1,7 +1,7 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
 import ProjectCreationModal from "../ProjectCreationModal";
 import { useProject } from "../../hooks/useProject";
@@ -180,7 +180,10 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "a".repeat(256));
+			// PERFORMANCE FIX: use fireEvent instead of typing 256 chars
+			const nameInput = screen.getByRole("textbox", { name: /project name/i });
+			fireEvent.change(nameInput, { target: { value: "a".repeat(256) } });
+			fireEvent.blur(nameInput);
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			expect(screen.getByText("Project name must be less than 255 characters")).toBeInTheDocument();
@@ -195,7 +198,7 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
@@ -206,7 +209,7 @@ describe("ProjectCreationModal", () => {
 			const user = userEvent.setup();
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
 
 			// When personal is selected, organization section should be hidden
@@ -221,8 +224,8 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
-			await user.type(screen.getByRole("textbox", { name: /description/i }), "Test description");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 
 			await user.click(screen.getByRole("button", { name: /create project/i }));
@@ -241,7 +244,7 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Personal Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Personal Project" } });
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
 
 			await user.click(screen.getByRole("button", { name: /create project/i }));
@@ -259,7 +262,7 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			await waitFor(() => {
@@ -275,7 +278,7 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject but not close modal due to error
@@ -380,7 +383,7 @@ describe("ProjectCreationModal", () => {
 			const user = userEvent.setup();
 			render(<ProjectCreationModal {...mockProps} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
 
 			expect(screen.getByText("An organization is required for team projects")).toBeInTheDocument();
@@ -452,8 +455,8 @@ describe("ProjectCreationModal", () => {
 
 			render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
-			await user.type(screen.getByRole("textbox", { name: /description/i }), "Test description");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject with the provided data
@@ -485,11 +488,10 @@ describe("ProjectCreationModal", () => {
 
 	describe("Form Reset", () => {
 		it("should reset form when modal is closed", async () => {
-			const user = userEvent.setup();
 			const { rerender } = render(<ProjectCreationModal {...mockProps} />);
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
-			await user.type(screen.getByRole("textbox", { name: /description/i }), "Test description");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
+			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), { target: { value: "Test description" } });
 
 			// Close modal
 			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);
@@ -593,7 +595,7 @@ describe("ProjectCreationModal", () => {
 				wrapper: TestWrapper
 			});
 
-			await user.type(screen.getByRole("textbox", { name: /project name/i }), "Test Project");
+			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), { target: { value: "Test Project" } });
 			await user.click(screen.getByRole("button", { name: /create project/i }));
 
 			// Should call createProject and handle error gracefully

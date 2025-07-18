@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -368,10 +368,9 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 
 		it("should filter projects by search term", async () => {
-			const user = userEvent.setup();
 			render(<NavigationPanel {...mockProps} />);
 
-			await user.type(screen.getByPlaceholderText("Search projects..."), "Test");
+			fireEvent.change(screen.getByPlaceholderText("Search projects..."), { target: { value: "Test" } });
 
 			expect(screen.getByText("Test Project")).toBeInTheDocument();
 			expect(screen.queryByText("Personal Project")).not.toBeInTheDocument();
