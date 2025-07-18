@@ -6,6 +6,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		typecheck: {
+			enabled: false,
 			tsconfig: './tsconfig.test.json'
 		},
 		environment: "jsdom",

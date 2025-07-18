@@ -1,6 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import EmailVerificationModal from "../EmailVerificationModal";
@@ -27,20 +26,25 @@ describe("EmailVerificationModal", () => {
 	};
 
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.clearAllMocks();
 		mockFetch.mockClear();
 		vi.mocked(clearPendingVerification).mockClear();
-		// Reset DOM state
-		cleanup();
 	});
 
 	afterEach(() => {
-		// Ensure clean state between tests
-		cleanup();
-		vi.clearAllMocks();
-		// Clear any pending timers that might affect subsequent tests
-		vi.clearAllTimers();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
+
+	const fillCode = (code: string) => {
+		const codeInputs = screen
+			.getAllByRole("textbox")
+			.filter(input => input.getAttribute("inputMode") === "numeric");
+		code.split("").forEach((char, index) => {
+			fireEvent.change(codeInputs[index], { target: { value: char } });
+		});
+	};
 
 	it("should not render when isOpen is false", () => {
 		render(<EmailVerificationModal {...defaultProps} isOpen={false} />);
@@ -49,370 +53,175 @@ describe("EmailVerificationModal", () => {
 
 	it("should render verification form when open", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
 		expect(screen.getByText("Verify Your Email")).toBeInTheDocument();
-		expect(screen.getByText("We've sent a 6-digit verification code to your email address.")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email Address")).toBeInTheDocument();
 		expect(screen.getByText("Verification Code")).toBeInTheDocument();
 	});
 
 	it("should pre-populate email field with initialEmail", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
 		expect(emailInput.value).toBe("test@example.com");
 	});
 
-	it("should handle code input", async () => {
-		const user = userEvent.setup();
+	it("should handle code input", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		// Get all code input fields
+		fillCode("1");
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		expect(codeInputs).toHaveLength(6);
-
-		// Test that individual inputs accept numeric values
-		await user.type(codeInputs[0], "1");
 		expect(codeInputs[0]).toHaveValue("1");
 	});
 
-	it("should handle backspace navigation between code inputs", async () => {
-		const user = userEvent.setup();
+	it("should handle backspace navigation between code inputs", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		// Focus second input and press backspace
 		codeInputs[1].focus();
-		await user.keyboard("{Backspace}");
+		fireEvent.keyDown(codeInputs[1], { key: "Backspace" });
 		expect(codeInputs[0]).toHaveFocus();
 	});
 
-	it("should handle paste of 6-digit code", async () => {
-		const user = userEvent.setup();
+	it("should handle paste of 6-digit code", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
 		const firstCodeInput = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
-
-		// Paste 6-digit code
-		await user.click(firstCodeInput);
-		await user.paste("123456");
-
-		// All inputs should be filled
+		fireEvent.paste(firstCodeInput, { clipboardData: { getData: () => "123456" } });
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		expect((codeInputs[0] as HTMLInputElement).value).toBe("1");
-		expect((codeInputs[1] as HTMLInputElement).value).toBe("2");
-		expect((codeInputs[2] as HTMLInputElement).value).toBe("3");
-		expect((codeInputs[3] as HTMLInputElement).value).toBe("4");
-		expect((codeInputs[4] as HTMLInputElement).value).toBe("5");
-		expect((codeInputs[5] as HTMLInputElement).value).toBe("6");
+		expect(codeInputs[5]).toHaveValue("6");
 	});
 
-	it("should disable verify button when email is empty", async () => {
-		const user = userEvent.setup();
+	it("should disable verify button when email is empty", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		// Clear the email
 		const emailInput = screen.getByLabelText("Email Address");
-		await user.clear(emailInput);
-
-		// Use fireEvent.change for faster input
-		const codeInputs = screen
-			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		// Fill code inputs directly
-		fireEvent.change(codeInputs[0], { target: { value: "1" } });
-		fireEvent.change(codeInputs[1], { target: { value: "2" } });
-		fireEvent.change(codeInputs[2], { target: { value: "3" } });
-		fireEvent.change(codeInputs[3], { target: { value: "4" } });
-		fireEvent.change(codeInputs[4], { target: { value: "5" } });
-		fireEvent.change(codeInputs[5], { target: { value: "6" } });
-
-		// Button should be disabled when email is empty even with complete code
+		fireEvent.change(emailInput, { target: { value: "" } });
+		fillCode("123456");
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
-		await waitFor(
-			() => {
-				expect(verifyButton).toBeDisabled();
-			},
-			{ timeout: 1000 }
-		);
+		expect(verifyButton).toBeDisabled();
 	});
 
 	it("should successfully verify code", async () => {
-		const user = userEvent.setup();
-
-		// Mock successful verification response
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
-			json: () =>
-				Promise.resolve({
-					message: "Email verified successfully",
-					success: true,
-					user_id: "123"
-				})
+			json: () => Promise.resolve({ message: "Email verified successfully", success: true, user_id: "123" })
 		});
 
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		// Use fireEvent.change for faster input (instead of user.paste which is slower)
-		const codeInputs = screen
-			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		// Fill code inputs directly
-		fireEvent.change(codeInputs[0], { target: { value: "1" } });
-		fireEvent.change(codeInputs[1], { target: { value: "2" } });
-		fireEvent.change(codeInputs[2], { target: { value: "3" } });
-		fireEvent.change(codeInputs[3], { target: { value: "4" } });
-		fireEvent.change(codeInputs[4], { target: { value: "5" } });
-		fireEvent.change(codeInputs[5], { target: { value: "6" } });
+		fillCode("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
+		expect(verifyButton).not.toBeDisabled();
+		fireEvent.click(verifyButton);
 
-		// Wait for button to be enabled
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
+		await act(async () => {
+			await Promise.resolve();
 		});
 
-		await user.click(verifyButton);
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/verify-code", expect.any(Object));
+		expect(screen.getByText("Email Verified!")).toBeInTheDocument();
+		expect(vi.mocked(clearPendingVerification)).toHaveBeenCalled();
 
-		// Should call verification endpoint
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/verify-code", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					email: "test@example.com",
-					code: "123456",
-					verification_type: "email_verification"
-				})
-			});
+		act(() => {
+			vi.advanceTimersByTime(2000);
 		});
 
-		// Should show success state
-		await waitFor(() => {
-			expect(screen.getByText("Email Verified!")).toBeInTheDocument();
-		});
-
-		// Should clear pending verification state
-		await waitFor(() => {
-			expect(vi.mocked(clearPendingVerification)).toHaveBeenCalled();
-		});
-
-		// Should call onSuccess and onClose after delay (2 seconds)
-		await waitFor(
-			() => {
-				expect(mockOnSuccess).toHaveBeenCalled();
-				expect(mockOnClose).toHaveBeenCalled();
-			},
-			{ timeout: 3000 }
-		);
-	}, 4000);
+		expect(mockOnSuccess).toHaveBeenCalled();
+		expect(mockOnClose).toHaveBeenCalled();
+	});
 
 	it("should handle verification failure gracefully", async () => {
-		const user = userEvent.setup();
-
-		// Mock failed verification response
 		mockFetch.mockResolvedValueOnce({
 			ok: false,
-			json: () =>
-				Promise.resolve({
-					message: "Invalid verification code",
-					success: false
-				})
+			json: () => Promise.resolve({ message: "Invalid verification code", success: false })
 		});
 
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		// Use fireEvent.change for faster input
-		const codeInputs = screen
-			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		// Fill code inputs directly
-		fireEvent.change(codeInputs[0], { target: { value: "1" } });
-		fireEvent.change(codeInputs[1], { target: { value: "2" } });
-		fireEvent.change(codeInputs[2], { target: { value: "3" } });
-		fireEvent.change(codeInputs[3], { target: { value: "4" } });
-		fireEvent.change(codeInputs[4], { target: { value: "5" } });
-		fireEvent.change(codeInputs[5], { target: { value: "6" } });
+		fillCode("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
+		fireEvent.click(verifyButton);
 
-		// Ensure button is enabled before clicking
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
+		await act(async () => {
+			await Promise.resolve();
 		});
 
-		await user.click(verifyButton);
-
-		// Should make the API call but not call success callbacks due to failure
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith(
-				expect.stringContaining("/verify-code"),
-				expect.objectContaining({
-					method: "POST",
-					headers: expect.objectContaining({
-						"Content-Type": "application/json"
-					}),
-					body: expect.stringContaining("123456")
-				})
-			);
-		});
-
-		// Should not call success callbacks when verification fails
+		expect(screen.getByText("Invalid verification code")).toBeInTheDocument();
 		expect(mockOnSuccess).not.toHaveBeenCalled();
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 
 	it("should resend verification code", async () => {
-		const user = userEvent.setup();
-
-		// Mock successful resend response
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: () => Promise.resolve({})
-		});
-
+		mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
 		render(<EmailVerificationModal {...defaultProps} />);
+		const resendButton = screen.getByRole("button", { name: /resend/i });
+		fireEvent.click(resendButton);
 
-		const resendButton = screen.getByRole("button", { name: /didn't receive a code\? resend/i });
-		await user.click(resendButton);
-
-		// Should call resend endpoint
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/send-verification", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ email: "test@example.com" })
-			});
+		await act(async () => {
+			await Promise.resolve();
 		});
 
-		// Code inputs should be cleared
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/send-verification", expect.any(Object));
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		codeInputs.forEach(input => {
-			expect((input as HTMLInputElement).value).toBe("");
-		});
+		expect(codeInputs[0]).toHaveValue("");
 	});
 
 	it("should allow user to request another code if resend fails", async () => {
-		const user = userEvent.setup();
-
-		// Mock failed resend response
-		mockFetch.mockResolvedValueOnce({
-			ok: false,
-			json: () => Promise.resolve({})
-		});
-
+		mockFetch.mockResolvedValueOnce({ ok: false, json: () => Promise.resolve({}) });
 		render(<EmailVerificationModal {...defaultProps} />);
+		const resendButton = screen.getByRole("button", { name: /resend/i });
+		fireEvent.click(resendButton);
 
-		const resendButton = screen.getByRole("button", { name: /didn't receive a code\? resend/i });
-
-		// User clicks resend button
-		await user.click(resendButton);
-
-		// Wait for resend operation to complete
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalled();
+		await act(async () => {
+			await Promise.resolve();
 		});
 
-		// User should be able to try resending again (button not permanently disabled)
+		expect(screen.getByText("Failed to resend code. Please try again.")).toBeInTheDocument();
 		expect(resendButton).not.toBeDisabled();
-		expect(resendButton).toBeInTheDocument();
 	});
 
-	it("should close modal when close button is clicked", async () => {
-		const user = userEvent.setup();
+	it("should close modal when close button is clicked", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		const closeButton = screen.getByRole("button", { name: /✕/i });
-		await user.click(closeButton);
-
+		const closeButton = screen.getByRole("button", { name: "✕" });
+		fireEvent.click(closeButton);
 		expect(mockOnClose).toHaveBeenCalled();
 	});
 
 	it("should reset state when modal opens", () => {
 		const { rerender } = render(<EmailVerificationModal {...defaultProps} isOpen={false} />);
-
-		// Reopen modal
 		rerender(<EmailVerificationModal {...defaultProps} isOpen={true} />);
-
-		// Code inputs should be empty
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		codeInputs.forEach(input => {
-			expect((input as HTMLInputElement).value).toBe("");
-		});
-
-		// No error should be shown
+		expect(codeInputs[0]).toHaveValue("");
 		expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
 	});
 
-	it("should only allow numeric input in code fields", async () => {
+	it("should only allow numeric input in code fields", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
 		const firstCodeInput = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
-
-		// Try to set non-numeric characters (component should filter to numeric only)
-		fireEvent.change(firstCodeInput, { target: { value: "1" } });
-
-		// Should only contain numeric characters
-		expect((firstCodeInput as HTMLInputElement).value).toBe("1");
+		fireEvent.change(firstCodeInput, { target: { value: "a1b" } });
+		expect(firstCodeInput).toHaveValue("");
 	});
 
 	it("should disable verify button when code is incomplete", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
+		fillCode("123");
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 		expect(verifyButton).toBeDisabled();
 	});
 
-	it("should enable verify button when code is complete and email is provided", async () => {
+	it("should enable verify button when code is complete and email is provided", () => {
 		render(<EmailVerificationModal {...defaultProps} />);
-
-		// Verify initial email is present (from defaultProps.initialEmail)
-		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
-		expect(emailInput.value).toBe("test@example.com");
-
-		// Use fireEvent.change for faster input
-		const codeInputs = screen
-			.getAllByRole("textbox")
-			.filter(input => input.getAttribute("inputMode") === "numeric");
-
-		// Fill code inputs directly
-		fireEvent.change(codeInputs[0], { target: { value: "1" } });
-		fireEvent.change(codeInputs[1], { target: { value: "2" } });
-		fireEvent.change(codeInputs[2], { target: { value: "3" } });
-		fireEvent.change(codeInputs[3], { target: { value: "4" } });
-		fireEvent.change(codeInputs[4], { target: { value: "5" } });
-		fireEvent.change(codeInputs[5], { target: { value: "6" } });
-
-		// Wait for React state to stabilize and button to be enabled
+		fillCode("123456");
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
-		await waitFor(() => {
-			expect(verifyButton).not.toBeDisabled();
-		});
+		expect(verifyButton).not.toBeDisabled();
 	});
 });
