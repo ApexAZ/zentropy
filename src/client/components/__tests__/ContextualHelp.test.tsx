@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Accessibility tests require userEvent for hover/keyboard interactions
 import userEvent from "@testing-library/user-event";
@@ -10,7 +11,7 @@ describe("ContextualHelp Component", () => {
 	describe("Help Tooltips", () => {
 		it("should display help tooltip for OAuth concept", async () => {
 			const user = userEvent.setup();
-			render(<ContextualHelp concept="oauth" />);
+			renderWithFullEnvironment(<ContextualHelp concept="oauth" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
 			expect(helpIcon).toBeInTheDocument();
@@ -23,7 +24,7 @@ describe("ContextualHelp Component", () => {
 
 		it("should display help tooltip for Multi-Factor Authentication concept", async () => {
 			const user = userEvent.setup();
-			render(<ContextualHelp concept="mfa" />);
+			renderWithFullEnvironment(<ContextualHelp concept="mfa" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*multi-factor authentication/i });
 			expect(helpIcon).toBeInTheDocument();
@@ -36,7 +37,7 @@ describe("ContextualHelp Component", () => {
 
 		it("should display help tooltip for Account Linking concept", async () => {
 			const user = userEvent.setup();
-			render(<ContextualHelp concept="account-linking" />);
+			renderWithFullEnvironment(<ContextualHelp concept="account-linking" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*account linking/i });
 			expect(helpIcon).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe("ContextualHelp Component", () => {
 		});
 
 		it("should show accessible tooltip with proper ARIA attributes", async () => {
-			render(<ContextualHelp concept="oauth" />);
+			renderWithFullEnvironment(<ContextualHelp concept="oauth" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
 			expect(helpIcon).toHaveAttribute("aria-describedby");
@@ -65,7 +66,7 @@ describe("ContextualHelp Component", () => {
 
 	describe("Documentation Links", () => {
 		it("should provide contextual documentation link for security topics", () => {
-			render(<ContextualHelp concept="oauth" showDocumentationLink />);
+			renderWithFullEnvironment(<ContextualHelp concept="oauth" showDocumentationLink />);
 
 			const docLink = screen.getByRole("link", { name: /learn more about oauth/i });
 			expect(docLink).toBeInTheDocument();
@@ -75,7 +76,7 @@ describe("ContextualHelp Component", () => {
 		});
 
 		it("should provide contextual documentation link for MFA topics", () => {
-			render(<ContextualHelp concept="mfa" showDocumentationLink />);
+			renderWithFullEnvironment(<ContextualHelp concept="mfa" showDocumentationLink />);
 
 			const docLink = screen.getByRole("link", { name: /learn more about multi-factor authentication/i });
 			expect(docLink).toBeInTheDocument();
@@ -83,7 +84,7 @@ describe("ContextualHelp Component", () => {
 		});
 
 		it("should not show documentation link when showDocumentationLink is false", () => {
-			render(<ContextualHelp concept="oauth" showDocumentationLink={false} />);
+			renderWithFullEnvironment(<ContextualHelp concept="oauth" showDocumentationLink={false} />);
 
 			const docLink = screen.queryByRole("link", { name: /learn more/i });
 			expect(docLink).not.toBeInTheDocument();
@@ -93,7 +94,7 @@ describe("ContextualHelp Component", () => {
 	describe("Accessibility", () => {
 		it("should support keyboard navigation for help tooltips", async () => {
 			const user = userEvent.setup();
-			render(<ContextualHelp concept="oauth" />);
+			renderWithFullEnvironment(<ContextualHelp concept="oauth" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*oauth/i });
 
@@ -107,7 +108,7 @@ describe("ContextualHelp Component", () => {
 		});
 
 		it("should provide proper screen reader support", () => {
-			render(<ContextualHelp concept="mfa" />);
+			renderWithFullEnvironment(<ContextualHelp concept="mfa" />);
 
 			const helpIcon = screen.getByRole("button", { name: /help.*multi-factor authentication/i });
 			expect(helpIcon).toHaveAttribute("aria-label");

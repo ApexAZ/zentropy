@@ -1,4 +1,5 @@
-import { screen, fireEvent } from "@testing-library/react";
+/* eslint-disable-next-line no-restricted-imports -- One test requires render with rerender for behavior testing */
+import { render, screen, fireEvent } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Modal tests require userEvent for keyboard navigation and focus management accessibility testing
@@ -49,7 +50,7 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User understands the impact of security changes", () => {
 		it("should show detailed confirmation for Google account unlinking", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Unlink Google Account"
@@ -75,7 +76,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should show consequences for critical security actions", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Delete Account"
@@ -99,7 +100,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should show recovery guidance when provided", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Remove Team Member"
@@ -119,7 +120,7 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User experiences secure password verification", () => {
 		it("should require password verification for destructive actions", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Unlink Google Account"
@@ -145,7 +146,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should validate password input properly", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					requiresPasswordConfirmation={true}
@@ -167,7 +168,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should not require password for non-destructive actions", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Save Changes"
@@ -186,7 +187,7 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User sees clear recovery paths", () => {
 		it("should show account lockout recovery guidance", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Disable Two-Factor Authentication"
@@ -202,7 +203,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should provide specific recovery steps", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Remove OAuth Provider"
@@ -217,7 +218,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should show emergency contact information when appropriate", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					title="Lock Account"
@@ -357,7 +358,7 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User receives helpful feedback", () => {
 		it("should show password error when provided", () => {
-			render(
+			renderWithFullEnvironment(
 				<EnhancedConfirmationModal
 					{...defaultProps}
 					requiresPasswordConfirmation={true}

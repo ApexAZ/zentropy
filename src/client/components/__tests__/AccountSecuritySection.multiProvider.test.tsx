@@ -1,4 +1,5 @@
-import { render, screen, act } from "@testing-library/react";
+import { screen, act } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Multi-provider OAuth tests require userEvent for complex authentication workflows
 import userEvent from "@testing-library/user-event";
@@ -163,7 +164,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			isProviderLinked: mockIsProviderLinked
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -190,7 +191,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -212,7 +213,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -236,7 +237,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -274,7 +275,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -299,7 +300,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -320,7 +321,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -349,7 +350,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			onError: mockOnError
 		}));
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		// Verify hook was called with correct callbacks
 		expect(useMultiProviderOAuth).toHaveBeenCalledWith({
@@ -367,7 +368,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -391,7 +392,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			providers: [] // Empty providers list
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		await act(async () => {
 			await Promise.resolve();
@@ -414,7 +415,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			getProviderState: mockGetProviderState
 		});
 
-		render(<AccountSecuritySection {...defaultProps} />);
+		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
 		// Click unlink button
 		await clickProviderButton(user, "google", "unlink");
