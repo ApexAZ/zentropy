@@ -1,4 +1,6 @@
 import { render, screen } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Help component tests require userEvent for hover/tooltip interactions
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { AccountSecurityHelp } from "../AccountSecurityHelp";

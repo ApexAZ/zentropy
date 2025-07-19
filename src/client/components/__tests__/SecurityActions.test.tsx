@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { SecurityActions } from "../SecurityActions";
@@ -35,7 +36,7 @@ describe("SecurityActions", () => {
 	});
 
 	it("should show link button for email-only authentication", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
 
 		expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Unlink Google Account" })).not.toBeInTheDocument();
@@ -47,7 +48,7 @@ describe("SecurityActions", () => {
 	});
 
 	it("should show unlink button for hybrid authentication", () => {
-		render(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
@@ -59,7 +60,7 @@ describe("SecurityActions", () => {
 	});
 
 	it("should handle link button click", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		fireEvent.click(linkButton);
@@ -68,7 +69,7 @@ describe("SecurityActions", () => {
 	});
 
 	it("should handle unlink button click", () => {
-		render(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		fireEvent.click(unlinkButton);
@@ -77,7 +78,9 @@ describe("SecurityActions", () => {
 	});
 
 	it("should show linking loading state", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} linkingLoading={true} />);
+		renderWithFullEnvironment(
+			<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} linkingLoading={true} />
+		);
 
 		const linkButton = screen.getByRole("button", { name: "Linking..." });
 		expect(linkButton).toBeDisabled();
@@ -85,7 +88,9 @@ describe("SecurityActions", () => {
 	});
 
 	it("should show OAuth loading state", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} oauthLoading={true} />);
+		renderWithFullEnvironment(
+			<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} oauthLoading={true} />
+		);
 
 		const linkButton = screen.getByRole("button", { name: "Starting OAuth..." });
 		expect(linkButton).toBeDisabled();
@@ -93,7 +98,9 @@ describe("SecurityActions", () => {
 	});
 
 	it("should show unlinking loading state", () => {
-		render(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} unlinkingLoading={true} />);
+		renderWithFullEnvironment(
+			<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} unlinkingLoading={true} />
+		);
 
 		const unlinkButton = screen.getByRole("button", { name: "Loading..." });
 		expect(unlinkButton).toBeDisabled();
@@ -101,7 +108,9 @@ describe("SecurityActions", () => {
 	});
 
 	it("should disable link button when Google OAuth not ready", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} googleOAuthReady={false} />);
+		renderWithFullEnvironment(
+			<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} googleOAuthReady={false} />
+		);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		expect(linkButton).toBeDisabled();
@@ -111,7 +120,7 @@ describe("SecurityActions", () => {
 	});
 
 	it("should have correct ARIA attributes", () => {
-		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		expect(linkButton).toHaveAttribute("aria-describedby", "link-description");
@@ -119,13 +128,15 @@ describe("SecurityActions", () => {
 
 	it("should show correct button variants", () => {
 		// Test link button variant
-		const { rerender } = render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
+		const { rerenderWithFullEnvironment } = renderWithFullEnvironment(
+			<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />
+		);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		expect(linkButton).toHaveClass("bg-interactive"); // Primary variant
 
 		// Test unlink button variant
-		rerender(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
+		rerenderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		expect(unlinkButton).toHaveClass("bg-red-600"); // Danger variant

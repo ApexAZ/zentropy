@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Accessibility tests require userEvent for hover/keyboard interactions
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
+import "@testing-library/jest-dom";
 import { ContextualHelp } from "../ContextualHelp";
 
 describe("ContextualHelp Component", () => {

@@ -1,7 +1,8 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from "vitest";
 import "@testing-library/jest-dom";
 import { useAuth } from "../useAuth";
+import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock fetch for API calls
 const mockFetch = vi.fn();
@@ -418,9 +419,8 @@ describe("useAuth", () => {
 			vi.useRealTimers();
 
 			// Wait for async logout operations to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
-			});
+			await fastStateSync();
+			expect(result.current.isAuthenticated).toBe(false);
 
 			// Verify logout API was called
 			expect(mockFetch).toHaveBeenCalledWith("/api/v1/auth/logout", {

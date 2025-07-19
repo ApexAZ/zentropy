@@ -1,5 +1,5 @@
 import React from "react";
-import { screen, waitFor, act } from "@testing-library/react";
+import { screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import App from "../App";
@@ -241,12 +241,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Verify that auth.login was called with correct parameters
-			await waitFor(() => {
-				expect(mockLogin).toHaveBeenCalledWith(mockAuthResponse.access_token, {
-					email: mockAuthResponse.user.email,
-					name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
-					has_projects_access: mockAuthResponse.user.has_projects_access
-				});
+			await fastStateSync();
+			expect(mockLogin).toHaveBeenCalledWith(mockAuthResponse.access_token, {
+				email: mockAuthResponse.user.email,
+				name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
+				has_projects_access: mockAuthResponse.user.has_projects_access
 			});
 
 			// Verify registration modal closes after successful OAuth
@@ -288,12 +287,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Should stay on home page after successful OAuth (no automatic redirect)
-			await waitFor(() => {
-				expect(mockLogin).toHaveBeenCalledWith(mockAuthResponse.access_token, {
-					email: mockAuthResponse.user.email,
-					name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
-					has_projects_access: mockAuthResponse.user.has_projects_access
-				});
+			await fastStateSync();
+			expect(mockLogin).toHaveBeenCalledWith(mockAuthResponse.access_token, {
+				email: mockAuthResponse.user.email,
+				name: `${mockAuthResponse.user.first_name} ${mockAuthResponse.user.last_name}`,
+				has_projects_access: mockAuthResponse.user.has_projects_access
 			});
 
 			// Should NOT redirect to dashboard - should remain on home page
@@ -356,9 +354,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Should handle network error gracefully
-			await waitFor(() => {
-				expect(screen.getByText(/google oauth.*failed/i)).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText(/google oauth.*failed/i)).toBeInTheDocument();
 
 			expect(mockLogin).not.toHaveBeenCalled();
 		});
@@ -392,9 +389,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Should handle incomplete response gracefully
-			await waitFor(() => {
-				expect(screen.getByText(/registration.*failed/i)).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText(/registration.*failed/i)).toBeInTheDocument();
 
 			// Should specifically report missing user data
 			expect(screen.getByText(/missing required user data/i)).toBeInTheDocument();
@@ -439,16 +435,15 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Verify the credential was sent to backend
-			await waitFor(() => {
-				expect(testEnv.mocks.fetch).toHaveBeenCalledWith(
-					"/api/v1/auth/google-oauth",
-					expect.objectContaining({
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: expect.stringContaining('"credential"')
-					})
-				);
-			});
+			await fastStateSync();
+			expect(testEnv.mocks.fetch).toHaveBeenCalledWith(
+				"/api/v1/auth/google-oauth",
+				expect.objectContaining({
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: expect.stringContaining('"credential"')
+				})
+			);
 		});
 	});
 
@@ -491,14 +486,13 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// After successful OAuth, should show authenticated state
-			await waitFor(() => {
-				expect(mockLogin).toHaveBeenCalledWith(
-					mockAuthResponse.access_token,
-					expect.objectContaining({
-						email: mockAuthResponse.user.email
-					})
-				);
-			});
+			await fastStateSync();
+			expect(mockLogin).toHaveBeenCalledWith(
+				mockAuthResponse.access_token,
+				expect.objectContaining({
+					email: mockAuthResponse.user.email
+				})
+			);
 		});
 
 		it("should handle Google OAuth callback parameter correctly in App component", async () => {

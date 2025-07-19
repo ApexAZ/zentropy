@@ -1,4 +1,6 @@
 import { render, screen, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Multi-provider OAuth tests require userEvent for complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";

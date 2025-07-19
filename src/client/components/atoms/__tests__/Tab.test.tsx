@@ -1,7 +1,9 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Tab component tests require userEvent for comprehensive keyboard navigation and accessibility testing
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { TabList, Tab, TabPanel } from "../Tab";
 

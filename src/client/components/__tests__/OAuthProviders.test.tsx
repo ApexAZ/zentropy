@@ -1,5 +1,7 @@
 import React from "react";
 import { render, screen, cleanup } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// OAuth provider tests require userEvent for keyboard navigation and complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";

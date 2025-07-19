@@ -64,6 +64,7 @@ describe("Mock Architecture Demonstration", () => {
 		let testEnv: ReturnType<typeof setupTestEnvironment>;
 
 		beforeEach(() => {
+			vi.clearAllMocks();
 			testEnv = setupTestEnvironment();
 		});
 

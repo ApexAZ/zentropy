@@ -1,4 +1,6 @@
-import { render, screen, cleanup, waitFor, fireEvent, act } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Organization management tests require userEvent for complex multi-step workflows and keyboard navigation
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -7,6 +9,7 @@ import { useOrganization } from "../../hooks/useOrganization";
 import { useProject } from "../../hooks/useProject";
 import { useToast } from "../../contexts/ToastContext";
 import type { Organization, Project } from "../../types";
+import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock hooks
 vi.mock("../../hooks/useOrganization", () => ({
@@ -157,9 +160,8 @@ describe("NavigationPanel - Organization Features", () => {
 		const leaveButton = screen.getByRole("button", { name: /leave organization/i });
 		await user.click(leaveButton);
 		// Wait for confirmation dialog to appear
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: /confirm/i })).toBeInTheDocument();
-		});
+		await fastStateSync();
+		expect(screen.getByRole("button", { name: /confirm/i })).toBeInTheDocument();
 		const confirmButton = screen.getByRole("button", { name: /confirm/i });
 		await user.click(confirmButton);
 	};
@@ -357,9 +359,8 @@ describe("NavigationPanel - Organization Features", () => {
 			const leaveButton = screen.getByRole("button", { name: /leave organization/i });
 			await user.click(leaveButton);
 
-			await waitFor(() => {
-				expect(screen.getByText("Are you sure you want to leave Test Organization?")).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText("Are you sure you want to leave Test Organization?")).toBeInTheDocument();
 
 			const confirmButton = screen.getByRole("button", { name: /confirm/i });
 			await user.click(confirmButton);
@@ -423,9 +424,8 @@ describe("NavigationPanel - Organization Features", () => {
 			const statusFilter = screen.getByRole("combobox", { name: /status filter/i });
 			await user.selectOptions(statusFilter, "archived");
 
-			await waitFor(() => {
-				expect(statusFilter).toHaveValue("archived");
-			});
+			await fastStateSync();
+			expect(statusFilter).toHaveValue("archived");
 		});
 	});
 

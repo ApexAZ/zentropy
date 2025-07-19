@@ -1,5 +1,7 @@
 import React from "react";
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// OrganizationSelector tests require userEvent for complex modal interactions, form validation, and accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -7,6 +9,7 @@ import OrganizationSelector from "../OrganizationSelector";
 import { useOrganization } from "../../hooks/useOrganization";
 import { ToastProvider } from "../../contexts/ToastContext";
 import type { Organization, DomainCheckResult } from "../../types";
+import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock useOrganization hook
 vi.mock("../../hooks/useOrganization", () => ({
@@ -213,9 +216,8 @@ describe("OrganizationSelector", () => {
 
 			render(<OrganizationSelector {...mockProps} />);
 
-			await waitFor(() => {
-				expect(screen.getByText("Domain check failed")).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText("Domain check failed")).toBeInTheDocument();
 		});
 
 		it("should show loading state while checking user's email domain", async () => {
@@ -233,9 +235,8 @@ describe("OrganizationSelector", () => {
 
 			// Resolve the promise to complete the test
 			resolvePromise!(mockDomainCheckResult);
-			await waitFor(() => {
-				expect(screen.queryByText("Checking domain...")).not.toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.queryByText("Checking domain...")).not.toBeInTheDocument();
 		});
 	});
 
@@ -264,9 +265,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByText("Test Organization")).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText("Test Organization")).toBeInTheDocument();
 
 			selectOrganization("Test Organization");
 
@@ -281,9 +281,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowPersonal: true });
 
-			await waitFor(() => {
-				expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
 		});
 
 		it("should hide personal option when allowPersonal is false", async () => {
@@ -294,9 +293,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowPersonal: false });
 
-			await waitFor(() => {
-				expect(screen.queryByText("Create Personal Project")).not.toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.queryByText("Create Personal Project")).not.toBeInTheDocument();
 		});
 
 		it("should handle personal project selection", async () => {
@@ -307,9 +305,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowPersonal: true });
 
-			await waitFor(() => {
-				expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
 
 			act(() => {
 				fireEvent.click(screen.getByRole("button", { name: /create personal project/i }));
@@ -328,9 +325,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: true });
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 		});
 
 		it("should hide create organization option when allowCreate is false", async () => {
@@ -341,9 +337,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: false });
 
-			await waitFor(() => {
-				expect(screen.queryByRole("button", { name: /create new organization/i })).not.toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.queryByRole("button", { name: /create new organization/i })).not.toBeInTheDocument();
 		});
 
 		it("should show organization creation form when create is clicked", async () => {
@@ -355,9 +350,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: true });
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
@@ -374,9 +368,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: true });
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
@@ -395,9 +388,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: true });
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
@@ -427,9 +419,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector({ allowCreate: true });
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
@@ -458,9 +449,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
 		});
 
 		it("should handle joining organization", async () => {
@@ -474,9 +464,8 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /join test organization/i }));
 
@@ -490,15 +479,13 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
 
 			await user.click(screen.getByRole("button", { name: /join test organization/i }));
 
-			await waitFor(() => {
-				expect(mockUseOrganization.joinOrganization).toHaveBeenCalledWith("org-1");
-			});
+			await fastStateSync();
+			expect(mockUseOrganization.joinOrganization).toHaveBeenCalledWith("org-1");
 
 			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});

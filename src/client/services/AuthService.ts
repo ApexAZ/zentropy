@@ -179,4 +179,37 @@ export class AuthService {
 		const data = await response.json();
 		return { message: data.message || "Verification email sent! Please check your inbox." };
 	}
+
+	/**
+	 * Verify email with code
+	 */
+	static async verifyCode(
+		email: string,
+		code: string,
+		verificationType: string = "email_verification"
+	): Promise<{ message: string; success: boolean; user_id: string }> {
+		const response = await fetch("/api/v1/auth/verify-code", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				email,
+				code,
+				verification_type: verificationType
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.detail || "Code verification failed");
+		}
+
+		const data = await response.json();
+		return {
+			message: data.message || "Email verified successfully",
+			success: data.success || true,
+			user_id: data.user_id
+		};
+	}
 }

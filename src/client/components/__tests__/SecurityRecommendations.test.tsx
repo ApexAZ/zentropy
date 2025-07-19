@@ -1,5 +1,7 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// SecurityRecommendations tests require userEvent for keyboard navigation accessibility testing
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";

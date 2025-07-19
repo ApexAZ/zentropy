@@ -6,8 +6,9 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useAuth } from "../../hooks/useAuth";
+import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -195,11 +196,10 @@ describe("useAuth Hook Remember Me Integration", () => {
 		const { result } = renderHook(() => useAuth());
 
 		// User should be automatically logged in after refresh
-		await waitFor(() => {
-			expect(result.current.isAuthenticated).toBe(true);
-			expect(result.current.user?.email).toBe("stored@example.com");
-			expect(result.current.user?.name).toBe("Stored User");
-		});
+		await fastStateSync();
+		expect(result.current.isAuthenticated).toBe(true);
+		expect(result.current.user?.email).toBe("stored@example.com");
+		expect(result.current.user?.name).toBe("Stored User");
 	});
 
 	test("user stays logged in during browser session even without 'remember me'", async () => {
@@ -226,11 +226,10 @@ describe("useAuth Hook Remember Me Integration", () => {
 		const { result } = renderHook(() => useAuth());
 
 		// User should remain authenticated during session
-		await waitFor(() => {
-			expect(result.current.isAuthenticated).toBe(true);
-			expect(result.current.user?.email).toBe("session@example.com");
-			expect(result.current.user?.name).toBe("Session User");
-		});
+		await fastStateSync();
+		expect(result.current.isAuthenticated).toBe(true);
+		expect(result.current.user?.email).toBe("session@example.com");
+		expect(result.current.user?.name).toBe("Session User");
 	});
 
 	test("user without saved authentication starts as logged out", async () => {

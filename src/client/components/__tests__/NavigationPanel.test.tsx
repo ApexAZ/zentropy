@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Navigation panel tests require userEvent for keyboard navigation accessibility testing (Enter, Escape, click-outside)
 import userEvent from "@testing-library/user-event";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";

@@ -1,5 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// ProjectCreationModal tests require userEvent for keyboard navigation and modal accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";

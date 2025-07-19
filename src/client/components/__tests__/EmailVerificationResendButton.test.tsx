@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
@@ -113,14 +113,12 @@ describe("EmailVerificationResendButton", () => {
 		await fastStateSync();
 
 		// Should always show the button (no internal success state)
-		await waitFor(() => {
-			expect(mockOnResendSuccess).toHaveBeenCalled();
-		});
+		await fastStateSync();
+		expect(mockOnResendSuccess).toHaveBeenCalled();
 
 		// Button should show countdown after successful send (rate limiting starts)
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
-		});
+		await fastStateSync();
+		expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
 
 		// Should not show internal success message (parent handles it)
 		expect(screen.queryByText("Verification email sent to test@example.com!")).not.toBeInTheDocument();
@@ -135,10 +133,9 @@ describe("EmailVerificationResendButton", () => {
 		fastUserActions.click(button);
 		await fastStateSync();
 
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
-			expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
-		});
+		await fastStateSync();
+		expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
 
 		// Should not show error message in compact UI
 		expect(screen.queryByText(/error/i)).not.toBeInTheDocument();
@@ -158,9 +155,8 @@ describe("EmailVerificationResendButton", () => {
 		// First click - fails
 		fastUserActions.click(button);
 		await fastStateSync();
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
-		});
+		await fastStateSync();
+		expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
 
 		// Second click - succeeds
 		fastUserActions.click(button);
@@ -213,9 +209,8 @@ describe("EmailVerificationResendButton", () => {
 			await fastStateSync();
 
 			// Should show countdown after rate limit error
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
 
 			// Button should be disabled during countdown
 			expect(screen.getByRole("button", { name: "60s" })).toBeDisabled();
@@ -239,9 +234,8 @@ describe("EmailVerificationResendButton", () => {
 			await fastStateSync();
 
 			// Should show countdown after rate limit error
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: "5s" })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: "5s" })).toBeInTheDocument();
 
 			// Button should be disabled during countdown
 			expect(screen.getByRole("button", { name: "5s" })).toBeDisabled();
@@ -265,9 +259,8 @@ describe("EmailVerificationResendButton", () => {
 			await fastStateSync();
 
 			// Should show countdown with correct value
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: "45s" })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: "45s" })).toBeInTheDocument();
 
 			// Button should be disabled during countdown
 			expect(screen.getByRole("button", { name: "45s" })).toBeDisabled();
@@ -290,9 +283,8 @@ describe("EmailVerificationResendButton", () => {
 			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
 			await fastStateSync();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: "30s" })).toBeInTheDocument();
-			});
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: "30s" })).toBeInTheDocument();
 
 			// Check that rate limit data is saved to localStorage
 			const storedData = localStorage.getItem("emailResendRateLimit");
@@ -366,15 +358,14 @@ describe("EmailVerificationResendButton", () => {
 			await fastStateSync();
 
 			// Should save rate limit data to localStorage after successful send
-			await waitFor(() => {
-				const storedData = localStorage.getItem("emailResendRateLimit");
-				expect(storedData).not.toBe(null);
-				expect(storedData).toMatch(/^\{.*\}$/);
+			await fastStateSync();
+			const storedData = localStorage.getItem("emailResendRateLimit");
+			expect(storedData).not.toBe(null);
+			expect(storedData).toMatch(/^\{.*\}$/);
 
-				const parsedData = JSON.parse(storedData!);
-				expect(parsedData.email).toBe(mockEmail);
-				expect(parsedData.expiresAt).toBeGreaterThan(Date.now());
-			});
+			const parsedData = JSON.parse(storedData!);
+			expect(parsedData.email).toBe(mockEmail);
+			expect(parsedData.expiresAt).toBeGreaterThan(Date.now());
 		});
 	});
 });

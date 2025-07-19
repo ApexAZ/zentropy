@@ -26,6 +26,7 @@ describe("formatters", () => {
 	const MOCK_DATE = new Date("2024-01-15T10:00:00Z");
 
 	beforeEach(() => {
+		vi.clearAllMocks();
 		vi.useFakeTimers();
 		vi.setSystemTime(MOCK_DATE);
 	});

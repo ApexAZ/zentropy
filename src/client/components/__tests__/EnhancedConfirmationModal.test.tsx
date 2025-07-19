@@ -1,4 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Modal tests require userEvent for keyboard navigation and focus management accessibility testing
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";

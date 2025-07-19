@@ -1,17 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { clearPendingVerification } from "../utils/pendingVerification";
+import { AuthService } from "../services/AuthService";
 
 interface EmailVerificationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSuccess?: () => void;
 	initialEmail?: string;
-}
-
-interface VerificationCodeResponse {
-	message: string;
-	success: boolean;
-	user_id?: string;
 }
 
 const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
@@ -116,21 +111,9 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 		setError(null);
 
 		try {
-			const response = await fetch("/api/v1/auth/verify-code", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					email,
-					code,
-					verification_type: "email_verification"
-				})
-			});
+			const result = await AuthService.verifyCode(email, code, "email_verification");
 
-			const result: VerificationCodeResponse = await response.json();
-
-			if (response.ok && result.success) {
+			if (result.success) {
 				setSuccess(true);
 				// Clear pending verification state since email is now verified
 				clearPendingVerification();
@@ -141,8 +124,8 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 			} else {
 				setError(result.message || "Verification failed");
 			}
-		} catch {
-			setError("Network error. Please try again.");
+		} catch (error) {
+			setError(error instanceof Error ? error.message : "Network error. Please try again.");
 		} finally {
 			setIsVerifying(false);
 		}
@@ -158,27 +141,16 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 		setError(null);
 
 		try {
-			const response = await fetch("/api/v1/auth/send-verification", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({ email })
-			});
-
-			if (response.ok) {
-				setError(null);
-				// Clear the code for new attempt
-				setCode("");
-				const firstRef = inputRefs[0];
-				if (firstRef?.current) {
-					firstRef.current.focus();
-				}
-			} else {
-				setError("Failed to resend code. Please try again.");
+			await AuthService.sendEmailVerification(email);
+			setError(null);
+			// Clear the code for new attempt
+			setCode("");
+			const firstRef = inputRefs[0];
+			if (firstRef?.current) {
+				firstRef.current.focus();
 			}
-		} catch {
-			setError("Network error. Please try again.");
+		} catch (error) {
+			setError(error instanceof Error ? error.message : "Failed to resend code. Please try again.");
 		} finally {
 			setIsResending(false);
 		}

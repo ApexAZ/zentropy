@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// Header navigation tests require userEvent for flyout menu interactions and focus management
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import Header from "../Header";

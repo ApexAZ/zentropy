@@ -1,4 +1,6 @@
 import { screen, fireEvent, act } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// OAuth account linking/unlinking tests require userEvent for complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";

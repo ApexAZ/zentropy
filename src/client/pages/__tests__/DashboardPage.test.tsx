@@ -1,5 +1,4 @@
-import { render, screen, cleanup, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, cleanup, act, fireEvent } from "@testing-library/react";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import DashboardPage from "../DashboardPage";
@@ -44,7 +43,6 @@ describe("DashboardPage", () => {
 	});
 
 	it("should display error state with retry functionality when data loading fails", async () => {
-		const user = userEvent.setup();
 		const errorMessage = "Failed to load dashboard data";
 
 		// Mock services to reject
@@ -65,7 +63,7 @@ describe("DashboardPage", () => {
 		expect(retryButton).toBeInTheDocument();
 
 		// Test retry functionality
-		await user.click(retryButton);
+		fireEvent.click(retryButton);
 
 		// Verify services are called again
 		await act(async () => {

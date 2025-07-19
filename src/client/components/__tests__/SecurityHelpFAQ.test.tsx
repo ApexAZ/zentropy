@@ -1,4 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+/* eslint-disable no-restricted-imports, no-restricted-syntax */
+// SecurityHelpFAQ tests require userEvent for keyboard navigation accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
