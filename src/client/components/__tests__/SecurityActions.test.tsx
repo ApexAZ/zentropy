@@ -128,15 +128,15 @@ describe("SecurityActions", () => {
 
 	it("should show correct button variants", () => {
 		// Test link button variant
-		const { rerenderWithFullEnvironment } = renderWithFullEnvironment(
-			<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />
-		);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		expect(linkButton).toHaveClass("bg-interactive"); // Primary variant
+	});
 
+	it("should show unlink button variant", () => {
 		// Test unlink button variant
-		rerenderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
+		renderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		expect(unlinkButton).toHaveClass("bg-red-600"); // Danger variant

@@ -398,7 +398,6 @@ describe("useAuth", () => {
 	describe("User session timeout", () => {
 		it("should automatically logout after timeout period of inactivity", async () => {
 			const mockToken = "valid-token";
-			const { result } = await setupAuthenticatedUser(mockToken);
 
 			// Mock logout API call for when timeout fires
 			mockFetch.mockClear();
@@ -407,18 +406,25 @@ describe("useAuth", () => {
 				json: async () => ({ message: "Logged out successfully" })
 			});
 
-			// Enable fake timers after authentication is complete
+			// Enable fake timers before authentication
 			vi.useFakeTimers();
+
+			const { result } = await setupAuthenticatedUser(mockToken);
 
 			// Advance time to trigger the timeout (200ms in test environment)
 			await act(async () => {
-				vi.advanceTimersByTime(200);
+				vi.advanceTimersByTime(201); // Slightly over the timeout
+			});
+
+			// Wait for any pending operations
+			await act(async () => {
+				vi.runAllTimers();
 			});
 
 			// Restore real timers
 			vi.useRealTimers();
 
-			// Wait for async logout operations to complete
+			// Additional wait for state updates
 			await fastStateSync();
 			expect(result.current.isAuthenticated).toBe(false);
 
