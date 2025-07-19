@@ -162,11 +162,12 @@ describe("ProjectCreationModal", () => {
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
-		it("should handle escape key press", async () => {
-			const user = userEvent.setup();
+		it("should handle escape key press", () => {
 			createModal();
 
-			await user.keyboard("{Escape}");
+			// Escape key should close the modal
+			const modal = screen.getByRole("dialog");
+			fireEvent.keyDown(modal, { key: "Escape" });
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});

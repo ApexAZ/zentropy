@@ -1,7 +1,6 @@
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, act, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { Toast } from "../Toast";
 
@@ -61,23 +60,21 @@ describe("Toast", () => {
 	});
 
 	describe("User can dismiss toast notifications", () => {
-		it("should call onDismiss when dismiss button is clicked", async () => {
-			const user = userEvent.setup();
+		it("should call onDismiss when dismiss button is clicked", () => {
 			render(<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
 
 			const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
-			await user.click(dismissButton);
+			fireEvent.click(dismissButton);
 
 			expect(mockOnDismiss).toHaveBeenCalledTimes(1);
 		});
 
-		it("should call onDismiss when escape key is pressed", async () => {
-			const user = userEvent.setup();
+		it("should call onDismiss when escape key is pressed", () => {
 			render(<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
 
 			const toast = screen.getByRole("alert");
 			toast.focus();
-			await user.keyboard("{Escape}");
+			fireEvent.keyDown(toast, { key: "Escape" });
 
 			expect(mockOnDismiss).toHaveBeenCalledTimes(1);
 		});

@@ -99,10 +99,11 @@ describe("OrganizationSelector", () => {
 	};
 
 	// Helper function to select an organization
-	const selectOrganization = async (organizationName: string) => {
-		const user = userEvent.setup();
+	const selectOrganization = (organizationName: string) => {
 		const selectButton = screen.getByRole("button", { name: new RegExp(`select ${organizationName}`, "i") });
-		await user.click(selectButton);
+		act(() => {
+			fireEvent.click(selectButton);
+		});
 	};
 
 	beforeEach(() => {
@@ -131,33 +132,48 @@ describe("OrganizationSelector", () => {
 		});
 
 		it("should call onClose when close button is clicked", async () => {
-			const user = userEvent.setup();
 			render(<OrganizationSelector {...mockProps} />);
 
-			await user.click(screen.getByRole("button", { name: /close/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /close/i }));
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
 		it("should call onClose when backdrop is clicked", async () => {
-			const user = userEvent.setup();
 			render(<OrganizationSelector {...mockProps} />);
 
 			// Click the backdrop (div with backdrop class)
 			const backdrop = screen.getByTestId("modal-backdrop");
-			await user.click(backdrop);
+			act(() => {
+				fireEvent.click(backdrop);
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
 		it("should handle escape key press", async () => {
-			const user = userEvent.setup();
 			render(<OrganizationSelector {...mockProps} />);
 
 			// Focus the dialog first
 			const dialog = screen.getByRole("dialog");
 			dialog.focus();
-			await user.keyboard("{Escape}");
+			act(() => {
+				fireEvent.keyDown(dialog, { key: "Escape" });
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
@@ -252,7 +268,7 @@ describe("OrganizationSelector", () => {
 				expect(screen.getByText("Test Organization")).toBeInTheDocument();
 			});
 
-			await selectOrganization("Test Organization");
+			selectOrganization("Test Organization");
 
 			expect(mockProps.onSelect).toHaveBeenCalledWith(mockOrganizations[0]);
 		});
@@ -284,7 +300,6 @@ describe("OrganizationSelector", () => {
 		});
 
 		it("should handle personal project selection", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
@@ -296,7 +311,9 @@ describe("OrganizationSelector", () => {
 				expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
 			});
 
-			await user.click(screen.getByRole("button", { name: /create personal project/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /create personal project/i }));
+			});
 
 			expect(mockProps.onSelect).toHaveBeenCalledWith(null);
 		});

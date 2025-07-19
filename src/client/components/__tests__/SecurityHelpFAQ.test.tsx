@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -13,9 +13,9 @@ describe("SecurityHelpFAQ Component", () => {
 		vi.restoreAllMocks();
 	});
 
-	const expandFAQ = async (user: ReturnType<typeof userEvent.setup>, questionText: string | RegExp) => {
+	const expandFAQ = (questionText: string | RegExp) => {
 		const questionButton = screen.getByRole("button", { name: questionText });
-		await user.click(questionButton);
+		fireEvent.click(questionButton);
 		return questionButton;
 	};
 
@@ -34,10 +34,9 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show expandable FAQ answers when clicked", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ />);
 
-			await expandFAQ(user, /what is multi-factor authentication/i);
+			expandFAQ(/what is multi-factor authentication/i);
 
 			expect(
 				await screen.findByText(/Multi-factor authentication \(MFA\) adds an extra layer of security/i)
@@ -46,10 +45,9 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show Google account benefits when FAQ is expanded", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ />);
 
-			await expandFAQ(user, /why should i link my google account/i);
+			expandFAQ(/why should i link my google account/i);
 
 			expect(
 				await screen.findByText(/linking your Google account provides several benefits/i)
@@ -59,10 +57,9 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should provide guidance for account recovery scenarios", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ />);
 
-			await expandFAQ(user, /what happens if i lose access to my google account/i);
+			expandFAQ(/what happens if i lose access to my google account/i);
 
 			expect(await screen.findByText(/if you lose access to your Google account/i)).toBeInTheDocument();
 			expect(screen.getByText(/you can still sign in using your email and password/i)).toBeInTheDocument();
@@ -70,19 +67,18 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should allow collapsing expanded FAQ answers", async () => {
-			const user = userEvent.setup();
 			render(<SecurityHelpFAQ />);
 
 			const mfaQuestion = findFAQButton(/what is multi-factor authentication/i);
 
 			// Expand the answer
-			await user.click(mfaQuestion);
+			fireEvent.click(mfaQuestion);
 			expect(
 				await screen.findByText(/Multi-factor authentication \(MFA\) adds an extra layer of security/i)
 			).toBeInTheDocument();
 
 			// Collapse the answer
-			await user.click(mfaQuestion);
+			fireEvent.click(mfaQuestion);
 			expect(
 				screen.queryByText(/Multi-factor authentication \(MFA\) adds an extra layer of security/i)
 			).not.toBeInTheDocument();
@@ -141,11 +137,10 @@ describe("SecurityHelpFAQ Component", () => {
 			expect(mfaQuestion).toHaveAttribute("aria-controls");
 		});
 
-		it("should update ARIA attributes when FAQ is expanded", async () => {
-			const user = userEvent.setup();
+		it("should update ARIA attributes when FAQ is expanded", () => {
 			render(<SecurityHelpFAQ />);
 
-			const mfaQuestion = await expandFAQ(user, /what is multi-factor authentication/i);
+			const mfaQuestion = expandFAQ(/what is multi-factor authentication/i);
 			expect(mfaQuestion).toHaveAttribute("aria-expanded", "true");
 		});
 
@@ -161,24 +156,22 @@ describe("SecurityHelpFAQ Component", () => {
 	});
 
 	describe("Search and Filtering", () => {
-		it("should allow searching through FAQ content", async () => {
-			const user = userEvent.setup();
+		it("should allow searching through FAQ content", () => {
 			render(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
 			expect(searchInput).toBeInTheDocument();
 
-			await user.type(searchInput, "multi-factor");
+			fireEvent.change(searchInput, { target: { value: "multi-factor" } });
 			expect(screen.getByText(/what is multi-factor authentication/i)).toBeInTheDocument();
 			expect(screen.queryByText(/why should i link my google account/i)).not.toBeInTheDocument();
 		});
 
-		it("should show no results message when search finds nothing", async () => {
-			const user = userEvent.setup();
+		it("should show no results message when search finds nothing", () => {
 			render(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
-			await user.type(searchInput, "nonexistent topic");
+			fireEvent.change(searchInput, { target: { value: "nonexistent topic" } });
 
 			expect(screen.getByText(/no matching questions found/i)).toBeInTheDocument();
 		});

@@ -1,7 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { SecurityActions } from "../SecurityActions";
 import type { AccountSecurityResponse } from "../../types";
@@ -59,24 +58,20 @@ describe("SecurityActions", () => {
 		).toBeInTheDocument();
 	});
 
-	it("should handle link button click", async () => {
-		const user = userEvent.setup();
-
+	it("should handle link button click", () => {
 		render(<SecurityActions securityStatus={mockEmailOnlyResponse} {...defaultProps} />);
 
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
-		await user.click(linkButton);
+		fireEvent.click(linkButton);
 
 		expect(mockOnLinkGoogle).toHaveBeenCalledTimes(1);
 	});
 
-	it("should handle unlink button click", async () => {
-		const user = userEvent.setup();
-
+	it("should handle unlink button click", () => {
 		render(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		await user.click(unlinkButton);
+		fireEvent.click(unlinkButton);
 
 		expect(mockOnUnlinkGoogle).toHaveBeenCalledTimes(1);
 	});
