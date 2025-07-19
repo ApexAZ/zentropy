@@ -1,7 +1,6 @@
 import { screen } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Help component tests require userEvent for hover/tooltip interactions
+// eslint-disable-next-line no-restricted-imports -- Help component tests require userEvent for hover/tooltip interactions
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
@@ -9,6 +8,8 @@ import { AccountSecurityHelp } from "../AccountSecurityHelp";
 
 describe("AccountSecurityHelp Component", () => {
 	describe("Contextual Help Integration", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Help integration tests require userEvent for hover/tooltip interactions
 		it("should provide help tooltips within security status display", async () => {
 			const user = userEvent.setup();
 			renderWithFullEnvironment(<AccountSecurityHelp />);
@@ -47,6 +48,7 @@ describe("AccountSecurityHelp Component", () => {
 			expect(screen.getByText(/support@zentropy\.app/i)).toBeInTheDocument();
 			expect(screen.getByText(/24-hour response/i)).toBeInTheDocument();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("Documentation Links", () => {
@@ -120,6 +122,8 @@ describe("AccountSecurityHelp Component", () => {
 	});
 
 	describe("Expandable Help Sections", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Expandable help tests require userEvent for click interactions
 		it("should allow expanding and collapsing help sections", async () => {
 			const user = userEvent.setup();
 			renderWithFullEnvironment(<AccountSecurityHelp expandableHelp showExplanations />);
@@ -146,9 +150,12 @@ describe("AccountSecurityHelp Component", () => {
 			// State should persist (component manages its own state)
 			expect(screen.getByText(/security help & guidance/i)).toBeInTheDocument();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("Accessibility", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Accessibility tests require userEvent for keyboard navigation testing
 		it("should provide proper ARIA labels for all interactive help elements", () => {
 			renderWithFullEnvironment(<AccountSecurityHelp />);
 
@@ -176,5 +183,6 @@ describe("AccountSecurityHelp Component", () => {
 			expect(helpRegion).toBeInTheDocument();
 			expect(helpRegion).toHaveAttribute("aria-label");
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 });

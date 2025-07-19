@@ -1,11 +1,12 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../../__tests__/utils/testRenderUtils";
 import { vi } from "vitest";
 import Card from "../Card";
 
 describe("Card Component", () => {
 	it("renders basic card with children", () => {
-		render(
+		renderWithFullEnvironment(
 			<Card>
 				<h2>Card Title</h2>
 				<p>Card content</p>
@@ -17,7 +18,7 @@ describe("Card Component", () => {
 	});
 
 	it("applies semantic styling classes", () => {
-		render(<Card data-testid="card">Content</Card>);
+		renderWithFullEnvironment(<Card data-testid="card">Content</Card>);
 		const card = screen.getByTestId("card");
 
 		expect(card).toHaveClass(
@@ -33,13 +34,13 @@ describe("Card Component", () => {
 	});
 
 	it("renders title when provided", () => {
-		render(<Card title="Team Alpha">Content</Card>);
+		renderWithFullEnvironment(<Card title="Team Alpha">Content</Card>);
 		expect(screen.getByText("Team Alpha")).toBeInTheDocument();
 		expect(screen.getByText("Team Alpha")).toHaveClass("text-text-contrast", "mb-2", "text-lg", "font-semibold");
 	});
 
 	it("renders description when provided", () => {
-		render(
+		renderWithFullEnvironment(
 			<Card title="Team" description="A great team">
 				Content
 			</Card>
@@ -52,7 +53,7 @@ describe("Card Component", () => {
 		const editAction = { label: "Edit", onClick: vi.fn(), icon: "✏️" };
 		const deleteAction = { label: "Delete", onClick: vi.fn(), icon: "🗑️" };
 
-		render(
+		renderWithFullEnvironment(
 			<Card title="Team" actions={[editAction, deleteAction]}>
 				Content
 			</Card>
@@ -70,7 +71,7 @@ describe("Card Component", () => {
 			{ label: "Delete", onClick: mockDelete, icon: "🗑️" }
 		];
 
-		render(
+		renderWithFullEnvironment(
 			<Card title="Team" actions={actions}>
 				Content
 			</Card>
@@ -90,7 +91,7 @@ describe("Card Component", () => {
 			{ label: "Working Days", value: "5 days/week" }
 		];
 
-		render(
+		renderWithFullEnvironment(
 			<Card title="Team" data={data}>
 				Content
 			</Card>
@@ -104,12 +105,12 @@ describe("Card Component", () => {
 
 	it("renders custom footer when provided", () => {
 		const footer = <div>Custom Footer</div>;
-		render(<Card footer={footer}>Content</Card>);
+		renderWithFullEnvironment(<Card footer={footer}>Content</Card>);
 		expect(screen.getByText("Custom Footer")).toBeInTheDocument();
 	});
 
 	it("applies custom className", () => {
-		render(
+		renderWithFullEnvironment(
 			<Card className="custom-class" data-testid="card">
 				Content
 			</Card>
@@ -119,7 +120,7 @@ describe("Card Component", () => {
 	});
 
 	it("renders without title/description when not provided", () => {
-		render(<Card>Just content</Card>);
+		renderWithFullEnvironment(<Card>Just content</Card>);
 		expect(screen.getByText("Just content")).toBeInTheDocument();
 		// Should not have title/description elements
 		expect(screen.queryByRole("heading")).not.toBeInTheDocument();
@@ -131,7 +132,7 @@ describe("Card Component", () => {
 			{ label: "Members", value: "5" }
 		];
 
-		render(<Card data={data}>Content</Card>);
+		renderWithFullEnvironment(<Card data={data}>Content</Card>);
 
 		// Check that data is in a structured list
 		const statusRow = screen.getByText(/Status:/).closest("div");

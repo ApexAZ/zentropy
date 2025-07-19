@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, act } from "@testing-library/react";
+import { screen, act } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
@@ -26,8 +27,8 @@ describe("EmailVerificationResendButton", () => {
 	const mockSendEmailVerification = vi.mocked(AuthService.sendEmailVerification);
 
 	beforeEach(() => {
+		vi.useFakeTimers(); // Use fake timers for predictable timing
 		vi.clearAllMocks();
-		vi.useRealTimers(); // Ensure real timers before each test
 		// Clear localStorage before each test
 		localStorage.clear();
 	});
@@ -38,7 +39,7 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("renders the resend button initially", () => {
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		expect(button).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe("EmailVerificationResendButton", () => {
 	it("shows loading state when button is clicked", async () => {
 		mockSendEmailVerification.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -61,7 +62,7 @@ describe("EmailVerificationResendButton", () => {
 	it("calls AuthService.sendEmailVerification with correct email", async () => {
 		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -77,7 +78,9 @@ describe("EmailVerificationResendButton", () => {
 			rate_limit_seconds_remaining: 60
 		});
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
+		renderWithFullEnvironment(
+			<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />
+		);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -106,7 +109,9 @@ describe("EmailVerificationResendButton", () => {
 			rate_limit_seconds_remaining: 60
 		});
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
+		renderWithFullEnvironment(
+			<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />
+		);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -127,7 +132,7 @@ describe("EmailVerificationResendButton", () => {
 	it("returns to normal state after error", async () => {
 		mockSendEmailVerification.mockRejectedValue(new Error("Network error"));
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -148,7 +153,9 @@ describe("EmailVerificationResendButton", () => {
 			.mockRejectedValueOnce(new Error("Network error"))
 			.mockResolvedValueOnce({ message: "Email sent successfully" });
 
-		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
+		renderWithFullEnvironment(
+			<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />
+		);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 
@@ -170,7 +177,7 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("has proper accessibility attributes", () => {
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		expect(button).toBeInTheDocument();
@@ -179,7 +186,7 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("maintains button styling from Button component", () => {
-		render(<EmailVerificationResendButton userEmail={mockEmail} />);
+		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		// Should have the secondary variant base with steel blue override and extra compact sizing
@@ -202,7 +209,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			const button = screen.getByRole("button", { name: "Resend" });
 			fastUserActions.click(button);
@@ -228,7 +235,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
 			await fastStateSync();
@@ -253,7 +260,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
 			await fastStateSync();
@@ -278,7 +285,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
 			await fastStateSync();
@@ -305,7 +312,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			// Should show countdown from localStorage
 			const button = screen.getByRole("button");
@@ -322,7 +329,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			// Should not show countdown for different email
 			const button = screen.getByRole("button", { name: "Resend" });
@@ -338,7 +345,7 @@ describe("EmailVerificationResendButton", () => {
 			};
 			localStorage.setItem("emailResendRateLimit", JSON.stringify(rateLimitData));
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			// Should not show countdown and should clear localStorage
 			const button = screen.getByRole("button", { name: "Resend" });
@@ -352,7 +359,7 @@ describe("EmailVerificationResendButton", () => {
 				rate_limit_seconds_remaining: 60
 			});
 
-			render(<EmailVerificationResendButton userEmail={mockEmail} />);
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
 			await fastStateSync();

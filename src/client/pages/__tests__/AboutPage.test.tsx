@@ -1,19 +1,16 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { beforeEach, afterEach, describe, it, expect } from "vitest";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import AboutPage from "../AboutPage";
 
 describe("AboutPage", () => {
 	beforeEach(() => {
-		// Clear any previous state
-	});
-
-	afterEach(() => {
-		cleanup();
+		vi.clearAllMocks();
 	});
 
 	it("should render the main page structure", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Verify main container exists
 		const mainElement = screen.getByRole("main");
@@ -22,7 +19,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the page title with proper styling", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for page title
 		const pageTitle = screen.getByRole("heading", { name: /about zentropy/i });
@@ -35,7 +32,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the main content section with proper styling", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for main content section
 		const contentSection = document.querySelector("section");
@@ -44,7 +41,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the introduction paragraphs", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for introduction paragraphs
 		const introText1 = screen.getByText(/comprehensive product management platform designed to streamline/i);
@@ -57,7 +54,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the 'Our Vision' section with proper content", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for 'Our Vision' heading
 		const visionHeading = screen.getByRole("heading", { name: /our vision/i });
@@ -71,7 +68,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the 'Key Features' section with proper content", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for 'Key Features' heading
 		const featuresHeading = screen.getByRole("heading", { name: /key features/i });
@@ -85,7 +82,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display all four key features", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for each key feature
 		const feature1 = screen.getByText(/intuitive team management and collaboration tools/i);
@@ -106,7 +103,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should display the closing paragraph", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check for closing paragraph
 		const closingText = screen.getByText(/built with modern web technologies and a focus on user experience/i);
@@ -115,7 +112,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should use semantic styling classes consistently", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check main content section uses semantic background
 		const contentSection = document.querySelector("section");
@@ -139,7 +136,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should have proper accessibility structure", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Check that main heading exists
 		const mainHeading = screen.getByRole("heading", { level: 2 });
@@ -158,7 +155,7 @@ describe("AboutPage", () => {
 	});
 
 	it("should have proper content structure and organization", () => {
-		render(<AboutPage />);
+		renderWithFullEnvironment(<AboutPage />);
 
 		// Verify content flows logically
 		const contentSection = document.querySelector("section");

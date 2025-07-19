@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { screen, cleanup } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Header navigation tests require userEvent for flyout menu interactions and focus management
+// eslint-disable-next-line no-restricted-imports -- Header navigation tests require userEvent for flyout menu interactions and focus management
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import Header from "../Header";
@@ -31,6 +30,8 @@ const mockAuthUnverified = {
 };
 
 describe("Header", () => {
+	/* eslint-disable no-restricted-syntax */
+	// Header navigation tests require userEvent for flyout menu interactions and focus management
 	beforeEach(() => {
 		mockOnPageChange.mockClear();
 	});
@@ -288,4 +289,5 @@ describe("Header", () => {
 	});
 
 	// Note: Cross-tab functionality has been replaced with a central verification code system
+	/* eslint-enable no-restricted-syntax */
 });

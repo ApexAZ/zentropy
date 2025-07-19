@@ -3,6 +3,7 @@ import { AuthService } from "../AuthService";
 import type { SignInCredentials, SignUpData, AuthResponse } from "../../types";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 describe("AuthService", () => {

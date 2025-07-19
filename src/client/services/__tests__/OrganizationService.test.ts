@@ -10,6 +10,7 @@ import type {
 } from "../../types";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 // Mock authentication token

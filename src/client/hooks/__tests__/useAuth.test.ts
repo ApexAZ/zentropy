@@ -6,6 +6,7 @@ import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock fetch for API calls
 const mockFetch = vi.fn();
+// eslint-disable-next-line no-restricted-syntax -- Auth hook integration tests require global fetch mocking for authentication flow testing
 global.fetch = mockFetch;
 
 // Mock localStorage
@@ -50,8 +51,10 @@ describe("useAuth", () => {
 		}
 	) => {
 		mockLocalStorage.getItem.mockReturnValue(token);
+
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
+			// eslint-disable-next-line no-restricted-syntax -- Helper function used across multiple test sections for authentication setup
 			json: async () => userData
 		});
 
@@ -106,6 +109,11 @@ describe("useAuth", () => {
 	});
 
 	describe("User authentication validates on mount", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Token validation tests require manual fetch response mocking to test:
+		// - API validation calls and responses
+		// - Network error scenarios
+		// - Malformed response handling
 		it("should validate existing token with API call", async () => {
 			const mockToken = "valid-jwt-token";
 			const mockUserData = {
@@ -201,9 +209,11 @@ describe("useAuth", () => {
 			// Verify token was removed due to parsing error
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User can login", () => {
+		// Login function tests use state management only - no fetch mocking needed
 		it("should login user with token and user data", () => {
 			const { result } = setupUnauthenticatedUser();
 
@@ -231,6 +241,10 @@ describe("useAuth", () => {
 	});
 
 	describe("User can logout", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Logout tests require manual fetch response mocking to test:
+		// - Logout API calls and responses
+		// - Network error scenarios during logout
 		it("should logout user and call API endpoint", async () => {
 			const mockToken = "existing-jwt-token";
 			const { result } = await setupAuthenticatedUser(mockToken, {
@@ -302,9 +316,12 @@ describe("useAuth", () => {
 
 			consoleWarnSpy.mockRestore();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User data formats correctly", () => {
+		// Data formatting tests require manual fetch response mocking to test:
+		// - API response parsing and user data transformation
 		it("should properly format first_name and last_name as display name", async () => {
 			const mockUserData = {
 				email: "jane.smith@example.com",
@@ -352,6 +369,9 @@ describe("useAuth", () => {
 	});
 
 	describe("User data validation", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Data validation tests require manual fetch response mocking to test:
+		// - API response validation and edge cases
 		it("should prevent 'John Doe' hardcoded fallback by using real API data", async () => {
 			const realUserData = {
 				email: "real.user@example.com",
@@ -393,9 +413,13 @@ describe("useAuth", () => {
 				}
 			});
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User session timeout", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Session timeout tests require manual fetch response mocking to test:
+		// - Logout API calls triggered by timeout
 		it("should automatically logout after timeout period of inactivity", async () => {
 			const mockToken = "valid-token";
 
@@ -422,6 +446,7 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
+
 			vi.useRealTimers();
 
 			// Additional wait for state updates
@@ -483,6 +508,7 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
+
 			vi.useRealTimers();
 
 			// Wait for async logout operations to complete
@@ -508,6 +534,7 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
+
 			vi.useRealTimers();
 
 			// User should still not be authenticated (no timeout started)
@@ -516,5 +543,6 @@ describe("useAuth", () => {
 			// No logout API calls should have been made for unauthenticated users
 			expect(mockFetch).not.toHaveBeenCalledWith(expect.stringContaining("/logout"), expect.any(Object));
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 });

@@ -1,5 +1,7 @@
 import React from "react";
+// eslint-disable-next-line no-restricted-imports -- Testing error handling requires direct render without provider context
 import { render, screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { ToastProvider, useToast } from "../ToastContext";
@@ -30,7 +32,7 @@ describe("ToastProvider", () => {
 	// 🚀 PERFORMANCE PATTERN: Using fastUserActions for 99%+ speed improvement
 	describe("User can show different types of toast notifications", () => {
 		it("should display success toast when showSuccess is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -45,7 +47,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should display error toast when showError is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -60,7 +62,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should display info toast when showInfo is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -75,7 +77,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should display warning toast when showWarning is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -89,7 +91,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should display custom toast when showToast is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -105,7 +107,7 @@ describe("ToastProvider", () => {
 
 	describe("User can manage multiple toast notifications", () => {
 		it("should display multiple toasts simultaneously", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -121,7 +123,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should stack toasts with proper positioning", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -140,7 +142,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should respect maximum toast limit", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider maxToasts={2}>
 					<TestComponent />
 				</ToastProvider>
@@ -160,7 +162,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should dismiss all toasts when dismissAllToasts is called", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -177,7 +179,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should dismiss individual toasts", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -198,7 +200,7 @@ describe("ToastProvider", () => {
 
 	describe("User experiences auto-dismiss behavior", () => {
 		it("should auto-dismiss toasts after timeout", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -219,7 +221,7 @@ describe("ToastProvider", () => {
 				return <button onClick={() => showSuccess("Custom timeout", 3000)}>Show Custom Timeout</button>;
 			}
 
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestCustomTimeout />
 				</ToastProvider>
@@ -254,7 +256,7 @@ describe("ToastProvider", () => {
 
 	describe("User sees proper accessibility support", () => {
 		it("should provide proper ARIA attributes for toasts", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>
@@ -268,7 +270,7 @@ describe("ToastProvider", () => {
 		});
 
 		it("should support keyboard navigation", async () => {
-			render(
+			renderWithFullEnvironment(
 				<ToastProvider>
 					<TestComponent />
 				</ToastProvider>

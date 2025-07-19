@@ -60,6 +60,8 @@ describe("Mock Architecture Demonstration", () => {
 	// LEVEL 1: FETCH MOCKING EXAMPLES (Service/Integration Tests)
 	// =============================================================================
 
+	/* eslint-disable no-restricted-syntax */
+	// Mock architecture demo file requires manual fetch response mocking to demonstrate different testing patterns for educational purposes
 	describe("Level 1: Fetch Mocking (Service Tests)", () => {
 		let testEnv: ReturnType<typeof setupTestEnvironment>;
 
@@ -358,6 +360,7 @@ describe("Migration Examples: Before vs After", () => {
 		it("shows old pattern - global fetch mock", () => {
 			// OLD PATTERN (don't use this)
 			const mockFetch = vi.fn();
+
 			global.fetch = mockFetch;
 
 			mockFetch.mockResolvedValueOnce({

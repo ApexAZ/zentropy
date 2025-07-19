@@ -198,6 +198,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 	});
 
 	describe("Google OAuth Registration Flow", () => {
+		/* eslint-disable no-restricted-syntax */
+		// OAuth integration tests require manual fetch response mocking to test:
+		// - HTTP response scenarios (success, error, network failure, incomplete response)
+		// - Response parsing and validation
+		// - Token exchange flows
 		it("should handle successful Google OAuth registration by calling auth.login", async () => {
 			// Mock successful OAuth response using new mock architecture
 			const mockAuthResponse = {
@@ -213,6 +218,7 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			};
 
 			// Use Level 1 (Fetch) mocking for integration testing
+
 			testEnv = renderWithFullEnvironment(<App />, {
 				providers: { toast: true },
 				mocks: {
@@ -519,6 +525,7 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			// App should process the credential, not just log it
 			// This test will fail until we implement proper credential processing
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 });
 

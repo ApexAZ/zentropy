@@ -1,8 +1,8 @@
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { screen, act, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import CalendarPage from "../CalendarPage";
-import { ToastProvider } from "../../contexts/ToastContext";
 import { CalendarService } from "../../services/CalendarService";
 import { TeamService } from "../../services/TeamService";
 
@@ -68,11 +68,9 @@ describe("CalendarPage", () => {
 	// ✅ Handles async initialization with act()
 	// ✅ Reusable across all tests in the file
 	const renderCalendarPage = async () => {
-		const result = render(
-			<ToastProvider>
-				<CalendarPage />
-			</ToastProvider>
-		);
+		const result = renderWithFullEnvironment(<CalendarPage />, {
+			providers: { toast: true }
+		});
 
 		// Wait for async initialization like EmailVerificationModal pattern
 		await act(async () => {

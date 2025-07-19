@@ -1,4 +1,5 @@
-import { render, screen, cleanup, act, fireEvent } from "@testing-library/react";
+import { screen, cleanup, act, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import DashboardPage from "../DashboardPage";
@@ -30,7 +31,7 @@ describe("DashboardPage", () => {
 			() => new Promise(() => {}) // Never resolves
 		);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Verify loading state is displayed
 		expect(screen.getByText("Loading dashboard...")).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockRejectedValue(new Error(errorMessage));
 		vi.mocked(DashboardService.getTeams).mockRejectedValue(new Error(errorMessage));
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for error state to appear
 		await act(async () => {
@@ -89,7 +90,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 40,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -97,7 +99,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -135,7 +137,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 40,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			},
 			{
 				id: "team-2",
@@ -144,7 +147,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 25,
 				sprint_length_days: 10,
 				working_days_per_week: 4,
-				created_at: "2025-01-02T11:00:00Z"
+				created_at: "2025-01-02T11:00:00Z",
+				updated_at: "2025-01-02T11:00:00Z"
 			}
 		];
 
@@ -152,7 +156,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -200,7 +204,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -229,7 +233,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 30,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -237,7 +242,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -267,7 +272,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 30,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -275,7 +281,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -310,7 +316,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 0, // No velocity set
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -318,7 +325,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -346,7 +353,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 30,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -354,7 +362,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {
@@ -383,7 +391,8 @@ describe("DashboardPage", () => {
 				velocity_baseline: 30,
 				sprint_length_days: 14,
 				working_days_per_week: 5,
-				created_at: "2025-01-01T10:00:00Z"
+				created_at: "2025-01-01T10:00:00Z",
+				updated_at: "2025-01-01T10:00:00Z"
 			}
 		];
 
@@ -391,7 +400,7 @@ describe("DashboardPage", () => {
 		vi.mocked(DashboardService.getDashboardStats).mockResolvedValue(mockStats);
 		vi.mocked(DashboardService.getTeams).mockResolvedValue(mockTeams);
 
-		render(<DashboardPage />);
+		renderWithFullEnvironment(<DashboardPage />);
 
 		// Wait for data to load
 		await act(async () => {

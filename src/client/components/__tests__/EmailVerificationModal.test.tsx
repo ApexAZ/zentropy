@@ -1,5 +1,7 @@
 import React from "react";
+/* eslint-disable-next-line no-restricted-imports -- One test requires render with rerender for modal state testing */
 import { render, screen, fireEvent, act } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import EmailVerificationModal from "../EmailVerificationModal";
@@ -57,25 +59,25 @@ describe("EmailVerificationModal", () => {
 	};
 
 	it("should not render when isOpen is false", () => {
-		render(<EmailVerificationModal {...defaultProps} isOpen={false} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} isOpen={false} />);
 		expect(screen.queryByText("Verify Your Email")).not.toBeInTheDocument();
 	});
 
 	it("should render verification form when open", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		expect(screen.getByText("Verify Your Email")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email Address")).toBeInTheDocument();
 		expect(screen.getByText("Verification Code")).toBeInTheDocument();
 	});
 
 	it("should pre-populate email field with initialEmail", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
 		expect(emailInput.value).toBe("test@example.com");
 	});
 
 	it("should handle code input", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		fillCode("1");
 		const codeInputs = screen
 			.getAllByRole("textbox")
@@ -84,7 +86,7 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should handle backspace navigation between code inputs", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const codeInputs = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric");
@@ -94,7 +96,7 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should handle paste of 6-digit code", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const firstCodeInput = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
@@ -106,7 +108,7 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should disable verify button when email is empty", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const emailInput = screen.getByLabelText("Email Address");
 		fireEvent.change(emailInput, { target: { value: "" } });
 		fillCode("123456");
@@ -123,7 +125,7 @@ describe("EmailVerificationModal", () => {
 			user_id: "123"
 		});
 
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		fillCode("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
@@ -154,7 +156,7 @@ describe("EmailVerificationModal", () => {
 		// ✅ Mock service method to throw error for faster error testing
 		vi.mocked(AuthService.verifyCode).mockRejectedValueOnce(new Error("Invalid verification code"));
 
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		fillCode("123456");
 
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
@@ -176,7 +178,7 @@ describe("EmailVerificationModal", () => {
 			message: "Verification email sent! Please check your inbox."
 		});
 
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const resendButton = screen.getByRole("button", { name: /resend/i });
 		fireEvent.click(resendButton);
 
@@ -198,7 +200,7 @@ describe("EmailVerificationModal", () => {
 			new Error("Failed to resend code. Please try again.")
 		);
 
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const resendButton = screen.getByRole("button", { name: /resend/i });
 		fireEvent.click(resendButton);
 
@@ -211,7 +213,7 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should close modal when close button is clicked", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const closeButton = screen.getByRole("button", { name: "✕" });
 		fireEvent.click(closeButton);
 		expect(mockOnClose).toHaveBeenCalled();
@@ -231,7 +233,7 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should only allow numeric input in code fields", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		const firstCodeInput = screen
 			.getAllByRole("textbox")
 			.filter(input => input.getAttribute("inputMode") === "numeric")[0];
@@ -240,14 +242,14 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should disable verify button when code is incomplete", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		fillCode("123");
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 		expect(verifyButton).toBeDisabled();
 	});
 
 	it("should enable verify button when code is complete and email is provided", () => {
-		render(<EmailVerificationModal {...defaultProps} />);
+		renderWithFullEnvironment(<EmailVerificationModal {...defaultProps} />);
 		fillCode("123456");
 		const verifyButton = screen.getByRole("button", { name: /verify email/i });
 		expect(verifyButton).not.toBeDisabled();

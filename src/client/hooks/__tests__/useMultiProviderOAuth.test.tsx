@@ -1,7 +1,7 @@
 import React from "react";
+// eslint-disable-next-line no-restricted-imports -- useMultiProviderOAuth tests require custom renderWithToast wrapper for OAuth testing
 import { render, screen, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// useMultiProviderOAuth tests require userEvent for complex OAuth provider linking/unlinking workflows
+// eslint-disable-next-line no-restricted-imports -- useMultiProviderOAuth tests require userEvent for complex OAuth provider linking/unlinking workflows
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -104,12 +104,12 @@ vi.mock("../useAccountSecurity", () => ({
 // Test component that uses the hook
 function TestMultiProviderOAuthComponent() {
 	const { providers, linkProvider, unlinkProvider, getProviderState, isProviderLinked } = useMultiProviderOAuth({
-		onSuccess: (credential: string, provider: string) => {
+		onSuccess: () => {
 			// This would normally trigger a toast, but we're testing the UI interaction
-			console.log(`Success: ${provider} linked with ${credential}`);
+			// Success callback for testing
 		},
-		onError: (error: string) => {
-			console.log(`Error: ${error}`);
+		onError: () => {
+			// Error callback for testing
 		}
 	});
 
@@ -190,6 +190,8 @@ describe("useMultiProviderOAuth", () => {
 	});
 
 	describe("User Experience: Linking OAuth Providers", () => {
+		/* eslint-disable no-restricted-syntax */
+		// OAuth linking tests require userEvent for provider interaction workflows
 		it("should allow user to link Google account by clicking button", async () => {
 			// Mock Google as unlinked so link button appears
 			const mockUseAccountSecurity = vi.fn(() => ({
@@ -248,9 +250,12 @@ describe("useMultiProviderOAuth", () => {
 			// User's action should trigger GitHub OAuth flow
 			expect(mockGitHubTrigger).toHaveBeenCalledOnce();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User Experience: Unlinking OAuth Providers", () => {
+		/* eslint-disable no-restricted-syntax */
+		// OAuth unlinking tests require userEvent for provider interaction workflows
 		it("should allow user to unlink Google account by clicking button", async () => {
 			const user = userEvent.setup();
 			renderWithToast(<TestMultiProviderOAuthComponent />);
@@ -328,6 +333,7 @@ describe("useMultiProviderOAuth", () => {
 			});
 			expect(mockOnError).toHaveBeenCalledWith("Unlinking microsoft is not yet supported");
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User Experience: Provider Status Feedback", () => {

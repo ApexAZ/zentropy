@@ -1,7 +1,7 @@
 import React from "react";
-import { render, screen, cleanup } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// OAuth provider tests require userEvent for keyboard navigation and complex authentication workflows
+import { screen, cleanup } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- OAuth provider tests require userEvent for keyboard navigation and complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -39,7 +39,7 @@ describe("OAuthProviders", () => {
 
 	describe("Component Rendering", () => {
 		it("should render OAuth providers with instructions", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Check main instruction text
 			expect(screen.getByText("Continue with your preferred account")).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should render with correct grid layout for 4 providers", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Check that the grid container has correct classes
 			const gridContainer = screen.getByRole("button", { name: /continue with google/i }).parentElement;
@@ -63,7 +63,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should render Google logo SVG when not loading", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			const googleLogo = googleButton.querySelector("svg");
@@ -73,10 +73,12 @@ describe("OAuthProviders", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing OAuth authentication workflows with real user interactions
 	describe("Google OAuth Integration", () => {
 		it("should call triggerOAuth when Google button is clicked", async () => {
 			const user = userEvent.setup();
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			await user.click(googleButton);
@@ -94,7 +96,7 @@ describe("OAuthProviders", () => {
 				return defaultHookReturn;
 			});
 
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Verify the callback was called with transformed credential response
 			expect(mockOnGoogleSignIn).toHaveBeenCalledWith({
@@ -113,7 +115,7 @@ describe("OAuthProviders", () => {
 
 			// Render without onGoogleSignIn prop
 			expect(() => {
-				render(<OAuthProviders />);
+				renderWithFullEnvironment(<OAuthProviders />);
 			}).not.toThrow();
 		});
 
@@ -127,16 +129,17 @@ describe("OAuthProviders", () => {
 				return defaultHookReturn;
 			});
 
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			expect(consoleSpy).toHaveBeenCalledWith("Google OAuth error in OAuthProviders:", mockError);
 			consoleSpy.mockRestore();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("Button States", () => {
 		it("should disable Google button when disabled prop is true", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} disabled={true} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} disabled={true} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			expect(googleButton).toBeDisabled();
@@ -148,7 +151,7 @@ describe("OAuthProviders", () => {
 				isReady: false
 			});
 
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			expect(googleButton).toBeDisabled();
@@ -160,7 +163,7 @@ describe("OAuthProviders", () => {
 				isLoading: true
 			});
 
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /signing in with google/i });
 			expect(googleButton).toBeDisabled();
@@ -181,7 +184,7 @@ describe("OAuthProviders", () => {
 				error: mockError
 			});
 
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: `Google Sign-In Error: ${mockError}` });
 			expect(googleButton).toBeDisabled();
@@ -191,7 +194,7 @@ describe("OAuthProviders", () => {
 
 	describe("Coming Soon Providers", () => {
 		it("should render Microsoft provider as disabled with coming soon label", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const microsoftButton = screen.getByRole("button", { name: /microsoft \(coming soon\)/i });
 			expect(microsoftButton).toBeDisabled();
@@ -200,7 +203,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should render GitHub provider as disabled with coming soon label", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const githubButton = screen.getByRole("button", { name: /github \(coming soon\)/i });
 			expect(githubButton).toBeDisabled();
@@ -209,7 +212,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should render Apple provider as disabled with coming soon label", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const appleButton = screen.getByRole("button", { name: /apple \(coming soon\)/i });
 			expect(appleButton).toBeDisabled();
@@ -218,7 +221,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should render provider logos for all coming soon providers", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Check Microsoft logo
 			const microsoftButton = screen.getByRole("button", { name: /microsoft \(coming soon\)/i });
@@ -237,9 +240,11 @@ describe("OAuthProviders", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing keyboard navigation accessibility features
 	describe("User Experience", () => {
 		it("should provide clear visual feedback for different button states", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 
@@ -256,7 +261,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should maintain accessibility with proper ARIA labels", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 			expect(googleButton).toHaveAttribute("aria-label", "Continue with Google");
@@ -265,7 +270,7 @@ describe("OAuthProviders", () => {
 
 		it("should handle keyboard navigation properly", async () => {
 			const user = userEvent.setup();
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
 
@@ -278,10 +283,11 @@ describe("OAuthProviders", () => {
 			expect(mockTriggerOAuth).toHaveBeenCalledOnce();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("Hook Integration", () => {
 		it("should pass correct props to useGoogleOAuth hook", () => {
-			render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Verify hook was called with correct configuration
 			expect(mockUseGoogleOAuth).toHaveBeenCalledWith({
@@ -291,7 +297,7 @@ describe("OAuthProviders", () => {
 		});
 
 		it("should handle hook state changes correctly", () => {
-			const { rerender } = render(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
+			const { rerender } = renderWithFullEnvironment(<OAuthProviders onGoogleSignIn={mockOnGoogleSignIn} />);
 
 			// Initially ready
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });

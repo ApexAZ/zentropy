@@ -3,6 +3,7 @@ import { ProjectService } from "../ProjectService";
 import type { Project, CreateProjectData, UpdateProjectData, ProjectListResponse } from "../../types";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 // Mock authentication token

@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
 import { SecurityStatusSkeleton } from "../SecurityStatusSkeleton";
@@ -8,7 +9,7 @@ describe("SecurityStatusSkeleton", () => {
 	// Following User-Focused Testing pattern from tests/README.md
 	describe("User sees structured loading placeholder", () => {
 		it("should display skeleton elements for authentication status", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			const skeletonElements = screen.getAllByRole("status");
 			expect(skeletonElements.length).toBeGreaterThan(0);
@@ -20,7 +21,7 @@ describe("SecurityStatusSkeleton", () => {
 		});
 
 		it("should display skeleton layout matching actual security status display", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Should have multiple skeleton elements representing different parts of the UI
 			const skeletonElements = screen.getAllByRole("status");
@@ -28,7 +29,7 @@ describe("SecurityStatusSkeleton", () => {
 		});
 
 		it("should display skeleton elements with proper spacing", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Check that the container has proper spacing classes
 			const skeletonElements = screen.getAllByRole("status");
@@ -42,7 +43,7 @@ describe("SecurityStatusSkeleton", () => {
 
 	describe("User sees authentication status section skeleton", () => {
 		it("should display skeleton elements for email and Google authentication rows", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Should have skeleton elements for both authentication methods
 			const skeletonElements = screen.getAllByRole("status");
@@ -50,7 +51,7 @@ describe("SecurityStatusSkeleton", () => {
 		});
 
 		it("should display skeleton for security status indicator", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Should have skeleton elements for security status and tips
 			const skeletonElements = screen.getAllByRole("status");
@@ -60,7 +61,7 @@ describe("SecurityStatusSkeleton", () => {
 
 	describe("User sees actions section skeleton", () => {
 		it("should display skeleton elements for security actions", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Should have skeleton elements for action button and help text
 			const skeletonElements = screen.getAllByRole("status");
@@ -68,7 +69,7 @@ describe("SecurityStatusSkeleton", () => {
 		});
 
 		it("should display skeleton with proper section separation", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// Check that actions section has proper border separation
 			const actionSection = document.querySelector(".border-layout-background");
@@ -78,7 +79,7 @@ describe("SecurityStatusSkeleton", () => {
 
 	describe("User understands loading context", () => {
 		it("should provide proper accessibility for screen readers", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			const skeletonElements = screen.getAllByRole("status");
 			skeletonElements.forEach(element => {
@@ -87,7 +88,7 @@ describe("SecurityStatusSkeleton", () => {
 		});
 
 		it("should maintain consistent skeleton styling", () => {
-			render(<SecurityStatusSkeleton />);
+			renderWithFullEnvironment(<SecurityStatusSkeleton />);
 
 			// All skeleton elements should have consistent styling
 			const skeletonElements = screen.getAllByRole("status");

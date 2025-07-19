@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, cleanup } from "@testing-library/react";
+import { screen, cleanup } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import RequiredAsterisk from "../RequiredAsterisk";
@@ -11,7 +12,7 @@ describe("RequiredAsterisk", () => {
 
 	describe("Visibility Logic", () => {
 		it("should show asterisk when field is empty and required", () => {
-			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
 			expect(asterisk).toBeInTheDocument();
@@ -20,19 +21,19 @@ describe("RequiredAsterisk", () => {
 		});
 
 		it("should not show asterisk when field is populated", () => {
-			render(<RequiredAsterisk isEmpty={false} isRequired={true} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={false} isRequired={true} />);
 
 			expect(screen.queryByText("*")).not.toBeInTheDocument();
 		});
 
 		it("should not show asterisk when field is not required", () => {
-			render(<RequiredAsterisk isEmpty={true} isRequired={false} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={false} />);
 
 			expect(screen.queryByText("*")).not.toBeInTheDocument();
 		});
 
 		it("should not show asterisk when field is populated and not required", () => {
-			render(<RequiredAsterisk isEmpty={false} isRequired={false} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={false} isRequired={false} />);
 
 			expect(screen.queryByText("*")).not.toBeInTheDocument();
 		});
@@ -40,7 +41,7 @@ describe("RequiredAsterisk", () => {
 
 	describe("Styling", () => {
 		it("should apply correct CSS classes for styling", () => {
-			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
 			expect(asterisk).toHaveClass("text-error");
@@ -48,7 +49,7 @@ describe("RequiredAsterisk", () => {
 		});
 
 		it("should use semantic color classes that work with theme system", () => {
-			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
 			// Should use semantic error color for required field indicators
@@ -60,14 +61,14 @@ describe("RequiredAsterisk", () => {
 
 	describe("Accessibility", () => {
 		it("should render as inline span element", () => {
-			render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 
 			const asterisk = screen.getByText("*");
 			expect(asterisk.tagName.toLowerCase()).toBe("span");
 		});
 
 		it("should not interfere with screen reader flow", () => {
-			render(
+			renderWithFullEnvironment(
 				<div>
 					<label>
 						First Name
@@ -84,7 +85,7 @@ describe("RequiredAsterisk", () => {
 
 	describe("Component API", () => {
 		it("should accept isEmpty boolean prop", () => {
-			const { rerender } = render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			const { rerender } = renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 			expect(screen.getByText("*")).toBeInTheDocument();
 
 			rerender(<RequiredAsterisk isEmpty={false} isRequired={true} />);
@@ -92,7 +93,7 @@ describe("RequiredAsterisk", () => {
 		});
 
 		it("should accept isRequired boolean prop", () => {
-			const { rerender } = render(<RequiredAsterisk isEmpty={true} isRequired={true} />);
+			const { rerender } = renderWithFullEnvironment(<RequiredAsterisk isEmpty={true} isRequired={true} />);
 			expect(screen.getByText("*")).toBeInTheDocument();
 
 			rerender(<RequiredAsterisk isEmpty={true} isRequired={false} />);

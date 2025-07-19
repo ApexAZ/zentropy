@@ -56,10 +56,13 @@ export default [
     }
   },
   {
-    // Global Mock Architecture guidance for test files
+    // Global Mock Architecture guidance for test files (excluding service unit tests)
     files: [
       'src/client/**/*.test.{ts,tsx}',
       'src/client/**/__tests__/**/*.{ts,tsx}'
+    ],
+    ignores: [
+      'src/client/services/__tests__/**'
     ],
     languageOptions: {
       parser: typescriptParser,
@@ -98,7 +101,7 @@ export default [
         },
         // Timer and Performance Optimization
         {
-          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.name="vi"][callee.property.name="useRealTimers"]',
+          selector: 'CallExpression[callee.type="MemberExpression"][callee.object.name="vi"][callee.property.name="useRealTimers"]:not(CallExpression[callee.name="afterEach"] *)',
           message: '⚡ Consider using vi.useFakeTimers() throughout your test for predictable timing and faster execution. Only use vi.useRealTimers() in afterEach cleanup.'
         },
         {

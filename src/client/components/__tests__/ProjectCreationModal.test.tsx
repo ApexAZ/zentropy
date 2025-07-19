@@ -1,7 +1,7 @@
 import React from "react";
+// eslint-disable-next-line no-restricted-imports -- ProjectCreationModal tests require custom wrapper for ToastProvider integration testing
 import { render, screen, fireEvent, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// ProjectCreationModal tests require userEvent for keyboard navigation and modal accessibility testing
+// eslint-disable-next-line no-restricted-imports -- ProjectCreationModal tests require userEvent for keyboard navigation and modal accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -96,6 +96,7 @@ describe("ProjectCreationModal", () => {
 	// Helper function to render modal with consistent setup
 	const createModal = (overrides = {}) => {
 		const props = { ...mockProps, ...overrides };
+
 		return render(<ProjectCreationModal {...props} />, { wrapper: TestWrapper });
 	};
 
@@ -545,6 +546,7 @@ describe("ProjectCreationModal", () => {
 			expect(screen.getByLabelText("Visibility")).toBeInTheDocument();
 		});
 
+		/* eslint-disable no-restricted-syntax */
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
 			createModal();
@@ -560,6 +562,7 @@ describe("ProjectCreationModal", () => {
 			await user.tab();
 			expect(document.activeElement).toBe(visibilitySelect);
 		});
+		/* eslint-enable no-restricted-syntax */
 
 		it("should announce validation errors to screen readers", () => {
 			mockUseProject.validateProject.mockReturnValue({

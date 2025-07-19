@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { screen, act, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { Toast } from "../Toast";
@@ -14,7 +15,7 @@ describe("Toast", () => {
 	// Following User-Focused Testing pattern from tests/README.md
 	describe("User sees toast notifications", () => {
 		it("should display success toast with message", () => {
-			render(
+			renderWithFullEnvironment(
 				<Toast
 					message="Operation completed successfully"
 					type="success"
@@ -29,7 +30,9 @@ describe("Toast", () => {
 		});
 
 		it("should display error toast with message", () => {
-			render(<Toast message="Something went wrong" type="error" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Something went wrong" type="error" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			expect(screen.getByRole("alert")).toBeInTheDocument();
 			expect(screen.getByText("Something went wrong")).toBeInTheDocument();
@@ -37,7 +40,9 @@ describe("Toast", () => {
 		});
 
 		it("should display info toast with message", () => {
-			render(<Toast message="Information message" type="info" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Information message" type="info" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			expect(screen.getByRole("alert")).toBeInTheDocument();
 			expect(screen.getByText("Information message")).toBeInTheDocument();
@@ -45,7 +50,9 @@ describe("Toast", () => {
 		});
 
 		it("should display warning toast with message", () => {
-			render(<Toast message="Warning message" type="warning" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Warning message" type="warning" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			expect(screen.getByRole("alert")).toBeInTheDocument();
 			expect(screen.getByText("Warning message")).toBeInTheDocument();
@@ -53,7 +60,9 @@ describe("Toast", () => {
 		});
 
 		it("should not render when not visible", () => {
-			render(<Toast message="Hidden message" type="success" isVisible={false} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Hidden message" type="success" isVisible={false} onDismiss={mockOnDismiss} />
+			);
 
 			expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 		});
@@ -61,7 +70,9 @@ describe("Toast", () => {
 
 	describe("User can dismiss toast notifications", () => {
 		it("should call onDismiss when dismiss button is clicked", () => {
-			render(<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
 			fireEvent.click(dismissButton);
@@ -70,7 +81,9 @@ describe("Toast", () => {
 		});
 
 		it("should call onDismiss when escape key is pressed", () => {
-			render(<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Test message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			toast.focus();
@@ -82,35 +95,43 @@ describe("Toast", () => {
 
 	describe("User sees appropriate styling for different toast types", () => {
 		it("should apply success styling classes", () => {
-			render(<Toast message="Success message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Success message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			expect(toast).toHaveClass("border-green-200", "bg-green-50", "text-green-700");
 		});
 
 		it("should apply error styling classes", () => {
-			render(<Toast message="Error message" type="error" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Error message" type="error" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			expect(toast).toHaveClass("border-red-200", "bg-red-50", "text-red-700");
 		});
 
 		it("should apply info styling classes", () => {
-			render(<Toast message="Info message" type="info" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Info message" type="info" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			expect(toast).toHaveClass("border-blue-200", "bg-blue-50", "text-blue-700");
 		});
 
 		it("should apply warning styling classes", () => {
-			render(<Toast message="Warning message" type="warning" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Warning message" type="warning" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			expect(toast).toHaveClass("border-yellow-200", "bg-yellow-50", "text-yellow-700");
 		});
 
 		it("should apply custom className", () => {
-			render(
+			renderWithFullEnvironment(
 				<Toast
 					message="Custom message"
 					type="success"
@@ -128,6 +149,7 @@ describe("Toast", () => {
 	describe("User experiences auto-dismiss behavior", () => {
 		beforeEach(() => {
 			vi.useFakeTimers();
+			vi.clearAllMocks();
 		});
 
 		afterEach(() => {
@@ -136,7 +158,9 @@ describe("Toast", () => {
 		});
 
 		it("should auto-dismiss toast after default timeout", () => {
-			render(<Toast message="Auto-dismiss message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Auto-dismiss message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			expect(mockOnDismiss).not.toHaveBeenCalled();
 
@@ -149,7 +173,7 @@ describe("Toast", () => {
 		});
 
 		it("should auto-dismiss toast after custom timeout", () => {
-			render(
+			renderWithFullEnvironment(
 				<Toast
 					message="Custom timeout message"
 					type="success"
@@ -170,7 +194,7 @@ describe("Toast", () => {
 		});
 
 		it("should not auto-dismiss when timeout is 0", () => {
-			render(
+			renderWithFullEnvironment(
 				<Toast
 					message="No auto-dismiss message"
 					type="success"
@@ -189,12 +213,12 @@ describe("Toast", () => {
 		});
 
 		it("should clear timeout when component unmounts", () => {
-			const { unmount } = render(
+			const { result } = renderWithFullEnvironment(
 				<Toast message="Unmount message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
 			);
 
 			// Unmount before timeout
-			unmount();
+			result.unmount();
 
 			// Fast-forward time by 5 seconds
 			act(() => {
@@ -207,7 +231,9 @@ describe("Toast", () => {
 
 	describe("User understands toast accessibility", () => {
 		it("should have proper ARIA attributes", () => {
-			render(<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const toast = screen.getByRole("alert");
 			expect(toast).toHaveAttribute("aria-live", "polite");
@@ -216,7 +242,9 @@ describe("Toast", () => {
 		});
 
 		it("should have properly labeled dismiss button", () => {
-			render(<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
 			expect(dismissButton).toBeInTheDocument();
@@ -224,7 +252,9 @@ describe("Toast", () => {
 		});
 
 		it("should have icon marked as decorative", () => {
-			render(<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />);
+			renderWithFullEnvironment(
+				<Toast message="Accessible message" type="success" isVisible={true} onDismiss={mockOnDismiss} />
+			);
 
 			// Look for the icon container div directly
 			const iconContainer = screen.getByText("✓").closest('div[aria-hidden="true"]');

@@ -39,7 +39,7 @@ describe("Button Component", () => {
 	});
 
 	it("renders icon variant for small icon buttons", () => {
-		render(
+		renderWithFullEnvironment(
 			<Button variant="icon" aria-label="Edit">
 				✏️
 			</Button>
@@ -63,7 +63,7 @@ describe("Button Component", () => {
 	});
 
 	it("renders custom loading text", () => {
-		render(
+		renderWithFullEnvironment(
 			<Button isLoading loadingText="Processing...">
 				Submit
 			</Button>
@@ -79,7 +79,7 @@ describe("Button Component", () => {
 	});
 
 	it("forwards all HTML button props", () => {
-		render(
+		renderWithFullEnvironment(
 			<Button type="submit" form="my-form">
 				Submit
 			</Button>

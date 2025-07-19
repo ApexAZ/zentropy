@@ -1,5 +1,6 @@
 import React from "react";
-import { screen, fireEvent } from "@testing-library/react";
+// eslint-disable-next-line no-restricted-imports -- Testing click-outside behavior requires custom DOM structure
+import { screen, fireEvent, render } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -15,7 +16,7 @@ describe("FlyoutNavigation", () => {
 	};
 
 	beforeEach(() => {
-		mockOnPageChange.mockClear();
+		vi.clearAllMocks();
 	});
 
 	it("renders the menu button with proper accessibility attributes", () => {

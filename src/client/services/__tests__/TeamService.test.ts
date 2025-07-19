@@ -13,6 +13,7 @@ import type {
 } from "../../types";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 describe("TeamService", () => {

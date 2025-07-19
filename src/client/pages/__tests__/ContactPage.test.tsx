@@ -1,19 +1,16 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { beforeEach, afterEach, describe, it, expect } from "vitest";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import ContactPage from "../ContactPage";
 
 describe("ContactPage", () => {
 	beforeEach(() => {
-		// Clear any previous state
-	});
-
-	afterEach(() => {
-		cleanup();
+		vi.clearAllMocks();
 	});
 
 	it("should render the main page structure", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Verify main container exists
 		const mainElement = screen.getByRole("main");
@@ -22,7 +19,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the page title with proper styling", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for page title
 		const pageTitle = screen.getByRole("heading", { name: /contact us/i });
@@ -35,7 +32,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the main content section with proper styling", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for main content section
 		const contentSection = document.querySelector("section");
@@ -44,7 +41,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the introduction paragraph", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for introduction paragraph
 		const introText = screen.getByText(
@@ -55,7 +52,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the 'Get In Touch' section with proper content", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for 'Get In Touch' heading
 		const getInTouchHeading = screen.getByRole("heading", { name: /get in touch/i });
@@ -69,7 +66,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the Support section with proper content", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for Support heading
 		const supportHeading = screen.getByRole("heading", { name: /support/i });
@@ -91,7 +88,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the General Inquiries section with proper content", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for General Inquiries heading
 		const generalInquiriesHeading = screen.getByRole("heading", { name: /general inquiries/i });
@@ -109,7 +106,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the Feedback section with proper content", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for Feedback heading
 		const feedbackHeading = screen.getByRole("heading", { name: /feedback/i });
@@ -127,7 +124,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the Office Hours section with proper content", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for Office Hours heading
 		const officeHoursHeading = screen.getByRole("heading", { name: /office hours/i });
@@ -141,7 +138,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display all office hours with proper formatting", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for office hours list
 		const officeHoursList = screen.getByRole("list", { hidden: true }); // list-none makes it not accessible by default
@@ -163,7 +160,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should display the closing paragraph", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check for closing paragraph
 		const closingText = screen.getByText(
@@ -174,7 +171,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should use semantic styling classes consistently", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check main content section uses semantic background
 		const contentSection = document.querySelector("section");
@@ -204,7 +201,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should have proper accessibility structure", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Check that main heading exists
 		const mainHeading = screen.getByRole("heading", { level: 2 });
@@ -229,7 +226,7 @@ describe("ContactPage", () => {
 	});
 
 	it("should have proper content structure and organization", () => {
-		render(<ContactPage />);
+		renderWithFullEnvironment(<ContactPage />);
 
 		// Verify content flows logically
 		const contentSection = document.querySelector("section");

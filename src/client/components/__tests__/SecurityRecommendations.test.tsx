@@ -1,9 +1,9 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// SecurityRecommendations tests require userEvent for keyboard navigation accessibility testing
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- SecurityRecommendations tests require userEvent for keyboard navigation accessibility testing
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { SecurityRecommendations } from "../SecurityRecommendations";
 import type { AccountSecurityResponse } from "../../types";
@@ -36,7 +36,7 @@ describe("SecurityRecommendations", () => {
 
 	describe("User sees helpful security recommendations", () => {
 		it("should show recommendation to add Google authentication for email-only users", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -50,7 +50,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should show critical recommendation for users with no authentication", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockNoAuthResponse}
 					onDismiss={mockOnDismiss}
@@ -64,7 +64,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should not show recommendations for users with strong security", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockHybridResponse}
 					onDismiss={mockOnDismiss}
@@ -76,10 +76,12 @@ describe("SecurityRecommendations", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing interactive educational content and user engagement workflows
 	describe("User can learn about multi-factor authentication benefits", () => {
 		it("should show educational content when user clicks learn more", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -98,7 +100,7 @@ describe("SecurityRecommendations", () => {
 
 		it("should show specific MFA benefits for email-only users", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -116,7 +118,7 @@ describe("SecurityRecommendations", () => {
 
 		it("should collapse educational content when user clicks collapse", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -135,11 +137,14 @@ describe("SecurityRecommendations", () => {
 			expect(screen.queryByTestId("educational-content")).not.toBeInTheDocument();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing recommendation dismissal workflows
 	describe("User can dismiss recommendations gently", () => {
 		it("should allow user to dismiss recommendation", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -154,7 +159,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should show 'remind me later' option for gentle dismissal", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -167,7 +172,7 @@ describe("SecurityRecommendations", () => {
 
 		it("should call onDismiss with postpone flag when user clicks remind me later", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -181,10 +186,13 @@ describe("SecurityRecommendations", () => {
 			expect(mockOnDismiss).toHaveBeenCalledWith("email-only-mfa", true);
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing keyboard navigation accessibility features
 	describe("User experiences accessible design", () => {
 		it("should provide proper ARIA labels for screen readers", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -199,7 +207,7 @@ describe("SecurityRecommendations", () => {
 
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -219,7 +227,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should have proper semantic structure", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -231,10 +239,11 @@ describe("SecurityRecommendations", () => {
 			expect(screen.getByRole("region")).toBeInTheDocument();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("User sees appropriate recommendation urgency", () => {
 		it("should show moderate urgency styling for email-only authentication", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -247,7 +256,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should show high urgency styling for no authentication", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockNoAuthResponse}
 					onDismiss={mockOnDismiss}
@@ -260,7 +269,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should use appropriate icons for different security levels", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -271,7 +280,7 @@ describe("SecurityRecommendations", () => {
 			expect(screen.getByText("🔒")).toBeInTheDocument(); // Security icon for moderate
 
 			// Unmount and test critical
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockNoAuthResponse}
 					onDismiss={mockOnDismiss}
@@ -283,9 +292,11 @@ describe("SecurityRecommendations", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing value proposition and user engagement features
 	describe("User receives non-pushy recommendations", () => {
 		it("should use gentle, helpful language", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -300,7 +311,7 @@ describe("SecurityRecommendations", () => {
 		});
 
 		it("should emphasize benefits rather than risks", () => {
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -314,7 +325,7 @@ describe("SecurityRecommendations", () => {
 
 		it("should provide clear value proposition", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<SecurityRecommendations
 					securityStatus={mockEmailOnlyResponse}
 					onDismiss={mockOnDismiss}
@@ -329,4 +340,5 @@ describe("SecurityRecommendations", () => {
 			expect(screen.getByText(/one-click setup/i)).toBeInTheDocument();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 });

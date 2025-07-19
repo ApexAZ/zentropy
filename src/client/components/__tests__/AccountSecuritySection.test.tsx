@@ -1,6 +1,5 @@
 import { screen, fireEvent, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// OAuth account linking/unlinking tests require userEvent for complex authentication workflows
+// eslint-disable-next-line no-restricted-imports -- OAuth account linking/unlinking tests require userEvent for complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -60,6 +59,7 @@ describe("AccountSecuritySection", () => {
 		fireEvent.change(passwordInput, { target: { value: password } });
 	};
 
+	/* eslint-disable no-restricted-syntax */
 	// Helper function to trigger Google account linking
 	const linkGoogleAccount = async () => {
 		const user = userEvent.setup();
@@ -81,6 +81,7 @@ describe("AccountSecuritySection", () => {
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		await user.click(unlinkButton);
 	};
+	/* eslint-enable no-restricted-syntax */
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -240,6 +241,7 @@ describe("AccountSecuritySection", () => {
 	});
 
 	describe("User can unlink Google account", () => {
+		/* eslint-disable no-restricted-syntax */
 		it("should handle Google account unlinking with password confirmation", async () => {
 			const user = userEvent.setup();
 			const mockUnlinkProvider = vi.fn().mockResolvedValue(undefined);
@@ -279,7 +281,9 @@ describe("AccountSecuritySection", () => {
 
 			expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 		});
+		/* eslint-enable no-restricted-syntax */
 
+		/* eslint-disable no-restricted-syntax */
 		it("should validate password before unlinking", async () => {
 			const user = userEvent.setup();
 			const mockUnlinkProvider = vi.fn();
@@ -317,7 +321,9 @@ describe("AccountSecuritySection", () => {
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 			expect(mockUnlinkProvider).not.toHaveBeenCalled();
 		});
+		/* eslint-enable no-restricted-syntax */
 
+		/* eslint-disable no-restricted-syntax */
 		it("should handle unlinking errors appropriately", async () => {
 			const user = userEvent.setup();
 			const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
@@ -354,6 +360,7 @@ describe("AccountSecuritySection", () => {
 			});
 			expect(screen.getByText("Incorrect password")).toBeInTheDocument();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User encounters error states", () => {
@@ -407,6 +414,7 @@ describe("AccountSecuritySection", () => {
 			expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 		});
 
+		/* eslint-disable no-restricted-syntax */
 		it("should allow user to retry after error", async () => {
 			const user = userEvent.setup();
 			const mockLoadSecurityStatus = vi.fn();
@@ -438,6 +446,7 @@ describe("AccountSecuritySection", () => {
 
 			expect(mockLoadSecurityStatus).toHaveBeenCalled();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User experiences accessibility and responsive design", () => {

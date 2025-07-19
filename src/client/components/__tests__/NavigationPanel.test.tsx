@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+/* eslint-disable-next-line no-restricted-imports -- One test requires original render for complex navigation behavior */
 import { render, screen, cleanup, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Navigation panel tests require userEvent for keyboard navigation accessibility testing (Enter, Escape, click-outside)
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- Navigation panel tests require userEvent for keyboard navigation accessibility testing (Enter, Escape, click-outside)
 import userEvent from "@testing-library/user-event";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
@@ -57,6 +58,8 @@ const mockUserWithoutProjects = {
 };
 
 describe("NavigationPanel - User Workflows", () => {
+	/* eslint-disable no-restricted-syntax */
+	// Navigation panel tests require userEvent for keyboard navigation accessibility testing (Enter, Escape, click-outside)
 	beforeEach(() => {
 		mockOnPageChange.mockClear();
 		mockOnShowRegistration.mockClear();
@@ -65,11 +68,12 @@ describe("NavigationPanel - User Workflows", () => {
 	});
 
 	afterEach(() => {
-		cleanup(); // Ensure DOM is cleaned up after each test
+		cleanup();
+		vi.restoreAllMocks();
 	});
 
 	it("authenticated user can navigate and sign out successfully", async () => {
-		render(
+		renderWithFullEnvironment(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
@@ -110,7 +114,7 @@ describe("NavigationPanel - User Workflows", () => {
 	});
 
 	it("unauthenticated user can access sign-in and registration", async () => {
-		render(
+		renderWithFullEnvironment(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
@@ -164,7 +168,7 @@ describe("NavigationPanel - User Workflows", () => {
 				user: { ...mockAuthenticatedUser.user, ...testUser }
 			};
 
-			const { unmount } = render(
+			render(
 				<NavigationPanel
 					onPageChange={mockOnPageChange}
 					onShowRegistration={mockOnShowRegistration}
@@ -174,7 +178,7 @@ describe("NavigationPanel - User Workflows", () => {
 			);
 
 			// User opens navigation and sees their correct data
-			const profileButton = screen.getByRole("button", { name: /profile/i });
+			const profileButton = screen.getByRole("button", { name: /profile menu/i });
 			fastUserActions.click(profileButton);
 			await fastStateSync();
 			expect(screen.getByText(testUser.name)).toBeInTheDocument();
@@ -182,12 +186,14 @@ describe("NavigationPanel - User Workflows", () => {
 
 			// No hardcoded fallback values
 			expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
-			unmount();
+
+			// Clean up between iterations to prevent DOM accumulation
+			cleanup();
 		}
 	});
 
 	it("users with projects access can manage projects effectively", async () => {
-		render(
+		renderWithFullEnvironment(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
@@ -217,7 +223,7 @@ describe("NavigationPanel - User Workflows", () => {
 	});
 
 	it("users without projects access see limited navigation options", async () => {
-		render(
+		renderWithFullEnvironment(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
 				onShowRegistration={mockOnShowRegistration}
@@ -236,7 +242,7 @@ describe("NavigationPanel - User Workflows", () => {
 
 	it("navigation is accessible via keyboard and click-outside", async () => {
 		const user = userEvent.setup();
-		render(
+		renderWithFullEnvironment(
 			<div>
 				<NavigationPanel
 					onPageChange={mockOnPageChange}
@@ -270,4 +276,5 @@ describe("NavigationPanel - User Workflows", () => {
 		});
 		expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 	});
+	/* eslint-enable no-restricted-syntax */
 });

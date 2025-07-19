@@ -1,19 +1,16 @@
-import { render, screen, cleanup } from "@testing-library/react";
-import { beforeEach, afterEach, describe, it, expect } from "vitest";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
 import HomePage from "../HomePage";
 
 describe("HomePage", () => {
 	beforeEach(() => {
-		// Clear any previous state
-	});
-
-	afterEach(() => {
-		cleanup();
+		vi.clearAllMocks();
 	});
 
 	it("should render the main page structure", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Verify main container exists
 		const mainElement = screen.getByRole("main");
@@ -22,7 +19,7 @@ describe("HomePage", () => {
 	});
 
 	it("should display the Welcome section with proper content", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check for Welcome section by ID
 		const welcomeSection = document.getElementById("home");
@@ -41,7 +38,7 @@ describe("HomePage", () => {
 	});
 
 	it("should display the Projects section with proper content", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check for Projects section by ID
 		const projectsSection = document.getElementById("projects");
@@ -60,7 +57,7 @@ describe("HomePage", () => {
 	});
 
 	it("should display the Teams section with proper content", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check for Teams section by ID
 		const teamsSection = document.getElementById("teams");
@@ -79,7 +76,7 @@ describe("HomePage", () => {
 	});
 
 	it("should display the Capacity Planning section with proper content", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check for Capacity Planning section by ID
 		const capacitySection = document.getElementById("capacity");
@@ -98,7 +95,7 @@ describe("HomePage", () => {
 	});
 
 	it("should use semantic styling classes consistently", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check all sections use semantic background styling
 		const sections = document.querySelectorAll("section");
@@ -128,7 +125,7 @@ describe("HomePage", () => {
 	});
 
 	it("should have proper accessibility structure", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check that all sections exist
 		const sections = document.querySelectorAll("section");
@@ -146,7 +143,7 @@ describe("HomePage", () => {
 	});
 
 	it("should render all sections in the correct order", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		const sections = document.querySelectorAll("section");
 		expect(sections).toHaveLength(4);
@@ -159,7 +156,7 @@ describe("HomePage", () => {
 	});
 
 	it("should have proper spacing and layout classes", () => {
-		render(<HomePage />);
+		renderWithFullEnvironment(<HomePage />);
 
 		// Check main container has proper classes
 		const mainElement = screen.getByRole("main");

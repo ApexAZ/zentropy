@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// SecurityHelpFAQ tests require userEvent for keyboard navigation accessibility testing
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- SecurityHelpFAQ tests require userEvent for keyboard navigation accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -26,7 +26,7 @@ describe("SecurityHelpFAQ Component", () => {
 	};
 	describe("FAQ Questions Display", () => {
 		it("should display frequently asked questions about account security", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expect(screen.getByText(/frequently asked questions/i)).toBeInTheDocument();
 			expect(screen.getByText(/what is multi-factor authentication/i)).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show expandable FAQ answers when clicked", async () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expandFAQ(/what is multi-factor authentication/i);
 
@@ -47,7 +47,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show Google account benefits when FAQ is expanded", async () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expandFAQ(/why should i link my google account/i);
 
@@ -59,7 +59,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should provide guidance for account recovery scenarios", async () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expandFAQ(/what happens if i lose access to my google account/i);
 
@@ -69,7 +69,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should allow collapsing expanded FAQ answers", async () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const mfaQuestion = findFAQButton(/what is multi-factor authentication/i);
 
@@ -89,7 +89,7 @@ describe("SecurityHelpFAQ Component", () => {
 
 	describe("Contact Support Integration", () => {
 		it("should provide contact support options for unresolved issues", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expect(screen.getByText(/need more help/i)).toBeInTheDocument();
 
@@ -99,14 +99,14 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show emergency contact information for critical account issues", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			expect(screen.getByText(/account security emergency/i)).toBeInTheDocument();
 			expect(screen.getByText(/support@zentropy\.app/i)).toBeInTheDocument();
 		});
 
 		it("should provide direct links to specific help topics", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const securityGuideLink = screen.getByRole("link", { name: /comprehensive security guide/i });
 			expect(securityGuideLink).toBeInTheDocument();
@@ -115,10 +115,12 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing comprehensive keyboard navigation accessibility features
 	describe("Accessibility", () => {
 		it("should support keyboard navigation for FAQ expansion", async () => {
 			const user = userEvent.setup();
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const mfaQuestion = findFAQButton(/what is multi-factor authentication/i);
 
@@ -132,7 +134,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should have proper ARIA attributes for expandable content", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const mfaQuestion = findFAQButton(/what is multi-factor authentication/i);
 			expect(mfaQuestion).toHaveAttribute("aria-expanded", "false");
@@ -140,14 +142,14 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should update ARIA attributes when FAQ is expanded", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const mfaQuestion = expandFAQ(/what is multi-factor authentication/i);
 			expect(mfaQuestion).toHaveAttribute("aria-expanded", "true");
 		});
 
 		it("should provide proper heading structure for screen readers", () => {
-			render(<SecurityHelpFAQ />);
+			renderWithFullEnvironment(<SecurityHelpFAQ />);
 
 			const mainHeading = screen.getByRole("heading", { name: /frequently asked questions/i });
 			expect(mainHeading).toBeInTheDocument();
@@ -156,10 +158,11 @@ describe("SecurityHelpFAQ Component", () => {
 			expect(faqHeadings.length).toBeGreaterThan(0);
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("Search and Filtering", () => {
 		it("should allow searching through FAQ content", () => {
-			render(<SecurityHelpFAQ searchable />);
+			renderWithFullEnvironment(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
 			expect(searchInput).toBeInTheDocument();
@@ -170,7 +173,7 @@ describe("SecurityHelpFAQ Component", () => {
 		});
 
 		it("should show no results message when search finds nothing", () => {
-			render(<SecurityHelpFAQ searchable />);
+			renderWithFullEnvironment(<SecurityHelpFAQ searchable />);
 
 			const searchInput = screen.getByLabelText(/search faqs/i);
 			fireEvent.change(searchInput, { target: { value: "nonexistent topic" } });

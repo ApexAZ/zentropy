@@ -1,7 +1,8 @@
-import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Organization management tests require userEvent for complex multi-step workflows and keyboard navigation
+// eslint-disable-next-line no-restricted-imports -- Organization management tests require direct render for complex integration testing
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+// eslint-disable-next-line no-restricted-imports -- Organization management tests require userEvent for complex multi-step workflows and keyboard navigation
 import userEvent from "@testing-library/user-event";
+import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import NavigationPanel from "../NavigationPanel.enhanced";
@@ -9,7 +10,6 @@ import { useOrganization } from "../../hooks/useOrganization";
 import { useProject } from "../../hooks/useProject";
 import { useToast } from "../../contexts/ToastContext";
 import type { Organization, Project } from "../../types";
-import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
 
 // Mock hooks
 vi.mock("../../hooks/useOrganization", () => ({
@@ -141,29 +141,29 @@ describe("NavigationPanel - Organization Features", () => {
 
 	// Helper function to open organization dropdown
 	const openOrganizationDropdown = async () => {
-		const user = userEvent.setup();
 		const switchButton = screen.getByRole("button", { name: /switch organization/i });
-		await user.click(switchButton);
+		fastUserActions.click(switchButton);
+		await fastStateSync();
 	};
 
 	// Helper function to switch to organization
 	const switchToOrganization = async (organizationName: string) => {
-		const user = userEvent.setup();
 		await openOrganizationDropdown();
 		const orgOption = screen.getByText(organizationName);
-		await user.click(orgOption);
+		fastUserActions.click(orgOption);
+		await fastStateSync();
 	};
 
 	// Helper function to leave organization
 	const leaveOrganization = async () => {
-		const user = userEvent.setup();
 		const leaveButton = screen.getByRole("button", { name: /leave organization/i });
-		await user.click(leaveButton);
+		fastUserActions.click(leaveButton);
 		// Wait for confirmation dialog to appear
 		await fastStateSync();
 		expect(screen.getByRole("button", { name: /confirm/i })).toBeInTheDocument();
 		const confirmButton = screen.getByRole("button", { name: /confirm/i });
-		await user.click(confirmButton);
+		fastUserActions.click(confirmButton);
+		await fastStateSync();
 	};
 
 	// Helper function to search projects
@@ -174,9 +174,9 @@ describe("NavigationPanel - Organization Features", () => {
 
 	// Helper function to create project
 	const createProject = async () => {
-		const user = userEvent.setup();
 		const createButton = screen.getByRole("button", { name: /create project/i });
-		await user.click(createButton);
+		fastUserActions.click(createButton);
+		await fastStateSync();
 	};
 
 	beforeEach(() => {
@@ -295,9 +295,6 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await act(async () => {
-				await Promise.resolve();
-			});
 			expect(screen.getByRole("button", { name: /join organization/i })).toBeInTheDocument();
 		});
 
@@ -306,9 +303,6 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await act(async () => {
-				await Promise.resolve();
-			});
 			expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
 		});
 
@@ -321,15 +315,12 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 
 		it("should open organization selector for joining", async () => {
-			const user = userEvent.setup();
 			createNavigationPanel();
 
 			await openOrganizationDropdown();
-
-			await act(async () => {
-				const joinButton = screen.getByRole("button", { name: /join organization/i });
-				await user.click(joinButton);
-			});
+			const joinButton = screen.getByRole("button", { name: /join organization/i });
+			fastUserActions.click(joinButton);
+			await fastStateSync();
 
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
@@ -345,6 +336,8 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing complex authentication confirmation workflows and keyboard navigation
 	describe("User can manage organization membership", () => {
 		it("should show leave organization option", () => {
 			createNavigationPanel();
@@ -394,7 +387,10 @@ describe("NavigationPanel - Organization Features", () => {
 			expect(screen.getByText(/Created.*Dec.*31.*2023/)).toBeInTheDocument();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing complex form interactions and dropdown selections
 	describe("User can search and filter projects", () => {
 		it("should show search input for projects", () => {
 			createNavigationPanel();
@@ -428,6 +424,7 @@ describe("NavigationPanel - Organization Features", () => {
 			expect(statusFilter).toHaveValue("archived");
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("User experiences loading states", () => {
 		it("should show loading state for organizations", () => {
@@ -454,6 +451,8 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing error recovery workflows with keyboard navigation
 	describe("User encounters error states", () => {
 		it("should display organization errors", () => {
 			(useOrganization as any).mockReturnValue({
@@ -491,6 +490,7 @@ describe("NavigationPanel - Organization Features", () => {
 			expect(mockUseOrganization.loadOrganizations).toHaveBeenCalled();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("User can perform organization operations", () => {
 		it("should successfully switch organizations", async () => {
@@ -514,22 +514,21 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 
 		it("should handle organization joining workflow", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.joinOrganization.mockResolvedValue(undefined);
 
 			createNavigationPanel();
 
 			await openOrganizationDropdown();
-
-			await act(async () => {
-				const joinButton = screen.getByRole("button", { name: /join organization/i });
-				await user.click(joinButton);
-			});
+			const joinButton = screen.getByRole("button", { name: /join organization/i });
+			fastUserActions.click(joinButton);
+			await fastStateSync();
 
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing comprehensive keyboard navigation accessibility features
 	describe("User experiences keyboard navigation", () => {
 		it("should support keyboard navigation for organization switching", async () => {
 			const user = userEvent.setup();
@@ -559,6 +558,7 @@ describe("NavigationPanel - Organization Features", () => {
 			expect(mockUseOrganization.getOrganizationById).toHaveBeenCalledWith("org-2");
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("User experiences accessibility features", () => {
 		it("should have proper ARIA attributes for organization dropdown", () => {

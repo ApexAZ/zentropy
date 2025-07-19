@@ -1,24 +1,21 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import TeamsPage from "../TeamsPage";
-import { ToastProvider } from "../../contexts/ToastContext";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Mock useTeams hook for integration testing
+vi.mock("../../hooks/useTeams", () => ({
+	useTeams: vi.fn()
+}));
 
-const mockFetch = fetch as any;
-
-// Test wrapper to provide ToastProvider context
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
-	React.createElement(ToastProvider, null, children);
+import { useTeams } from "../../hooks/useTeams";
+const mockUseTeams = useTeams as any;
 
 describe("TeamsPage", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.clearAllMocks();
-		mockFetch.mockClear();
 	});
 
 	afterEach(() => {
@@ -38,43 +35,89 @@ describe("TeamsPage", () => {
 	];
 
 	it("renders teams page with main elements", async () => {
-		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
-		render(<TeamsPage />, { wrapper: TestWrapper });
-		await act(async () => {});
+		mockUseTeams.mockReturnValue({
+			teams: [],
+			isLoading: false,
+			error: "",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
 		expect(screen.getByText("Team Management")).toBeInTheDocument();
 	});
 
 	it("displays loading state initially", () => {
-		mockFetch.mockImplementation(() => new Promise(() => {}));
-		render(<TeamsPage />, { wrapper: TestWrapper });
+		mockUseTeams.mockReturnValue({
+			teams: [],
+			isLoading: true,
+			error: "",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
 		expect(screen.getByText("Loading teams...")).toBeInTheDocument();
 	});
 
 	it("loads and displays teams", async () => {
-		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => mockTeams });
-		render(<TeamsPage />, { wrapper: TestWrapper });
-		await act(async () => {});
+		mockUseTeams.mockReturnValue({
+			teams: mockTeams,
+			isLoading: false,
+			error: "",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
+
 		expect(screen.getByText("Frontend Team")).toBeInTheDocument();
 	});
 
 	it("displays empty state when no teams", async () => {
-		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
-		render(<TeamsPage />, { wrapper: TestWrapper });
-		await act(async () => {});
+		mockUseTeams.mockReturnValue({
+			teams: [],
+			isLoading: false,
+			error: "",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
+
 		expect(screen.getByText("No Teams Yet")).toBeInTheDocument();
 	});
 
 	it("handles API errors gracefully", async () => {
-		mockFetch.mockRejectedValueOnce(new Error("Network error"));
-		render(<TeamsPage />, { wrapper: TestWrapper });
-		await act(async () => {});
+		mockUseTeams.mockReturnValue({
+			teams: [],
+			isLoading: false,
+			error: "Network error",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
+
 		expect(screen.getByText("Unable to Load Teams")).toBeInTheDocument();
 	});
 
 	it("opens create modal when Create New Team button is clicked", async () => {
-		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
-		render(<TeamsPage />, { wrapper: TestWrapper });
-		await act(async () => {});
+		mockUseTeams.mockReturnValue({
+			teams: [],
+			isLoading: false,
+			error: "",
+			refreshTeams: vi.fn(),
+			createTeam: vi.fn(),
+			updateTeam: vi.fn(),
+			deleteTeam: vi.fn()
+		});
+		renderWithFullEnvironment(<TeamsPage />, { providers: { toast: true } });
 		fireEvent.click(screen.getByText("Create New Team"));
 		expect(screen.getByText("Basic Information")).toBeInTheDocument();
 	});

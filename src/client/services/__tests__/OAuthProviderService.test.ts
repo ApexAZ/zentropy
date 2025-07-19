@@ -8,6 +8,7 @@ vi.mock("../../utils/auth", () => ({
 }));
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 describe("OAuthProviderService", () => {

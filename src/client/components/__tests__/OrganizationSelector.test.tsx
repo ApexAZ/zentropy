@@ -1,7 +1,7 @@
 import React from "react";
+// eslint-disable-next-line no-restricted-imports -- OrganizationSelector tests require custom wrapper for ToastProvider integration testing
 import { render, screen, fireEvent, act } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// OrganizationSelector tests require userEvent for complex modal interactions, form validation, and accessibility testing
+// eslint-disable-next-line no-restricted-imports -- OrganizationSelector tests require userEvent for complex modal interactions, form validation, and accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -18,6 +18,7 @@ vi.mock("../../hooks/useOrganization", () => ({
 
 describe("OrganizationSelector", () => {
 	// Test wrapper to provide ToastProvider context
+
 	const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 		React.createElement(ToastProvider, null, children);
 
@@ -86,6 +87,7 @@ describe("OrganizationSelector", () => {
 	// Helper function to render selector with consistent setup
 	const createSelector = (overrides = {}) => {
 		const props = { ...mockProps, ...overrides };
+
 		return render(<OrganizationSelector {...props} />, { wrapper: TestWrapper });
 	};
 
@@ -316,6 +318,8 @@ describe("OrganizationSelector", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing complex form interactions and organization creation workflows
 	describe("User can create new organizations", () => {
 		it("should show create organization option when allowCreate is true", async () => {
 			mockUseOrganization.checkDomain.mockResolvedValue({
@@ -442,7 +446,10 @@ describe("OrganizationSelector", () => {
 			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing organization joining workflows
 	describe("User can join organizations", () => {
 		it("should show join option for suggested organization", async () => {
 			mockUseOrganization.checkDomain.mockResolvedValue(mockDomainCheckResult);
@@ -490,6 +497,7 @@ describe("OrganizationSelector", () => {
 			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("User experiences loading and error states", () => {
 		it("should show loading state during organization operations", async () => {
@@ -550,6 +558,8 @@ describe("OrganizationSelector", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing comprehensive keyboard navigation and accessibility features
 	describe("User experiences accessibility features", () => {
 		it("should have proper ARIA attributes", async () => {
 			await act(async () => {
@@ -623,4 +633,5 @@ describe("OrganizationSelector", () => {
 			expect(document.contains(activeElement)).toBe(true);
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 });

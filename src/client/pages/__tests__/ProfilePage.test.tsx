@@ -110,8 +110,8 @@ describe("ProfilePage", () => {
 	let testEnv: ReturnType<typeof renderWithFullEnvironment>;
 
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.clearAllMocks();
-		vi.useRealTimers();
 
 		// Set up default mocks for all tests using the standard approach
 		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
@@ -776,8 +776,6 @@ describe("ProfilePage", () => {
 		});
 
 		expect(screen.queryByText("Profile updated successfully!")).not.toBeInTheDocument();
-
-		vi.useRealTimers();
 	});
 
 	it("allows manual dismissal of toast", async () => {

@@ -250,7 +250,9 @@ describe("Auth Utilities", () => {
 		let mockFetch: ReturnType<typeof vi.fn>;
 
 		beforeEach(() => {
+			vi.clearAllMocks();
 			mockFetch = vi.fn();
+			// eslint-disable-next-line no-restricted-syntax -- Utility function tests require global.fetch mocking to test HTTP calls
 			global.fetch = mockFetch;
 
 			// Mock setTimeout and clearTimeout for timeout tests

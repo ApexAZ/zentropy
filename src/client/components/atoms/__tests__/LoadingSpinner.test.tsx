@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../../__tests__/utils/testRenderUtils";
 import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
 import LoadingSpinner from "../LoadingSpinner";
@@ -8,7 +9,7 @@ describe("LoadingSpinner", () => {
 	// Following User-Focused Testing pattern from tests/README.md
 	describe("User sees loading feedback", () => {
 		it("should display spinner with default props", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toBeInTheDocument();
@@ -16,7 +17,7 @@ describe("LoadingSpinner", () => {
 		});
 
 		it("should display spinner with custom text", () => {
-			render(<LoadingSpinner text="Loading data..." />);
+			renderWithFullEnvironment(<LoadingSpinner text="Loading data..." />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toHaveAttribute("aria-label", "Loading data...");
@@ -24,7 +25,7 @@ describe("LoadingSpinner", () => {
 		});
 
 		it("should display spinner without text when text prop is not provided", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toHaveAttribute("aria-label", "Loading");
@@ -34,7 +35,7 @@ describe("LoadingSpinner", () => {
 
 	describe("User sees appropriate sizing", () => {
 		it("should apply small size classes", () => {
-			render(<LoadingSpinner size="small" text="Loading..." />);
+			renderWithFullEnvironment(<LoadingSpinner size="small" text="Loading..." />);
 
 			const spinner = screen.getByRole("status");
 			const spinnerElement = spinner.querySelector("div");
@@ -45,7 +46,7 @@ describe("LoadingSpinner", () => {
 		});
 
 		it("should apply medium size classes by default", () => {
-			render(<LoadingSpinner text="Loading..." />);
+			renderWithFullEnvironment(<LoadingSpinner text="Loading..." />);
 
 			const spinner = screen.getByRole("status");
 			const spinnerElement = spinner.querySelector("div");
@@ -56,7 +57,7 @@ describe("LoadingSpinner", () => {
 		});
 
 		it("should apply large size classes", () => {
-			render(<LoadingSpinner size="large" text="Loading..." />);
+			renderWithFullEnvironment(<LoadingSpinner size="large" text="Loading..." />);
 
 			const spinner = screen.getByRole("status");
 			const spinnerElement = spinner.querySelector("div");
@@ -69,21 +70,21 @@ describe("LoadingSpinner", () => {
 
 	describe("User sees proper positioning", () => {
 		it("should center spinner when centered prop is true", () => {
-			render(<LoadingSpinner centered />);
+			renderWithFullEnvironment(<LoadingSpinner centered />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toHaveClass("justify-center");
 		});
 
 		it("should not center spinner by default", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).not.toHaveClass("justify-center");
 		});
 
 		it("should apply custom className", () => {
-			render(<LoadingSpinner className="custom-spinner" />);
+			renderWithFullEnvironment(<LoadingSpinner className="custom-spinner" />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toHaveClass("custom-spinner");
@@ -92,21 +93,21 @@ describe("LoadingSpinner", () => {
 
 	describe("User understands loading context", () => {
 		it("should provide proper accessibility attributes", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const spinner = screen.getByRole("status");
 			expect(spinner).toHaveAttribute("aria-label", "Loading");
 		});
 
 		it("should have screen reader text", () => {
-			render(<LoadingSpinner text="Loading data..." />);
+			renderWithFullEnvironment(<LoadingSpinner text="Loading data..." />);
 
 			const srText = screen.getByText("Loading data...", { selector: ".sr-only" });
 			expect(srText).toBeInTheDocument();
 		});
 
 		it("should have default screen reader text when no text provided", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const srText = screen.getByText("Loading", { selector: ".sr-only" });
 			expect(srText).toBeInTheDocument();
@@ -115,7 +116,7 @@ describe("LoadingSpinner", () => {
 
 	describe("User sees consistent visual styling", () => {
 		it("should apply spinner animation classes", () => {
-			render(<LoadingSpinner />);
+			renderWithFullEnvironment(<LoadingSpinner />);
 
 			const spinner = screen.getByRole("status");
 			const spinnerElement = spinner.querySelector("div");
@@ -128,7 +129,7 @@ describe("LoadingSpinner", () => {
 		});
 
 		it("should apply text color classes", () => {
-			render(<LoadingSpinner text="Loading..." />);
+			renderWithFullEnvironment(<LoadingSpinner text="Loading..." />);
 
 			const textElement = screen.getByText("Loading...", { selector: "span:not(.sr-only)" });
 			expect(textElement).toHaveClass("text-primary");

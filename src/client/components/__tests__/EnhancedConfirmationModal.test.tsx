@@ -1,8 +1,7 @@
 /* eslint-disable-next-line no-restricted-imports -- One test requires render with rerender for behavior testing */
 import { render, screen, fireEvent } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Modal tests require userEvent for keyboard navigation and focus management accessibility testing
+// eslint-disable-next-line no-restricted-imports -- Modal tests require userEvent for keyboard navigation and focus management accessibility testing
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -252,6 +251,7 @@ describe("EnhancedConfirmationModal", () => {
 			expect(title).toHaveAttribute("id");
 		});
 
+		/* eslint-disable no-restricted-syntax */
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
 			renderWithFullEnvironment(
@@ -268,6 +268,7 @@ describe("EnhancedConfirmationModal", () => {
 			await user.tab();
 			expect(screen.getByRole("button", { name: "Confirm" })).toHaveFocus();
 		});
+		/* eslint-enable no-restricted-syntax */
 
 		it("should handle escape key to close", () => {
 			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} />);

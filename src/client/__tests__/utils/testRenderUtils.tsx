@@ -9,6 +9,7 @@
  */
 
 import React, { ReactElement, ReactNode } from "react";
+// eslint-disable-next-line no-restricted-imports -- Test utilities require direct render access to provide renderWithFullEnvironment
 import { render, RenderOptions, fireEvent, act } from "@testing-library/react";
 import { vi } from "vitest";
 import { BrowserRouter } from "react-router-dom";
@@ -265,6 +266,7 @@ export const setupTestEnvironment = (options: TestEnvironmentOptions = {}): Stan
 
 	// Configure global fetch mock with realistic responses
 	configureFetchMock(customMocks.fetch);
+	// eslint-disable-next-line no-restricted-syntax -- Test utilities require global.fetch assignment for mock infrastructure
 	global.fetch = customMocks.fetch;
 
 	// Apply mock overrides if provided

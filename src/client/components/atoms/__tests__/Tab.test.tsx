@@ -1,7 +1,7 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Tab component tests require userEvent for comprehensive keyboard navigation and accessibility testing
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- Tab component tests require userEvent for comprehensive keyboard navigation and accessibility testing
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -15,6 +15,8 @@ describe("Tab Components", () => {
 	});
 
 	describe("Tab", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Tab interaction tests require userEvent for comprehensive keyboard navigation and accessibility testing
 		const defaultProps = {
 			id: "profile",
 			label: "Profile",
@@ -23,14 +25,14 @@ describe("Tab Components", () => {
 		};
 
 		it("should render tab with correct label", () => {
-			render(<Tab {...defaultProps} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} />);
 
 			expect(screen.getByRole("tab")).toBeInTheDocument();
 			expect(screen.getByText("Profile")).toBeInTheDocument();
 		});
 
 		it("should have correct accessibility attributes", () => {
-			render(<Tab {...defaultProps} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} />);
 
 			const tab = screen.getByRole("tab");
 			expect(tab).toHaveAttribute("aria-selected", "false");
@@ -40,7 +42,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should have correct accessibility attributes when active", () => {
-			render(<Tab {...defaultProps} isActive={true} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} isActive={true} />);
 
 			const tab = screen.getByRole("tab");
 			expect(tab).toHaveAttribute("aria-selected", "true");
@@ -49,7 +51,7 @@ describe("Tab Components", () => {
 
 		it("should call onClick when clicked", async () => {
 			const user = userEvent.setup();
-			render(<Tab {...defaultProps} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} />);
 
 			const tab = screen.getByRole("tab");
 			await user.click(tab);
@@ -59,7 +61,7 @@ describe("Tab Components", () => {
 
 		it("should call onClick when Enter key is pressed", async () => {
 			const user = userEvent.setup();
-			render(<Tab {...defaultProps} isActive={true} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} isActive={true} />);
 
 			const tab = screen.getByRole("tab");
 			tab.focus();
@@ -70,7 +72,7 @@ describe("Tab Components", () => {
 
 		it("should call onClick when Space key is pressed", async () => {
 			const user = userEvent.setup();
-			render(<Tab {...defaultProps} isActive={true} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} isActive={true} />);
 
 			const tab = screen.getByRole("tab");
 			tab.focus();
@@ -80,14 +82,14 @@ describe("Tab Components", () => {
 		});
 
 		it("should have active styling when isActive is true", () => {
-			render(<Tab {...defaultProps} isActive={true} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} isActive={true} />);
 
 			const tab = screen.getByRole("tab");
 			expect(tab).toHaveClass("text-contrast", "border-interactive");
 		});
 
 		it("should have inactive styling when isActive is false", () => {
-			render(<Tab {...defaultProps} isActive={false} />);
+			renderWithFullEnvironment(<Tab {...defaultProps} isActive={false} />);
 
 			const tab = screen.getByRole("tab");
 			expect(tab).toHaveClass("border-transparent");
@@ -95,11 +97,12 @@ describe("Tab Components", () => {
 		});
 
 		it("should apply custom className", () => {
-			render(<Tab {...defaultProps} className="custom-class" />);
+			renderWithFullEnvironment(<Tab {...defaultProps} className="custom-class" />);
 
 			const tab = screen.getByRole("tab");
 			expect(tab).toHaveClass("custom-class");
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("TabList", () => {
@@ -112,13 +115,13 @@ describe("Tab Components", () => {
 		);
 
 		it("should render tablist with correct role", () => {
-			render(<TabListWithTabs />);
+			renderWithFullEnvironment(<TabListWithTabs />);
 
 			expect(screen.getByRole("tablist")).toBeInTheDocument();
 		});
 
 		it("should render all child tabs", () => {
-			render(<TabListWithTabs />);
+			renderWithFullEnvironment(<TabListWithTabs />);
 
 			expect(screen.getByText("Profile")).toBeInTheDocument();
 			expect(screen.getByText("Security")).toBeInTheDocument();
@@ -126,7 +129,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should handle keyboard navigation with ArrowRight", () => {
-			render(<TabListWithTabs activeTab="profile" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="profile" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "ArrowRight" });
@@ -135,7 +138,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should handle keyboard navigation with ArrowLeft", () => {
-			render(<TabListWithTabs activeTab="security" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="security" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "ArrowLeft" });
@@ -144,7 +147,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should wrap around when using ArrowRight on last tab", () => {
-			render(<TabListWithTabs activeTab="billing" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="billing" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "ArrowRight" });
@@ -153,7 +156,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should wrap around when using ArrowLeft on first tab", () => {
-			render(<TabListWithTabs activeTab="profile" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="profile" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "ArrowLeft" });
@@ -162,7 +165,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should handle Home key to select first tab", () => {
-			render(<TabListWithTabs activeTab="billing" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="billing" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "Home" });
@@ -171,7 +174,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should handle End key to select last tab", () => {
-			render(<TabListWithTabs activeTab="profile" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="profile" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "End" });
@@ -180,7 +183,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should not handle other keys", () => {
-			render(<TabListWithTabs activeTab="profile" />);
+			renderWithFullEnvironment(<TabListWithTabs activeTab="profile" />);
 
 			const tablist = screen.getByRole("tablist");
 			fireEvent.keyDown(tablist, { key: "Escape" });
@@ -189,7 +192,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should apply custom className", () => {
-			render(
+			renderWithFullEnvironment(
 				<TabList activeTab="profile" onTabChange={mockOnTabChange} className="custom-class">
 					<Tab id="profile" label="Profile" isActive={true} onClick={mockOnTabChange} />
 				</TabList>
@@ -208,21 +211,21 @@ describe("Tab Components", () => {
 		};
 
 		it("should render panel content when active", () => {
-			render(<TabPanel {...defaultProps} />);
+			renderWithFullEnvironment(<TabPanel {...defaultProps} />);
 
 			expect(screen.getByRole("tabpanel")).toBeInTheDocument();
 			expect(screen.getByText("Profile content")).toBeInTheDocument();
 		});
 
 		it("should not render panel content when inactive", () => {
-			render(<TabPanel {...defaultProps} activeTab="security" />);
+			renderWithFullEnvironment(<TabPanel {...defaultProps} activeTab="security" />);
 
 			expect(screen.queryByRole("tabpanel")).not.toBeInTheDocument();
 			expect(screen.queryByText("Profile content")).not.toBeInTheDocument();
 		});
 
 		it("should have correct accessibility attributes", () => {
-			render(<TabPanel {...defaultProps} />);
+			renderWithFullEnvironment(<TabPanel {...defaultProps} />);
 
 			const panel = screen.getByRole("tabpanel");
 			expect(panel).toHaveAttribute("id", "tabpanel-profile");
@@ -231,7 +234,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should apply custom className", () => {
-			render(<TabPanel {...defaultProps} className="custom-class" />);
+			renderWithFullEnvironment(<TabPanel {...defaultProps} className="custom-class" />);
 
 			const panel = screen.getByRole("tabpanel");
 			expect(panel).toHaveClass("custom-class");
@@ -239,6 +242,8 @@ describe("Tab Components", () => {
 	});
 
 	describe("Tab Integration", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Tab integration tests require userEvent for comprehensive keyboard navigation and accessibility testing
 		const TabbedInterface = () => {
 			const [activeTab, setActiveTab] = React.useState("profile");
 
@@ -267,7 +272,7 @@ describe("Tab Components", () => {
 
 		it("should show correct panel when tab is clicked", async () => {
 			const user = userEvent.setup();
-			render(<TabbedInterface />);
+			renderWithFullEnvironment(<TabbedInterface />);
 
 			// Initially shows profile panel
 			expect(screen.getByText("Profile Panel Content")).toBeInTheDocument();
@@ -284,7 +289,7 @@ describe("Tab Components", () => {
 
 		it("should update tab states when different tab is selected", async () => {
 			const user = userEvent.setup();
-			render(<TabbedInterface />);
+			renderWithFullEnvironment(<TabbedInterface />);
 
 			const profileTab = screen.getByRole("tab", { name: "Profile" });
 			const securityTab = screen.getByRole("tab", { name: "Security" });
@@ -302,7 +307,7 @@ describe("Tab Components", () => {
 		});
 
 		it("should handle keyboard navigation between tabs", () => {
-			render(<TabbedInterface />);
+			renderWithFullEnvironment(<TabbedInterface />);
 
 			const tablist = screen.getByRole("tablist");
 			const profileTab = screen.getByRole("tab", { name: "Profile" });
@@ -319,5 +324,6 @@ describe("Tab Components", () => {
 			expect(securityTab).toHaveAttribute("aria-selected", "true");
 			expect(screen.getByText("Security Panel Content")).toBeInTheDocument();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 });

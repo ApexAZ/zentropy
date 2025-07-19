@@ -75,6 +75,7 @@ describe("useGitHubOAuth", () => {
 		});
 
 		// Mock global fetch for GitHub API calls
+		// eslint-disable-next-line no-restricted-syntax -- Hook tests require global.fetch mocking to test HTTP behavior
 		global.fetch = vi.fn().mockResolvedValue({
 			ok: true,
 			json: vi.fn().mockResolvedValue({

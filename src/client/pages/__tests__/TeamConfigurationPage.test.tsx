@@ -1,8 +1,8 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import TeamConfigurationPage from "../TeamConfigurationPage";
-import { ToastProvider } from "../../contexts/ToastContext";
 import { TeamService } from "../../services/TeamService";
 
 // Clean module-level mock with all required methods
@@ -90,11 +90,9 @@ describe("TeamConfigurationPage", () => {
 
 	// Helper function to render TeamConfigurationPage with required providers
 	const renderTeamConfigurationPage = () => {
-		return render(
-			<ToastProvider>
-				<TeamConfigurationPage />
-			</ToastProvider>
-		);
+		return renderWithFullEnvironment(<TeamConfigurationPage />, {
+			providers: { toast: true }
+		});
 	};
 
 	// Helper function to fill member form

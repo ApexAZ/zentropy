@@ -14,6 +14,7 @@ import type {
 import * as authUtils from "../../utils/auth";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 // Mock AuthService dependency

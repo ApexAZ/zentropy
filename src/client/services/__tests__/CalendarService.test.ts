@@ -3,6 +3,7 @@ import { CalendarService } from "../CalendarService";
 import type { CalendarEntry, CreateCalendarEntryData, Team, User } from "../../types";
 
 // Mock fetch globally
+
 global.fetch = vi.fn();
 
 describe("CalendarService", () => {

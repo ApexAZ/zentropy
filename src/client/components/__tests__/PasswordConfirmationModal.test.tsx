@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { PasswordConfirmationModal } from "../PasswordConfirmationModal";
@@ -43,13 +44,13 @@ describe("PasswordConfirmationModal", () => {
 	};
 
 	it("should not render when closed", () => {
-		render(<PasswordConfirmationModal {...defaultProps} isOpen={false} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} isOpen={false} />);
 
 		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 
 	it("should render modal when open", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		expect(screen.getByRole("dialog")).toBeInTheDocument();
 		expect(screen.getByText("Confirm Password")).toBeInTheDocument();
@@ -57,7 +58,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should handle password input", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		enterPassword("mypassword");
 
@@ -65,7 +66,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should handle form submission with valid password", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		enterPassword("mypassword");
 		clickConfirmButton();
@@ -74,7 +75,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should validate empty password", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		clickConfirmButton();
 
@@ -83,7 +84,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should validate whitespace-only password", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		enterPassword("   ");
 		clickConfirmButton();
@@ -93,7 +94,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should handle cancel button", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		clickCancelButton();
 
@@ -101,7 +102,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should clear validation error when password is entered", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		// Trigger validation error first
 		clickConfirmButton();
@@ -116,7 +117,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should show loading state", () => {
-		render(<PasswordConfirmationModal {...defaultProps} loading={true} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} loading={true} />);
 
 		const confirmButton = screen.getByRole("button", { name: "Unlinking..." });
 		const cancelButton = screen.getByRole("button", { name: "Cancel" });
@@ -127,13 +128,13 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should display server error", () => {
-		render(<PasswordConfirmationModal {...defaultProps} error="Incorrect password" />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} error="Incorrect password" />);
 
 		expect(screen.getByText("Incorrect password")).toBeInTheDocument();
 	});
 
 	it("should handle keyboard submission", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		const passwordInput = getPasswordInput();
 		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
@@ -146,13 +147,13 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should focus password input when opened", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		expect(getPasswordInput()).toHaveFocus();
 	});
 
 	it("should clear form state on close", () => {
-		const { rerender } = render(<PasswordConfirmationModal {...defaultProps} />);
+		const { rerender } = renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		enterPassword("mypassword");
 
@@ -171,7 +172,7 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should have correct accessibility attributes", () => {
-		render(<PasswordConfirmationModal {...defaultProps} />);
+		renderWithFullEnvironment(<PasswordConfirmationModal {...defaultProps} />);
 
 		const dialog = screen.getByRole("dialog");
 		expect(dialog).toHaveAttribute("aria-labelledby", "password-confirmation-title");

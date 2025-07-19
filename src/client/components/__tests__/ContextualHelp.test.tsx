@@ -1,7 +1,7 @@
-import { screen } from "@testing-library/react";
+// eslint-disable-next-line no-restricted-imports -- Testing edge case requires container.firstChild access
+import { screen, render } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Accessibility tests require userEvent for hover/keyboard interactions
+// eslint-disable-next-line no-restricted-imports -- Accessibility tests require userEvent for hover/keyboard interactions
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
@@ -9,6 +9,8 @@ import { ContextualHelp } from "../ContextualHelp";
 
 describe("ContextualHelp Component", () => {
 	describe("Help Tooltips", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Help tooltip tests require userEvent for hover interactions
 		it("should display help tooltip for OAuth concept", async () => {
 			const user = userEvent.setup();
 			renderWithFullEnvironment(<ContextualHelp concept="oauth" />);
@@ -62,6 +64,7 @@ describe("ContextualHelp Component", () => {
 			// Component should render nothing for unknown concepts
 			expect(container.firstChild).toBeNull();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("Documentation Links", () => {
@@ -92,6 +95,8 @@ describe("ContextualHelp Component", () => {
 	});
 
 	describe("Accessibility", () => {
+		/* eslint-disable no-restricted-syntax */
+		// Accessibility tests require userEvent for keyboard navigation and focus management
 		it("should support keyboard navigation for help tooltips", async () => {
 			const user = userEvent.setup();
 			renderWithFullEnvironment(<ContextualHelp concept="oauth" />);
@@ -114,5 +119,6 @@ describe("ContextualHelp Component", () => {
 			expect(helpIcon).toHaveAttribute("aria-label");
 			expect(helpIcon).toHaveAttribute("aria-describedby");
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 });

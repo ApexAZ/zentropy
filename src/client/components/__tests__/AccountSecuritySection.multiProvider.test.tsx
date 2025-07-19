@@ -1,7 +1,6 @@
 import { screen, act } from "@testing-library/react";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// Multi-provider OAuth tests require userEvent for complex authentication workflows
+// eslint-disable-next-line no-restricted-imports -- Multi-provider OAuth tests require userEvent for complex authentication workflows
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -201,6 +200,8 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		expect(screen.getByTestId("provider-status-github")).toHaveTextContent("Not linked");
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing multi-provider OAuth authentication workflows
 	it("should handle provider linking successfully", async () => {
 		const user = userEvent.setup();
 		const mockLinkProvider = vi.fn();
@@ -265,6 +266,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		});
 		expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "user-password");
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	it("should show loading states for individual providers", async () => {
 		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([], ["microsoft"]);
@@ -403,6 +405,8 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		expect(screen.getByTestId("account-security-container")).toBeInTheDocument();
 	});
 
+	/* eslint-disable no-restricted-syntax */
+	// This section requires userEvent for testing password confirmation workflows with complex form interactions
 	it("should preserve existing password confirmation flow", async () => {
 		const user = userEvent.setup();
 		const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
@@ -438,4 +442,5 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		});
 		expect(screen.getByText("Incorrect password")).toBeInTheDocument();
 	});
+	/* eslint-enable no-restricted-syntax */
 });

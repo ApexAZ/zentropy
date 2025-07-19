@@ -34,6 +34,7 @@ Object.defineProperty(window, "sessionStorage", {
 
 // Mock fetch globally
 const mockFetch = vi.fn();
+// eslint-disable-next-line no-restricted-syntax -- Remember me integration tests require global fetch mocking for auth flow testing
 global.fetch = mockFetch;
 
 describe("useAuth Hook Remember Me Integration", () => {
@@ -184,6 +185,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		// Mock successful token validation - user should still be valid
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
+			// eslint-disable-next-line no-restricted-syntax -- OAuth token validation requires manual fetch response mocking to test localStorage auth persistence
 			json: async () => ({
 				email: "stored@example.com",
 				first_name: "Stored",
@@ -214,6 +216,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		// Mock successful token validation
 		mockFetch.mockResolvedValueOnce({
 			ok: true,
+			// eslint-disable-next-line no-restricted-syntax -- OAuth token validation requires manual fetch response mocking to test sessionStorage auth persistence
 			json: async () => ({
 				email: "session@example.com",
 				first_name: "Session",

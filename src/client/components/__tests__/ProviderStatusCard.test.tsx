@@ -1,7 +1,7 @@
 import React from "react";
-import { render, screen, cleanup } from "@testing-library/react";
-/* eslint-disable no-restricted-imports, no-restricted-syntax */
-// ProviderStatusCard tests require userEvent for keyboard navigation accessibility testing
+import { screen, cleanup } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
+// eslint-disable-next-line no-restricted-imports -- ProviderStatusCard tests require userEvent for keyboard navigation accessibility testing
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -43,7 +43,7 @@ describe("ProviderStatusCard", () => {
 
 	describe("Provider Display", () => {
 		it("should display Google provider information correctly", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -57,7 +57,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should display Microsoft provider information correctly", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockMicrosoftProvider}
 					isLinked={false}
@@ -71,7 +71,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should display GitHub provider information correctly", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGitHubProvider}
 					isLinked={false}
@@ -87,7 +87,7 @@ describe("ProviderStatusCard", () => {
 
 	describe("Link/Unlink States", () => {
 		it("should show link button when provider is not linked", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -102,7 +102,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should show unlink button and status when provider is linked", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -119,7 +119,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should show linked status without email when no provider email given", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -133,10 +133,11 @@ describe("ProviderStatusCard", () => {
 		});
 	});
 
+	/* eslint-disable no-restricted-syntax */
 	describe("User Interactions", () => {
 		it("should call onLink when link button is clicked", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -153,7 +154,7 @@ describe("ProviderStatusCard", () => {
 
 		it("should call onUnlink when unlink button is clicked", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -170,7 +171,7 @@ describe("ProviderStatusCard", () => {
 
 		it("should handle keyboard navigation for link button", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -192,7 +193,7 @@ describe("ProviderStatusCard", () => {
 
 		it("should handle keyboard navigation for unlink button", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -212,10 +213,11 @@ describe("ProviderStatusCard", () => {
 			expect(mockOnUnlink).toHaveBeenCalledOnce();
 		});
 	});
+	/* eslint-enable no-restricted-syntax */
 
 	describe("Loading States", () => {
 		it("should show loading state when linking is in progress", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -231,7 +233,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should show loading state when unlinking is in progress", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -246,9 +248,10 @@ describe("ProviderStatusCard", () => {
 			expect(unlinkButton.querySelector(".animate-spin")).toBeInTheDocument();
 		});
 
+		/* eslint-disable no-restricted-syntax */
 		it("should prevent interaction when linking is loading", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -266,7 +269,7 @@ describe("ProviderStatusCard", () => {
 
 		it("should prevent interaction when unlinking is loading", async () => {
 			const user = userEvent.setup();
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -281,11 +284,12 @@ describe("ProviderStatusCard", () => {
 
 			expect(mockOnUnlink).not.toHaveBeenCalled();
 		});
+		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("Provider-Specific Styling", () => {
 		it("should apply Google brand color", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -300,7 +304,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should apply Microsoft brand color", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockMicrosoftProvider}
 					isLinked={false}
@@ -314,7 +318,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should apply GitHub brand color", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGitHubProvider}
 					isLinked={false}
@@ -330,7 +334,7 @@ describe("ProviderStatusCard", () => {
 
 	describe("Accessibility", () => {
 		it("should have proper ARIA labels for link button", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -344,7 +348,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should have proper ARIA labels for unlink button", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -358,7 +362,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should have proper ARIA labels during loading states", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={false}
@@ -373,7 +377,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should provide clear status information for screen readers", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}
@@ -396,7 +400,7 @@ describe("ProviderStatusCard", () => {
 				brandColor: ""
 			};
 
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={providerWithoutColor}
 					isLinked={false}
@@ -415,7 +419,7 @@ describe("ProviderStatusCard", () => {
 				iconClass: ""
 			};
 
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={providerWithoutIcon}
 					isLinked={false}
@@ -429,7 +433,7 @@ describe("ProviderStatusCard", () => {
 		});
 
 		it("should handle simultaneous loading states gracefully", () => {
-			render(
+			renderWithFullEnvironment(
 				<ProviderStatusCard
 					provider={mockGoogleProvider}
 					isLinked={true}

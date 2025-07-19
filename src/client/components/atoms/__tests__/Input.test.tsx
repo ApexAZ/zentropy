@@ -1,18 +1,19 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { vi } from "vitest";
+import { screen, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect } from "vitest";
+import { renderWithFullEnvironment } from "../../../__tests__/utils/testRenderUtils";
 import Input from "../Input";
 
 describe("Input Component", () => {
 	it("renders text input with label", () => {
-		render(<Input label="Email" />);
+		renderWithFullEnvironment(<Input label="Email" />);
 		expect(screen.getByLabelText("Email")).toBeInTheDocument();
 		expect(screen.getByRole("textbox")).toBeInTheDocument();
 	});
 
 	it("handles value changes", () => {
 		const handleChange = vi.fn();
-		render(<Input label="Name" value="" onChange={handleChange} />);
+		renderWithFullEnvironment(<Input label="Name" value="" onChange={handleChange} />);
 
 		const input = screen.getByRole("textbox");
 		fireEvent.change(input, { target: { value: "John" } });
@@ -20,18 +21,18 @@ describe("Input Component", () => {
 	});
 
 	it("renders with required asterisk when required", () => {
-		render(<Input label="Required Field" required />);
+		renderWithFullEnvironment(<Input label="Required Field" required />);
 		expect(screen.getByText("*")).toBeInTheDocument();
 	});
 
 	it("shows error message when error prop provided", () => {
-		render(<Input label="Email" error="Email is required" />);
+		renderWithFullEnvironment(<Input label="Email" error="Email is required" />);
 		expect(screen.getByText("Email is required")).toBeInTheDocument();
 		expect(screen.getByText("Email is required")).toHaveClass("text-red-500");
 	});
 
 	it("renders different input types", () => {
-		const { rerender } = render(<Input label="Email" type="email" />);
+		const { rerender } = renderWithFullEnvironment(<Input label="Email" type="email" />);
 		expect(screen.getByRole("textbox")).toHaveAttribute("type", "email");
 
 		rerender(<Input label="Password" type="password" />);
@@ -42,7 +43,7 @@ describe("Input Component", () => {
 	});
 
 	it("renders textarea when multiline is true", () => {
-		render(<Input label="Description" multiline />);
+		renderWithFullEnvironment(<Input label="Description" multiline />);
 		expect(screen.getByRole("textbox")).toBeInTheDocument();
 		expect(screen.getByRole("textbox").tagName).toBe("TEXTAREA");
 	});
@@ -52,39 +53,39 @@ describe("Input Component", () => {
 			{ value: "1", label: "Option 1" },
 			{ value: "2", label: "Option 2" }
 		];
-		render(<Input label="Choice" options={options} />);
+		renderWithFullEnvironment(<Input label="Choice" options={options} />);
 		expect(screen.getByRole("combobox")).toBeInTheDocument();
 		expect(screen.getByText("Option 1")).toBeInTheDocument();
 		expect(screen.getByText("Option 2")).toBeInTheDocument();
 	});
 
 	it("applies semantic focus styles", () => {
-		render(<Input label="Test" />);
+		renderWithFullEnvironment(<Input label="Test" />);
 		const input = screen.getByRole("textbox");
 		expect(input).toHaveClass("focus:border-interactive");
 	});
 
 	it("shows placeholder text", () => {
-		render(<Input label="Email" placeholder="Enter your email" />);
+		renderWithFullEnvironment(<Input label="Email" placeholder="Enter your email" />);
 		expect(screen.getByPlaceholderText("Enter your email")).toBeInTheDocument();
 	});
 
 	it("handles disabled state", () => {
-		render(<Input label="Disabled" disabled />);
+		renderWithFullEnvironment(<Input label="Disabled" disabled />);
 		const input = screen.getByRole("textbox");
 		expect(input).toBeDisabled();
 		expect(input).toHaveClass("opacity-50");
 	});
 
 	it("forwards HTML input attributes", () => {
-		render(<Input label="Test" id="custom-id" name="test-name" />);
+		renderWithFullEnvironment(<Input label="Test" id="custom-id" name="test-name" />);
 		const input = screen.getByRole("textbox");
 		expect(input).toHaveAttribute("id", "custom-id");
 		expect(input).toHaveAttribute("name", "test-name");
 	});
 
 	it("auto-generates id from label when id not provided", () => {
-		render(<Input label="Email Address" />);
+		renderWithFullEnvironment(<Input label="Email Address" />);
 		const input = screen.getByRole("textbox");
 		const label = screen.getByText("Email Address");
 		const expectedId = "email-address";
@@ -93,7 +94,7 @@ describe("Input Component", () => {
 	});
 
 	it("shows helper text when provided", () => {
-		render(<Input label="Password" helper="Must be at least 8 characters" />);
+		renderWithFullEnvironment(<Input label="Password" helper="Must be at least 8 characters" />);
 		expect(screen.getByText("Must be at least 8 characters")).toBeInTheDocument();
 		expect(screen.getByText("Must be at least 8 characters")).toHaveClass("text-text-primary");
 	});
