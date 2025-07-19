@@ -1,65 +1,12 @@
 import React from "react";
-import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
-import { fastUserActions, fastStateSync } from "./utils";
+import { screen, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import App from "../App";
 import type { AuthUser } from "../types";
+import { renderWithFullEnvironment, fastUserActions, fastStateSync } from "./utils/testRenderUtils";
 
-const mockLogin = vi.fn();
-const mockLogout = vi.fn();
-
-const mockAuth: {
-	isAuthenticated: boolean;
-	user: AuthUser | null;
-	token: string | null;
-	login: typeof mockLogin;
-	logout: typeof mockLogout;
-} = {
-	isAuthenticated: false,
-	user: null,
-	token: null,
-	login: mockLogin,
-	logout: mockLogout
-};
-
-const resetAuthMock = (): void => {
-	mockAuth.isAuthenticated = false;
-	mockAuth.user = null;
-	mockAuth.token = null;
-	mockLogin.mockClear();
-	mockLogout.mockClear();
-};
-
-const setAuthenticatedUser = (user: AuthUser, token = "mock-token"): void => {
-	mockAuth.isAuthenticated = true;
-	mockAuth.user = user;
-	mockAuth.token = token;
-};
-
-const setUnauthenticatedState = (): void => {
-	mockAuth.isAuthenticated = false;
-	mockAuth.user = null;
-	mockAuth.token = null;
-};
-
-const mockTriggerOAuth = vi.fn();
-
-const mockGoogleOAuth = {
-	isReady: true,
-	isLoading: false,
-	error: null,
-	triggerOAuth: mockTriggerOAuth
-};
-
-vi.mock("../hooks/useAuth", () => ({
-	useAuth: () => mockAuth
-}));
-
-vi.mock("../hooks/useGoogleOAuth", () => ({
-	useGoogleOAuth: () => mockGoogleOAuth
-}));
-
+// Mock all page components to focus on App logic
 vi.mock("../pages/HomePage", () => ({
 	default: () => <div data-testid="home-page">Home Page</div>
 }));
@@ -181,26 +128,78 @@ vi.mock("../components/AuthModal", () => ({
 	}
 }));
 
+// Mock auth hooks with controllable state
+const mockLogin = vi.fn();
+const mockLogout = vi.fn();
+
+const mockAuth: {
+	isAuthenticated: boolean;
+	user: AuthUser | null;
+	token: string | null;
+	login: typeof mockLogin;
+	logout: typeof mockLogout;
+} = {
+	isAuthenticated: false,
+	user: null,
+	token: null,
+	login: mockLogin,
+	logout: mockLogout
+};
+
+const resetAuthMock = (): void => {
+	mockAuth.isAuthenticated = false;
+	mockAuth.user = null;
+	mockAuth.token = null;
+	mockLogin.mockClear();
+	mockLogout.mockClear();
+};
+
+const setAuthenticatedUser = (user: AuthUser, token = "mock-token"): void => {
+	mockAuth.isAuthenticated = true;
+	mockAuth.user = user;
+	mockAuth.token = token;
+};
+
+const setUnauthenticatedState = (): void => {
+	mockAuth.isAuthenticated = false;
+	mockAuth.user = null;
+	mockAuth.token = null;
+};
+
+const mockTriggerOAuth = vi.fn();
+
+const mockGoogleOAuth = {
+	isReady: true,
+	isLoading: false,
+	error: null,
+	triggerOAuth: mockTriggerOAuth
+};
+
+vi.mock("../hooks/useAuth", () => ({
+	useAuth: () => mockAuth
+}));
+
+vi.mock("../hooks/useGoogleOAuth", () => ({
+	useGoogleOAuth: () => mockGoogleOAuth
+}));
+
 describe("App - Google OAuth Integration (TDD)", () => {
+	let testEnv: ReturnType<typeof renderWithFullEnvironment>;
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset auth state using centralized helper
 		resetAuthMock();
-		// Reset global fetch mock
-		global.fetch = vi.fn();
 	});
 
 	afterEach(() => {
-		cleanup();
-		vi.restoreAllMocks();
-		// Ensure global fetch is reset
-		global.fetch = vi.fn();
+		if (testEnv) {
+			testEnv.cleanup();
+		}
 	});
 
 	describe("Google OAuth Registration Flow", () => {
 		it("should handle successful Google OAuth registration by calling auth.login", async () => {
-			// This test will FAIL initially - Google OAuth success handling not implemented
-			// Mock successful OAuth response
+			// Mock successful OAuth response using new mock architecture
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
 				token_type: "bearer",
@@ -213,13 +212,16 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				}
 			};
 
-			// Mock fetch for successful OAuth
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
+			// Use Level 1 (Fetch) mocking for integration testing
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: true,
+						json: () => Promise.resolve(mockAuthResponse)
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -252,7 +254,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		});
 
 		it("should stay on home page after successful Google OAuth registration", async () => {
-			// Updated test - no longer redirects to dashboard, stays on home page
 			// Mock successful OAuth response
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -266,13 +267,15 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				}
 			};
 
-			// Mock fetch for successful OAuth
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: true,
+						json: () => Promise.resolve(mockAuthResponse)
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -301,14 +304,16 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		});
 
 		it("should handle Google OAuth errors gracefully without crashing", async () => {
-			// This test will FAIL initially - error handling not implemented properly
-			// Mock failed OAuth response
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: false,
-				json: () => Promise.resolve({ detail: "Google OAuth failed: Invalid token" })
+			// Use Level 1 (Fetch) mocking for error scenarios
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: false,
+						json: () => Promise.resolve({ detail: "Google OAuth failed: Invalid token" })
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -326,18 +331,19 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			});
 
 			expect(screen.getByText(/google oauth.*failed/i)).toBeInTheDocument();
-
 			expect(mockLogin).not.toHaveBeenCalled();
 			// Registration modal should remain open to show error
 			expect(screen.getByText("Create Your Account")).toBeInTheDocument();
 		});
 
 		it("should handle network errors during Google OAuth", async () => {
-			// This test will FAIL initially - network error handling not implemented
-			// Mock network error
-			global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
-
-			render(<App />);
+			// Network error scenario using Level 1 (Fetch) mocking
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockRejectedValueOnce(new Error("Network error"))
+				}
+			});
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -358,7 +364,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		});
 
 		it("should not call auth.login if Google OAuth response is missing required fields", async () => {
-			// This test will FAIL initially - response validation not implemented
 			// Mock incomplete OAuth response (missing user data)
 			const incompleteResponse = {
 				access_token: "mock-jwt-token",
@@ -366,12 +371,15 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				// Missing user object
 			};
 
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(incompleteResponse)
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: true,
+						json: () => Promise.resolve(incompleteResponse)
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -397,7 +405,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		});
 
 		it("should handle Google OAuth credential parameter correctly", async () => {
-			// This test will FAIL initially - credential handling not properly implemented
 			// Mock successful OAuth response
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -411,20 +418,20 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				}
 			};
 
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: true,
+						json: () => Promise.resolve(mockAuthResponse)
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
 			fastUserActions.click(registerButton);
 			await fastStateSync();
-
-			// Simulate Google OAuth success with credential
-			// This simulates the RegistrationMethodModal calling onSelectGoogle with credential
 
 			// Trigger Google OAuth success simulation
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
@@ -433,7 +440,7 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Verify the credential was sent to backend
 			await waitFor(() => {
-				expect(global.fetch).toHaveBeenCalledWith(
+				expect(testEnv.mocks.fetch).toHaveBeenCalledWith(
 					"/api/v1/auth/google-oauth",
 					expect.objectContaining({
 						method: "POST",
@@ -447,7 +454,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 	describe("Google OAuth Integration State Management", () => {
 		it("should properly update App state after successful Google OAuth", async () => {
-			// This test will FAIL initially - state management integration not complete
 			// Mock successful OAuth
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -461,12 +467,15 @@ describe("App - Google OAuth Integration (TDD)", () => {
 				}
 			};
 
-			global.fetch = vi.fn().mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve(mockAuthResponse)
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true },
+				mocks: {
+					fetch: vi.fn().mockResolvedValueOnce({
+						ok: true,
+						json: () => Promise.resolve(mockAuthResponse)
+					} as Response)
+				}
 			});
-
-			render(<App />);
 
 			// Initially should show unauthenticated state
 			expect(screen.getByRole("button", { name: /show registration/i })).toBeInTheDocument();
@@ -493,8 +502,9 @@ describe("App - Google OAuth Integration (TDD)", () => {
 		});
 
 		it("should handle Google OAuth callback parameter correctly in App component", async () => {
-			// This test will FAIL initially - App doesn't properly handle OAuth callback
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
@@ -519,24 +529,24 @@ describe("App - Google OAuth Integration (TDD)", () => {
 });
 
 describe("App - General Rendering and Routing Logic", () => {
+	let testEnv: ReturnType<typeof renderWithFullEnvironment>;
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset auth state using centralized helper
 		resetAuthMock();
-		// Reset global fetch mock
-		global.fetch = vi.fn();
 	});
 
 	afterEach(() => {
-		cleanup();
-		vi.restoreAllMocks();
-		// Ensure global fetch is reset
-		global.fetch = vi.fn();
+		if (testEnv) {
+			testEnv.cleanup();
+		}
 	});
 
 	describe("Basic Component Rendering", () => {
 		it("should render header, main content, and footer", () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Verify main App structure renders
 			expect(screen.getByTestId("header")).toBeInTheDocument();
@@ -545,14 +555,18 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should render home page by default", () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
 			expect(screen.getByTestId("current-page")).toHaveTextContent("home");
 		});
 
 		it("should render correct page content based on navigation", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Navigate to About page
 			fastUserActions.click(screen.getByText("Navigate to About"));
@@ -564,7 +578,9 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Page Routing Logic", () => {
 		it("should navigate between public pages correctly", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Start on home page
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
@@ -585,7 +601,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Navigate to profile page
 			fastUserActions.click(screen.getByText("Navigate to Profile"));
@@ -594,7 +612,9 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should handle invalid page routing gracefully", () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// App should render home page for any invalid routes (default case)
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
@@ -611,7 +631,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Navigate to teams page
 			fastUserActions.click(screen.getByText("Navigate to Teams"));
@@ -638,7 +660,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Attempt to navigate to teams page
 			fastUserActions.click(screen.getByText("Navigate to Teams"));
@@ -658,7 +682,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Attempt to navigate to calendar page
 			fastUserActions.click(screen.getByText("Navigate to Calendar"));
@@ -678,7 +704,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Attempt to navigate to dashboard page
 			fastUserActions.click(screen.getByText("Navigate to Dashboard"));
@@ -700,7 +728,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: false
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			expect(screen.getByText("Email verification required")).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
@@ -715,7 +745,9 @@ describe("App - General Rendering and Routing Logic", () => {
 				email_verified: true
 			});
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
 			expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
@@ -725,7 +757,9 @@ describe("App - General Rendering and Routing Logic", () => {
 			// Ensure unauthenticated state using centralized helper
 			setUnauthenticatedState();
 
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			expect(screen.queryByText("Email verification required")).not.toBeInTheDocument();
 			expect(screen.queryByRole("button", { name: "Resend" })).not.toBeInTheDocument();
@@ -734,7 +768,9 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Authentication Modal Management", () => {
 		it("should show registration modal when Show Registration is clicked", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Initially modal should not be visible
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
@@ -749,7 +785,9 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should show sign in modal when Show Sign In is clicked", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Initially modal should not be visible
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
@@ -764,7 +802,9 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should close authentication modal when close button is clicked", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Open modal
 			fastUserActions.click(screen.getByText("Show Registration"));
@@ -778,7 +818,9 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should close authentication modal after successful authentication", async () => {
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 
 			// Open modal
 			fastUserActions.click(screen.getByText("Show Sign In"));
@@ -796,7 +838,9 @@ describe("App - General Rendering and Routing Logic", () => {
 	describe("Email Verification Modal Integration", () => {
 		it("should show verification modal when requested", () => {
 			// Basic test that verification modal can be rendered
-			render(<App />);
+			testEnv = renderWithFullEnvironment(<App />, {
+				providers: { toast: true }
+			});
 			// This will be expanded to test the new verification flow
 			expect(screen.getByTestId("header")).toBeInTheDocument();
 		});

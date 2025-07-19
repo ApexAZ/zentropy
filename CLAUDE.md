@@ -309,167 +309,105 @@ def test_user_creation(client, db):  # Uses test fixtures
 
 ## 🧪 TESTING PATTERNS
 
-### **High-Performance Frontend Testing (99%+ Speed Improvement)**
+### **Global Mock Architecture (3-Level Hierarchy)**
+
+Use **Global Mock Architecture** for structured, performant testing across all components. **See `tests/README.md` for complete guide.**
+
 ```typescript
-// 🚀 PRIMARY PATTERN: Environment-Aware OAuth Hooks (Automatic)
-// ✅ useGoogleOAuth auto-detects test environment and returns immediate mocks
-// ✅ Eliminates 30-second timer polling, achieving 99%+ performance improvement
-it("should render Security tab with OAuth functionality", async () => {
-  // useGoogleOAuth automatically detects test environment via:
-  // 1. VITE_OAUTH_MOCK_MODE environment variable
-  // 2. Mocked fetch detection (component test context)
-  // Returns immediate deterministic mocks, preserving production functionality
-  
-  renderWithToast(<SecurityTab />);
-  
-  await act(async () => {
-    await Promise.resolve();
+// Level 1: Module-Level Service Mocking (Primary Pattern)
+vi.mock("../../services/UserService", () => ({
+  UserService: {
+    getCurrentUser: vi.fn(),
+    updateProfile: vi.fn(),
+    updatePassword: vi.fn()
+  }
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  (UserService.getCurrentUser as any).mockResolvedValue(mockUser);
+  (UserService.updateProfile as any).mockResolvedValue(updatedUser);
+});
+
+it("should update user profile", async () => {
+  renderWithFullEnvironment(<ProfilePage />, {
+    providers: { toast: true }
   });
+  
+  await fastStateSync();
+  
+  fastUserActions.click(screen.getByText("Edit Profile"));
+  fastUserActions.click(screen.getByText("Save Changes"));
+  
+  expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
+});
+```
+
+### **Environment-Aware OAuth Hooks (99%+ Speed Improvement)**
+```typescript
+// ✅ AUTOMATIC: OAuth hooks auto-detect test environment
+// ✅ No manual mocking needed - useGoogleOAuth handles environment detection
+// ✅ Eliminates 30-second timer polling for immediate test responses
+it("should render OAuth functionality", async () => {
+  // useGoogleOAuth automatically detects test environment and provides fast mocks
+  renderWithFullEnvironment(<SecurityTab />, {
+    providers: { toast: true }
+  });
+  
+  await fastStateSync();
   
   expect(screen.getByText("Google")).toBeInTheDocument();
 });
-
-// ✅ SECONDARY PATTERN: Upfront API Mocking + fireEvent for non-OAuth components
-it("should allow user to sign in with valid credentials", async () => {
-  // 1. Mock all component initialization API calls upfront
-  mockFetch
-    .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockUser) });
-    // Add more mocks as needed for your component
-  
-  renderWithToast(<AuthModal />);
-  
-  // 2. Let React finish initialization
-  await act(async () => {
-    await Promise.resolve();
-  });
-  
-  // 3. Use fireEvent for immediate interactions (19ms vs 2000ms+ timeouts)
-  fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "test@example.com" } });
-  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-  
-  // 4. Let React process updates
-  await act(async () => {
-    await Promise.resolve();
-  });
-  
-  expect(mockOnSuccess).toHaveBeenCalled();
-});
-
-// ❌ SLOW: Manual OAuth mocking with timer polling
-// vi.mock('../hooks/useGoogleOAuth', () => ({ ... })); // Complex manual setup
-// ❌ SLOW: userEvent with fake timers (causes timeouts)
-// const user = userEvent.setup();
-// await user.type(...); // Timing conflicts with vi.useFakeTimers()
 ```
 
-### **Frontend Test Optimization Patterns**
+### **Fast Test Utilities**
 ```typescript
-// 🚀 PRIMARY: Environment-Aware OAuth Hooks (Zero Configuration)
-// useGoogleOAuth automatically detects test environment via:
-// 1. VITE_OAUTH_MOCK_MODE environment variable  
-// 2. Mocked fetch detection in component test context
-// Provides immediate deterministic responses, eliminating 30-second timer delays
+// ✅ Use fast utilities from testRenderUtils
+import { renderWithFullEnvironment, fastUserActions, fastStateSync } from "../utils/testRenderUtils";
 
-it('OAuth component test', async () => {
-  // No manual mocking needed - hooks handle environment detection automatically
-  render(<ComponentWithOAuth />);
-  
-  await act(async () => {
-    await Promise.resolve();
-  });
-  
-  expect(screen.getByText("OAuth Ready")).toBeInTheDocument();
-});
+// ✅ fireEvent for immediate interactions (19ms vs 2000ms timeouts)
+fastUserActions.click(button);
+fastUserActions.type(input, "value");
+fastUserActions.replaceText(input, "new value");
 
-// ✅ SECONDARY: Upfront API Mocking for Non-OAuth Components
-mockFetch
-  .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockData1) })
-  .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockData2) });
-  // Add as many mockResolvedValueOnce calls as your component needs
+// ✅ Fast state synchronization
+await fastStateSync(); // Replaces complex waitFor patterns
 
-// ✅ fireEvent for User Interactions
-fireEvent.click(button);
-fireEvent.change(input, { target: { value: "test" } });
-
-// ✅ Synchronous Helper Functions
-const fillForm = (data) => {
-  fireEvent.change(screen.getByLabelText(/name/i), { target: { value: data.name } });
-};
-
-// ✅ Simple act() Pattern
-await act(async () => {
-  await Promise.resolve();
-});
-expect(screen.getByText("Result")).toBeInTheDocument();
-
-// ✅ Clean Imports
-import { render, screen, fireEvent, act } from "@testing-library/react";
-// Don't import: waitFor, userEvent (unless specifically needed)
+// ✅ Clean imports - only what you need
+import { screen, fireEvent, act } from "@testing-library/react";
+// ❌ Don't import: waitFor, userEvent (unless specifically needed)
 ```
 
 ### **High-Performance Test Architecture**
-```python
-# ✅ Transaction rollback for 8x speed improvement
-@pytest.fixture(scope="session")
-def test_db_engine():
-    # Single database engine for entire test session
-    engine = create_engine(DATABASE_URL, poolclass=StaticPool)
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
 
-@pytest.fixture(scope="function") 
-def db(test_db_engine):
-    # Per-test transaction rollback (not database recreation)
-    connection = test_db_engine.connect()
-    transaction = connection.begin()
-    session = Session(bind=connection)
-    
-    try:
-        yield session
-    finally:
-        session.close()
-        if transaction.is_active:  # Handle edge cases
-            transaction.rollback()
-        connection.close()
+**Backend: Transaction Rollback (8x Speed Improvement)**
+```python
+# ✅ Use test fixtures in conftest.py - request `client` and `db` in test functions
+def test_create_widget(client, db, auth_headers):
+    response = client.post("/api/v1/widgets", json=widget_data, headers=auth_headers)
+    assert response.status_code == 201
+
+# ✅ Opt-in fixtures for specialized tests
+def test_email_functionality(client, db, auto_clean_mailpit, test_rate_limits):
+    # Only use expensive fixtures when needed
 ```
 
-### **Optimized Fixture Strategy**
-```python
-# ✅ Opt-in fixtures for expensive operations
-@pytest.fixture(scope="function")  # Not autouse=True
-def test_rate_limits():
-    # For tests making multiple API calls (register, login, etc.)
-    # Prevents 429 errors during parallel execution
-    
-@pytest.fixture(scope="function")  # Not autouse=True  
-def auto_clean_mailpit():
-    # Only use for email-specific tests
-    
-# ✅ Parallel execution by default
-"test:backend": "python3 -m pytest -n auto"
-```
-
-### **Rate Limiting in Parallel Tests**
-```python
-# ✅ Add test_rate_limits for API-intensive tests
-def test_user_registration_flow(client, test_rate_limits):
-    # Multiple API calls: register + login + create_project
-    
-# ❌ Missing fixture causes 429 errors in parallel execution
-def test_user_registration_flow(client):
-    # Will fail with "Rate limit exceeded" when run with -n auto
-```
-
-### **Robust Mocking**
+**Frontend: Service Mock Architecture (99%+ Speed Improvement)**
 ```typescript
-// ✅ Handles React StrictMode double renders
-mockFetch.mockImplementation(url => {
-	if (url.includes("/api/v1/teams")) {
-		return Promise.resolve({ ok: true, json: async () => mockTeams });
-	}
-	return Promise.reject(new Error(`Unhandled: ${url}`));
+// ✅ Use renderWithFullEnvironment for structured test setup
+const testEnv = renderWithFullEnvironment(<YourComponent />, {
+  providers: { toast: true, auth: true },
+  mocks: {
+    userService: UserServiceScenarios.standardUser(),
+    teamService: TeamServiceScenarios.standardTeam()
+  }
 });
+
+// ✅ Access mocks for verification
+expect(testEnv.mocks.userService.getCurrentUser).toHaveBeenCalled();
+
+// ✅ Automatic cleanup
+testEnv.cleanup();
 ```
 
 ## ⚡ TDD WORKFLOW (MANDATORY)

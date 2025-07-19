@@ -1,0 +1,170 @@
+{
+  "Module Level Service Mock": {
+    "prefix": "mocksvc",
+    "body": [
+      "// Module-level service mock (Global Mock Architecture Level 1)",
+      "vi.mock(\"../../services/${1:ServiceName}\", () => ({",
+      "  ${1:ServiceName}: {",
+      "    ${2:methodName}: vi.fn()$0",
+      "  }",
+      "}));",
+      "",
+      "import { ${1:ServiceName} } from \"../../services/${1:ServiceName}\";"
+    ],
+    "description": "Create module-level service mock following Global Mock Architecture"
+  },
+
+  "Test with Full Environment": {
+    "prefix": "testenv",
+    "body": [
+      "it('${1:should do something}', async () => {",
+      "  const testEnv = renderWithFullEnvironment(<${2:Component} />, {",
+      "    providers: { toast: true$3 },",
+      "    mocks: {$4}",
+      "  });",
+      "",
+      "  await fastStateSync();",
+      "",
+      "  $0",
+      "",
+      "  testEnv.cleanup();",
+      "});"
+    ],
+    "description": "Create test with renderWithFullEnvironment (99%+ performance improvement)"
+  },
+
+  "Service Mock beforeEach Setup": {
+    "prefix": "mocksetup",
+    "body": [
+      "beforeEach(() => {",
+      "  vi.clearAllMocks();",
+      "  (${1:ServiceName}.${2:methodName} as any).mockResolvedValue(${3:mockData});$0",
+      "});"
+    ],
+    "description": "Standard beforeEach setup for service mocks"
+  },
+
+  "Service Mock Scenario": {
+    "prefix": "mockscenario",
+    "body": [
+      "const testEnv = renderWithFullEnvironment(<${1:Component} />, {",
+      "  providers: { toast: true, auth: true },",
+      "  mocks: {",
+      "    ${2:serviceName}: ${3:ServiceName}Scenarios.${4:standardScenario}()$0",
+      "  }",
+      "});",
+      "",
+      "await fastStateSync();"
+    ],
+    "description": "Use pre-configured service scenario from Global Mock Architecture"
+  },
+
+  "Fast User Actions": {
+    "prefix": "fastactions",
+    "body": [
+      "fastUserActions.click(screen.getByText(\"${1:Button Text}\"));",
+      "fastUserActions.type(screen.getByLabelText(/${2:label}/i), \"${3:input value}\");",
+      "fastUserActions.replaceText(screen.getByLabelText(/${4:label}/i), \"${5:new value}\");$0"
+    ],
+    "description": "Fast user interactions (19ms vs 2000ms+ timeouts)"
+  },
+
+  "Global Mock Architecture Test": {
+    "prefix": "gmatest",
+    "body": [
+      "import React from \"react\";",
+      "import { describe, it, expect, vi, beforeEach, afterEach } from \"vitest\";",
+      "import { screen, fireEvent, act } from \"@testing-library/react\";",
+      "import \"@testing-library/jest-dom\";",
+      "import { renderWithFullEnvironment, fastStateSync, fastUserActions } from \"../../__tests__/utils/testRenderUtils\";",
+      "",
+      "// Module-level service mock (Global Mock Architecture Level 1)",
+      "vi.mock(\"../../services/${1:ServiceName}\", () => ({",
+      "  ${1:ServiceName}: {",
+      "    ${2:methodName}: vi.fn()$0",
+      "  }",
+      "}));",
+      "",
+      "import { ${1:ServiceName} } from \"../../services/${1:ServiceName}\";",
+      "import ${3:ComponentName} from \"../${3:ComponentName}\";",
+      "",
+      "describe(\"${3:ComponentName}\", () => {",
+      "  beforeEach(() => {",
+      "    vi.clearAllMocks();",
+      "    vi.useFakeTimers(); // High-performance: predictable timing",
+      "    (${1:ServiceName}.${2:methodName} as any).mockResolvedValue(${4:mockData});",
+      "  });",
+      "",
+      "  afterEach(() => {",
+      "    vi.useRealTimers(); // Cleanup",
+      "  });",
+      "",
+      "  it('${5:should do something}', async () => {",
+      "    renderWithFullEnvironment(<${3:ComponentName} />, {",
+      "      providers: { toast: true }",
+      "    });",
+      "",
+      "    await fastStateSync(); // High-performance: 19ms vs 2000ms",
+      "",
+      "    expect(screen.getByText(\"${6:Expected Text}\")).toBeInTheDocument();",
+      "  });",
+      "});"
+    ],
+    "description": "Complete high-performance test file template using Global Mock Architecture"
+  },
+
+  "High Performance Test Pattern": {
+    "prefix": "perftest",
+    "body": [
+      "it('${1:should do something}', async () => {",
+      "  // High-performance pattern: fake timers + service mocks + fireEvent",
+      "  vi.useFakeTimers();",
+      "  ",
+      "  renderWithFullEnvironment(<${2:Component} />, {",
+      "    providers: { toast: true }",
+      "  });",
+      "",
+      "  await fastStateSync(); // 19ms vs 2000ms+ waitFor",
+      "",
+      "  // Fast user interactions (immediate, no timing conflicts)",
+      "  fastUserActions.click(screen.getByText(\"${3:Button Text}\"));",
+      "  fastUserActions.type(screen.getByLabelText(/${4:input}/i), \"${5:value}\");",
+      "",
+      "  await fastStateSync();",
+      "",
+      "  expect(screen.getByText(\"${6:Expected Result}\")).toBeInTheDocument();",
+      "",
+      "  vi.useRealTimers();",
+      "});"
+    ],
+    "description": "High-performance test pattern with fake timers, fastStateSync, and fireEvent"
+  },
+
+  "Fake Timers Setup": {
+    "prefix": "faketimers",
+    "body": [
+      "beforeEach(() => {",
+      "  vi.clearAllMocks();",
+      "  vi.useFakeTimers(); // Predictable timing + faster execution",
+      "});",
+      "",
+      "afterEach(() => {",
+      "  vi.useRealTimers(); // Always cleanup",
+      "});"
+    ],
+    "description": "Standard fake timers setup for high-performance tests"
+  },
+
+  "Timer Advance Pattern": {
+    "prefix": "advancetime",
+    "body": [
+      "// Fast timer advancement (no real waiting)",
+      "act(() => {",
+      "  vi.advanceTimersByTime(${1:5000}); // Advance ${2:5 seconds}",
+      "});",
+      "",
+      "expect(${3:expectedResult}).${4:toBe}(${5:expectedValue});"
+    ],
+    "description": "Fast timer advancement pattern for testing time-dependent behavior"
+  }
+}

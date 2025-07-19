@@ -1,12 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { screen, act, fireEvent } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ProfilePage from "../ProfilePage";
-import { ToastProvider } from "../../contexts/ToastContext";
+import { renderWithFullEnvironment, fastUserActions, fastStateSync } from "../../__tests__/utils/testRenderUtils";
+import {
+	createUserServiceMocks,
+	UserServiceScenarios,
+	OAuthProviderServiceScenarios
+} from "../../__tests__/mocks/serviceMocks";
+import { UserService } from "../../services/UserService";
 
-// 🚀 PERFORMANCE PATTERN: Environment-Aware OAuth Hooks
-// ✅ useGoogleOAuth now auto-detects test environment and returns fast mocks
-// ✅ No manual mocking needed - hook handles environment detection automatically
+// Clean module-level mock with sensible defaults
+vi.mock("../../services/UserService", () => ({
+	UserService: {
+		getCurrentUser: vi.fn(),
+		updateProfile: vi.fn(),
+		updatePassword: vi.fn(),
+		getAllUsers: vi.fn(),
+		getAccountSecurity: vi.fn(),
+		linkGoogleAccount: vi.fn(),
+		unlinkGoogleAccount: vi.fn(),
+		validateProfile: vi.fn(),
+		validatePasswordUpdate: vi.fn()
+	}
+}));
+
+// Environment-aware OAuth hooks - automatic test detection, no manual mocking needed
+// useGoogleOAuth, useMicrosoftOAuth, useGitHubOAuth auto-detect test environment
 
 vi.mock("../../hooks/useMicrosoftOAuth", () => ({
 	useMicrosoftOAuth: () => ({
@@ -65,12 +85,8 @@ vi.mock("../../hooks/useMultiProviderOAuth", () => ({
 	})
 }));
 
-// Mock fetch globally
-global.fetch = vi.fn();
-
-const mockFetch = fetch as any;
-
-const mockUser = {
+// User data with actual AuthUser type compatibility
+const profileUser = {
 	id: "user-123",
 	username: "testuser",
 	email: "test@example.com",
@@ -81,129 +97,45 @@ const mockUser = {
 	updated_at: "2025-01-01T00:00:00Z"
 };
 
-// Helper function to render ProfilePage with required providers
-const renderProfilePage = () => {
-	return render(
-		<ToastProvider>
-			<ProfilePage />
-		</ToastProvider>
-	);
+// Helper function to setup standard user mocks
+const setupStandardUserMocks = () => {
+	(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
+	(UserService.getAccountSecurity as any).mockResolvedValue({
+		email_auth_linked: true,
+		google_auth_linked: false
+	});
 };
 
-// 🚀 PERFORMANCE PATTERN: Direct fireEvent calls with act() wrapping
-// ✅ All Security tab interactions use direct fireEvent.click wrapped in act() for proper async handling
-
 describe("ProfilePage", () => {
-	beforeEach(() => {
-		mockFetch.mockClear();
-		vi.useRealTimers(); // Ensure real timers before each test
+	let testEnv: ReturnType<typeof renderWithFullEnvironment>;
 
-		// 🚀 PERFORMANCE PATTERN: Comprehensive API Mock Coverage
-		// ✅ Covers ALL Security tab API endpoints to prevent timeout errors
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me/security") && !options?.method) {
-				// GET /api/v1/users/me/security - Load security status (needed for Security tab)
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({
-						google_linked: false,
-						microsoft_linked: false,
-						github_linked: false,
-						password_set: true,
-						email_verified: true,
-						mfa_enabled: false,
-						security_score: 75,
-						linked_providers: [],
-						available_providers: ["google", "microsoft", "github"]
-					})
-				});
-			}
-			if (url.includes("/api/v1/users/me/link-google") && options?.method === "POST") {
-				// POST /api/v1/users/me/link-google - Link Google account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Google account linked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/users/me/unlink-google") && options?.method === "POST") {
-				// POST /api/v1/users/me/unlink-google - Unlink Google account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Google account unlinked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/users/me/link-microsoft") && options?.method === "POST") {
-				// POST /api/v1/users/me/link-microsoft - Link Microsoft account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Microsoft account linked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/users/me/unlink-microsoft") && options?.method === "POST") {
-				// POST /api/v1/users/me/unlink-microsoft - Unlink Microsoft account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Microsoft account unlinked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/users/me/link-github") && options?.method === "POST") {
-				// POST /api/v1/users/me/link-github - Link GitHub account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "GitHub account linked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/users/me/unlink-github") && options?.method === "POST") {
-				// POST /api/v1/users/me/unlink-github - Unlink GitHub account
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "GitHub account unlinked successfully" })
-				});
-			}
-			if (url.includes("/api/v1/oauth/providers") && !options?.method) {
-				// GET /api/v1/oauth/providers - Get available OAuth providers
-				return Promise.resolve({
-					ok: true,
-					json: async () => [
-						{ name: "google", displayName: "Google", enabled: true },
-						{ name: "microsoft", displayName: "Microsoft", enabled: true },
-						{ name: "github", displayName: "GitHub", enabled: true }
-					]
-				});
-			}
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				// GET /api/v1/users/me - Load profile
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me") && options?.method === "PUT") {
-				// PUT /api/v1/users/me - Update profile
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me/password") && options?.method === "PUT") {
-				// PUT /api/v1/users/me/password - Update password
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Password updated successfully" })
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useRealTimers();
+
+		// Set up default mocks for all tests using the standard approach
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
+		(UserService.getAccountSecurity as any).mockResolvedValue({
+			email_auth_linked: true,
+			google_auth_linked: false
 		});
+		(UserService.validateProfile as any).mockReturnValue({ isValid: true, errors: {} });
+		(UserService.validatePasswordUpdate as any).mockReturnValue({ isValid: true, errors: {} });
 	});
 
 	afterEach(() => {
-		vi.useRealTimers(); // Cleanup fake timers after each test
+		if (testEnv) {
+			testEnv.cleanup();
+		}
+		vi.useRealTimers();
 	});
 
 	it("renders profile page with main elements", async () => {
-		await act(async () => {
-			renderProfilePage();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
 		expect(screen.getByText("Manage your account information and security settings")).toBeInTheDocument();
@@ -216,10 +148,11 @@ describe("ProfilePage", () => {
 			resolveProfile = resolve;
 		});
 
-		mockFetch.mockReturnValueOnce(profilePromise);
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockReturnValue(profilePromise);
 
-		await act(async () => {
-			renderProfilePage();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
 		// Loading state should be visible immediately
@@ -227,19 +160,20 @@ describe("ProfilePage", () => {
 
 		// Resolve promise to complete loading (cleanup)
 		await act(async () => {
-			resolveProfile!({
-				ok: true,
-				json: async () => mockUser
-			});
+			resolveProfile!(profileUser);
+			await Promise.resolve();
 		});
 	});
 
 	it("loads and displays user profile", async () => {
-		renderProfilePage();
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 		expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -250,13 +184,14 @@ describe("ProfilePage", () => {
 	});
 
 	it("handles API errors gracefully", async () => {
-		mockFetch.mockRejectedValueOnce(new Error("Network error"));
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockRejectedValue(new Error("Network error"));
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Unable to Load Profile")).toBeInTheDocument();
 		expect(screen.getByText("Network error")).toBeInTheDocument();
@@ -264,32 +199,34 @@ describe("ProfilePage", () => {
 	});
 
 	it("displays different role badges correctly", async () => {
-		const adminUser = { ...mockUser, role: "admin" };
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => adminUser
+		const adminUser = { ...profileUser, role: "admin" };
+
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(adminUser);
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getAllByText("Administrator")).toHaveLength(2); // Role label and badge
 	});
 
 	it("opens profile edit form when Edit Profile button is clicked", async () => {
-		renderProfilePage();
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		const editButton = screen.getByText("Edit Profile");
-		fireEvent.click(editButton);
+		fastUserActions.click(editButton);
 
 		expect(screen.getByLabelText("First Name")).toBeInTheDocument();
 		expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
@@ -299,32 +236,37 @@ describe("ProfilePage", () => {
 	});
 
 	it("validates profile form fields", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		// Override the validateProfile mock for this test
+		(UserService.validateProfile as any).mockImplementation((data: any) => {
+			const errors: Record<string, string> = {};
+			if (!data.first_name) errors.first_name = "First name is required";
+			if (data.email === "invalid-email") errors.email = "Please enter a valid email address";
+			return { isValid: Object.keys(errors).length === 0, errors };
 		});
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
+		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form
-		fireEvent.click(screen.getByText("Edit Profile"));
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		await fastStateSync();
 
 		expect(screen.getByLabelText("First Name")).toBeInTheDocument();
 		expect((screen.getByLabelText("First Name") as HTMLInputElement).value).toBe("Test");
 
 		// Clear the first name field to make it invalid
 		const firstNameInput = screen.getByLabelText("First Name") as HTMLInputElement;
-		fireEvent.change(firstNameInput, { target: { value: "" } });
+		fastUserActions.replaceText(firstNameInput, "");
 		expect(firstNameInput.value).toBe("");
 
 		// Make email invalid too
 		const emailInput = screen.getByLabelText("Email Address") as HTMLInputElement;
-		fireEvent.change(emailInput, { target: { value: "invalid-email" } });
+		fastUserActions.replaceText(emailInput, "invalid-email");
 		fireEvent.blur(emailInput); // Trigger validation
 		expect(emailInput.value).toBe("invalid-email");
 
@@ -332,172 +274,136 @@ describe("ProfilePage", () => {
 		const form = document.querySelector("form");
 		fireEvent.submit(form!);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("First name is required")).toBeInTheDocument();
 		expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
 	});
 
 	it("validates profile field length limits", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
+		(UserService.validateProfile as any).mockImplementation((data: any) => {
+			const errors: Record<string, string> = {};
+			if (data.first_name && data.first_name.length > 100) {
+				errors.first_name = "First name must be less than 100 characters";
+			}
+			return { isValid: Object.keys(errors).length === 0, errors };
 		});
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
+		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form
-		fireEvent.click(screen.getByText("Edit Profile"));
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		await fastStateSync();
 
-		await act(async () => {
-			await Promise.resolve();
-		});
-
-		// Test first name too long - simplified without blur event
+		// Test first name too long
 		const firstNameInput = screen.getByLabelText("First Name");
-		fireEvent.change(firstNameInput, { target: { value: "a".repeat(101) } });
+		fastUserActions.replaceText(firstNameInput, "a".repeat(101));
 
 		const submitButton = screen.getByText("Save Changes");
-		fireEvent.click(submitButton);
+		fastUserActions.click(submitButton);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("First name must be less than 100 characters")).toBeInTheDocument();
 	});
 
 	it("successfully updates profile with valid data", async () => {
-		// Mock initial load and successful update
-		const updatedUser = { ...mockUser, first_name: "Updated", last_name: "Name" };
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				// GET /api/v1/users/me - Initial load
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me") && options?.method === "PUT") {
-				// PUT /api/v1/users/me - Update profile
-				return Promise.resolve({
-					ok: true,
-					json: async () => updatedUser
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
+		const updatedUser = { ...profileUser, first_name: "Updated", last_name: "Name" };
+
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
+		(UserService.updateProfile as any).mockResolvedValue(updatedUser);
+		(UserService.validateProfile as any).mockReturnValue({ isValid: true, errors: {} });
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form
-		fireEvent.click(screen.getByText("Edit Profile"));
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		await fastStateSync();
 
 		// Update name
 		const firstNameInput = screen.getByLabelText("First Name");
-		fireEvent.change(firstNameInput, { target: { value: "Updated" } });
+		fastUserActions.replaceText(firstNameInput, "Updated");
 
 		const lastNameInput = screen.getByLabelText("Last Name");
-		fireEvent.change(lastNameInput, { target: { value: "Name" } });
+		fastUserActions.replaceText(lastNameInput, "Name");
 
 		const submitButton = screen.getByText("Save Changes");
-		fireEvent.click(submitButton);
+		fastUserActions.click(submitButton);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
 
 		// Should exit edit mode and show updated data
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Updated Name")).toBeInTheDocument();
 		expect(screen.queryByLabelText("First Name")).not.toBeInTheDocument();
 	});
 
 	it("handles profile update API errors", async () => {
-		// Mock initial load success and update error
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				// GET /api/v1/users/me - Initial load succeeds
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me") && options?.method === "PUT") {
-				// PUT /api/v1/users/me - Update fails
-				return Promise.resolve({
-					ok: false,
-					status: 400,
-					json: async () => ({ message: "Email already exists" })
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
+		(UserService.updateProfile as any).mockRejectedValue(new Error("Email already exists"));
+		(UserService.validateProfile as any).mockReturnValue({ isValid: true, errors: {} });
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form and submit
-		fireEvent.click(screen.getByText("Edit Profile"));
-		fireEvent.click(screen.getByText("Save Changes"));
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		fastUserActions.click(screen.getByText("Save Changes"));
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Email already exists")).toBeInTheDocument();
 	});
 
 	it("cancels profile edit and restores original data", async () => {
-		renderProfilePage();
+		// Configure the module mock directly
+		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form
-		fireEvent.click(screen.getByText("Edit Profile"));
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		await fastStateSync();
 
 		// Make changes
 		const firstNameInput = screen.getByLabelText("First Name");
-		fireEvent.change(firstNameInput, { target: { value: "Changed" } });
+		fastUserActions.replaceText(firstNameInput, "Changed");
 
 		// Cancel
 		const cancelButton = screen.getByText("Cancel");
-		fireEvent.click(cancelButton);
+		fastUserActions.click(cancelButton);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		// Should restore original data and exit edit mode
 		expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -505,104 +411,98 @@ describe("ProfilePage", () => {
 	});
 
 	it("opens password change form when Change Password button is clicked", async () => {
-		// TEST ISOLATION: Click Security tab directly without helper function
-		renderProfilePage();
+		// Configure the module mock directly
+		setupStandardUserMocks();
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 		// Click Security tab directly
 		const securityTab = screen.getByRole("tab", { name: "Security" });
-		fireEvent.click(securityTab);
+		fastUserActions.click(securityTab);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-		// Test passes if we can navigate to Security tab and see Change Password button
 	});
 
 	it("validates password change form", async () => {
-		// VALIDATION TEST: Verify form validation without complex Security tab interactions
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.standardUser(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
+
+		await fastStateSync();
 
 		// Verify basic Security functionality is available
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
-
-		// This test verifies password form validation setup is available
-		// Actual form validation behavior is tested in integration tests
 	});
 
 	it("validates new password requirements", async () => {
-		// MINIMAL TEST: Just verify Security tab exists
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.standardUser(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
 
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		await fastStateSync();
 
-		// Test passes if Security tab is rendered
+		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 	});
 
 	it("validates password confirmation match", async () => {
-		// DIRECT APPROACH: Test password validation without complex interactions
-		// Mock the password validation error response directly
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.passwordUpdateFailed(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
 			}
-			if (url.includes("/api/v1/users/me/password") && options?.method === "PUT") {
-				// Return validation error for mismatched passwords
-				return Promise.resolve({
-					ok: false,
-					status: 400,
-					json: async () => ({ message: "Passwords do not match" })
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		// Just verify we have the basic page structure
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
-
-		// This test verifies password validation setup without complex form interactions
 	});
 
 	it("successfully updates password with valid data", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: createUserServiceMocks({
+					getCurrentUser: vi.fn().mockResolvedValue(profileUser),
+					getAccountSecurity: vi.fn().mockResolvedValue({
+						email_auth_linked: true,
+						google_auth_linked: false
+					}),
+					updatePassword: vi.fn().mockResolvedValue({
+						message: "Password updated successfully"
+					})
+				}),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 		// Navigate to Security tab with proper act() wrapping
 		await act(async () => {
 			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fireEvent.click(securityTab);
+			fastUserActions.click(securityTab);
 			await Promise.resolve();
 		});
 
@@ -611,21 +511,19 @@ describe("ProfilePage", () => {
 		// Open password change form with proper act() wrapping
 		await act(async () => {
 			const changePasswordButton = screen.getByText("Change Password");
-			fireEvent.click(changePasswordButton);
+			fastUserActions.click(changePasswordButton);
 			await Promise.resolve();
 		});
 
 		// Fill with valid data
-		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
-		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
-		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewStrongPass123!" } });
+		fastUserActions.type(screen.getByLabelText("Current Password"), "current123");
+		fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
+		fastUserActions.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
 
 		const submitButton = screen.getByText("Update Password");
-		fireEvent.click(submitButton);
+		fastUserActions.click(submitButton);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Password updated successfully!")).toBeInTheDocument();
 
@@ -634,53 +532,21 @@ describe("ProfilePage", () => {
 	});
 
 	it("handles password update API errors", async () => {
-		// Mock successful initial load and failed password update
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me/security") && !options?.method) {
-				// GET /api/v1/users/me/security - Load security status
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({
-						google_linked: false,
-						microsoft_linked: false,
-						github_linked: false,
-						password_set: true,
-						email_verified: true,
-						mfa_enabled: false,
-						security_score: 75
-					})
-				});
-			}
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				// GET /api/v1/users/me - Initial load succeeds
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me/password") && options?.method === "PUT") {
-				// PUT /api/v1/users/me/password - Password update fails
-				return Promise.resolve({
-					ok: false,
-					status: 400,
-					json: async () => ({ message: "Current password is incorrect" })
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
+		// Override the updatePassword mock to return an error
+		(UserService.updatePassword as any).mockRejectedValue(new Error("Current password is incorrect"));
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 		// Navigate to Security tab with proper act() wrapping
 		await act(async () => {
 			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fireEvent.click(securityTab);
+			fastUserActions.click(securityTab);
 			await Promise.resolve();
 		});
 
@@ -689,35 +555,37 @@ describe("ProfilePage", () => {
 		// Open password change form and submit with proper act() wrapping
 		await act(async () => {
 			const changePasswordButton = screen.getByText("Change Password");
-			fireEvent.click(changePasswordButton);
+			fastUserActions.click(changePasswordButton);
 			await Promise.resolve();
 		});
 
-		fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "wrong123" } });
-		fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
-		fireEvent.change(screen.getByLabelText("Confirm New Password"), { target: { value: "NewStrongPass123!" } });
-		fireEvent.click(screen.getByText("Update Password"));
+		fastUserActions.type(screen.getByLabelText("Current Password"), "wrong123");
+		fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
+		fastUserActions.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
+		fastUserActions.click(screen.getByText("Update Password"));
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Current password is incorrect")).toBeInTheDocument();
 	});
 
 	it("cancels password change and clears form", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.standardUser(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 		// Navigate to Security tab with proper act() wrapping
 		await act(async () => {
 			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fireEvent.click(securityTab);
+			fastUserActions.click(securityTab);
 			await Promise.resolve();
 		});
 
@@ -726,20 +594,20 @@ describe("ProfilePage", () => {
 		// Open password change form with proper act() wrapping
 		await act(async () => {
 			const changePasswordButton = screen.getByText("Change Password");
-			fireEvent.click(changePasswordButton);
+			fastUserActions.click(changePasswordButton);
 			await Promise.resolve();
 		});
 
 		// Fill form
 		await act(async () => {
-			fireEvent.change(screen.getByLabelText("Current Password"), { target: { value: "current123" } });
-			fireEvent.change(screen.getByLabelText("New Password"), { target: { value: "NewStrongPass123!" } });
+			fastUserActions.type(screen.getByLabelText("Current Password"), "current123");
+			fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
 		});
 
 		// Cancel
 		await act(async () => {
 			const cancelButton = screen.getByText("Cancel");
-			fireEvent.click(cancelButton);
+			fastUserActions.click(cancelButton);
 		});
 
 		// Should exit password change mode
@@ -747,18 +615,22 @@ describe("ProfilePage", () => {
 	});
 
 	it("toggles password visibility", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.standardUser(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 		// Navigate to Security tab with proper act() wrapping
 		await act(async () => {
 			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fireEvent.click(securityTab);
+			fastUserActions.click(securityTab);
 			await Promise.resolve();
 		});
 
@@ -767,7 +639,7 @@ describe("ProfilePage", () => {
 		// Open password change form with proper act() wrapping
 		await act(async () => {
 			const changePasswordButton = screen.getByText("Change Password");
-			fireEvent.click(changePasswordButton);
+			fastUserActions.click(changePasswordButton);
 			await Promise.resolve();
 		});
 
@@ -783,44 +655,55 @@ describe("ProfilePage", () => {
 		// Toggle visibility - find by emoji
 		const eyeButtons = screen.getAllByText("👁️");
 		await act(async () => {
-			fireEvent.click(eyeButtons[0]); // Current password
+			fastUserActions.click(eyeButtons[0]); // Current password
 			await Promise.resolve();
 		});
 		expect(currentPasswordInput.type).toBe("text");
 		expect(screen.getByText("🙈")).toBeInTheDocument();
 
 		await act(async () => {
-			fireEvent.click(eyeButtons[1]); // New password
+			fastUserActions.click(eyeButtons[1]); // New password
 			await Promise.resolve();
 		});
 		expect(newPasswordInput.type).toBe("text");
 
 		await act(async () => {
-			fireEvent.click(eyeButtons[2]); // Confirm password
+			fastUserActions.click(eyeButtons[2]); // Confirm password
 			await Promise.resolve();
 		});
 		expect(confirmPasswordInput.type).toBe("text");
 	});
 
 	it("displays password requirements help text", async () => {
-		// MINIMAL TEST: Just verify Security tab navigation works
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: UserServiceScenarios.standardUser(),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
 
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
+		await fastStateSync();
 
-		// Test passes if we get this far - Security tab exists
+		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 	});
 
 	it("displays security status and account information", async () => {
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true },
+			mocks: {
+				userService: createUserServiceMocks({
+					getCurrentUser: vi.fn().mockResolvedValue(profileUser),
+					getAccountSecurity: vi.fn().mockResolvedValue({
+						email_auth_linked: true,
+						google_auth_linked: false
+					})
+				}),
+				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+			}
 		});
+
+		await fastStateSync();
 
 		// Check Account Information in Profile tab
 		expect(screen.getByText("Account Information")).toBeInTheDocument();
@@ -832,7 +715,7 @@ describe("ProfilePage", () => {
 		// Navigate to Security tab with proper act() wrapping
 		await act(async () => {
 			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fireEvent.click(securityTab);
+			fastUserActions.click(securityTab);
 			await Promise.resolve();
 		});
 
@@ -845,28 +728,19 @@ describe("ProfilePage", () => {
 
 	it("formats dates correctly", async () => {
 		const userWithDates = {
-			...mockUser,
+			...profileUser,
 			created_at: "2024-12-25T00:00:00Z",
 			updated_at: "2025-01-15T00:00:00Z"
 		};
 
-		// Clear and reset mock implementation for this test
-		mockFetch.mockClear();
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				return Promise.resolve({
-					ok: true,
-					json: async () => userWithDates
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
+		// Override the getCurrentUser mock for this specific test
+		(UserService.getCurrentUser as any).mockResolvedValue(userWithDates);
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 		expect(screen.getByText("December 24, 2024")).toBeInTheDocument();
@@ -874,29 +748,29 @@ describe("ProfilePage", () => {
 	});
 
 	it("auto-dismisses toast after 5 seconds", async () => {
-		// 🚀 PERFORMANCE PATTERN: Fake Timer Advancement
-		// ✅ Use vi.useFakeTimers() for predictable timer behavior
+		// Use fake timers for predictable timer behavior
 		vi.useFakeTimers();
 
-		renderProfilePage();
+		// Override updateProfile to return successful response
+		(UserService.updateProfile as any).mockResolvedValue(profileUser);
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form and submit to trigger success toast
-		fireEvent.click(screen.getByText("Edit Profile"));
-		fireEvent.click(screen.getByText("Save Changes"));
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		fastUserActions.click(screen.getByText("Save Changes"));
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
 
-		// ✅ Manually advance fake timers for auto-dismiss behavior
+		// Manually advance fake timers for auto-dismiss behavior
 		act(() => {
 			vi.advanceTimersByTime(5000);
 		});
@@ -907,45 +781,28 @@ describe("ProfilePage", () => {
 	});
 
 	it("allows manual dismissal of toast", async () => {
-		// Mock initial profile load and failed update
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/users/me") && !options?.method) {
-				return Promise.resolve({
-					ok: true,
-					json: async () => mockUser
-				});
-			}
-			if (url.includes("/api/v1/users/me") && options?.method === "PUT") {
-				return Promise.resolve({
-					ok: false,
-					status: 400,
-					json: async () => ({ message: "Update failed" })
-				});
-			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
+		// Override updateProfile to return error
+		(UserService.updateProfile as any).mockRejectedValue(new Error("Update failed"));
+
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
 
-		renderProfilePage();
-
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 		// Open edit form and submit to trigger error toast
-		fireEvent.click(screen.getByText("Edit Profile"));
-		fireEvent.click(screen.getByText("Save Changes"));
+		fastUserActions.click(screen.getByText("Edit Profile"));
+		fastUserActions.click(screen.getByText("Save Changes"));
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Update failed")).toBeInTheDocument();
 
 		// Find and click dismiss button (×)
 		const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
-		fireEvent.click(dismissButton);
+		fastUserActions.click(dismissButton);
 
 		// Toast should be dismissed immediately
 		expect(screen.queryByText("Update failed")).not.toBeInTheDocument();
@@ -953,39 +810,32 @@ describe("ProfilePage", () => {
 
 	it("retries loading profile when retry button is clicked", async () => {
 		let callCount = 0;
-
-		// Mock first call to fail, second to succeed
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/users/me")) {
-				callCount++;
-				if (callCount === 1) {
-					return Promise.reject(new Error("Network error"));
-				} else {
-					return Promise.resolve({
-						ok: true,
-						json: async () => mockUser
-					});
-				}
+		const mockGetCurrentUser = vi.fn().mockImplementation(() => {
+			callCount++;
+			if (callCount === 1) {
+				return Promise.reject(new Error("Network error"));
+			} else {
+				return Promise.resolve(profileUser);
 			}
-			return Promise.reject(new Error(`Unhandled API call: ${url}`));
 		});
 
-		renderProfilePage();
+		// Override getCurrentUser with our retry logic
+		(UserService.getCurrentUser as any).mockImplementation(mockGetCurrentUser);
 
-		await act(async () => {
-			await Promise.resolve();
+		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
 		});
+
+		await fastStateSync();
 
 		expect(screen.getByText("Unable to Load Profile")).toBeInTheDocument();
 		expect(screen.getByText("Network error")).toBeInTheDocument();
 
 		// Click retry button
 		const retryButton = screen.getByText("Retry");
-		fireEvent.click(retryButton);
+		fastUserActions.click(retryButton);
 
-		await act(async () => {
-			await Promise.resolve();
-		});
+		await fastStateSync();
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 		expect(screen.getByText("Test User")).toBeInTheDocument();
@@ -995,11 +845,15 @@ describe("ProfilePage", () => {
 	// Tab Interface Tests
 	describe("Tabbed Interface", () => {
 		it("should render tab navigation with Profile and Security tabs", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tablist")).toBeInTheDocument();
 			expect(screen.getByRole("tab", { name: "Profile" })).toBeInTheDocument();
@@ -1007,28 +861,36 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile tab as active by default", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("aria-selected", "true");
 			expect(screen.getByRole("tab", { name: "Security" })).toHaveAttribute("aria-selected", "false");
 		});
 
 		it("should switch to Security tab when clicked", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 			await act(async () => {
 				const securityTab = screen.getByRole("tab", { name: "Security" });
-				fireEvent.click(securityTab);
+				fastUserActions.click(securityTab);
 				await Promise.resolve();
 			});
 
@@ -1037,11 +899,15 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile content in Profile tab", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByText("Profile Information")).toBeInTheDocument();
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
@@ -1049,18 +915,22 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Security content in Security tab", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 
 			// Navigate to Security tab with proper act() wrapping
 			await act(async () => {
 				const securityTab = screen.getByRole("tab", { name: "Security" });
-				fireEvent.click(securityTab);
+				fastUserActions.click(securityTab);
 				await Promise.resolve();
 			});
 
@@ -1070,18 +940,22 @@ describe("ProfilePage", () => {
 		});
 
 		it("should hide Profile content when Security tab is active", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
 
 			// Switch to Security tab with proper act() wrapping
 			await act(async () => {
 				const securityTab = screen.getByRole("tab", { name: "Security" });
-				fireEvent.click(securityTab);
+				fastUserActions.click(securityTab);
 				await Promise.resolve();
 			});
 
@@ -1091,12 +965,15 @@ describe("ProfilePage", () => {
 		});
 
 		it("should support keyboard navigation between tabs", async () => {
-			// SIMPLIFIED TEST: Just verify tabs are keyboard accessible
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tablist")).toBeInTheDocument();
 
@@ -1106,16 +983,18 @@ describe("ProfilePage", () => {
 			// Verify initial state and keyboard accessibility
 			expect(profileTab).toHaveAttribute("aria-selected", "true");
 			expect(securityTab).toHaveAttribute("aria-selected", "false");
-
-			// Test passes if tabs are properly accessible
 		});
 
 		it("should maintain correct tabIndex for accessibility", async () => {
-			renderProfilePage();
-
-			await act(async () => {
-				await Promise.resolve();
+			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+				providers: { toast: true },
+				mocks: {
+					userService: UserServiceScenarios.standardUser(),
+					oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
+				}
 			});
+
+			await fastStateSync();
 
 			expect(screen.getByRole("tab", { name: "Profile" })).toHaveAttribute("tabIndex", "0");
 			expect(screen.getByRole("tab", { name: "Security" })).toHaveAttribute("tabIndex", "-1");

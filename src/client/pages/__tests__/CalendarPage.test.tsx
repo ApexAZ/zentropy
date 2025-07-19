@@ -3,11 +3,25 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import CalendarPage from "../CalendarPage";
 import { ToastProvider } from "../../contexts/ToastContext";
+import { CalendarService } from "../../services/CalendarService";
+import { TeamService } from "../../services/TeamService";
 
-// Mock fetch globally
-global.fetch = vi.fn();
+// Clean module-level mock with sensible defaults
+vi.mock("../../services/CalendarService", () => ({
+	CalendarService: {
+		getInitializationData: vi.fn(),
+		getCalendarEntries: vi.fn(),
+		createCalendarEntry: vi.fn(),
+		updateCalendarEntry: vi.fn(),
+		deleteCalendarEntry: vi.fn()
+	}
+}));
 
-const mockFetch = fetch as any;
+vi.mock("../../services/TeamService", () => ({
+	TeamService: {
+		getTeamUsers: vi.fn()
+	}
+}));
 
 const mockTeams = [
 	{
@@ -31,26 +45,17 @@ describe("CalendarPage", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.clearAllMocks();
-		mockFetch.mockClear();
-		// 🚀 PERFORMANCE PATTERN: Robust URL-based Mocking
-		// ✅ Use mockImplementation for complex/unpredictable API patterns
-		// ✅ Handles dynamic URLs and different HTTP methods
-		// ✅ More resilient than simple mockResolvedValueOnce chains
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams") && url.includes("/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
+
+		// Set up default mocks for all tests using the standard approach
+		(CalendarService.getInitializationData as any).mockResolvedValue({
+			teams: mockTeams,
+			users: mockUsers
 		});
+		(CalendarService.getCalendarEntries as any).mockResolvedValue([]);
+		(CalendarService.createCalendarEntry as any).mockResolvedValue({ id: "new-entry" });
+		(CalendarService.updateCalendarEntry as any).mockResolvedValue({ id: "updated-entry" });
+		(CalendarService.deleteCalendarEntry as any).mockResolvedValue(undefined);
+		(TeamService.getTeamUsers as any).mockResolvedValue(mockUsers);
 	});
 
 	afterEach(() => {
@@ -138,35 +143,14 @@ describe("CalendarPage", () => {
 		return submitButton;
 	};
 
-	// Simple mock setup like EmailVerificationModal
-	const setupMockResponse = (entries: any[] = [], teams: any[] = mockTeams, users: any[] = mockUsers) => {
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/teams") && url.includes("/users")) {
-				return Promise.resolve({ ok: true, json: async () => users });
-			}
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => teams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => users });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "POST") {
-				return Promise.resolve({ ok: true, json: async () => ({ id: "new-entry", ...entries[0] }) });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "PUT") {
-				return Promise.resolve({ ok: true, json: async () => ({ id: "updated-entry", ...entries[0] }) });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "DELETE") {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Calendar entry deleted successfully" })
-				});
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => entries });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
+	// Helper function to setup service mocks with specific data
+	const setupServiceMocks = (entries: any[] = [], teams: any[] = mockTeams, users: any[] = mockUsers) => {
+		(CalendarService.getInitializationData as any).mockResolvedValue({
+			teams,
+			users
 		});
+		(CalendarService.getCalendarEntries as any).mockResolvedValue(entries);
+		(TeamService.getTeamUsers as any).mockResolvedValue(users);
 	};
 
 	it("renders calendar page with main elements", async () => {
@@ -179,8 +163,8 @@ describe("CalendarPage", () => {
 	});
 
 	it("shows teams and users after data loads", async () => {
-		// Mock successful API responses
-		setupMockResponse([], mockTeams, mockUsers);
+		// Configure the service mocks directly
+		setupServiceMocks([], mockTeams, mockUsers);
 
 		await renderCalendarPage();
 
@@ -205,8 +189,8 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Set up mock with entry data
-		setupMockResponse(mockEntries);
+		// Configure the service mocks with entry data
+		setupServiceMocks(mockEntries);
 
 		await renderCalendarPage();
 
@@ -267,8 +251,8 @@ describe("CalendarPage", () => {
 	});
 
 	it("successfully creates new calendar entry", async () => {
-		// Mock successful creation
-		setupMockResponse([]);
+		// Configure service mocks for successful creation
+		setupServiceMocks([]);
 
 		await renderCalendarPage();
 
@@ -298,32 +282,11 @@ describe("CalendarPage", () => {
 	});
 
 	it("handles API errors when creating entry", async () => {
-		// Mock API error only for POST request, not initial load
-		setupMockResponse([]);
+		// Configure service mocks for successful initialization but failed creation
+		setupServiceMocks([]);
 
-		// Override fetch to fail only on POST
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/teams") && url.includes("/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "POST") {
-				return Promise.resolve({
-					ok: false,
-					status: 400,
-					json: async () => ({ message: "Invalid data provided" })
-				});
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		// Override createCalendarEntry to return an error
+		(CalendarService.createCalendarEntry as any).mockRejectedValue(new Error("Invalid data provided"));
 
 		await renderCalendarPage();
 
@@ -349,8 +312,8 @@ describe("CalendarPage", () => {
 	});
 
 	it("filters entries by team selection", async () => {
-		// Clear and set up robust mocking for this test
-		setupMockResponse([]);
+		// Configure service mocks
+		setupServiceMocks([]);
 
 		await renderCalendarPage();
 
@@ -359,17 +322,22 @@ describe("CalendarPage", () => {
 		const teamFilter = screen.getByDisplayValue("All Teams");
 		fireEvent.change(teamFilter, { target: { value: "team1" } });
 
-		// Should trigger API call with team filter
+		// Should trigger service call with team filter
 		await act(async () => {
 			await Promise.resolve();
 		});
 
-		expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?team_id=team1&month=07&year=2025");
+		// Verify the service was called with team filter
+		expect(CalendarService.getCalendarEntries).toHaveBeenCalledWith({
+			team_id: "team1",
+			month: "07",
+			year: "2025"
+		});
 	});
 
 	it("filters entries by month selection", async () => {
-		// Clear and set up robust mocking for this test
-		setupMockResponse([]);
+		// Configure service mocks
+		setupServiceMocks([]);
 
 		await renderCalendarPage();
 
@@ -378,12 +346,13 @@ describe("CalendarPage", () => {
 		const monthFilter = screen.getByDisplayValue(/\d{4}/); // Current year
 		fireEvent.change(monthFilter, { target: { value: "2025-08" } });
 
-		// Should trigger API call with month filter
+		// Should trigger service call with month filter
 		await act(async () => {
 			await Promise.resolve();
 		});
 
-		expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?month=08&year=2025");
+		// Verify the service was called with month filter
+		expect(CalendarService.getCalendarEntries).toHaveBeenCalledWith({ month: "08", year: "2025" });
 	});
 
 	it("opens edit modal when entry is clicked", async () => {
@@ -403,8 +372,8 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Mock initial load with entry data
-		setupMockResponse(mockEntries);
+		// Configure service mocks with entry data
+		setupServiceMocks(mockEntries);
 
 		await renderCalendarPage();
 
@@ -437,8 +406,8 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Mock initial load and update
-		setupMockResponse(mockEntries);
+		// Configure service mocks for initial load and update
+		setupServiceMocks(mockEntries);
 
 		await renderCalendarPage();
 
@@ -474,8 +443,8 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Mock initial load and deletion
-		setupMockResponse(mockEntries);
+		// Configure service mocks for initial load and deletion
+		setupServiceMocks(mockEntries);
 
 		await renderCalendarPage();
 
@@ -510,8 +479,8 @@ describe("CalendarPage", () => {
 	});
 
 	it("displays empty state when no entries", async () => {
-		// Mock empty entries response
-		setupMockResponse([]);
+		// Configure service mocks with empty entries
+		setupServiceMocks([]);
 
 		await renderCalendarPage();
 
@@ -519,8 +488,8 @@ describe("CalendarPage", () => {
 	});
 
 	it("handles network errors gracefully", async () => {
-		// Mock network error for all initialization calls
-		mockFetch.mockRejectedValue(new Error("Network error"));
+		// Configure service mock to return network error for initialization
+		(CalendarService.getInitializationData as any).mockRejectedValue(new Error("Network error"));
 
 		await renderCalendarPage();
 

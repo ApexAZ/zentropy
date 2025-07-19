@@ -2,7 +2,204 @@
 
 **Purpose**: This is the **comprehensive guide** for unit and integration testing in the Zentropy project, covering backend (pytest) and frontend (vitest) testing strategies.
 
-## 1. Quality Philosophy: Test What Can Break
+## 1. Global Mock Architecture - Structured Testing at Scale
+
+**Purpose**: A 3-level hierarchy for systematic, high-performance testing across the entire frontend codebase.
+
+### **Architecture Overview**
+
+```
+Level 1: Module-Level Service Mocking (Primary) → Component Integration Tests
+Level 2: Service Factory Mocking (Scenarios)    → Complex Workflow Tests  
+Level 3: Hook-Level Mocking (Specialized)       → Component Unit Tests
+```
+
+**Key Benefits:**
+- **99%+ Performance Improvement**: Service mocks vs fetch polling patterns
+- **Enterprise Scalability**: TypeScript interfaces ensure consistency across 1000+ tests
+- **Developer Experience**: IntelliSense support, self-documenting test patterns
+- **Zero Regressions**: Maintains full user behavior validation while optimizing execution
+
+### **Level 1: Module-Level Service Mocking (Primary Pattern)**
+
+**When to Use**: 90% of component tests - direct service interaction testing
+
+```typescript
+// Clean module-level mock with sensible defaults
+vi.mock("../../services/UserService", () => ({
+  UserService: {
+    getCurrentUser: vi.fn(),
+    updateProfile: vi.fn(),
+    updatePassword: vi.fn(),
+    getAccountSecurity: vi.fn()
+  }
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Set up default successful responses
+  (UserService.getCurrentUser as any).mockResolvedValue(mockUser);
+  (UserService.getAccountSecurity as any).mockResolvedValue(mockSecurity);
+});
+
+it("should update user profile successfully", async () => {
+  (UserService.updateProfile as any).mockResolvedValue(updatedUser);
+  
+  renderWithFullEnvironment(<ProfilePage />, {
+    providers: { toast: true }
+  });
+  
+  await fastStateSync();
+  
+  fastUserActions.click(screen.getByText("Edit Profile"));
+  fastUserActions.replaceText(screen.getByLabelText("First Name"), "Updated");
+  fastUserActions.click(screen.getByText("Save Changes"));
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("Profile updated successfully!")).toBeInTheDocument();
+  expect(UserService.updateProfile).toHaveBeenCalledWith({
+    first_name: "Updated",
+    // ... other fields
+  });
+});
+```
+
+**Benefits of Level 1:**
+- **Clean**: No fetch URL mocking, direct service method calls
+- **Fast**: Immediate mock responses, no network simulation
+- **Maintainable**: Service interface changes automatically surface in tests
+- **Reliable**: Consistent mock behavior across test runs
+
+### **Level 2: Service Factory Mocking (Scenario-Driven)**
+
+**When to Use**: Complex workflows, pre-configured scenarios, cross-service integration
+
+```typescript
+import { 
+  createUserServiceMocks, 
+  UserServiceScenarios,
+  createTeamServiceMocks,
+  TeamServiceScenarios
+} from "../mocks/serviceMocks";
+
+it("should handle user with multiple team memberships", async () => {
+  const testEnv = renderWithFullEnvironment(<DashboardPage />, {
+    providers: { toast: true, auth: true, organization: true },
+    mocks: {
+      userService: UserServiceScenarios.standardUser(),
+      teamService: TeamServiceScenarios.teamWithMultipleMembers(),
+      projectService: ProjectServiceScenarios.standardProject()
+    }
+  });
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("Welcome back, Test User")).toBeInTheDocument();
+  expect(screen.getByText("3 teams")).toBeInTheDocument();
+  
+  // Access mocks for verification
+  expect(testEnv.mocks.teamService.getTeamMembers).toHaveBeenCalled();
+  
+  testEnv.cleanup();
+});
+```
+
+**Available Service Scenarios:**
+- `AuthServiceScenarios`: `successfulSignIn()`, `failedSignIn()`, `rateLimited()`, `expiredSession()`
+- `UserServiceScenarios`: `standardUser()`, `googleLinked()`, `passwordUpdateFailed()`
+- `TeamServiceScenarios`: `standardTeam()`, `noTeams()`, `teamWithMultipleMembers()`
+- `ProjectServiceScenarios`: `standardProject()`, `personalProjectsOnly()`, `noProjects()`
+- `OrganizationServiceScenarios`: `domainFound()`, `domainNotFound()`, `organizationFull()`
+
+### **Level 3: Hook-Level Mocking (Specialized)**
+
+**When to Use**: Component unit tests, hook behavior isolation, OAuth components
+
+```typescript
+// Environment-aware OAuth hooks (auto-detection)
+it("should render OAuth provider buttons", async () => {
+  // useGoogleOAuth automatically detects test environment and provides fast mocks
+  // No manual mocking required!
+  renderWithFullEnvironment(<SecurityTab />, {
+    providers: { toast: true }
+  });
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("Google")).toBeInTheDocument();
+  expect(screen.getByText("Microsoft")).toBeInTheDocument();
+  expect(screen.getByText("GitHub")).toBeInTheDocument();
+});
+
+// Manual hook mocking for specialized behavior
+vi.mock("../../hooks/useCustomHook", () => ({
+  useCustomHook: () => ({
+    data: mockData,
+    loading: false,
+    error: null,
+    refetch: vi.fn()
+  })
+}));
+```
+
+### **Test Utilities & Performance Optimizations**
+
+```typescript
+// Fast rendering with structured environment setup
+import { renderWithFullEnvironment, fastUserActions, fastStateSync } from "../utils/testRenderUtils";
+
+// Provider combinations for different test needs
+const testEnv = ProviderCombinations.toastOnly(<SimpleComponent />);
+const testEnv = ProviderCombinations.withAuth(<AuthComponent />, mockUser);
+const testEnv = ProviderCombinations.withOrganization(<OrgComponent />, { user, organization });
+
+// Scenario-based environments
+const testEnv = TestScenarios.authenticatedUser(<Component />);
+const testEnv = TestScenarios.unauthenticatedUser(<Component />);
+const testEnv = TestScenarios.networkError(<Component />);
+
+// Fast user interactions (19ms vs 2000ms+ timeouts)
+fastUserActions.click(button);
+fastUserActions.type(input, "text");
+fastUserActions.replaceText(input, "new text");
+
+// Fast state synchronization (replaces waitFor patterns)
+await fastStateSync();
+```
+
+### **Migration from Legacy Patterns**
+
+```typescript
+// ❌ OLD PATTERN: Global fetch mocking
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(data) });
+
+// ✅ NEW PATTERN: Module-level service mocking
+vi.mock("../../services/UserService", () => ({
+  UserService: { getCurrentUser: vi.fn() }
+}));
+(UserService.getCurrentUser as any).mockResolvedValue(data);
+
+// ❌ OLD PATTERN: Complex manual OAuth mocking
+vi.mock('../hooks/useGoogleOAuth', () => ({
+  useGoogleOAuth: () => {
+    const [isReady, setIsReady] = useState(false);
+    useEffect(() => {
+      const timer = setTimeout(() => setIsReady(true), 30000); // 30s delay!
+      return () => clearTimeout(timer);
+    }, []);
+    return { isReady };
+  }
+}));
+
+// ✅ NEW PATTERN: Environment-aware OAuth hooks (automatic)
+// No manual mocking needed - hooks auto-detect test environment
+renderWithFullEnvironment(<SecurityTab />, { providers: { toast: true } });
+```
+
+## 2. Quality Philosophy: Test What Can Break
 
 Our testing strategy is built on a simple, powerful idea: **write meaningful tests that prevent real bugs.** We favor clarity and effectiveness over dogma.
 
@@ -10,7 +207,7 @@ Our testing strategy is built on a simple, powerful idea: **write meaningful tes
 - **Focus on Behavior**: Test what the user experiences and what the code _does_, not its internal implementation details.
 - **Zero-Tolerance for Lint**: All code must pass static analysis checks (`npm run quality`) before it is considered complete.
 
-## 2. The Core Testing Workflow
+## 3. The Core Testing Workflow
 
 This is the practical, step-by-step guide for adding new, tested features.
 
@@ -44,48 +241,148 @@ This is the practical, step-by-step guide for adding new, tested features.
         assert db.query(Widget).count() == 1 # Verify database state
     ```
 
-### Step 3: Writing a Frontend Test (UI Components & Pages)
+### Step 3: Writing a Frontend Test with Global Mock Architecture
 
-Our frontend testing uses a **High-Performance Approach**: we test user behavior with optimized patterns that achieve 99%+ speed improvements.
+Use the **Global Mock Architecture** for structured, high-performance testing that achieves 99%+ speed improvements.
 
 1.  **Extract Logic**: First, pull any complex validation, data formatting, or state management out of your component and into a pure utility function (`src/client/utils/`) or a custom hook (`src/client/hooks/`). Write fast, simple unit tests for that extracted logic.
 2.  **Create the Component Test File**: e.g., `src/client/components/__tests__/YourComponent.test.tsx`.
-3.  **Test the User's Goal**: The component test should verify the user's workflow using our optimized patterns.
+3.  **Choose Your Mock Level**: Select the appropriate level from the Global Mock Architecture based on your testing needs.
+4.  **Test the User's Goal**: Verify the user's workflow using structured mock patterns.
 
-    ```typescript
-    it('allows a user to create a new widget and see it in the list', async () => {
-      // 1. Arrange: Mock API calls with 3-mock pattern
-      mockFetch
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockWidget) })
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockWidgets) });
-      
-      render(<WidgetPage />);
-      
-      await act(async () => {
-        await Promise.resolve(); // Let React finish initialization
-      });
+**Level 1 Example (Primary Pattern - Module-Level Service Mocking):**
+```typescript
+// Clean module-level mock
+vi.mock("../../services/WidgetService", () => ({
+  WidgetService: {
+    getWidgets: vi.fn(),
+    createWidget: vi.fn(),
+    updateWidget: vi.fn()
+  }
+}));
 
-      // 2. Act: Use fireEvent for fast user interactions
-      fireEvent.change(screen.getByLabelText(/widget name/i), { target: { value: 'My Test Widget' } });
-      fireEvent.click(screen.getByRole('button', { name: /save widget/i }));
+beforeEach(() => {
+  vi.clearAllMocks();
+  (WidgetService.getWidgets as any).mockResolvedValue([]);
+});
 
-      await act(async () => {
-        await Promise.resolve(); // Let React process updates
-      });
+it('allows a user to create a new widget and see it in the list', async () => {
+  // 1. Arrange: Configure service mock responses
+  (WidgetService.createWidget as any).mockResolvedValue(mockWidget);
+  (WidgetService.getWidgets as any).mockResolvedValueOnce([mockWidget]);
+  
+  renderWithFullEnvironment(<WidgetPage />, {
+    providers: { toast: true }
+  });
+  
+  await fastStateSync();
 
-      // 3. Assert: Check for the expected outcome
-      expect(screen.getByText(/widget created successfully/i)).toBeInTheDocument();
-      expect(screen.getByText(/my test widget/i)).toBeInTheDocument();
-    });
-    ```
+  // 2. Act: Use fast user interactions
+  fastUserActions.type(screen.getByLabelText(/widget name/i), 'My Test Widget');
+  fastUserActions.click(screen.getByRole('button', { name: /save widget/i }));
 
-### Step 4: Frontend Performance Optimization Patterns
+  await fastStateSync();
 
-Our frontend tests use **performance-optimized patterns** that achieve 99%+ speed improvements while maintaining full user behavior validation.
+  // 3. Assert: Check for the expected outcome
+  expect(screen.getByText(/widget created successfully/i)).toBeInTheDocument();
+  expect(screen.getByText(/my test widget/i)).toBeInTheDocument();
+  expect(WidgetService.createWidget).toHaveBeenCalledWith({
+    name: 'My Test Widget'
+  });
+});
+```
 
-#### **🚀 High-Performance Test Patterns**
+**Level 2 Example (Scenario-Driven):**
+```typescript
+it('handles complex widget workflow with multiple services', async () => {
+  const testEnv = renderWithFullEnvironment(<WidgetDashboard />, {
+    providers: { toast: true, auth: true },
+    mocks: {
+      widgetService: WidgetServiceScenarios.withMultipleWidgets(),
+      userService: UserServiceScenarios.standardUser(),
+      teamService: TeamServiceScenarios.standardTeam()
+    }
+  });
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("5 widgets")).toBeInTheDocument();
+  expect(testEnv.mocks.widgetService.getWidgets).toHaveBeenCalled();
+  
+  testEnv.cleanup();
+});
+```
 
-**1. Environment-Aware OAuth Hooks (Primary Pattern)**
+### Step 4: Global Mock Architecture Implementation Patterns
+
+The Global Mock Architecture provides **enterprise-grade testing patterns** that achieve 99%+ speed improvements while maintaining full user behavior validation.
+
+#### **🚀 Global Mock Architecture Patterns**
+
+**1. Module-Level Service Mocking (Primary Pattern)**
+```typescript
+// ✅ CLEAN: Direct service method mocking
+vi.mock("../../services/TeamService", () => ({
+  TeamService: {
+    getTeam: vi.fn(),
+    getTeamMembers: vi.fn(),
+    updateTeamBasicInfo: vi.fn(),
+    addTeamMember: vi.fn()
+  }
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  (TeamService.getTeam as any).mockResolvedValue(mockTeam);
+  (TeamService.getTeamMembers as any).mockResolvedValue(mockMembers);
+});
+
+it('should update team information successfully', async () => {
+  (TeamService.updateTeamBasicInfo as any).mockResolvedValue(updatedTeam);
+  
+  renderWithFullEnvironment(<TeamConfigurationPage />, {
+    providers: { toast: true }
+  });
+  
+  await fastStateSync();
+  
+  fastUserActions.click(screen.getByText("Edit Team"));
+  fastUserActions.replaceText(screen.getByLabelText(/team name/i), "Updated Team");
+  fastUserActions.click(screen.getByText("Save Changes"));
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("Team updated successfully!")).toBeInTheDocument();
+  expect(TeamService.updateTeamBasicInfo).toHaveBeenCalledWith(mockTeam.id, {
+    name: "Updated Team"
+  });
+});
+```
+
+**2. Service Factory Scenarios (Complex Workflows)**
+```typescript
+// ✅ SCENARIOS: Pre-configured service behaviors
+import { TeamServiceScenarios, UserServiceScenarios } from "../mocks/serviceMocks";
+
+it('should handle team with no members scenario', async () => {
+  const testEnv = renderWithFullEnvironment(<TeamPage />, {
+    providers: { toast: true, auth: true },
+    mocks: {
+      teamService: TeamServiceScenarios.noTeams(),
+      userService: UserServiceScenarios.standardUser()
+    }
+  });
+  
+  await fastStateSync();
+  
+  expect(screen.getByText("No teams found")).toBeInTheDocument();
+  expect(screen.getByText("Create your first team")).toBeInTheDocument();
+  
+  testEnv.cleanup();
+});
+```
+
+**3. Environment-Aware OAuth Hooks (Specialized)**
 ```typescript
 // ✅ AUTOMATIC: OAuth hooks auto-detect test environment and return fast mocks
 // ✅ No manual mocking needed - useGoogleOAuth automatically handles environment detection
@@ -106,7 +403,41 @@ it('renders component with OAuth functionality', async () => {
 });
 ```
 
-**2. Upfront API Mocking for Component Initialization**
+**4. Structured Test Environment Setup**
+```typescript
+// ✅ STRUCTURED: Full environment with provider combinations
+import { renderWithFullEnvironment, ProviderCombinations, TestScenarios } from "../utils/testRenderUtils";
+
+// Basic provider setup
+const testEnv = ProviderCombinations.toastOnly(<SimpleComponent />);
+const testEnv = ProviderCombinations.withAuth(<AuthComponent />, mockUser);
+const testEnv = ProviderCombinations.withOrganization(<OrgComponent />, { user, organization });
+
+// Scenario-based setup
+const testEnv = TestScenarios.authenticatedUser(<Component />);
+const testEnv = TestScenarios.unauthenticatedUser(<Component />);
+const testEnv = TestScenarios.networkError(<Component />);
+
+// Custom mock combinations
+const testEnv = renderWithFullEnvironment(<ComplexComponent />, {
+  providers: { toast: true, auth: true, organization: true },
+  mocks: {
+    userService: createUserServiceMocks({
+      getCurrentUser: vi.fn().mockResolvedValue(customUser)
+    }),
+    teamService: TeamServiceScenarios.teamWithMultipleMembers(),
+    projectService: ProjectServiceScenarios.noProjects()
+  }
+});
+
+// Access mocks for verification
+expect(testEnv.mocks.userService.getCurrentUser).toHaveBeenCalled();
+
+// Automatic cleanup
+testEnv.cleanup();
+```
+
+**5. Legacy Pattern Migration**
 ```typescript
 // ✅ FAST: Mock all component initialization API calls upfront
 it('loads component data successfully', async () => {
@@ -126,7 +457,7 @@ it('loads component data successfully', async () => {
 });
 ```
 
-**3. fireEvent for User Interactions**
+**6. Fast User Interaction Utilities**
 ```typescript
 // ✅ FAST: Direct DOM events (19ms vs 2000ms+ timeouts)
 fireEvent.click(button);
@@ -136,7 +467,7 @@ fireEvent.change(input, { target: { value: "test" } });
 await user.click(button);
 ```
 
-**4. Synchronous Helper Functions**
+**7. Synchronous Helper Functions**
 ```typescript
 // ✅ FAST: No async complexity
 const fillForm = (data) => {
@@ -151,7 +482,7 @@ const fillForm = async (data) => {
 };
 ```
 
-**5. Simple act() Pattern**
+**8. Fast State Synchronization**
 ```typescript
 // ✅ FAST: Let React finish updates
 await act(async () => {
@@ -165,36 +496,65 @@ await waitFor(() => {
 });
 ```
 
-#### **When to Use Different Patterns**
+#### **When to Use Each Level**
 
-**Environment-Aware OAuth Hooks (Primary Pattern):**
-- Components using OAuth functionality (useGoogleOAuth - fully implemented)
-- Automatically detects test environment and provides immediate deterministic mocks
-- Eliminates timer polling delays (30-second timeouts → immediate responses)
-- Zero manual mocking required for component tests
-- Preserves full OAuth functionality in development/production
-- Pattern ready for extension to useMicrosoftOAuth, useGitHubOAuth
+**Level 1 - Module-Level Service Mocking (90% of tests):**
+- Component integration tests
+- User workflow validation
+- Service method verification
+- Fast, direct testing patterns
+- Standard CRUD operations
 
-**Fast Patterns (Upfront Mocking + fireEvent):**
-- Component initialization tests
-- User interaction workflows  
-- Form submission tests
-- Modal and dialog tests
-- 99% of frontend unit/integration tests
+**Level 2 - Service Factory Scenarios (Complex workflows):**
+- Multi-service integration
+- Pre-configured error scenarios
+- Cross-component workflows
+- User permission variations
+- Complex business logic scenarios
 
-**Robust Patterns (mockImplementation):**
-- Complex components with unpredictable API call patterns
-- Tests that need to handle React StrictMode double renders
-- Integration tests spanning multiple components
+**Level 3 - Hook-Level Mocking (Specialized cases):**
+- Component unit tests
+- Hook behavior isolation
+- OAuth components (environment-aware)
+- Custom hook testing
+- Edge case isolation
+
+#### **Available Service Mock Factories**
 
 ```typescript
-// ✅ ROBUST: For complex/unpredictable scenarios
-mockFetch.mockImplementation((url) => {
-  if (url.includes('/api/v1/teams')) {
-    return Promise.resolve({ ok: true, json: async () => mockTeams });
-  }
-  return Promise.reject(new Error(`Unhandled: ${url}`));
-});
+// Authentication scenarios
+AuthServiceScenarios.successfulSignIn()
+AuthServiceScenarios.failedSignIn()
+AuthServiceScenarios.rateLimited()
+AuthServiceScenarios.expiredSession()
+
+// User management scenarios
+UserServiceScenarios.standardUser()
+UserServiceScenarios.googleLinked()
+UserServiceScenarios.passwordUpdateFailed()
+
+// Team scenarios
+TeamServiceScenarios.standardTeam()
+TeamServiceScenarios.noTeams()
+TeamServiceScenarios.teamWithMultipleMembers()
+TeamServiceScenarios.teamNotFound()
+
+// Project scenarios
+ProjectServiceScenarios.standardProject()
+ProjectServiceScenarios.personalProjectsOnly()
+ProjectServiceScenarios.noProjects()
+ProjectServiceScenarios.projectNotFound()
+
+// Organization scenarios
+OrganizationServiceScenarios.domainFound()
+OrganizationServiceScenarios.domainNotFound()
+OrganizationServiceScenarios.organizationFull()
+OrganizationServiceScenarios.noPermissions()
+
+// OAuth provider scenarios
+OAuthProviderServiceScenarios.googleOnly()
+OAuthProviderServiceScenarios.multipleProviders()
+OAuthProviderServiceScenarios.noProviders()
 ```
 
 #### **Performance Results**
@@ -207,7 +567,22 @@ mockFetch.mockImplementation((url) => {
 
 For complex test files like `App.test.tsx`, mocks are consolidated at the top of the file for better organization and reusability. This includes creating helper functions to manage mock state. While Vitest's hoisting behavior prevents the use of a central `__mocks__` directory, this in-file consolidation provides similar benefits.
 
-### Step 5: Backend Test Directory Structure
+### Step 5: Global Mock Architecture Files
+
+**Core Architecture Files:**
+- `src/client/__tests__/setup/globalMocks.ts` - Core mock registry and TypeScript interfaces
+- `src/client/__tests__/mocks/serviceMocks.ts` - Service-specific mock factories and scenarios
+- `src/client/__tests__/utils/testRenderUtils.ts` - Enhanced rendering utilities and provider combinations
+- `src/client/__tests__/setup/mockArchitecture.test.tsx` - Architecture validation tests
+- `src/client/__tests__/examples/MockArchitectureDemo.test.tsx` - Usage examples and patterns
+
+**Integration Examples:**
+- `src/client/pages/__tests__/ProfilePage.test.tsx` - Level 1 module-level service mocking
+- `src/client/pages/__tests__/TeamConfigurationPage.test.tsx` - Level 1 with comprehensive CRUD operations
+- `src/client/pages/__tests__/CalendarPage.test.tsx` - Level 1 with calendar-specific scenarios
+- `src/client/components/__tests__/AccountSecuritySection.test.tsx` - Level 3 hook-level OAuth mocking
+
+### Step 6: Backend Test Directory Structure
 
 To improve organization and maintainability, the `tests/` directory mirrors the structure of the `api/` directory. This makes it easy to locate tests related to specific parts of the application.
 
@@ -221,7 +596,7 @@ To improve organization and maintainability, the `tests/` directory mirrors the 
 
 When adding new tests, place them in the corresponding subdirectory.
 
-## 3. The Backend Test Isolation System
+## 4. The Backend Test Isolation System
 
 To ensure a clean, isolated database for your Python tests, explicitly request the `client` and `db` fixtures in your test functions.
 
@@ -301,7 +676,7 @@ def test_custom_user_scenario(client, db):
 - **Authentication**: Use `auth_headers` for standard user tests and `admin_auth_headers` for admin-only operations
 - **Database Isolation**: All fixtures ensure complete test isolation - no test data will leak between tests or pollute the main database
 
-## 4. Test Performance Optimization
+## 5. Test Performance Optimization
 
 ### High-Performance Test Architecture
 
@@ -414,7 +789,7 @@ mockFetch
   // Add as many mockResolvedValueOnce calls as your component needs
 ```
 
-## 5. Static Analysis & Code Quality: The Pipeline is the Law
+## 6. Static Analysis & Code Quality: The Pipeline is the Law
 
 We enforce a strict, consistent, and automated approach to code quality. The linters, type checkers, and test runners are not suggestions; they are the law. This ensures the codebase remains readable, maintainable, and free of common errors and warnings. These checks are run automatically by pre-commit hooks.
 
@@ -450,7 +825,129 @@ While the full configuration is in `eslint.config.js`, these are the most import
 2.  **Run `npm run fix` Often**: This command will automatically format your code with Prettier/Black and fix any auto-fixable ESLint errors.
 3.  **Run `npm run quality` Before Committing**: This is the same check the CI pipeline runs. If it passes on your machine, it will pass in the pipeline.
 
-## 6. Running Tests & Quality Checks
+## 7. ESLint Integration - Gentle Rails for Global Mock Architecture
+
+The codebase includes **ESLint rules** that guide developers toward Global Mock Architecture patterns without forcing adoption. These create "gentle rails" that encourage better testing practices.
+
+### **What the ESLint Rules Do**
+
+#### **For Test Files Only** (`src/client/**/*.test.{ts,tsx}`, `src/client/**/__tests__/**/*.{ts,tsx}`)
+
+**🚨 Discourage Legacy Patterns:**
+```typescript
+// ⚠️ ESLint Warning: "Consider using module-level service mocking instead of global.fetch"
+global.fetch = vi.fn();
+
+// ⚠️ ESLint Warning: "Consider using service mock scenarios instead of manual fetch response mocking"
+mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(data) });
+```
+
+**💡 Encourage Better Infrastructure:**
+```typescript
+// ⚠️ ESLint Warning: "Consider using renderWithFullEnvironment for 99%+ performance improvement"
+import { render } from '@testing-library/react';
+
+// ✅ Preferred (no warning)
+import { renderWithFullEnvironment } from '../../__tests__/utils/testRenderUtils';
+```
+
+**🎯 Guide High-Performance Testing Patterns:**
+```typescript
+// ⚠️ ESLint Warning: "Consider using act() with fastStateSync() instead of waitFor"
+import { waitFor } from '@testing-library/react';
+await waitFor(() => expect(screen.getByText("Loading")).toBeInTheDocument());
+
+// ⚠️ ESLint Warning: "Consider using fireEvent with fastUserActions for immediate interactions"
+import userEvent from '@testing-library/user-event';
+const user = userEvent.setup();
+await user.click(button);
+
+// ⚠️ ESLint Warning: "Consider using vi.useFakeTimers() for predictable timing"
+vi.useRealTimers(); // In beforeEach (should only be in afterEach)
+
+// ✅ Preferred (no warnings) - High-performance patterns
+await fastStateSync(); // 19ms vs 2000ms+ waitFor
+fastUserActions.click(button); // Immediate vs userEvent delays
+vi.useFakeTimers(); // Predictable timing + faster execution
+```
+
+### **Developer Experience Features**
+
+#### **VS Code Snippets** (`.vscode/typescript.json`)
+- **`mocksvc`** → Complete module-level service mock
+- **`testenv`** → renderWithFullEnvironment test template  
+- **`mocksetup`** → beforeEach mock configuration
+- **`mockscenario`** → Service scenario usage
+- **`fastactions`** → Fast user interaction patterns
+- **`gmatest`** → Complete test file template
+
+#### **Snippet Optimization** (`.vscode/settings.json`)
+- Snippets appear at top of autocomplete suggestions
+- Enhanced TypeScript IntelliSense for mock patterns
+- Module export completions for service imports
+
+### **ESLint Rule Details**
+
+```javascript
+// eslint.config.js - Test file specific rules
+{
+  files: ['src/client/**/*.test.{ts,tsx}', 'src/client/**/__tests__/**/*.{ts,tsx}'],
+  rules: {
+    // Allow explicit any for mock type assertions  
+    '@typescript-eslint/no-explicit-any': 'off',
+    
+    // Discourage global.fetch assignments
+    'no-restricted-syntax': [
+      'warn',
+      {
+        selector: 'AssignmentExpression[left.object.name="global"][left.property.name="fetch"]',
+        message: '💡 Consider using module-level service mocking instead of global.fetch'
+      }
+    ],
+    
+    // Encourage renderWithFullEnvironment
+    'no-restricted-imports': [
+      'warn',
+      {
+        paths: [{
+          name: '@testing-library/react',
+          importNames: ['render'],
+          message: '⚡ Consider using renderWithFullEnvironment for 99%+ performance improvement'
+        }]
+      }
+    ]
+  }
+}
+```
+
+### **Philosophy: Guidance, Not Enforcement**
+
+- **Warnings, not errors** - Won't break builds or block productivity
+- **Educational messages** - Point to documentation and benefits
+- **Gradual adoption** - Old patterns still work during transition
+- **Context-aware** - Rules only apply to test files
+- **Performance-focused** - Emphasize measurable improvements (99%+ faster)
+
+### **Benefits for New Developers**
+
+1. **Immediate feedback** in VS Code as they type
+2. **Clear guidance** toward preferred patterns
+3. **No productivity blocking** - warnings don't prevent commits
+4. **Learning-friendly** - Messages explain why and link to docs
+5. **Snippet acceleration** - Type `mocksvc` and get complete template
+
+### **ESLint Output Example**
+
+```bash
+/src/client/pages/__tests__/TeamsPage.test.tsx
+  9:1   warning  💡 Consider using module-level service mocking instead of global.fetch
+  41:47 warning  🚀 Consider using service mock scenarios for cleaner tests
+  3:10  warning  ⚡ Consider using renderWithFullEnvironment for 99%+ performance improvement
+```
+
+This creates a **learning-friendly environment** where developers naturally discover better patterns through their normal workflow, without forced adoption or breaking changes.
+
+## 8. Running Tests & Quality Checks
 
 ### Essential Commands
 

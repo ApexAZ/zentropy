@@ -3,6 +3,21 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import TeamConfigurationPage from "../TeamConfigurationPage";
 import { ToastProvider } from "../../contexts/ToastContext";
+import { TeamService } from "../../services/TeamService";
+
+// Clean module-level mock with all required methods
+vi.mock("../../services/TeamService", () => ({
+	TeamService: {
+		getTeam: vi.fn(),
+		getTeamMembers: vi.fn(),
+		getTeamSprints: vi.fn(),
+		updateTeamBasicInfo: vi.fn(),
+		updateTeamVelocity: vi.fn(),
+		addTeamMember: vi.fn(),
+		removeTeamMember: vi.fn(),
+		createSprint: vi.fn()
+	}
+}));
 
 // Mock data
 const mockTeam = {
@@ -52,15 +67,20 @@ const mockSprints = [
 	}
 ];
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
-
 describe("TeamConfigurationPage", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.clearAllMocks();
-		mockFetch.mockClear();
+
+		// Set up default mocks for all tests using the clean service approach
+		(TeamService.getTeam as any).mockResolvedValue(mockTeam);
+		(TeamService.getTeamMembers as any).mockResolvedValue(mockTeamMembers);
+		(TeamService.getTeamSprints as any).mockResolvedValue(mockSprints);
+		(TeamService.updateTeamBasicInfo as any).mockResolvedValue(mockTeam);
+		(TeamService.updateTeamVelocity as any).mockResolvedValue(mockTeam);
+		(TeamService.addTeamMember as any).mockResolvedValue({ id: "new-member" });
+		(TeamService.removeTeamMember as any).mockResolvedValue(undefined);
+		(TeamService.createSprint as any).mockResolvedValue({ id: "new-sprint" });
 	});
 
 	afterEach(() => {
@@ -107,17 +127,8 @@ describe("TeamConfigurationPage", () => {
 
 	describe("loading state", () => {
 		it("should display loading spinner while fetching team configuration", async () => {
-			// Use immediate promises to avoid timing issues
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
-			render(
-				<ToastProvider>
-					<TeamConfigurationPage />
-				</ToastProvider>
-			);
+			// Service mocks are already set up in beforeEach for successful loading
+			renderTeamConfigurationPage();
 
 			// Loading state should be visible immediately
 			expect(screen.getByText(/loading team configuration/i)).toBeInTheDocument();
@@ -135,13 +146,10 @@ describe("TeamConfigurationPage", () => {
 
 	describe("error state", () => {
 		it("should display error message and retry button on fetch failure", async () => {
-			mockFetch.mockRejectedValueOnce(new Error("Network error"));
+			// Override the default successful mock with error
+			(TeamService.getTeam as any).mockRejectedValueOnce(new Error("Network error"));
 
-			render(
-				<ToastProvider>
-					<TeamConfigurationPage />
-				</ToastProvider>
-			);
+			renderTeamConfigurationPage();
 
 			await act(async () => {
 				await Promise.resolve();
@@ -155,17 +163,10 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should retry loading configuration when retry button is clicked", async () => {
-			// All initial calls fail
-			mockFetch
-				.mockRejectedValueOnce(new Error("Network error"))
-				.mockRejectedValueOnce(new Error("Network error"))
-				.mockRejectedValueOnce(new Error("Network error"));
+			// Initial load fails
+			(TeamService.getTeam as any).mockRejectedValueOnce(new Error("Network error"));
 
-			render(
-				<ToastProvider>
-					<TeamConfigurationPage />
-				</ToastProvider>
-			);
+			renderTeamConfigurationPage();
 
 			await act(async () => {
 				await Promise.resolve();
@@ -173,11 +174,10 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText(/network error/i)).toBeInTheDocument();
 
-			// Setup successful retry
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
+			// Setup successful retry - clear the mock and restore default behavior
+			(TeamService.getTeam as any).mockClear().mockResolvedValue(mockTeam);
+			(TeamService.getTeamMembers as any).mockClear().mockResolvedValue(mockTeamMembers);
+			(TeamService.getTeamSprints as any).mockClear().mockResolvedValue(mockSprints);
 
 			const retryButton = screen.getByRole("button", { name: /retry/i });
 			fireEvent.click(retryButton);
@@ -193,11 +193,7 @@ describe("TeamConfigurationPage", () => {
 
 	describe("team information form", () => {
 		it("should display team information form with current values", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -218,11 +214,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should update team information when form is submitted", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -232,10 +224,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
 
 			// Mock successful update
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve({ ...mockTeam, name: "Updated Team" })
-			});
+			(TeamService.updateTeamBasicInfo as any).mockResolvedValueOnce({ ...mockTeam, name: "Updated Team" });
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			fireEvent.change(nameInput, { target: { value: "" } });
@@ -250,26 +239,15 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText(/team information updated successfully/i)).toBeInTheDocument();
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					name: "Updated Team",
-					description: "Test team description",
-					working_days: [1, 2, 3, 4, 5],
-					working_days_per_week: 5
-				})
+			expect(TeamService.updateTeamBasicInfo).toHaveBeenCalledWith("1", {
+				name: "Updated Team",
+				description: "Test team description",
+				working_days: [1, 2, 3, 4, 5]
 			});
 		});
 
 		it("should toggle working days when checkboxes are clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -292,11 +270,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display error toast when team update fails", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -306,7 +280,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
 
 			// Mock failed update
-			mockFetch.mockRejectedValueOnce(new Error("Update failed"));
+			(TeamService.updateTeamBasicInfo as any).mockRejectedValueOnce(new Error("Update failed"));
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			fireEvent.change(nameInput, { target: { value: "" } });
@@ -325,11 +299,7 @@ describe("TeamConfigurationPage", () => {
 
 	describe("velocity settings form", () => {
 		it("should display velocity settings form with current values", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -347,11 +317,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should update velocity settings when form is submitted", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -361,10 +327,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
 
 			// Mock successful update
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({ ...mockTeam, velocity_baseline: 60 })
-			});
+			(TeamService.updateTeamVelocity as any).mockResolvedValueOnce({ ...mockTeam, velocity_baseline: 60 });
 
 			const velocityInput = screen.getByLabelText(/story points per sprint/i);
 			fireEvent.change(velocityInput, { target: { value: "" } });
@@ -379,24 +342,14 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText(/velocity settings updated successfully/i)).toBeInTheDocument();
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1", {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					velocity_baseline: 60,
-					sprint_length_days: 14
-				})
+			expect(TeamService.updateTeamVelocity).toHaveBeenCalledWith("1", {
+				baseline_velocity: 60,
+				sprint_length: 2
 			});
 		});
 
 		it("should update sprint length when dropdown is changed", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -416,11 +369,7 @@ describe("TeamConfigurationPage", () => {
 
 	describe("team member management", () => {
 		it("should display team members list", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -434,11 +383,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should open add member modal when add button is clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -456,11 +401,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should add team member when form is submitted with valid data", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -470,9 +411,12 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText("John Doe")).toBeInTheDocument();
 
 			// Mock successful member addition
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: () => Promise.resolve({ id: "3", email: "new.member@example.com", role: "member" })
+			(TeamService.addTeamMember as any).mockResolvedValueOnce({
+				id: "3",
+				first_name: "New",
+				last_name: "Member",
+				email: "new.member@example.com",
+				team_role: "member"
 			});
 
 			// Open modal
@@ -490,24 +434,14 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText(/team member added successfully/i)).toBeInTheDocument();
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1/members", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					email: "new.member@example.com",
-					role: "member"
-				})
+			expect(TeamService.addTeamMember).toHaveBeenCalledWith("1", {
+				email: "new.member@example.com",
+				role: "member"
 			});
 		});
 
 		it("should remove team member when remove button is clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -520,10 +454,7 @@ describe("TeamConfigurationPage", () => {
 			const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
 			// Mock successful member removal
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({})
-			});
+			(TeamService.removeTeamMember as any).mockResolvedValueOnce(undefined);
 
 			const removeButtons = screen.getAllByText(/remove/i);
 			fireEvent.click(removeButtons[0]);
@@ -535,19 +466,13 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText(/team member removed successfully/i)).toBeInTheDocument();
 
 			expect(confirmSpy).toHaveBeenCalledWith("Are you sure you want to remove this team member?");
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1/members/1", {
-				method: "DELETE"
-			});
+			expect(TeamService.removeTeamMember).toHaveBeenCalledWith("1", "1");
 
 			confirmSpy.mockRestore();
 		});
 
 		it("should close add member modal when cancel button is clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -572,11 +497,7 @@ describe("TeamConfigurationPage", () => {
 
 	describe("sprint management", () => {
 		it("should display sprints list", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -590,11 +511,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should open create sprint modal when create button is clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -613,11 +530,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should create sprint when form is submitted with valid data", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -627,16 +540,13 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText("Sprint 1")).toBeInTheDocument();
 
 			// Mock successful sprint creation
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						id: "3",
-						name: "Sprint 3",
-						start_date: "2025-02-01",
-						end_date: "2025-02-14",
-						status: "planned"
-					})
+			(TeamService.createSprint as any).mockResolvedValueOnce({
+				id: "3",
+				name: "Sprint 3",
+				start_date: "2025-02-01",
+				end_date: "2025-02-14",
+				status: "planned",
+				team_id: "1"
 			});
 
 			// Open modal
@@ -654,26 +564,15 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText(/sprint created successfully/i)).toBeInTheDocument();
 
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1/sprints", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
-					name: "Sprint 3",
-					start_date: "2025-02-01",
-					end_date: "2025-02-14",
-					team_id: "1"
-				})
+			expect(TeamService.createSprint).toHaveBeenCalledWith("1", {
+				name: "Sprint 3",
+				start_date: "2025-02-01",
+				end_date: "2025-02-14"
 			});
 		});
 
 		it("should validate sprint dates", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -703,11 +602,7 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should show generate multiple sprints alert", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -732,11 +627,7 @@ describe("TeamConfigurationPage", () => {
 
 	describe("toast notifications", () => {
 		it("should dismiss toast when close button is clicked", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
-
+			// Service mocks already set up in beforeEach
 			renderTeamConfigurationPage();
 
 			await act(async () => {
@@ -746,10 +637,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
 
 			// Mock successful update to trigger toast
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({ ...mockTeam, name: "Updated Team" })
-			});
+			(TeamService.updateTeamBasicInfo as any).mockResolvedValueOnce({ ...mockTeam, name: "Updated Team" });
 
 			const nameInput = screen.getByLabelText(/team name/i);
 			fireEvent.change(nameInput, { target: { value: "" } });
@@ -774,10 +662,9 @@ describe("TeamConfigurationPage", () => {
 
 	describe("empty states", () => {
 		it("should display empty state for team members", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
+			// Override default mocks to return empty arrays
+			(TeamService.getTeamMembers as any).mockResolvedValueOnce([]);
+			(TeamService.getTeamSprints as any).mockResolvedValueOnce([]);
 
 			renderTeamConfigurationPage();
 
@@ -790,10 +677,9 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should display empty state for sprints", async () => {
-			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
+			// Override default mocks to return empty arrays
+			(TeamService.getTeamMembers as any).mockResolvedValueOnce([]);
+			(TeamService.getTeamSprints as any).mockResolvedValueOnce([]);
 
 			renderTeamConfigurationPage();
 
