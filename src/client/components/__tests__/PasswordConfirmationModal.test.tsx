@@ -1,7 +1,6 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { PasswordConfirmationModal } from "../PasswordConfirmationModal";
 
@@ -21,6 +20,29 @@ describe("PasswordConfirmationModal", () => {
 		vi.clearAllMocks();
 	});
 
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	const getPasswordInput = () => screen.getByRole("dialog").querySelector("#password") as HTMLInputElement;
+
+	const enterPassword = async (user: ReturnType<typeof userEvent.setup>, password: string) => {
+		const passwordInput = getPasswordInput();
+		await user.type(passwordInput, password);
+	};
+
+	const clickConfirmButton = async (user: ReturnType<typeof userEvent.setup>) => {
+		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
+		await user.click(confirmButton);
+		return confirmButton;
+	};
+
+	const clickCancelButton = async (user: ReturnType<typeof userEvent.setup>) => {
+		const cancelButton = screen.getByRole("button", { name: "Cancel" });
+		await user.click(cancelButton);
+		return cancelButton;
+	};
+
 	it("should not render when closed", () => {
 		render(<PasswordConfirmationModal {...defaultProps} isOpen={false} />);
 
@@ -36,23 +58,20 @@ describe("PasswordConfirmationModal", () => {
 	});
 
 	it("should handle password input", async () => {
+		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
+		await enterPassword(user, "mypassword");
 
-		expect(passwordInput).toHaveValue("mypassword");
+		expect(getPasswordInput()).toHaveValue("mypassword");
 	});
 
 	it("should handle form submission with valid password", async () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-
-		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
-		await user.click(confirmButton);
+		await enterPassword(user, "mypassword");
+		await clickConfirmButton(user);
 
 		expect(mockOnConfirm).toHaveBeenCalledWith("mypassword");
 	});
@@ -61,8 +80,7 @@ describe("PasswordConfirmationModal", () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-		await user.click(confirmButton);
+		await clickConfirmButton(user);
 
 		expect(screen.getByText("Password is required")).toBeInTheDocument();
 		expect(mockOnConfirm).not.toHaveBeenCalled();
@@ -72,11 +90,8 @@ describe("PasswordConfirmationModal", () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-
-		fireEvent.change(passwordInput, { target: { value: "   " } });
-		await user.click(confirmButton);
+		await enterPassword(user, "   ");
+		await clickConfirmButton(user);
 
 		expect(screen.getByText("Password is required")).toBeInTheDocument();
 		expect(mockOnConfirm).not.toHaveBeenCalled();
@@ -86,8 +101,7 @@ describe("PasswordConfirmationModal", () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const cancelButton = screen.getByRole("button", { name: "Cancel" });
-		await user.click(cancelButton);
+		await clickCancelButton(user);
 
 		expect(mockOnClose).toHaveBeenCalledTimes(1);
 	});
@@ -96,16 +110,13 @@ describe("PasswordConfirmationModal", () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-
 		// Trigger validation error first
-		await user.click(confirmButton);
+		await clickConfirmButton(user);
 		expect(screen.getByText("Password is required")).toBeInTheDocument();
 
 		// Enter password and submit again
-		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
-		await user.click(confirmButton);
+		await enterPassword(user, "mypassword");
+		await clickConfirmButton(user);
 
 		expect(screen.queryByText("Password is required")).not.toBeInTheDocument();
 		expect(mockOnConfirm).toHaveBeenCalledWith("mypassword");
@@ -132,7 +143,7 @@ describe("PasswordConfirmationModal", () => {
 		const user = userEvent.setup();
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
+		const passwordInput = getPasswordInput();
 		await user.type(passwordInput, "mypassword{enter}");
 
 		expect(mockOnConfirm).toHaveBeenCalledWith("mypassword");
@@ -141,31 +152,26 @@ describe("PasswordConfirmationModal", () => {
 	it("should focus password input when opened", () => {
 		render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		expect(passwordInput).toHaveFocus();
+		expect(getPasswordInput()).toHaveFocus();
 	});
 
 	it("should clear form state on close", async () => {
 		const user = userEvent.setup();
 		const { rerender } = render(<PasswordConfirmationModal {...defaultProps} />);
 
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
+		await enterPassword(user, "mypassword");
 
 		// Trigger validation error
-		const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-		await user.click(confirmButton);
+		await clickConfirmButton(user);
 
 		// Close modal
-		const cancelButton = screen.getByRole("button", { name: "Cancel" });
-		await user.click(cancelButton);
+		await clickCancelButton(user);
 
 		// Reopen modal
 		rerender(<PasswordConfirmationModal {...defaultProps} />);
 
 		// Form should be cleared
-		const newPasswordInput = document.getElementById("password") as HTMLInputElement;
-		expect(newPasswordInput).toHaveValue("");
+		expect(getPasswordInput()).toHaveValue("");
 		expect(screen.queryByText("Password is required")).not.toBeInTheDocument();
 	});
 

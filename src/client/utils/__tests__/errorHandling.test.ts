@@ -254,11 +254,13 @@ describe("getRetryDelay", () => {
 
 describe("AccountSecurityErrorHandler", () => {
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.clearAllMocks();
 	});
 
 	afterEach(() => {
-		vi.clearAllTimers();
+		vi.useRealTimers();
+		vi.clearAllMocks();
 	});
 
 	describe("User gets processed errors", () => {
@@ -311,8 +313,6 @@ describe("AccountSecurityErrorHandler", () => {
 		});
 
 		it("should retry network errors with exponential backoff", async () => {
-			vi.useFakeTimers();
-
 			const mockOperation = vi
 				.fn()
 				.mockRejectedValueOnce(new Error("Network error"))
@@ -331,8 +331,6 @@ describe("AccountSecurityErrorHandler", () => {
 			expect(result).toBe("success");
 			expect(mockOperation).toHaveBeenCalledTimes(3);
 			expect(mockOnError).toHaveBeenCalledTimes(2);
-
-			vi.useRealTimers();
 		});
 
 		it("should not retry validation errors", async () => {
@@ -351,22 +349,38 @@ describe("AccountSecurityErrorHandler", () => {
 			const mockOperation = vi.fn().mockRejectedValue(new Error("Network error"));
 			const mockOnError = vi.fn();
 
-			// Mock the setTimeout to avoid real delays
-			const originalSetTimeout = global.setTimeout;
-			global.setTimeout = vi.fn().mockImplementation((callback: () => void) => {
-				callback(); // Execute immediately
-				return 1 as any;
-			});
+			// Suppress unhandled rejection warnings for this test
+			const originalHandler = process.listeners("unhandledRejection");
+			const rejectionHandler = () => {
+				// Silently handle expected rejections during retry testing
+			};
+			process.removeAllListeners("unhandledRejection");
+			process.on("unhandledRejection", rejectionHandler);
 
 			try {
-				await expect(
-					AccountSecurityErrorHandler.executeWithRetry(mockOperation, "loading", mockOnError)
-				).rejects.toThrow("Network error");
+				// Start the retry operation
+				const retryPromise = AccountSecurityErrorHandler.executeWithRetry(
+					mockOperation,
+					"loading",
+					mockOnError
+				);
 
+				// Advance through all retry delays step by step
+				await vi.advanceTimersByTimeAsync(1000); // First retry
+				await vi.advanceTimersByTimeAsync(2000); // Second retry
+
+				// Ensure the promise completes
+				await expect(retryPromise).rejects.toThrow("Network error");
+
+				// The operation is called once initially, and retried twice.
 				expect(mockOperation).toHaveBeenCalledTimes(3);
 				expect(mockOnError).toHaveBeenCalledTimes(3);
 			} finally {
-				global.setTimeout = originalSetTimeout;
+				// Restore original handlers
+				process.removeAllListeners("unhandledRejection");
+				originalHandler.forEach(handler => {
+					process.on("unhandledRejection", handler);
+				});
 			}
 		});
 	});

@@ -1,7 +1,6 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { EnhancedConfirmationModal } from "../EnhancedConfirmationModal";
 
@@ -23,6 +22,27 @@ describe("EnhancedConfirmationModal", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	const enterPassword = async (user: ReturnType<typeof userEvent.setup>, password: string) => {
+		const passwordInput = screen.getByLabelText(/password/i);
+		await user.type(passwordInput, password);
+	};
+
+	const clickConfirmButton = async (user: ReturnType<typeof userEvent.setup>, buttonName: string = "Confirm") => {
+		const confirmButton = screen.getByRole("button", { name: buttonName });
+		await user.click(confirmButton);
+		return confirmButton;
+	};
+
+	const clickCancelButton = async (user: ReturnType<typeof userEvent.setup>) => {
+		const cancelButton = screen.getByRole("button", { name: "Cancel" });
+		await user.click(cancelButton);
+		return cancelButton;
+	};
 
 	describe("User understands the impact of security changes", () => {
 		it("should show detailed confirmation for Google account unlinking", () => {
@@ -111,17 +131,14 @@ describe("EnhancedConfirmationModal", () => {
 			expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
 			expect(screen.getByText("Enter your password to confirm this action")).toBeInTheDocument();
 
-			const passwordInput = screen.getByLabelText(/password/i);
-			const confirmButton = screen.getByRole("button", { name: "Unlink Account" });
-
 			// Should not be able to confirm without password
-			await user.click(confirmButton);
+			await clickConfirmButton(user, "Unlink Account");
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 			expect(mockOnConfirm).not.toHaveBeenCalled();
 
 			// Should confirm with valid password
-			fireEvent.change(passwordInput, { target: { value: "validpassword" } });
-			await user.click(confirmButton);
+			await enterPassword(user, "validpassword");
+			await clickConfirmButton(user, "Unlink Account");
 			expect(mockOnConfirm).toHaveBeenCalledWith("validpassword");
 		});
 
@@ -136,17 +153,15 @@ describe("EnhancedConfirmationModal", () => {
 			);
 
 			const passwordInput = screen.getByLabelText(/password/i);
-			const confirmButton = screen.getByRole("button", { name: "Confirm Action" });
-
 			// Test whitespace-only password
-			fireEvent.change(passwordInput, { target: { value: "   " } });
-			await user.click(confirmButton);
+			await user.type(passwordInput, "   ");
+			await clickConfirmButton(user, "Confirm Action");
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 
 			// Clear and test valid password
 			await user.clear(passwordInput);
-			fireEvent.change(passwordInput, { target: { value: "validpassword" } });
-			await user.click(confirmButton);
+			await enterPassword(user, "validpassword");
+			await clickConfirmButton(user, "Confirm Action");
 			expect(mockOnConfirm).toHaveBeenCalledWith("validpassword");
 		});
 
@@ -164,8 +179,7 @@ describe("EnhancedConfirmationModal", () => {
 
 			expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
 
-			const confirmButton = screen.getByRole("button", { name: "Save" });
-			await user.click(confirmButton);
+			await clickConfirmButton(user, "Save");
 			expect(mockOnConfirm).toHaveBeenCalledWith();
 		});
 	});
@@ -299,8 +313,7 @@ describe("EnhancedConfirmationModal", () => {
 			const user = userEvent.setup();
 			render(<EnhancedConfirmationModal {...defaultProps} />);
 
-			const cancelButton = screen.getByRole("button", { name: "Cancel" });
-			await user.click(cancelButton);
+			await clickCancelButton(user);
 
 			expect(mockOnClose).toHaveBeenCalledTimes(1);
 		});
@@ -312,10 +325,9 @@ describe("EnhancedConfirmationModal", () => {
 			);
 
 			const passwordInput = screen.getByLabelText(/password/i);
-			fireEvent.change(passwordInput, { target: { value: "somepassword" } });
+			await user.type(passwordInput, "somepassword");
 
-			const cancelButton = screen.getByRole("button", { name: "Cancel" });
-			await user.click(cancelButton);
+			await clickCancelButton(user);
 
 			// Reopen modal
 			rerender(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />);
@@ -353,14 +365,12 @@ describe("EnhancedConfirmationModal", () => {
 			render(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />);
 
 			const passwordInput = screen.getByLabelText(/password/i);
-			const confirmButton = screen.getByRole("button", { name: "Confirm" });
-
 			// Trigger validation error
-			await user.click(confirmButton);
+			await clickConfirmButton(user, "Confirm");
 			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
 
 			// Clear error by typing password
-			fireEvent.change(passwordInput, { target: { value: "password" } });
+			await user.type(passwordInput, "password");
 			expect(screen.queryByText("Password is required to confirm this action")).not.toBeInTheDocument();
 		});
 

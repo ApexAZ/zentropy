@@ -13,7 +13,7 @@ export const fillVerificationCode = (code: string): void => {
 	const codeInputs = screen.getAllByRole("textbox").filter(input => input.getAttribute("inputMode") === "numeric");
 
 	code.split("").forEach((digit, index) => {
-		if (index < codeInputs.length) {
+		if (index < codeInputs.length && codeInputs[index]) {
 			fireEvent.change(codeInputs[index], { target: { value: digit } });
 		}
 	});

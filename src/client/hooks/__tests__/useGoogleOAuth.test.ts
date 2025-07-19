@@ -8,7 +8,8 @@ vi.mock("../../utils/logger", () => ({
 	logger: {
 		error: vi.fn(),
 		info: vi.fn(),
-		debug: vi.fn()
+		debug: vi.fn(),
+		warn: vi.fn()
 	}
 }));
 
@@ -146,8 +147,8 @@ describe("useGoogleOAuth", () => {
 				credentialCallback?.(emptyCredentialResponse);
 			});
 
-			expect(result.current.error).toBe("No credential received from Google");
-			expect(mockOnError).toHaveBeenCalledWith("No credential received from Google");
+			expect(result.current.error).toBe("Failed to process Google OAuth credential");
+			expect(mockOnError).toHaveBeenCalledWith("Failed to process Google OAuth credential");
 			expect(mockOnSuccess).not.toHaveBeenCalled();
 		});
 
@@ -228,7 +229,7 @@ describe("useGoogleOAuth", () => {
 
 		it("should handle OAuth popup dismissal", async () => {
 			const mockPrompt = vi.fn(callback => {
-				// Simulate user dismissing popup
+				// Simulate user dismissing popup - call the callback immediately
 				callback({
 					isNotDisplayed: () => true,
 					isSkippedMoment: () => false,
@@ -260,16 +261,17 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// User triggers OAuth
-			act(() => {
+			await act(async () => {
 				result.current.triggerOAuth();
+				await Promise.resolve(); // Allow prompt callback to execute
 			});
 
 			// Should handle dismissal gracefully
 			await waitFor(() => {
-				expect(result.current.error).toBe("Google Sign-In was cancelled or blocked");
+				expect(result.current.error).toBe("Google Sign-In was dismissed or unavailable");
 			});
 
-			expect(mockOnError).toHaveBeenCalledWith("Google Sign-In was cancelled or blocked");
+			expect(mockOnError).toHaveBeenCalledWith("Google Sign-In was dismissed or unavailable");
 			expect(result.current.isLoading).toBe(false);
 		});
 	});

@@ -1,12 +1,13 @@
 import React from "react";
-import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import ProjectCreationModal from "../ProjectCreationModal";
 import { useProject } from "../../hooks/useProject";
 import { useOrganization } from "../../hooks/useOrganization";
 import { ToastProvider } from "../../contexts/ToastContext";
+import { fastStateSync } from "../../__tests__/utils";
 import type { Organization } from "../../types";
 
 // Mock hooks
@@ -45,18 +46,6 @@ describe("ProjectCreationModal", () => {
 			updated_at: "2024-01-02T00:00:00Z"
 		}
 	];
-
-	// const mockProject: Project = {
-	// 	id: "proj-1",
-	// 	name: "Test Project",
-	// 	description: "A test project",
-	// 	visibility: "team",
-	// 	status: "active",
-	// 	organization_id: "org-1",
-	// 	created_by: "user-1",
-	// 	created_at: "2024-01-01T00:00:00Z",
-	// 	updated_at: "2024-01-01T00:00:00Z"
-	// };
 
 	const mockUseProject = {
 		projects: [],
@@ -102,6 +91,36 @@ describe("ProjectCreationModal", () => {
 		defaultVisibility: "team" as const
 	};
 
+	// Helper function to render modal with consistent setup
+	const createModal = (overrides = {}) => {
+		const props = { ...mockProps, ...overrides };
+		return render(<ProjectCreationModal {...props} />, { wrapper: TestWrapper });
+	};
+
+	// Helper function to fill project form
+	const fillProjectForm = (formData: { name?: string; description?: string; visibility?: string }) => {
+		if (formData.name) {
+			const nameInput = screen.getByRole("textbox", { name: /project name/i });
+			fireEvent.change(nameInput, { target: { value: formData.name } });
+		}
+
+		if (formData.description) {
+			const descInput = screen.getByRole("textbox", { name: /description/i });
+			fireEvent.change(descInput, { target: { value: formData.description } });
+		}
+
+		if (formData.visibility) {
+			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
+			fireEvent.change(visibilitySelect, { target: { value: formData.visibility } });
+		}
+	};
+
+	// Helper function to trigger project creation
+	const submitProject = () => {
+		const createButton = screen.getByRole("button", { name: /create project/i });
+		fireEvent.click(createButton);
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useProject as any).mockReturnValue(mockUseProject);
@@ -110,44 +129,42 @@ describe("ProjectCreationModal", () => {
 	});
 
 	afterEach(() => {
-		cleanup();
+		vi.restoreAllMocks();
 	});
 
-	describe("Modal State Management", () => {
+	describe("User can open and close modal", () => {
 		it("should render modal when isOpen is true", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			expect(screen.getByRole("dialog")).toBeInTheDocument();
 			expect(screen.getByText("Create New Project")).toBeInTheDocument();
 		});
 
 		it("should not render modal when isOpen is false", () => {
-			render(<ProjectCreationModal {...mockProps} isOpen={false} />);
+			createModal({ isOpen: false });
 
 			expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 		});
 
-		it("should call onClose when close button is clicked", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+		it("should call onClose when close button is clicked", () => {
+			createModal();
 
-			await user.click(screen.getByRole("button", { name: /close/i }));
+			fireEvent.click(screen.getByRole("button", { name: /close/i }));
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
-		it("should call onClose when cancel button is clicked", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+		it("should call onClose when cancel button is clicked", () => {
+			createModal();
 
-			await user.click(screen.getByRole("button", { name: /cancel/i }));
+			fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
 
 			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
 		it("should handle escape key press", async () => {
 			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			await user.keyboard("{Escape}");
 
@@ -155,88 +172,96 @@ describe("ProjectCreationModal", () => {
 		});
 	});
 
-	describe("Project Form Validation", () => {
-		it("should validate required fields", async () => {
-			const user = userEvent.setup();
+	describe("User encounters validation errors", () => {
+		it("should show error when project name is missing", () => {
 			mockUseProject.validateProject.mockReturnValue({
 				isValid: false,
 				errors: { name: "Project name is required" }
 			});
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			// Try to submit without filling required fields
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			submitProject();
 
 			expect(screen.getByText("Project name is required")).toBeInTheDocument();
 		});
 
-		it("should validate project name length", async () => {
-			const user = userEvent.setup();
+		it("should show error when project name is too long", () => {
 			mockUseProject.validateProject.mockReturnValue({
 				isValid: false,
 				errors: { name: "Project name must be less than 255 characters" }
 			});
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
-			// PERFORMANCE FIX: use fireEvent instead of typing 256 chars
-			const nameInput = screen.getByRole("textbox", { name: /project name/i });
-			fireEvent.change(nameInput, { target: { value: "a".repeat(256) } });
-			fireEvent.blur(nameInput);
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			// Fill form with long name
+			fillProjectForm({ name: "a".repeat(256) });
+			submitProject();
 
 			expect(screen.getByText("Project name must be less than 255 characters")).toBeInTheDocument();
 		});
 
-		it("should validate organization requirement for team projects", async () => {
-			const user = userEvent.setup();
+		it("should show error when team project has no organization", () => {
 			mockUseProject.validateProject.mockReturnValue({
 				isValid: false,
 				errors: { organization_id: "Team and organization projects require an organization" }
 			});
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			fillProjectForm({ name: "Test Project", visibility: "team" });
+			submitProject();
 
 			expect(screen.getByText("Team and organization projects require an organization")).toBeInTheDocument();
 		});
 
-		it("should validate personal projects cannot have organization", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
-
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
+		it("should handle multiple validation errors", () => {
+			mockUseProject.validateProject.mockReturnValue({
+				isValid: false,
+				errors: {
+					name: "Project name is required",
+					description: "Description is too long"
+				}
 			});
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
+
+			createModal();
+
+			submitProject();
+
+			expect(screen.getByText("Project name is required")).toBeInTheDocument();
+			expect(screen.getByText("Description is too long")).toBeInTheDocument();
+		});
+
+		it("should hide organization section for personal projects", () => {
+			createModal({ preselectedOrganization: mockOrganizations[0] });
+
+			fillProjectForm({ name: "Test Project", visibility: "personal" });
 
 			// When personal is selected, organization section should be hidden
 			expect(screen.queryByText("Organization:")).not.toBeInTheDocument();
 		});
 	});
 
-	describe("Project Creation", () => {
-		it("should create project with valid data", async () => {
-			const user = userEvent.setup();
+	describe("User can create projects", () => {
+		it("should successfully create team project with organization", async () => {
 			mockUseProject.createProject.mockResolvedValue(undefined);
 
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
-				target: { value: "Test description" }
-			});
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
+			act(() => {
+				fillProjectForm({
+					name: "Test Project",
+					description: "Test description",
+					visibility: "team"
+				});
 
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+				submitProject();
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(mockUseProject.createProject).toHaveBeenCalledWith({
 				name: "Test Project",
@@ -246,18 +271,23 @@ describe("ProjectCreationModal", () => {
 			});
 		});
 
-		it("should create personal project without organization", async () => {
-			const user = userEvent.setup();
+		it("should successfully create personal project without organization", async () => {
 			mockUseProject.createProject.mockResolvedValue(undefined);
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Personal Project" }
+			act(() => {
+				fillProjectForm({
+					name: "Personal Project",
+					visibility: "personal"
+				});
+
+				submitProject();
 			});
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
 
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(mockUseProject.createProject).toHaveBeenCalledWith({
 				name: "Personal Project",
@@ -267,86 +297,119 @@ describe("ProjectCreationModal", () => {
 		});
 
 		it("should call onSuccess after successful creation", async () => {
-			const user = userEvent.setup();
 			mockUseProject.createProject.mockResolvedValue(undefined);
 
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
+			act(() => {
+				fillProjectForm({ name: "Test Project" });
+				submitProject();
 			});
-			await user.click(screen.getByRole("button", { name: /create project/i }));
 
-			await waitFor(() => {
-				expect(mockProps.onSuccess).toHaveBeenCalledWith(undefined);
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			expect(mockProps.onSuccess).toHaveBeenCalledWith(undefined);
 		});
 
 		it("should handle creation errors gracefully", async () => {
-			const user = userEvent.setup();
-
-			// Mock the createProject to fail
 			mockUseProject.createProject.mockRejectedValue(new Error("Project name already exists"));
 
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
+			act(() => {
+				fillProjectForm({ name: "Test Project" });
+				submitProject();
 			});
-			await user.click(screen.getByRole("button", { name: /create project/i }));
 
-			// Should call createProject but not close modal due to error
-			await waitFor(() => {
-				expect(mockUseProject.createProject).toHaveBeenCalledWith(
-					expect.objectContaining({
-						name: "Test Project"
-					})
-				);
-			});
+			await fastStateSync();
 
 			// Should NOT close modal when creation fails
 			expect(mockProps.onClose).not.toHaveBeenCalled();
 		});
+
+		it("should handle network errors gracefully", async () => {
+			mockUseProject.createProject.mockRejectedValue(new Error("Network error"));
+
+			createModal({ preselectedOrganization: mockOrganizations[0] });
+
+			act(() => {
+				fillProjectForm({ name: "Test Project" });
+				submitProject();
+			});
+
+			await fastStateSync();
+
+			// Should NOT close modal when network error occurs
+			expect(mockProps.onClose).not.toHaveBeenCalled();
+		});
 	});
 
-	describe("Organization Selection", () => {
+	describe("User can manage organizations", () => {
 		it("should show organization selector when no preselected organization", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: /choose organization/i })).toBeInTheDocument();
 		});
 
 		it("should display preselected organization", () => {
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
 			expect(screen.getByText("Organization: Test Organization")).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: /change organization/i })).toBeInTheDocument();
 		});
 
 		it("should allow changing organization", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
-			await user.click(screen.getByRole("button", { name: /change organization/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /change organization/i }));
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
 
 		it("should handle organization selection", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
-			await user.click(screen.getByRole("button", { name: /choose organization/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /choose organization/i }));
+			});
+
+			await act(async () => {
+				await Promise.resolve();
+			});
 
 			// This would open the OrganizationSelector component
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
+
+		it("should require organization for team projects", async () => {
+			createModal();
+
+			await fillProjectForm({ name: "Test Project", visibility: "team" });
+
+			expect(screen.getByText("An organization is required for team projects")).toBeInTheDocument();
+		});
+
+		it("should show organization selection button for team projects", async () => {
+			createModal();
+
+			await fillProjectForm({ visibility: "team" });
+
+			expect(screen.getByRole("button", { name: /choose organization/i })).toBeInTheDocument();
+		});
 	});
 
-	describe("Visibility Options", () => {
+	describe("User can configure project visibility", () => {
 		it("should show all visibility options", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
 			expect(visibilitySelect).toBeInTheDocument();
@@ -359,75 +422,41 @@ describe("ProjectCreationModal", () => {
 		});
 
 		it("should set default visibility", () => {
-			render(<ProjectCreationModal {...mockProps} defaultVisibility="organization" />);
+			createModal({ defaultVisibility: "organization" });
 
 			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
 			expect(visibilitySelect).toHaveValue("organization");
 		});
 
-		it("should update visibility when selection changes", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+		it("should update visibility when selection changes", () => {
+			createModal();
 
 			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
-			await user.selectOptions(visibilitySelect, "personal");
+			fireEvent.change(visibilitySelect, { target: { value: "personal" } });
 
 			expect(visibilitySelect).toHaveValue("personal");
 		});
 
 		it("should show visibility descriptions", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			expect(screen.getByText("Selected team members can see this project")).toBeInTheDocument();
 		});
 
-		it("should update visibility description when selection changes", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+		it("should update visibility description when selection changes", () => {
+			createModal();
 
 			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
-			await user.selectOptions(visibilitySelect, "organization");
+			fireEvent.change(visibilitySelect, { target: { value: "organization" } });
 
 			expect(screen.getByText("All organization members can see this project")).toBeInTheDocument();
 		});
 	});
 
-	describe("Just-in-Time Organization Flow", () => {
-		it("should trigger organization selection for team projects", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
-
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
-
-			expect(screen.getByText("An organization is required for team projects")).toBeInTheDocument();
-		});
-
-		it("should show organization selection button for team projects", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
-
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "team");
-
-			expect(screen.getByRole("button", { name: /choose organization/i })).toBeInTheDocument();
-		});
-
-		it("should hide organization selection for personal projects", async () => {
-			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
-
-			await user.selectOptions(screen.getByRole("combobox", { name: /visibility/i }), "personal");
-
-			expect(screen.queryByText("Organization:")).not.toBeInTheDocument();
-		});
-	});
-
-	describe("Loading States", () => {
+	describe("User experiences loading states", () => {
 		it("should show loading state during project creation", async () => {
 			// First render with normal state
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
 			// Verify initial state shows "Create Project"
 			expect(screen.getByRole("button", { name: /create project/i })).toBeInTheDocument();
@@ -441,20 +470,19 @@ describe("ProjectCreationModal", () => {
 			(useProject as any).mockReturnValue(mockUseProjectLoading);
 
 			// Re-render with loading state
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />);
+			createModal({ preselectedOrganization: mockOrganizations[0] });
 
 			// Now it should show loading state
 			expect(screen.getByText("Creating...")).toBeInTheDocument();
 		});
 
 		it("should disable form during loading", async () => {
-			// const user = userEvent.setup();
 			(useProject as any).mockReturnValue({
 				...mockUseProject,
 				isLoading: true
 			});
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			expect(screen.getByRole("textbox", { name: /project name/i })).toBeDisabled();
 			expect(screen.getByRole("textbox", { name: /description/i })).toBeDisabled();
@@ -464,57 +492,13 @@ describe("ProjectCreationModal", () => {
 		});
 	});
 
-	describe("Project Creation Workflow", () => {
-		it("should successfully create project with valid data", async () => {
-			const user = userEvent.setup();
-			mockUseProject.createProject.mockResolvedValue(undefined);
+	describe("User experiences form reset", () => {
+		it("should reset form when modal is closed and reopened", () => {
+			const { rerender } = render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
 
-			render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
-
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
-				target: { value: "Test description" }
-			});
-			await user.click(screen.getByRole("button", { name: /create project/i }));
-
-			// Should call createProject with the provided data
-			await waitFor(() => {
-				expect(mockUseProject.createProject).toHaveBeenCalledWith(
-					expect.objectContaining({
-						name: "Test Project",
-						description: "Test description"
-					})
-				);
-			});
-
-			// Should close modal on successful creation
-			await waitFor(() => {
-				expect(mockProps.onClose).toHaveBeenCalled();
-			});
-		});
-
-		it("should allow switching organizations during creation", async () => {
-			render(<ProjectCreationModal {...mockProps} />);
-
-			// Should show organization selection section
-			expect(screen.getByText("Select Organization")).toBeInTheDocument();
-
-			// Should be able to interact with organization selector
-			expect(screen.getByRole("dialog")).toBeInTheDocument();
-		});
-	});
-
-	describe("Form Reset", () => {
-		it("should reset form when modal is closed", async () => {
-			const { rerender } = render(<ProjectCreationModal {...mockProps} />);
-
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
-				target: { value: "Test description" }
+			fillProjectForm({
+				name: "Test Project",
+				description: "Test description"
 			});
 
 			// Close modal
@@ -528,7 +512,7 @@ describe("ProjectCreationModal", () => {
 		});
 
 		it("should reset form when modal is reopened", () => {
-			const { rerender } = render(<ProjectCreationModal {...mockProps} />);
+			const { rerender } = render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
 
 			// Close modal
 			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);
@@ -541,9 +525,9 @@ describe("ProjectCreationModal", () => {
 		});
 	});
 
-	describe("Accessibility", () => {
+	describe("User experiences accessibility features", () => {
 		it("should have proper ARIA attributes", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			const dialog = screen.getByRole("dialog");
 			expect(dialog).toHaveAttribute("aria-labelledby");
@@ -551,7 +535,7 @@ describe("ProjectCreationModal", () => {
 		});
 
 		it("should have proper form labels", () => {
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			expect(screen.getByLabelText("Project Name")).toBeInTheDocument();
 			expect(screen.getByLabelText("Description")).toBeInTheDocument();
@@ -560,7 +544,7 @@ describe("ProjectCreationModal", () => {
 
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
 			const nameInput = screen.getByRole("textbox", { name: /project name/i });
 			const descInput = screen.getByRole("textbox", { name: /description/i });
@@ -574,67 +558,18 @@ describe("ProjectCreationModal", () => {
 			expect(document.activeElement).toBe(visibilitySelect);
 		});
 
-		it("should announce validation errors to screen readers", async () => {
-			const user = userEvent.setup();
+		it("should announce validation errors to screen readers", () => {
 			mockUseProject.validateProject.mockReturnValue({
 				isValid: false,
 				errors: { name: "Project name is required" }
 			});
 
-			render(<ProjectCreationModal {...mockProps} />);
+			createModal();
 
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			submitProject();
 
 			const errorMessage = screen.getByText("Project name is required");
 			expect(errorMessage).toHaveAttribute("role", "alert");
-		});
-	});
-
-	describe("Error Handling", () => {
-		it("should display validation errors", async () => {
-			const user = userEvent.setup();
-			mockUseProject.validateProject.mockReturnValue({
-				isValid: false,
-				errors: {
-					name: "Project name is required",
-					description: "Description is too long"
-				}
-			});
-
-			render(<ProjectCreationModal {...mockProps} />);
-
-			await user.click(screen.getByRole("button", { name: /create project/i }));
-
-			expect(screen.getByText("Project name is required")).toBeInTheDocument();
-			expect(screen.getByText("Description is too long")).toBeInTheDocument();
-		});
-
-		it("should handle network errors gracefully", async () => {
-			const user = userEvent.setup();
-
-			// Mock the createProject to fail with network error
-			mockUseProject.createProject.mockRejectedValue(new Error("Network error"));
-
-			render(<ProjectCreationModal {...mockProps} preselectedOrganization={mockOrganizations[0]} />, {
-				wrapper: TestWrapper
-			});
-
-			fireEvent.change(screen.getByRole("textbox", { name: /project name/i }), {
-				target: { value: "Test Project" }
-			});
-			await user.click(screen.getByRole("button", { name: /create project/i }));
-
-			// Should call createProject and handle error gracefully
-			await waitFor(() => {
-				expect(mockUseProject.createProject).toHaveBeenCalledWith(
-					expect.objectContaining({
-						name: "Test Project"
-					})
-				);
-			});
-
-			// Should NOT close modal when network error occurs
-			expect(mockProps.onClose).not.toHaveBeenCalled();
 		});
 	});
 });

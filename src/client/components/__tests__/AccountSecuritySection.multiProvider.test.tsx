@@ -1,7 +1,6 @@
-import React from "react";
-import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { vi } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { AccountSecuritySection } from "../AccountSecuritySection";
 import { useMultiProviderOAuth } from "../../hooks/useMultiProviderOAuth";
@@ -113,14 +112,49 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	afterEach(() => {
-		cleanup();
+		vi.restoreAllMocks();
 	});
 
-	it("should display all available OAuth providers", async () => {
-		const mockIsProviderLinked = vi.fn();
-		mockIsProviderLinked.mockImplementation((provider: string) => {
-			return provider === "google"; // Only Google is linked
+	const clickProviderButton = async (
+		user: ReturnType<typeof userEvent.setup>,
+		provider: string,
+		action: "link" | "unlink"
+	) => {
+		const button = screen.getByTestId(`${action}-button-${provider}`);
+		await user.click(button);
+		return button;
+	};
+
+	const setupProviderMocks = (
+		linkedProviders: string[],
+		loadingProviders: string[] = [],
+		errorProviders: Record<string, string> = {}
+	) => {
+		const mockIsProviderLinked = vi.fn().mockImplementation((provider: string) => {
+			return linkedProviders.includes(provider);
 		});
+
+		const mockGetProviderState = vi.fn().mockImplementation((provider: string) => {
+			if (errorProviders[provider]) {
+				return { isReady: false, isLoading: false, error: errorProviders[provider] };
+			}
+			return {
+				isReady: true,
+				isLoading: loadingProviders.includes(provider),
+				error: null
+			};
+		});
+
+		return { mockIsProviderLinked, mockGetProviderState };
+	};
+
+	const enterPasswordInModal = async (user: ReturnType<typeof userEvent.setup>, password: string) => {
+		const passwordInput = screen.getByLabelText(/password/i);
+		await user.type(passwordInput, password);
+	};
+
+	it("should display all available OAuth providers", async () => {
+		const { mockIsProviderLinked } = setupProviderMocks(["google"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
@@ -145,14 +179,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	it("should show correct linking status for each provider", async () => {
-		const mockIsProviderLinked = vi.fn();
-		mockIsProviderLinked.mockImplementation((provider: string) => {
-			return provider === "google"; // Only Google is linked
-		});
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks(["google"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
-			isProviderLinked: mockIsProviderLinked
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -167,12 +199,13 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	it("should handle provider linking successfully", async () => {
 		const user = userEvent.setup();
 		const mockLinkProvider = vi.fn();
-		const mockIsProviderLinked = vi.fn().mockReturnValue(false);
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
 			linkProvider: mockLinkProvider,
-			isProviderLinked: mockIsProviderLinked
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -181,8 +214,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			expect(screen.getByTestId("link-button-microsoft")).toBeInTheDocument();
 		});
 
-		const linkButton = screen.getByTestId("link-button-microsoft");
-		await user.click(linkButton);
+		await clickProviderButton(user, "microsoft", "link");
 
 		expect(mockLinkProvider).toHaveBeenCalledWith("microsoft");
 	});
@@ -190,15 +222,13 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	it("should handle provider unlinking with password confirmation", async () => {
 		const user = userEvent.setup();
 		const mockUnlinkProvider = vi.fn().mockResolvedValue(undefined);
-		const mockIsProviderLinked = vi.fn();
-		mockIsProviderLinked.mockImplementation((provider: string) => {
-			return provider === "google"; // Only Google is linked
-		});
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks(["google"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
 			unlinkProvider: mockUnlinkProvider,
-			isProviderLinked: mockIsProviderLinked
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -207,8 +237,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 			expect(screen.getByTestId("unlink-button-google")).toBeInTheDocument();
 		});
 
-		const unlinkButton = screen.getByTestId("unlink-button-google");
-		await user.click(unlinkButton);
+		await clickProviderButton(user, "google", "unlink");
 
 		// Should show password confirmation modal
 		await waitFor(() => {
@@ -217,8 +246,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		});
 
 		// Enter password and confirm
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "user-password" } });
+		await enterPasswordInModal(user, "user-password");
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);
@@ -230,16 +258,11 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	it("should show loading states for individual providers", async () => {
-		const mockGetProviderState = vi.fn();
-		mockGetProviderState.mockImplementation((provider: string) => {
-			if (provider === "microsoft") {
-				return { isReady: true, isLoading: true, error: null };
-			}
-			return { isReady: true, isLoading: false, error: null };
-		});
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([], ["microsoft"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
+			isProviderLinked: mockIsProviderLinked,
 			getProviderState: mockGetProviderState
 		});
 
@@ -257,16 +280,13 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	it("should handle errors for individual providers", async () => {
-		const mockGetProviderState = vi.fn();
-		mockGetProviderState.mockImplementation((provider: string) => {
-			if (provider === "github") {
-				return { isReady: false, isLoading: false, error: "GitHub OAuth not configured" };
-			}
-			return { isReady: true, isLoading: false, error: null };
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([], [], {
+			github: "GitHub OAuth not configured"
 		});
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
+			isProviderLinked: mockIsProviderLinked,
 			getProviderState: mockGetProviderState
 		});
 
@@ -282,18 +302,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	it("should handle mixed provider states correctly", async () => {
-		const mockIsProviderLinked = vi.fn();
-		mockIsProviderLinked.mockImplementation((provider: string) => {
-			return provider === "google" || provider === "github"; // Google and GitHub linked
-		});
-
-		const mockGetProviderState = vi.fn();
-		mockGetProviderState.mockImplementation((provider: string) => {
-			if (provider === "microsoft") {
-				return { isReady: true, isLoading: true, error: null }; // Microsoft is loading
-			}
-			return { isReady: true, isLoading: false, error: null };
-		});
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks(["google", "github"], ["microsoft"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
@@ -318,9 +327,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	it("should handle OAuth success callbacks correctly", async () => {
 		const mockOnSuccess = vi.fn();
 		const mockOnError = vi.fn();
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([]);
 
 		(useMultiProviderOAuth as any).mockImplementation(() => ({
 			...defaultMultiProviderOAuth,
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState,
 			// Store callbacks for testing
 			onSuccess: mockOnSuccess,
 			onError: mockOnError
@@ -336,11 +348,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	});
 
 	it("should maintain accessibility for multi-provider UI", async () => {
-		const mockIsProviderLinked = vi.fn().mockReturnValue(false);
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks([]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
-			isProviderLinked: mockIsProviderLinked
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
@@ -379,19 +392,19 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	it("should preserve existing password confirmation flow", async () => {
 		const user = userEvent.setup();
 		const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
-		const mockIsProviderLinked = vi.fn().mockReturnValue(true);
+		const { mockIsProviderLinked, mockGetProviderState } = setupProviderMocks(["google"]);
 
 		(useMultiProviderOAuth as any).mockReturnValue({
 			...defaultMultiProviderOAuth,
 			unlinkProvider: mockUnlinkProvider,
-			isProviderLinked: mockIsProviderLinked
+			isProviderLinked: mockIsProviderLinked,
+			getProviderState: mockGetProviderState
 		});
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
 		// Click unlink button
-		const unlinkButton = screen.getByTestId("unlink-button-google");
-		await user.click(unlinkButton);
+		await clickProviderButton(user, "google", "unlink");
 
 		// Should show password confirmation modal
 		await waitFor(() => {
@@ -399,8 +412,7 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		});
 
 		// Try with wrong password
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "wrong-password" } });
+		await enterPasswordInModal(user, "wrong-password");
 
 		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 		await user.click(confirmButton);

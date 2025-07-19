@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from "vitest";
 import "@testing-library/jest-dom";
 import { useAuth } from "../useAuth";
@@ -34,6 +34,42 @@ const originalWarn = console.warn;
 console.warn = vi.fn();
 
 describe("useAuth", () => {
+	// Helper function to create hook with clean state
+	const createHook = () => {
+		return renderHook(() => useAuth());
+	};
+
+	// Helper function to setup authenticated user
+	const setupAuthenticatedUser = async (
+		token = "valid-jwt-token",
+		userData = {
+			email: "test@example.com",
+			first_name: "Test",
+			last_name: "User"
+		}
+	) => {
+		mockLocalStorage.getItem.mockReturnValue(token);
+		mockFetch.mockResolvedValueOnce({
+			ok: true,
+			json: async () => userData
+		});
+
+		const { result } = createHook();
+
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		return { result, token, userData };
+	};
+
+	// Helper function to setup unauthenticated user
+	const setupUnauthenticatedUser = () => {
+		mockLocalStorage.getItem.mockReturnValue(null);
+		mockSessionStorage.getItem.mockReturnValue(null);
+		return createHook();
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLocalStorage.getItem.mockClear();
@@ -52,12 +88,9 @@ describe("useAuth", () => {
 		console.warn = originalWarn;
 	});
 
-	describe("Initial State", () => {
-		it("should start with unauthenticated state when no token exists", () => {
-			mockLocalStorage.getItem.mockReturnValue(null);
-			mockSessionStorage.getItem.mockReturnValue(null);
-
-			const { result } = renderHook(() => useAuth());
+	describe("User starts unauthenticated", () => {
+		it("should start with clean state when no token exists", () => {
+			const { result } = setupUnauthenticatedUser();
 
 			expect(result.current.isAuthenticated).toBe(false);
 			expect(result.current.user).toBe(null);
@@ -65,17 +98,14 @@ describe("useAuth", () => {
 		});
 
 		it("should not call API when no token exists in storage", () => {
-			mockLocalStorage.getItem.mockReturnValue(null);
-			mockSessionStorage.getItem.mockReturnValue(null);
-
-			renderHook(() => useAuth());
+			setupUnauthenticatedUser();
 
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 	});
 
-	describe("Token Validation on Mount", () => {
-		it("should validate existing token with /api/v1/users/me API call", async () => {
+	describe("User authentication validates on mount", () => {
+		it("should validate existing token with API call", async () => {
 			const mockToken = "valid-jwt-token";
 			const mockUserData = {
 				email: "integration.test@example.com",
@@ -84,17 +114,7 @@ describe("useAuth", () => {
 				organization: "Test Corp"
 			};
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockUserData
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
-			});
+			const { result } = await setupAuthenticatedUser(mockToken, mockUserData);
 
 			// Verify API call was made correctly
 			expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
@@ -123,10 +143,10 @@ describe("useAuth", () => {
 				status: 401
 			});
 
-			const { result } = renderHook(() => useAuth());
+			const { result } = createHook();
 
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
 
 			// Verify token was removed from localStorage
@@ -143,10 +163,10 @@ describe("useAuth", () => {
 			mockLocalStorage.getItem.mockReturnValue(mockToken);
 			mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-			const { result } = renderHook(() => useAuth());
+			const { result } = createHook();
 
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
 
 			// Verify token was removed due to validation failure
@@ -168,22 +188,23 @@ describe("useAuth", () => {
 				}
 			});
 
-			const { result } = renderHook(() => useAuth());
+			const { result } = createHook();
 
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			// Verify auth state is cleared
+			expect(result.current.isAuthenticated).toBe(false);
 
 			// Verify token was removed due to parsing error
 			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
 	});
 
-	describe("Login Functionality", () => {
+	describe("User can login", () => {
 		it("should login user with token and user data", () => {
-			mockLocalStorage.getItem.mockReturnValue(null);
-
-			const { result } = renderHook(() => useAuth());
+			const { result } = setupUnauthenticatedUser();
 
 			const mockToken = "new-jwt-token";
 			const mockUser = {
@@ -208,26 +229,13 @@ describe("useAuth", () => {
 		});
 	});
 
-	describe("Logout Functionality", () => {
+	describe("User can logout", () => {
 		it("should logout user and call API endpoint", async () => {
 			const mockToken = "existing-jwt-token";
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-
-			// Mock successful user data fetch on mount
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					email: "user@example.com",
-					first_name: "John",
-					last_name: "Doe"
-				})
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			// Wait for authentication to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
+			const { result } = await setupAuthenticatedUser(mockToken, {
+				email: "user@example.com",
+				first_name: "John",
+				last_name: "Doe"
 			});
 
 			// Reset fetch mock for logout call
@@ -265,23 +273,10 @@ describe("useAuth", () => {
 			const mockToken = "existing-jwt-token";
 			const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-
-			// Mock successful user data fetch on mount
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					email: "user@example.com",
-					first_name: "John",
-					last_name: "Doe"
-				})
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			// Wait for authentication to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
+			const { result } = await setupAuthenticatedUser(mockToken, {
+				email: "user@example.com",
+				first_name: "John",
+				last_name: "Doe"
 			});
 
 			// Reset fetch mock for failed logout call
@@ -308,9 +303,8 @@ describe("useAuth", () => {
 		});
 	});
 
-	describe("Real User Data Integration", () => {
+	describe("User data formats correctly", () => {
 		it("should properly format first_name and last_name as display name", async () => {
-			const mockToken = "valid-jwt-token";
 			const mockUserData = {
 				email: "jane.smith@example.com",
 				first_name: "Jane",
@@ -319,17 +313,7 @@ describe("useAuth", () => {
 				role: "developer"
 			};
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockUserData
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
-			});
+			const { result } = await setupAuthenticatedUser("valid-jwt-token", mockUserData);
 
 			// Verify name is properly formatted as "First Last"
 			expect(result.current.user?.name).toBe("Jane Smith");
@@ -337,7 +321,6 @@ describe("useAuth", () => {
 		});
 
 		it("should handle edge cases in name formatting", async () => {
-			const mockToken = "valid-jwt-token";
 			const testCases = [
 				{
 					input: { first_name: "", last_name: "Smith" },
@@ -354,19 +337,9 @@ describe("useAuth", () => {
 			];
 
 			for (const testCase of testCases) {
-				mockLocalStorage.getItem.mockReturnValue(mockToken);
-				mockFetch.mockResolvedValueOnce({
-					ok: true,
-					json: async () => ({
-						email: "test@example.com",
-						...testCase.input
-					})
-				});
-
-				const { result } = renderHook(() => useAuth());
-
-				await waitFor(() => {
-					expect(result.current.isAuthenticated).toBe(true);
+				const { result } = await setupAuthenticatedUser("valid-jwt-token", {
+					email: "test@example.com",
+					...testCase.input
 				});
 
 				expect(result.current.user?.name).toBe(testCase.expected);
@@ -377,9 +350,8 @@ describe("useAuth", () => {
 		});
 	});
 
-	describe("Bug Fix Validation", () => {
+	describe("User data validation", () => {
 		it("should prevent 'John Doe' hardcoded fallback by using real API data", async () => {
-			const mockToken = "existing-token";
 			const realUserData = {
 				email: "real.user@example.com",
 				first_name: "Real",
@@ -387,17 +359,7 @@ describe("useAuth", () => {
 				organization: "Real Corp"
 			};
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => realUserData
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
-			});
+			const { result } = await setupAuthenticatedUser("existing-token", realUserData);
 
 			// Verify that we get real user data, NOT "John Doe"
 			expect(result.current.user?.name).toBe("Real User");
@@ -419,7 +381,7 @@ describe("useAuth", () => {
 			});
 
 			await act(async () => {
-				renderHook(() => useAuth());
+				createHook();
 			});
 
 			// Verify API call happens immediately
@@ -432,27 +394,10 @@ describe("useAuth", () => {
 		});
 	});
 
-	describe("Session Timeout", () => {
+	describe("User session timeout", () => {
 		it("should automatically logout after timeout period of inactivity", async () => {
 			const mockToken = "valid-token";
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-
-			// Mock successful user data fetch on mount
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					email: "user@example.com",
-					first_name: "Test",
-					last_name: "User"
-				})
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			// Wait for authentication to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
-			});
+			const { result } = await setupAuthenticatedUser(mockToken);
 
 			// Mock logout API call for when timeout fires
 			mockFetch.mockClear();
@@ -493,24 +438,7 @@ describe("useAuth", () => {
 
 		it("should reset timeout on user activity", async () => {
 			const mockToken = "valid-token";
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-
-			// Mock successful user data fetch on mount
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					email: "user@example.com",
-					first_name: "Test",
-					last_name: "User"
-				})
-			});
-
-			const { result } = renderHook(() => useAuth());
-
-			// Wait for authentication to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(true);
-			});
+			const { result } = await setupAuthenticatedUser(mockToken);
 
 			// Enable fake timers after authentication is complete
 			vi.useFakeTimers();
@@ -552,16 +480,15 @@ describe("useAuth", () => {
 			vi.useRealTimers();
 
 			// Wait for async logout operations to complete
-			await waitFor(() => {
-				expect(result.current.isAuthenticated).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			expect(result.current.isAuthenticated).toBe(false);
 		});
 
 		it("should not start timeout for unauthenticated users", async () => {
-			mockLocalStorage.getItem.mockReturnValue(null);
-			mockFetch.mockClear();
-
-			const { result } = renderHook(() => useAuth());
+			const { result } = setupUnauthenticatedUser();
 
 			// User is not authenticated
 			expect(result.current.isAuthenticated).toBe(false);

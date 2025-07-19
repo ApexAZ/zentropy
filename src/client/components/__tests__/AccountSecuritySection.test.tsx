@@ -1,5 +1,4 @@
-import React from "react";
-import { screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -25,552 +24,461 @@ vi.mock("../../hooks/useMultiProviderOAuth", () => ({
 }));
 
 describe("AccountSecuritySection", () => {
-	// Following User-Focused Testing pattern from tests/README.md
+	// Mock data setup
 	const defaultProps = TestPropsFactory.createAccountSecurityProps();
 	const mockEmailOnlyResponse = AccountSecurityFactory.createEmailOnly();
 	const mockHybridResponse = AccountSecurityFactory.createHybrid();
 	const defaultMultiProviderOAuth = MockUseMultiProviderOAuthFactory.create();
 
+	// Helper function to render component with consistent setup
+	const createAccountSecurity = (mockSecurityOverrides = {}, mockOAuthOverrides = {}) => {
+		const mockSecurity = {
+			...MockUseAccountSecurityFactory.create({ securityStatus: mockEmailOnlyResponse }),
+			...mockSecurityOverrides
+		};
+		const mockOAuth = {
+			...defaultMultiProviderOAuth,
+			getProviderState: vi.fn().mockReturnValue({ isLoading: false }),
+			...mockOAuthOverrides
+		};
+
+		(useAccountSecurity as any).mockReturnValue(mockSecurity);
+		(useMultiProviderOAuth as any).mockReturnValue(mockOAuth);
+
+		return renderWithToast(<AccountSecuritySection {...defaultProps} />);
+	};
+
+	// Helper function to fill password confirmation dialog
+	const fillPasswordConfirmation = async (password: string) => {
+		await waitFor(() => {
+			expect(document.getElementById("password")).toBeInTheDocument();
+		});
+		const passwordInput = document.getElementById("password") as HTMLInputElement;
+		fireEvent.change(passwordInput, { target: { value: password } });
+	};
+
+	// Helper function to trigger Google account linking
+	const linkGoogleAccount = async () => {
+		const user = userEvent.setup();
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
+		});
+		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
+		await user.click(linkButton);
+	};
+
+	// Helper function to trigger Google account unlinking
+	const unlinkGoogleAccount = async () => {
+		const user = userEvent.setup();
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
+		});
+		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
+		await user.click(unlinkButton);
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Set up default mock for useMultiProviderOAuth
-		(useMultiProviderOAuth as any).mockReturnValue(defaultMultiProviderOAuth);
 	});
 
 	afterEach(() => {
-		cleanup();
+		vi.restoreAllMocks();
 	});
 
-	// Test skeleton loading state
-	it("should show skeleton loading state while fetching security status", () => {
-		// Mock hook to return loading state
-		(useAccountSecurity as any).mockReturnValue(MockUseAccountSecurityFactory.createLoading());
+	describe("User can view account security status", () => {
+		it("should show skeleton loading state while fetching security status", () => {
+			createAccountSecurity(MockUseAccountSecurityFactory.createLoading());
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Should show skeleton loading elements instead of simple spinner
-		const skeletonElements = screen.getAllByRole("status");
-		expect(skeletonElements.length).toBeGreaterThan(0);
-
-		// Should show Account Security title
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Should show test container
-		expect(screen.getByTestId("account-security-container")).toBeInTheDocument();
-	});
-
-	// Test email-only authentication display
-	it("should display email-only authentication status correctly", async () => {
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue(
-			MockUseAccountSecurityFactory.create({
-				securityStatus: mockEmailOnlyResponse
-			})
-		);
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Should show email authentication as linked
-		expect(screen.getByText("Email Authentication")).toBeInTheDocument();
-		expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
-
-		// Should show Google authentication as not linked
-		expect(screen.getByText("Google Authentication")).toBeInTheDocument();
-		expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Not linked");
-
-		// Should show "Link Google Account" button
-		expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Unlink Google Account" })).not.toBeInTheDocument();
-	});
-
-	// Test optimistic updates
-	it("should display optimistic linked state during Google linking", async () => {
-		const mockOptimisticResponse = AccountSecurityFactory.createHybrid({
-			google_email: "linking..."
+			const skeletonElements = screen.getAllByRole("status");
+			expect(skeletonElements.length).toBeGreaterThan(0);
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByTestId("account-security-container")).toBeInTheDocument();
 		});
 
-		// Mock hook to return optimistic state
-		(useAccountSecurity as any).mockReturnValue(
-			MockUseAccountSecurityFactory.create({
+		it("should display email-only authentication status correctly", () => {
+			createAccountSecurity({ securityStatus: mockEmailOnlyResponse });
+
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByText("Email Authentication")).toBeInTheDocument();
+			expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
+			expect(screen.getByText("Google Authentication")).toBeInTheDocument();
+			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Not linked");
+			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: "Unlink Google Account" })).not.toBeInTheDocument();
+		});
+
+		it("should display hybrid authentication status correctly", () => {
+			const mockSecurity = {
+				securityStatus: mockHybridResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
+			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
+			expect(screen.getByText("john@gmail.com")).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
+		});
+
+		it("should display correct status badges and indicators", () => {
+			createAccountSecurity({ securityStatus: mockEmailOnlyResponse });
+
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByTestId("email-auth-indicator")).toHaveClass("bg-success");
+			expect(screen.getByTestId("google-auth-indicator")).toHaveClass("bg-neutral");
+			expect(screen.getByTestId("email-auth-status")).toHaveAttribute(
+				"aria-label",
+				"Email authentication is active"
+			);
+			expect(screen.getByTestId("google-auth-status")).toHaveAttribute(
+				"aria-label",
+				"Google authentication is not linked"
+			);
+		});
+	});
+
+	describe("User experiences loading and optimistic states", () => {
+		it("should display optimistic linked state during Google linking", () => {
+			const mockOptimisticResponse = AccountSecurityFactory.createHybrid({
+				google_email: "linking..."
+			});
+
+			const mockSecurity = {
 				securityStatus: mockEmailOnlyResponse,
 				linkingLoading: true,
 				optimisticSecurityStatus: mockOptimisticResponse
-			})
-		);
+			};
+			const mockOAuth = MockUseMultiProviderOAuthFactory.createWithLinkedProvider("google");
 
-		// Mock multi-provider OAuth to show Google as linked
-		(useMultiProviderOAuth as any).mockReturnValue(
-			MockUseMultiProviderOAuthFactory.createWithLinkedProvider("google")
-		);
+			createAccountSecurity(mockSecurity, mockOAuth);
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Should show optimistic Google authentication as linked
-		expect(screen.getByText("Google Authentication")).toBeInTheDocument();
-		expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
-
-		// Should show linking email placeholder
-		expect(screen.getByText("linking...")).toBeInTheDocument();
-
-		// Should show "Unlink Google" button (optimistic state) - updated text
-		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
-	});
-
-	// Test hybrid authentication display
-	it("should display hybrid authentication status correctly", async () => {
-		// Mock hook to return hybrid status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockHybridResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
-
-		// Mock multi-provider OAuth to show Google as linked
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google")
-		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Should show both authentication methods as active
-		expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
-		expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
-
-		// Should show linked Google email
-		expect(screen.getByText("john@gmail.com")).toBeInTheDocument();
-
-		// Should show "Unlink Google Account" button
-		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
-	});
-
-	// Test visual indicators and status badges
-	it("should display correct status badges and indicators", async () => {
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue(
-			MockUseAccountSecurityFactory.create({
-				securityStatus: mockEmailOnlyResponse
-			})
-		);
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Check for visual status indicators
-		expect(screen.getByTestId("email-auth-indicator")).toHaveClass("bg-success");
-		expect(screen.getByTestId("google-auth-indicator")).toHaveClass("bg-neutral");
-
-		// Check accessibility attributes
-		expect(screen.getByTestId("email-auth-status")).toHaveAttribute("aria-label", "Email authentication is active");
-		expect(screen.getByTestId("google-auth-status")).toHaveAttribute(
-			"aria-label",
-			"Google authentication is not linked"
-		);
-	});
-
-	// Test linking Google account
-	it("should handle Google account linking successfully", async () => {
-		const user = userEvent.setup();
-		const mockLinkProvider = vi.fn();
-
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
-
-		// Mock multi-provider OAuth to capture link calls
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			linkProvider: mockLinkProvider
-		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
-		});
-
-		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
-		await user.click(linkButton);
-
-		// Should call the multi-provider hook's linkProvider function
-		expect(mockLinkProvider).toHaveBeenCalledWith("google");
-	});
-
-	// Test unlinking Google account
-	it("should handle Google account unlinking with password confirmation", async () => {
-		const user = userEvent.setup();
-		const mockUnlinkProvider = vi.fn().mockResolvedValue(undefined);
-
-		// Mock hook to return hybrid status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockHybridResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
-
-		// Mock multi-provider OAuth to show Google as linked and capture unlink calls
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
-			unlinkProvider: mockUnlinkProvider
-		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		await waitFor(() => {
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByText("Google Authentication")).toBeInTheDocument();
+			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
+			expect(screen.getByText("linking...")).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
 		});
-
-		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		await user.click(unlinkButton);
-
-		// Should show enhanced confirmation dialog
-		await waitFor(() => {
-			expect(screen.getByRole("dialog")).toBeInTheDocument();
-			expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
-		});
-
-		// Enter password and confirm
-		await waitFor(() => {
-			expect(document.getElementById("password")).toBeInTheDocument();
-		});
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "current-password" } });
-
-		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
-		await user.click(confirmButton);
-
-		// Should call the multi-provider hook's unlinkProvider with password
-		// Direct assertion for synchronous mock call after user click
-		expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 	});
 
-	// Test password confirmation modal
-	it("should validate password before unlinking", async () => {
-		const user = userEvent.setup();
-		const mockUnlinkProvider = vi.fn();
+	describe("User can link Google account", () => {
+		it("should handle Google account linking successfully", async () => {
+			const mockLinkProvider = vi.fn();
+			const mockSecurity = {
+				securityStatus: mockEmailOnlyResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				linkProvider: mockLinkProvider,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
 
-		// Mock hook to return hybrid status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockHybridResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			await linkGoogleAccount();
+
+			expect(mockLinkProvider).toHaveBeenCalledWith("google");
 		});
 
-		// Mock multi-provider OAuth to show Google as linked
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
-			unlinkProvider: mockUnlinkProvider
+		it("should handle linking errors appropriately", async () => {
+			const mockLinkProvider = vi.fn();
+			const mockSecurity = {
+				securityStatus: mockEmailOnlyResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				linkProvider: mockLinkProvider,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			await linkGoogleAccount();
+
+			expect(mockLinkProvider).toHaveBeenCalledWith("google");
 		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
-		});
-
-		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		await user.click(unlinkButton);
-
-		// Should show password dialog
-		await waitFor(() => {
-			expect(screen.getByRole("dialog")).toBeInTheDocument();
-		});
-
-		// Try to confirm without password
-		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
-		await user.click(confirmButton);
-
-		// Should show validation error
-		expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
-		expect(mockUnlinkProvider).not.toHaveBeenCalled();
 	});
 
-	// Test error handling
-	it("should handle API errors gracefully", async () => {
-		const mockLoadSecurityStatus = vi.fn();
+	describe("User can unlink Google account", () => {
+		it("should handle Google account unlinking with password confirmation", async () => {
+			const user = userEvent.setup();
+			const mockUnlinkProvider = vi.fn().mockResolvedValue(undefined);
+			const mockSecurity = {
+				securityStatus: mockHybridResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+				unlinkProvider: mockUnlinkProvider,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
 
-		// Mock hook to return error state
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: null,
-			loading: false,
-			error: "Connection problem. Please check your internet connection and try again.",
-			errorResolution: "Check your internet connection and try again in a moment.",
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: mockLoadSecurityStatus,
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			await unlinkGoogleAccount();
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+				expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
+			});
+
+			await fillPasswordConfirmation("current-password");
+
+			const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
+			await user.click(confirmButton);
+
+			expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "current-password");
 		});
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
+		it("should validate password before unlinking", async () => {
+			const user = userEvent.setup();
+			const mockUnlinkProvider = vi.fn();
+			const mockSecurity = {
+				securityStatus: mockHybridResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+				unlinkProvider: mockUnlinkProvider,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
 
-		expect(
-			screen.getByText("Connection problem. Please check your internet connection and try again.")
-		).toBeInTheDocument();
-		expect(screen.getByText("Check your internet connection and try again in a moment.")).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			await unlinkGoogleAccount();
+
+			await waitFor(() => {
+				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			});
+
+			const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
+			await user.click(confirmButton);
+
+			expect(screen.getByText("Password is required to confirm this action")).toBeInTheDocument();
+			expect(mockUnlinkProvider).not.toHaveBeenCalled();
+		});
+
+		it("should handle unlinking errors appropriately", async () => {
+			const user = userEvent.setup();
+			const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
+			const mockSecurity = {
+				securityStatus: mockHybridResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
+				unlinkProvider: mockUnlinkProvider,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			await unlinkGoogleAccount();
+
+			await fillPasswordConfirmation("wrong-password");
+
+			const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
+			await user.click(confirmButton);
+
+			await waitFor(() => {
+				expect(screen.getByText("Incorrect password")).toBeInTheDocument();
+			});
+		});
 	});
 
-	// Test error handling without resolution guidance
-	it("should handle API errors without resolution guidance", async () => {
-		const mockLoadSecurityStatus = vi.fn();
+	describe("User encounters error states", () => {
+		it("should handle API errors gracefully", () => {
+			const mockLoadSecurityStatus = vi.fn();
+			const mockSecurity = {
+				securityStatus: null,
+				loading: false,
+				error: "Connection problem. Please check your internet connection and try again.",
+				errorResolution: "Check your internet connection and try again in a moment.",
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: mockLoadSecurityStatus,
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
 
-		// Mock hook to return error state without resolution
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: null,
-			loading: false,
-			error: "Unable to load account security information.",
-			errorResolution: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: mockLoadSecurityStatus,
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
+			createAccountSecurity(mockSecurity);
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		expect(screen.getByText("Unable to load account security information.")).toBeInTheDocument();
-		expect(screen.queryByText("Check your internet connection and try again in a moment.")).not.toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-	});
-
-	// Test retry functionality
-	it("should allow user to retry after error", async () => {
-		const user = userEvent.setup();
-		const mockLoadSecurityStatus = vi.fn();
-
-		// Mock hook to return error state
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: null,
-			loading: false,
-			error: "Connection problem. Please check your internet connection and try again.",
-			errorResolution: "Check your internet connection and try again in a moment.",
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: mockLoadSecurityStatus,
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Wait for error state
-		await waitFor(() => {
 			expect(
 				screen.getByText("Connection problem. Please check your internet connection and try again.")
 			).toBeInTheDocument();
+			expect(screen.getByText("Check your internet connection and try again in a moment.")).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 		});
 
-		// Click retry button
-		const retryButton = screen.getByRole("button", { name: "Retry" });
-		await user.click(retryButton);
+		it("should handle API errors without resolution guidance", () => {
+			const mockLoadSecurityStatus = vi.fn();
+			const mockSecurity = {
+				securityStatus: null,
+				loading: false,
+				error: "Unable to load account security information.",
+				errorResolution: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: mockLoadSecurityStatus,
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
 
-		// Should call the hook's loadSecurityStatus function
-		expect(mockLoadSecurityStatus).toHaveBeenCalled();
-	});
+			createAccountSecurity(mockSecurity);
 
-	// Test linking errors
-	it("should handle linking errors appropriately", async () => {
-		const user = userEvent.setup();
-		const mockLinkProvider = vi.fn();
-
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
+			expect(screen.getByText("Unable to load account security information.")).toBeInTheDocument();
+			expect(
+				screen.queryByText("Check your internet connection and try again in a moment.")
+			).not.toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
 		});
 
-		// Mock multi-provider OAuth to capture link calls
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			linkProvider: mockLinkProvider
-		});
+		it("should allow user to retry after error", async () => {
+			const user = userEvent.setup();
+			const mockLoadSecurityStatus = vi.fn();
+			const mockSecurity = {
+				securityStatus: null,
+				loading: false,
+				error: "Connection problem. Please check your internet connection and try again.",
+				errorResolution: "Check your internet connection and try again in a moment.",
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				loadSecurityStatus: mockLoadSecurityStatus,
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
+			createAccountSecurity(mockSecurity);
 
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
-		});
+			await waitFor(() => {
+				expect(
+					screen.getByText("Connection problem. Please check your internet connection and try again.")
+				).toBeInTheDocument();
+			});
 
-		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
-		await user.click(linkButton);
+			const retryButton = screen.getByRole("button", { name: "Retry" });
+			await user.click(retryButton);
 
-		// Should call the multi-provider hook's linkProvider function
-		expect(mockLinkProvider).toHaveBeenCalledWith("google");
-	});
-
-	// Test unlinking errors
-	it("should handle unlinking errors appropriately", async () => {
-		const user = userEvent.setup();
-		const mockUnlinkProvider = vi.fn().mockRejectedValue(new Error("Incorrect password"));
-
-		// Mock hook to return hybrid status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockHybridResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
-		});
-
-		// Mock multi-provider OAuth to show Google as linked and return error on unlink
-		(useMultiProviderOAuth as any).mockReturnValue({
-			...defaultMultiProviderOAuth,
-			isProviderLinked: vi.fn().mockImplementation(provider => provider === "google"),
-			unlinkProvider: mockUnlinkProvider
-		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
-		});
-
-		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		await user.click(unlinkButton);
-
-		// Enter password and confirm
-		await waitFor(() => {
-			expect(document.getElementById("password")).toBeInTheDocument();
-		});
-
-		const passwordInput = document.getElementById("password") as HTMLInputElement;
-		fireEvent.change(passwordInput, { target: { value: "wrong-password" } });
-
-		const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
-		await user.click(confirmButton);
-
-		// Should show error in dialog
-		await waitFor(() => {
-			expect(screen.getByText("Incorrect password")).toBeInTheDocument();
+			expect(mockLoadSecurityStatus).toHaveBeenCalled();
 		});
 	});
 
-	// Test accessibility
-	it("should meet accessibility requirements", async () => {
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
+	describe("User experiences accessibility and responsive design", () => {
+		it("should meet accessibility requirements", () => {
+			const mockSecurity = {
+				securityStatus: mockEmailOnlyResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			createAccountSecurity(mockSecurity);
+
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
+			expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
+			expect(screen.getByTestId("email-auth-status")).toHaveAttribute("aria-label");
+			expect(screen.getByTestId("google-auth-status")).toHaveAttribute("aria-label");
+
+			const linkButton = screen.getByRole("button", { name: "Link Google Account" });
+			expect(linkButton).toHaveAttribute("aria-label");
 		});
 
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
+		it("should render responsively across device sizes", () => {
+			const mockSecurity = {
+				securityStatus: mockEmailOnlyResponse,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
 
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
+			createAccountSecurity(mockSecurity);
 
-		// Check heading structure
-		expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
+			expect(screen.getByText("Account Security")).toBeInTheDocument();
 
-		// Check ARIA labels
-		expect(screen.getByTestId("email-auth-status")).toHaveAttribute("aria-label");
-		expect(screen.getByTestId("google-auth-status")).toHaveAttribute("aria-label");
-
-		// Check button accessibility
-		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
-		expect(linkButton).toHaveAttribute("aria-label");
-	});
-
-	// Test responsive design elements
-	it("should render responsively across device sizes", async () => {
-		// Mock hook to return email-only status
-		(useAccountSecurity as any).mockReturnValue({
-			securityStatus: mockEmailOnlyResponse,
-			loading: false,
-			error: null,
-			linkingLoading: false,
-			unlinkingLoading: false,
-			googleOAuthReady: true,
-			oauthLoading: false,
-			optimisticSecurityStatus: null,
-			loadSecurityStatus: vi.fn(),
-			handleLinkGoogle: vi.fn(),
-			handleUnlinkGoogle: vi.fn()
+			const container = screen.getByTestId("account-security-container");
+			expect(container).toHaveClass("border-layout-background", "bg-content-background", "rounded-lg");
 		});
-
-		renderWithToast(<AccountSecuritySection {...defaultProps} />);
-
-		// Direct assertion for synchronous rendering with mocked data
-		expect(screen.getByText("Account Security")).toBeInTheDocument();
-
-		// Check that the container exists and has the Card component styling
-		const container = screen.getByTestId("account-security-container");
-		expect(container).toHaveClass("border-layout-background", "bg-content-background", "rounded-lg");
 	});
 });

@@ -6,6 +6,21 @@ import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 import { useToast } from "../contexts/ToastContext";
 import type { AccountSecurityResponse, LinkOAuthProviderRequest, UnlinkOAuthProviderRequest } from "../types";
 
+// 🚀 PERFORMANCE PATTERN: Environment-Aware Timeout Optimization
+// ✅ Shorter timeouts in test environment for faster test execution
+// ✅ Full timeouts in production for reliable user experience
+function getEnvironmentAwareTimeout(productionMs: number): number {
+	// Test environment: Use much shorter timeouts for fast test execution
+	if (import.meta.env.MODE === "test" || import.meta.env.VITEST === "true") {
+		// Use 1/15th of production timeout, minimum 100ms, maximum 1000ms
+		const testTimeout = Math.max(100, Math.min(1000, productionMs / 15));
+		return testTimeout;
+	}
+
+	// Production/development: Use full timeout values
+	return productionMs;
+}
+
 interface UseAccountSecurityProps {
 	/** Callback when security status is updated */
 	onSecurityUpdate: () => void;
@@ -64,7 +79,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 	 * Load account security status from API with enhanced error handling and timeout
 	 */
 	const loadSecurityStatus = useCallback(async () => {
-		const TIMEOUT_MS = 15000; // 15 second timeout
+		const TIMEOUT_MS = getEnvironmentAwareTimeout(15000); // 15s production, ~1s test
 		let timeoutId: NodeJS.Timeout | undefined;
 
 		try {
@@ -103,7 +118,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 	 */
 	const handleGoogleOAuthSuccess = useCallback(
 		async (credential: string) => {
-			const TIMEOUT_MS = 10000; // 10 second timeout for linking
+			const TIMEOUT_MS = getEnvironmentAwareTimeout(10000); // 10s production, ~667ms test
 			let timeoutId: NodeJS.Timeout | undefined;
 
 			try {
@@ -193,7 +208,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 	 */
 	const handleUnlinkGoogle = useCallback(
 		async (password: string) => {
-			const TIMEOUT_MS = 10000; // 10 second timeout for unlinking
+			const TIMEOUT_MS = getEnvironmentAwareTimeout(10000); // 10s production, ~667ms test
 			let timeoutId: NodeJS.Timeout | undefined;
 
 			try {

@@ -41,10 +41,11 @@ pids/
 coverage/
 *.lcov
 
-# E2E test results
+# Test results
 tests-e2e-results/
 tests-e2e-report/
 test-results/
+test-results.json
 playwright-report/
 
 # IDE files

@@ -1,4 +1,3 @@
-import React from "react";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -131,6 +130,53 @@ describe("NavigationPanel - Organization Features", () => {
 		userName: "Test User"
 	};
 
+	// Helper function to render NavigationPanel with consistent setup
+	const createNavigationPanel = (overrides = {}) => {
+		const props = { ...mockProps, ...overrides };
+		return render(<NavigationPanel {...props} />);
+	};
+
+	// Helper function to open organization dropdown
+	const openOrganizationDropdown = async () => {
+		const user = userEvent.setup();
+		const switchButton = screen.getByRole("button", { name: /switch organization/i });
+		await user.click(switchButton);
+	};
+
+	// Helper function to switch to organization
+	const switchToOrganization = async (organizationName: string) => {
+		const user = userEvent.setup();
+		await openOrganizationDropdown();
+		const orgOption = screen.getByText(organizationName);
+		await user.click(orgOption);
+	};
+
+	// Helper function to leave organization
+	const leaveOrganization = async () => {
+		const user = userEvent.setup();
+		const leaveButton = screen.getByRole("button", { name: /leave organization/i });
+		await user.click(leaveButton);
+		// Wait for confirmation dialog to appear
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: /confirm/i })).toBeInTheDocument();
+		});
+		const confirmButton = screen.getByRole("button", { name: /confirm/i });
+		await user.click(confirmButton);
+	};
+
+	// Helper function to search projects
+	const searchProjects = async (searchTerm: string) => {
+		const searchInput = screen.getByPlaceholderText("Search projects...");
+		fireEvent.change(searchInput, { target: { value: searchTerm } });
+	};
+
+	// Helper function to create project
+	const createProject = async () => {
+		const user = userEvent.setup();
+		const createButton = screen.getByRole("button", { name: /create project/i });
+		await user.click(createButton);
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useOrganization as any).mockReturnValue(mockUseOrganization);
@@ -139,41 +185,38 @@ describe("NavigationPanel - Organization Features", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		cleanup();
 	});
 
-	describe("Organization Context Display", () => {
+	describe("User can view organization context", () => {
 		it("should display current organization in header", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Test Organization")).toBeInTheDocument();
 			expect(screen.getByText("test.com")).toBeInTheDocument();
 		});
 
 		it("should display organization switching button", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByRole("button", { name: /switch organization/i })).toBeInTheDocument();
 		});
 
 		it("should display user's organizations in dropdown", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
-			// Use getAllByText since "Test Organization" appears in both current selection and dropdown
 			const testOrgElements = screen.getAllByText("Test Organization");
 			expect(testOrgElements.length).toBeGreaterThan(0);
 			expect(screen.getByText("Another Org")).toBeInTheDocument();
 		});
 
 		it("should handle organization switching", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
-			await user.click(screen.getByText("Another Org"));
+			await switchToOrganization("Another Org");
 
 			expect(mockUseOrganization.getOrganizationById).toHaveBeenCalledWith("org-2");
 		});
@@ -184,25 +227,24 @@ describe("NavigationPanel - Organization Features", () => {
 				currentOrganization: null
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Personal")).toBeInTheDocument();
-			// Use getAllByText since email appears in multiple places (header and personal context)
 			const emailElements = screen.getAllByText("test@test.com");
 			expect(emailElements.length).toBeGreaterThan(0);
 		});
 	});
 
-	describe("Organization-filtered Projects", () => {
+	describe("User can browse organization-filtered projects", () => {
 		it("should display projects for current organization", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Test Project")).toBeInTheDocument();
 			expect(screen.getByText("team")).toBeInTheDocument();
 		});
 
 		it("should filter projects by organization", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(mockUseProject.loadProjectsByOrganization).toHaveBeenCalledWith("org-1");
 		});
@@ -213,18 +255,16 @@ describe("NavigationPanel - Organization Features", () => {
 				currentOrganization: null
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Personal Project")).toBeInTheDocument();
 			expect(screen.getByText("personal")).toBeInTheDocument();
 		});
 
 		it("should update projects when organization changes", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
-			await user.click(screen.getByText("Another Org"));
+			await switchToOrganization("Another Org");
 
 			expect(mockUseOrganization.getOrganizationById).toHaveBeenCalledWith("org-2");
 		});
@@ -235,62 +275,53 @@ describe("NavigationPanel - Organization Features", () => {
 				projects: []
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("No projects found")).toBeInTheDocument();
 		});
 	});
 
-	describe("Quick Actions", () => {
+	describe("User can access quick actions", () => {
 		it("should show create project button", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByRole("button", { name: /create project/i })).toBeInTheDocument();
 		});
 
 		it("should show join organization button", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Open the organization dropdown first
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
-			// Wait for dropdown content to appear
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /join organization/i })).toBeInTheDocument();
 			});
 		});
 
 		it("should show create organization button", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Open the organization dropdown first
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
-			// Wait for dropdown content to appear
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
 			});
 		});
 
 		it("should open project creation modal", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			await createProject();
 
 			expect(screen.getByText("Create New Project")).toBeInTheDocument();
 		});
 
 		it("should open organization selector for joining", async () => {
 			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Open the organization dropdown first
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
-			// Wait for dropdown and click join organization button
 			await waitFor(async () => {
 				const joinButton = screen.getByRole("button", { name: /join organization/i });
 				await user.click(joinButton);
@@ -300,35 +331,36 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 
 		it("should pass current organization to project creation", async () => {
-			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /create project/i }));
+			await createProject();
 
-			// Check that the project creation modal receives the current organization
 			const dialogs = screen.getAllByRole("dialog");
 			const projectModal = dialogs.find(dialog => dialog.getAttribute("data-organization"));
 			expect(projectModal).toHaveAttribute("data-organization", "org-1");
 		});
 	});
 
-	describe("Organization Management", () => {
+	describe("User can manage organization membership", () => {
 		it("should show leave organization option", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByRole("button", { name: /leave organization/i })).toBeInTheDocument();
 		});
 
 		it("should handle leaving organization", async () => {
 			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /leave organization/i }));
+			const leaveButton = screen.getByRole("button", { name: /leave organization/i });
+			await user.click(leaveButton);
 
-			// Should show confirmation dialog
-			expect(screen.getByText("Are you sure you want to leave Test Organization?")).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByText("Are you sure you want to leave Test Organization?")).toBeInTheDocument();
+			});
 
-			await user.click(screen.getByRole("button", { name: /confirm/i }));
+			const confirmButton = screen.getByRole("button", { name: /confirm/i });
+			await user.click(confirmButton);
 
 			expect(mockUseOrganization.leaveOrganization).toHaveBeenCalledWith("org-1");
 		});
@@ -342,71 +374,68 @@ describe("NavigationPanel - Organization Features", () => {
 				}
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.queryByRole("button", { name: /leave organization/i })).not.toBeInTheDocument();
 		});
 
 		it("should show organization member count", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText(/50 members/)).toBeInTheDocument();
 		});
 
 		it("should show organization created date", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText(/Created.*Dec.*31.*2023/)).toBeInTheDocument();
 		});
 	});
 
-	describe("Search and Filtering", () => {
+	describe("User can search and filter projects", () => {
 		it("should show search input for projects", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByPlaceholderText("Search projects...")).toBeInTheDocument();
 		});
 
 		it("should filter projects by search term", async () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			fireEvent.change(screen.getByPlaceholderText("Search projects..."), { target: { value: "Test" } });
+			await searchProjects("Test");
 
 			expect(screen.getByText("Test Project")).toBeInTheDocument();
 			expect(screen.queryByText("Personal Project")).not.toBeInTheDocument();
 		});
 
 		it("should show project status filter", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByRole("combobox", { name: /status filter/i })).toBeInTheDocument();
 		});
 
 		it("should filter projects by status", async () => {
 			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			const statusFilter = screen.getByRole("combobox", { name: /status filter/i });
 			await user.selectOptions(statusFilter, "archived");
 
-			// Status filtering is done client-side, so verify the selected option
 			await waitFor(() => {
 				expect(statusFilter).toHaveValue("archived");
 			});
 		});
 	});
 
-	describe("Loading States", () => {
+	describe("User experiences loading states", () => {
 		it("should show loading state for organizations", () => {
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
 				isLoading: true
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// The component might not show specific "Loading organizations..." text
-			// Check if any loading indicator is present or if org content is disabled
 			const switchButton = screen.getByRole("button", { name: /switch organization/i });
 			expect(switchButton).toBeInTheDocument();
 		});
@@ -417,20 +446,20 @@ describe("NavigationPanel - Organization Features", () => {
 				isLoading: true
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Loading projects...")).toBeInTheDocument();
 		});
 	});
 
-	describe("Error Handling", () => {
+	describe("User encounters error states", () => {
 		it("should display organization errors", () => {
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
 				error: "Failed to load organizations"
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Failed to load organizations")).toBeInTheDocument();
 		});
@@ -441,7 +470,7 @@ describe("NavigationPanel - Organization Features", () => {
 				error: "Failed to load projects"
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByText("Failed to load projects")).toBeInTheDocument();
 		});
@@ -453,7 +482,7 @@ describe("NavigationPanel - Organization Features", () => {
 				error: "Failed to load organizations"
 			});
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			await user.click(screen.getByRole("button", { name: /retry/i }));
 
@@ -461,36 +490,24 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 	});
 
-	describe("Organization Operations", () => {
+	describe("User can perform organization operations", () => {
 		it("should successfully switch organizations", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.getOrganizationById.mockResolvedValue(mockOrganizations[1]);
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Open organization dropdown
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await switchToOrganization("Another Org");
 
-			// Select different organization
-			await user.click(screen.getByText("Another Org"));
-
-			// Should call the organization switching function
 			expect(mockUseOrganization.getOrganizationById).toHaveBeenCalledWith("org-2");
 		});
 
 		it("should successfully leave organization with confirmation", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.leaveOrganization.mockResolvedValue(undefined);
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Click leave organization
-			await user.click(screen.getByRole("button", { name: /leave organization/i }));
+			await leaveOrganization();
 
-			// Confirm in dialog
-			await user.click(screen.getByRole("button", { name: /confirm/i }));
-
-			// Should call leave organization function
 			expect(mockUseOrganization.leaveOrganization).toHaveBeenCalledWith("org-1");
 		});
 
@@ -498,33 +515,29 @@ describe("NavigationPanel - Organization Features", () => {
 			const user = userEvent.setup();
 			mockUseOrganization.joinOrganization.mockResolvedValue(undefined);
 
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			// Open organization dropdown
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
-			// Click join organization to open selector
 			await waitFor(async () => {
 				const joinButton = screen.getByRole("button", { name: /join organization/i });
 				await user.click(joinButton);
 			});
 
-			// Should open organization selector
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
 	});
 
-	describe("Keyboard Navigation", () => {
+	describe("User experiences keyboard navigation", () => {
 		it("should support keyboard navigation for organization switching", async () => {
 			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			const switchButton = screen.getByRole("button", { name: /switch organization/i });
 			switchButton.focus();
 
 			await user.keyboard("{Enter}");
 
-			// Use getAllByText since "Test Organization" appears in both header and dropdown
 			const testOrgElements = screen.getAllByText("Test Organization");
 			expect(testOrgElements.length).toBeGreaterThan(0);
 			expect(screen.getByText("Another Org")).toBeInTheDocument();
@@ -532,9 +545,9 @@ describe("NavigationPanel - Organization Features", () => {
 
 		it("should support Enter key for organization selection", async () => {
 			const user = userEvent.setup();
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
-			await user.click(screen.getByRole("button", { name: /switch organization/i }));
+			await openOrganizationDropdown();
 
 			const orgOption = screen.getByRole("option", { name: /another org/i });
 			orgOption.focus();
@@ -545,9 +558,9 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 	});
 
-	describe("Accessibility", () => {
+	describe("User experiences accessibility features", () => {
 		it("should have proper ARIA attributes for organization dropdown", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			const switchButton = screen.getByRole("button", { name: /switch organization/i });
 			expect(switchButton).toHaveAttribute("aria-expanded", "false");
@@ -555,7 +568,7 @@ describe("NavigationPanel - Organization Features", () => {
 		});
 
 		it("should have proper heading structure", () => {
-			render(<NavigationPanel {...mockProps} />);
+			createNavigationPanel();
 
 			expect(screen.getByRole("heading", { level: 3, name: /test organization/i })).toBeInTheDocument();
 			expect(screen.getByRole("heading", { level: 3, name: /projects/i })).toBeInTheDocument();

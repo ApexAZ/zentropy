@@ -1,7 +1,8 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import "@testing-library/jest-dom";
+import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import FlyoutNavigation from "../FlyoutNavigation";
 
 describe("FlyoutNavigation", () => {
@@ -42,11 +43,11 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("shows the dropdown menu when button is clicked", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
-		await user.click(menuButton);
+		fastUserActions.click(menuButton);
+		await fastStateSync();
 
 		expect(screen.getByText("About")).toBeInTheDocument();
 		expect(screen.getByText("Contact")).toBeInTheDocument();
@@ -54,59 +55,63 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("hides the dropdown menu when button is clicked again", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 
 		// Open menu
-		await user.click(menuButton);
+		fastUserActions.click(menuButton);
+		await fastStateSync();
 		expect(screen.getByText("About")).toBeInTheDocument();
 
 		// Close menu
-		await user.click(menuButton);
+		fastUserActions.click(menuButton);
+		await fastStateSync();
 		expect(screen.queryByText("About")).not.toBeInTheDocument();
 		expect(menuButton).toHaveAttribute("aria-expanded", "false");
 	});
 
 	it("calls onPageChange when About is clicked", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} />);
 
 		// Open menu
-		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
+		await fastStateSync();
 
 		// Click About
-		await user.click(screen.getByText("About"));
+		fastUserActions.click(screen.getByText("About"));
+		await fastStateSync();
 
 		expect(mockOnPageChange).toHaveBeenCalledWith("about");
 	});
 
 	it("calls onPageChange when Contact is clicked", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} />);
 
 		// Open menu
-		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
+		await fastStateSync();
 
 		// Click Contact
-		await user.click(screen.getByText("Contact"));
+		fastUserActions.click(screen.getByText("Contact"));
+		await fastStateSync();
 
 		expect(mockOnPageChange).toHaveBeenCalledWith("contact");
 	});
 
 	it("closes the menu after clicking a navigation item", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 
 		// Open menu
-		await user.click(menuButton);
+		fastUserActions.click(menuButton);
+		await fastStateSync();
 		expect(screen.getByText("About")).toBeInTheDocument();
 
 		// Click About
-		await user.click(screen.getByText("About"));
+		fastUserActions.click(screen.getByText("About"));
+		await fastStateSync();
 
 		// Menu should be closed
 		expect(screen.queryByText("About")).not.toBeInTheDocument();
@@ -114,11 +119,11 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("highlights the current page in the dropdown", async () => {
-		const user = userEvent.setup();
 		render(<FlyoutNavigation {...defaultProps} currentPage="about" />);
 
 		// Open menu
-		await user.click(screen.getByRole("button", { name: /navigation menu/i }));
+		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
+		await fastStateSync();
 
 		const aboutButton = screen.getByText("About");
 		const contactButton = screen.getByText("Contact");

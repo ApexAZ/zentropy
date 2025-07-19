@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fastUserActions, fastStateSync } from "./utils";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import App from "../App";
@@ -200,8 +200,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 	describe("Google OAuth Registration Flow", () => {
 		it("should handle successful Google OAuth registration by calling auth.login", async () => {
 			// This test will FAIL initially - Google OAuth success handling not implemented
-			const user = userEvent.setup();
-
 			// Mock successful OAuth response
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -225,7 +223,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Wait for modal to appear
 			await waitFor(() => {
@@ -234,7 +233,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click Google OAuth button (this will trigger the mocked OAuth flow)
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Verify that auth.login was called with correct parameters
 			await waitFor(() => {
@@ -251,8 +251,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should stay on home page after successful Google OAuth registration", async () => {
 			// Updated test - no longer redirects to dashboard, stays on home page
-			const user = userEvent.setup();
-
 			// Mock successful OAuth response
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -276,11 +274,13 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Click Google OAuth button
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Should stay on home page after successful OAuth (no automatic redirect)
 			await waitFor(() => {
@@ -300,8 +300,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should handle Google OAuth errors gracefully without crashing", async () => {
 			// This test will FAIL initially - error handling not implemented properly
-			const user = userEvent.setup();
-
 			// Mock failed OAuth response
 			global.fetch = vi.fn().mockResolvedValueOnce({
 				ok: false,
@@ -312,11 +310,13 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Click Google OAuth button
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Should show error message and NOT call auth.login
 			await waitFor(() => {
@@ -330,8 +330,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should handle network errors during Google OAuth", async () => {
 			// This test will FAIL initially - network error handling not implemented
-			const user = userEvent.setup();
-
 			// Mock network error
 			global.fetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
 
@@ -339,11 +337,13 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Click Google OAuth button
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Should handle network error gracefully
 			await waitFor(() => {
@@ -355,8 +355,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should not call auth.login if Google OAuth response is missing required fields", async () => {
 			// This test will FAIL initially - response validation not implemented
-			const user = userEvent.setup();
-
 			// Mock incomplete OAuth response (missing user data)
 			const incompleteResponse = {
 				access_token: "mock-jwt-token",
@@ -373,11 +371,13 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Click Google OAuth button
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Should handle incomplete response gracefully
 			await waitFor(() => {
@@ -394,8 +394,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should handle Google OAuth credential parameter correctly", async () => {
 			// This test will FAIL initially - credential handling not properly implemented
-			const user = userEvent.setup();
-
 			// Mock successful OAuth response
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -418,14 +416,16 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// Simulate Google OAuth success with credential
 			// This simulates the RegistrationMethodModal calling onSelectGoogle with credential
 
 			// Trigger Google OAuth success simulation
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// Verify the credential was sent to backend
 			await waitFor(() => {
@@ -444,8 +444,6 @@ describe("App - Google OAuth Integration (TDD)", () => {
 	describe("Google OAuth Integration State Management", () => {
 		it("should properly update App state after successful Google OAuth", async () => {
 			// This test will FAIL initially - state management integration not complete
-			const user = userEvent.setup();
-
 			// Mock successful OAuth
 			const mockAuthResponse = {
 				access_token: "mock-jwt-token",
@@ -472,10 +470,12 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 			// Perform Google OAuth
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// After successful OAuth, should show authenticated state
 			await waitFor(() => {
@@ -490,13 +490,12 @@ describe("App - Google OAuth Integration (TDD)", () => {
 
 		it("should handle Google OAuth callback parameter correctly in App component", async () => {
 			// This test will FAIL initially - App doesn't properly handle OAuth callback
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Click show registration button
 			const registerButton = screen.getByRole("button", { name: /show registration/i });
-			await user.click(registerButton);
+			fastUserActions.click(registerButton);
+			await fastStateSync();
 
 			// The RegistrationMethodModal should call App's handleSelectGoogleRegistration
 			// with the credential parameter when OAuth succeeds
@@ -506,7 +505,8 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			// This will fail because App.handleSelectGoogleRegistration just logs to console
 			// instead of processing the OAuth credential
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
-			await user.click(googleButton);
+			fastUserActions.click(googleButton);
+			await fastStateSync();
 
 			// App should process the credential, not just log it
 			// This test will fail until we implement proper credential processing
@@ -548,12 +548,11 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should render correct page content based on navigation", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Navigate to About page
-			await user.click(screen.getByText("Navigate to About"));
+			fastUserActions.click(screen.getByText("Navigate to About"));
+			await fastStateSync();
 			expect(screen.getByTestId("about-page")).toBeInTheDocument();
 			expect(screen.getByTestId("current-page")).toHaveTextContent("about");
 		});
@@ -561,22 +560,19 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Page Routing Logic", () => {
 		it("should navigate between public pages correctly", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Start on home page
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
 
 			// Navigate to About page
-			await user.click(screen.getByText("Navigate to About"));
+			fastUserActions.click(screen.getByText("Navigate to About"));
+			await fastStateSync();
 			expect(screen.getByTestId("about-page")).toBeInTheDocument();
 			expect(screen.queryByTestId("home-page")).not.toBeInTheDocument();
 		});
 
 		it("should render profile page when authenticated", async () => {
-			const user = userEvent.setup();
-
 			// Set authenticated state using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -588,7 +584,8 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Navigate to profile page
-			await user.click(screen.getByText("Navigate to Profile"));
+			fastUserActions.click(screen.getByText("Navigate to Profile"));
+			await fastStateSync();
 			expect(screen.getByTestId("profile-page")).toBeInTheDocument();
 		});
 
@@ -602,8 +599,6 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Projects Access Control", () => {
 		it("should allow access to projects pages when user has projects access", async () => {
-			const user = userEvent.setup();
-
 			// Set authenticated user with projects access using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -615,21 +610,22 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Navigate to teams page
-			await user.click(screen.getByText("Navigate to Teams"));
+			fastUserActions.click(screen.getByText("Navigate to Teams"));
+			await fastStateSync();
 			expect(screen.getByTestId("teams-page")).toBeInTheDocument();
 
 			// Navigate to calendar page
-			await user.click(screen.getByText("Navigate to Calendar"));
+			fastUserActions.click(screen.getByText("Navigate to Calendar"));
+			await fastStateSync();
 			expect(screen.getByTestId("calendar-page")).toBeInTheDocument();
 
 			// Navigate to dashboard page
-			await user.click(screen.getByText("Navigate to Dashboard"));
+			fastUserActions.click(screen.getByText("Navigate to Dashboard"));
+			await fastStateSync();
 			expect(screen.getByTestId("dashboard-page")).toBeInTheDocument();
 		});
 
 		it("should redirect to home page when user lacks projects access", async () => {
-			const user = userEvent.setup();
-
 			// Set authenticated user WITHOUT projects access using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -641,7 +637,8 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Attempt to navigate to teams page
-			await user.click(screen.getByText("Navigate to Teams"));
+			fastUserActions.click(screen.getByText("Navigate to Teams"));
+			await fastStateSync();
 
 			// Should redirect to home page instead
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
@@ -649,8 +646,6 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should redirect from calendar page when user lacks projects access", async () => {
-			const user = userEvent.setup();
-
 			// Set authenticated user WITHOUT projects access using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -662,7 +657,8 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Attempt to navigate to calendar page
-			await user.click(screen.getByText("Navigate to Calendar"));
+			fastUserActions.click(screen.getByText("Navigate to Calendar"));
+			await fastStateSync();
 
 			// Should redirect to home page instead
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
@@ -670,8 +666,6 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should redirect from dashboard page when user lacks projects access", async () => {
-			const user = userEvent.setup();
-
 			// Set authenticated user WITHOUT projects access using centralized helper
 			setAuthenticatedUser({
 				email: "test@example.com",
@@ -683,7 +677,8 @@ describe("App - General Rendering and Routing Logic", () => {
 			render(<App />);
 
 			// Attempt to navigate to dashboard page
-			await user.click(screen.getByText("Navigate to Dashboard"));
+			fastUserActions.click(screen.getByText("Navigate to Dashboard"));
+			await fastStateSync();
 
 			// Should redirect to home page instead
 			expect(screen.getByTestId("home-page")).toBeInTheDocument();
@@ -735,15 +730,14 @@ describe("App - General Rendering and Routing Logic", () => {
 
 	describe("Authentication Modal Management", () => {
 		it("should show registration modal when Show Registration is clicked", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Initially modal should not be visible
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
 
 			// Click show registration
-			await user.click(screen.getByText("Show Registration"));
+			fastUserActions.click(screen.getByText("Show Registration"));
+			await fastStateSync();
 
 			// Modal should appear with signup mode
 			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
@@ -751,15 +745,14 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should show sign in modal when Show Sign In is clicked", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Initially modal should not be visible
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
 
 			// Click show sign in
-			await user.click(screen.getByText("Show Sign In"));
+			fastUserActions.click(screen.getByText("Show Sign In"));
+			await fastStateSync();
 
 			// Modal should appear with signin mode
 			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
@@ -767,30 +760,30 @@ describe("App - General Rendering and Routing Logic", () => {
 		});
 
 		it("should close authentication modal when close button is clicked", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Open modal
-			await user.click(screen.getByText("Show Registration"));
+			fastUserActions.click(screen.getByText("Show Registration"));
+			await fastStateSync();
 			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
 
 			// Close modal
-			await user.click(screen.getByText("Close Modal"));
+			fastUserActions.click(screen.getByText("Close Modal"));
+			await fastStateSync();
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
 		});
 
 		it("should close authentication modal after successful authentication", async () => {
-			const user = userEvent.setup();
-
 			render(<App />);
 
 			// Open modal
-			await user.click(screen.getByText("Show Sign In"));
+			fastUserActions.click(screen.getByText("Show Sign In"));
+			await fastStateSync();
 			expect(screen.getByTestId("auth-modal")).toBeInTheDocument();
 
 			// Simulate successful authentication
-			await user.click(screen.getByText("Auth Success"));
+			fastUserActions.click(screen.getByText("Auth Success"));
+			await fastStateSync();
 			expect(screen.queryByTestId("auth-modal")).not.toBeInTheDocument();
 		});
 	});

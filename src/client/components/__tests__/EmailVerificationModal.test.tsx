@@ -5,7 +5,10 @@ import "@testing-library/jest-dom";
 import EmailVerificationModal from "../EmailVerificationModal";
 import { clearPendingVerification } from "../../utils/pendingVerification";
 
-// Mock the pendingVerification utilities
+// 🚀 PERFORMANCE PATTERN: Module Mocking
+// ✅ Use vi.mock() to mock utility modules
+// ✅ Prevents actual utility functions from running during tests
+// Use this pattern when your component imports utility functions
 vi.mock("../../utils/pendingVerification", () => ({
 	clearPendingVerification: vi.fn()
 }));
@@ -37,6 +40,9 @@ describe("EmailVerificationModal", () => {
 		vi.restoreAllMocks();
 	});
 
+	// 🚀 PERFORMANCE PATTERN: Synchronous Helper Function
+	// ✅ No async/await - immediate DOM manipulation
+	// ✅ Uses fireEvent.change for fast input simulation
 	const fillCode = (code: string) => {
 		const codeInputs = screen
 			.getAllByRole("textbox")
@@ -125,6 +131,9 @@ describe("EmailVerificationModal", () => {
 		expect(screen.getByText("Email Verified!")).toBeInTheDocument();
 		expect(vi.mocked(clearPendingVerification)).toHaveBeenCalled();
 
+		// 🚀 PERFORMANCE PATTERN: Fake Timer Advancement
+		// ✅ Manually advance fake timers for auto-close behaviors
+		// ✅ Avoids waiting for real time delays in tests
 		act(() => {
 			vi.advanceTimersByTime(2000);
 		});
@@ -193,6 +202,9 @@ describe("EmailVerificationModal", () => {
 	});
 
 	it("should reset state when modal opens", () => {
+		// 🚀 PERFORMANCE PATTERN: Component Re-rendering
+		// ✅ Test component behavior across re-renders
+		// ✅ Useful for modal open/close state changes
 		const { rerender } = render(<EmailVerificationModal {...defaultProps} isOpen={false} />);
 		rerender(<EmailVerificationModal {...defaultProps} isOpen={true} />);
 		const codeInputs = screen

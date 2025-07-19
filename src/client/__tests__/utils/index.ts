@@ -23,4 +23,15 @@ export {
 } from "./mockHookFactories";
 
 // Render Utilities
-export { TestWrapper, renderWithProviders, renderWithToast, setupModalTest, cleanupModalTest } from "./testRenderUtils";
+export {
+	TestWrapper,
+	renderWithProviders,
+	renderWithToast,
+	setupModalTest,
+	cleanupModalTest,
+	// Performance utilities
+	fastUserActions,
+	fastFillForm,
+	fastStateSync,
+	renderFast
+} from "./testRenderUtils";

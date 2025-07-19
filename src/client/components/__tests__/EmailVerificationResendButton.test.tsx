@@ -1,7 +1,7 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import userEvent from "@testing-library/user-event";
+import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
 import EmailVerificationResendButton from "../EmailVerificationResendButton";
 import { AuthService } from "../../services/AuthService";
@@ -46,32 +46,31 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("shows loading state when button is clicked", async () => {
-		const user = userEvent.setup();
 		mockSendEmailVerification.mockImplementation(() => new Promise(() => {})); // Never resolves
 
 		render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 
 		expect(screen.getByRole("button", { name: "Sending..." })).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Sending..." })).toBeDisabled();
 	});
 
 	it("calls AuthService.sendEmailVerification with correct email", async () => {
-		const user = userEvent.setup();
 		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
 
 		render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 
 		expect(mockSendEmailVerification).toHaveBeenCalledWith(mockEmail);
 	});
 
 	it("calls onResendSuccess callback and starts countdown after successful email send", async () => {
-		const user = userEvent.setup();
 		const mockOnResendSuccess = vi.fn();
 		mockSendEmailVerification.mockResolvedValue({
 			message: "Email sent successfully",
@@ -81,7 +80,8 @@ describe("EmailVerificationResendButton", () => {
 		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 
 		await waitFor(() => {
 			expect(mockOnResendSuccess).toHaveBeenCalled();
@@ -97,7 +97,6 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("does not manage success state internally (parent handles it)", async () => {
-		const user = userEvent.setup();
 		const mockOnResendSuccess = vi.fn();
 		mockSendEmailVerification.mockResolvedValue({
 			message: "Email sent successfully",
@@ -107,7 +106,8 @@ describe("EmailVerificationResendButton", () => {
 		render(<EmailVerificationResendButton userEmail={mockEmail} onResendSuccess={mockOnResendSuccess} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 
 		// Should always show the button (no internal success state)
 		await waitFor(() => {
@@ -124,13 +124,13 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("returns to normal state after error", async () => {
-		const user = userEvent.setup();
 		mockSendEmailVerification.mockRejectedValue(new Error("Network error"));
 
 		render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
@@ -143,7 +143,6 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("can be clicked again after an error", async () => {
-		const user = userEvent.setup();
 		const mockOnResendSuccess = vi.fn();
 		mockSendEmailVerification
 			.mockRejectedValueOnce(new Error("Network error"))
@@ -154,13 +153,15 @@ describe("EmailVerificationResendButton", () => {
 		const button = screen.getByRole("button", { name: "Resend" });
 
 		// First click - fails
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 		await waitFor(() => {
 			expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
 		});
 
 		// Second click - succeeds
-		await user.click(button);
+		fastUserActions.click(button);
+		await fastStateSync();
 		await waitFor(() => {
 			expect(mockOnResendSuccess).toHaveBeenCalled();
 		});
@@ -201,11 +202,11 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			const user = userEvent.setup();
 			render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 			const button = screen.getByRole("button", { name: "Resend" });
-			await user.click(button);
+			fastUserActions.click(button);
+			await fastStateSync();
 
 			// Should show countdown after rate limit error
 			await waitFor(() => {
@@ -228,10 +229,10 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			const user = userEvent.setup();
 			render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
-			await user.click(screen.getByRole("button", { name: "Resend" }));
+			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
+			await fastStateSync();
 
 			// Should show countdown after rate limit error
 			await waitFor(() => {
@@ -254,10 +255,10 @@ describe("EmailVerificationResendButton", () => {
 			};
 			mockSendEmailVerification.mockRejectedValue(rateError);
 
-			const user = userEvent.setup();
 			render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
-			await user.click(screen.getByRole("button", { name: "Resend" }));
+			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
+			await fastStateSync();
 
 			// Should show countdown with correct value
 			await waitFor(() => {
@@ -269,8 +270,6 @@ describe("EmailVerificationResendButton", () => {
 		});
 
 		it("persists rate limit state in localStorage", async () => {
-			const user = userEvent.setup();
-
 			const rateError = new Error("Rate limit exceeded");
 			(rateError as any).response = {
 				status: 429,
@@ -284,7 +283,8 @@ describe("EmailVerificationResendButton", () => {
 
 			render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
-			await user.click(screen.getByRole("button", { name: "Resend" }));
+			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
+			await fastStateSync();
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: "30s" })).toBeInTheDocument();
@@ -351,7 +351,6 @@ describe("EmailVerificationResendButton", () => {
 		});
 
 		it("persists rate limit state after successful sends", async () => {
-			const user = userEvent.setup();
 			mockSendEmailVerification.mockResolvedValue({
 				message: "Email sent successfully",
 				rate_limit_seconds_remaining: 60
@@ -359,7 +358,8 @@ describe("EmailVerificationResendButton", () => {
 
 			render(<EmailVerificationResendButton userEmail={mockEmail} />);
 
-			await user.click(screen.getByRole("button", { name: "Resend" }));
+			fastUserActions.click(screen.getByRole("button", { name: "Resend" }));
+			await fastStateSync();
 
 			// Should save rate limit data to localStorage after successful send
 			await waitFor(() => {

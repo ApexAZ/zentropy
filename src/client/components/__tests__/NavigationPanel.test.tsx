@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
 import NavigationPanel from "../NavigationPanel";
 
@@ -66,7 +67,6 @@ describe("NavigationPanel - User Workflows", () => {
 	});
 
 	it("authenticated user can navigate and sign out successfully", async () => {
-		const user = userEvent.setup();
 		render(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
@@ -78,7 +78,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User opens navigation
 		const profileButton = screen.getByRole("button", { name: /profile/i });
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 
 		// User sees their profile information
 		expect(screen.getByText("Jane Smith")).toBeInTheDocument();
@@ -86,7 +87,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User navigates to profile page
 		const profileLink = screen.getByText("My Profile");
-		await user.click(profileLink);
+		fastUserActions.click(profileLink);
+		await fastStateSync();
 		expect(mockOnPageChange).toHaveBeenCalledWith("profile");
 
 		// Navigation panel closes after navigation
@@ -95,15 +97,16 @@ describe("NavigationPanel - User Workflows", () => {
 		});
 
 		// User can sign out
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 		const signOutButton = screen.getByText("Sign Out");
-		await user.click(signOutButton);
+		fastUserActions.click(signOutButton);
+		await fastStateSync();
 		expect(mockLogout).toHaveBeenCalledOnce();
 		expect(mockOnPageChange).toHaveBeenCalledWith("home");
 	});
 
 	it("unauthenticated user can access sign-in and registration", async () => {
-		const user = userEvent.setup();
 		render(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
@@ -115,7 +118,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User opens navigation
 		const profileButton = screen.getByRole("button", { name: /profile/i });
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 
 		// User sees authentication options (no sign out option)
 		expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
@@ -124,7 +128,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User can access sign-in
 		const signInButton = screen.getByRole("button", { name: "Sign in" });
-		await user.click(signInButton);
+		fastUserActions.click(signInButton);
+		await fastStateSync();
 		expect(mockOnShowSignIn).toHaveBeenCalledOnce();
 
 		// Panel closes after action
@@ -133,15 +138,15 @@ describe("NavigationPanel - User Workflows", () => {
 		});
 
 		// User can access registration
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 		const registerButton = screen.getByRole("button", { name: "Register" });
-		await user.click(registerButton);
+		fastUserActions.click(registerButton);
+		await fastStateSync();
 		expect(mockOnShowRegistration).toHaveBeenCalledOnce();
 	});
 
 	it("displays real user data correctly across different name formats", async () => {
-		const user = userEvent.setup();
-
 		// Test various user name formats
 		const testUsers = [
 			{ name: "María José García-López", email: "maria@example.com" },
@@ -166,7 +171,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 			// User opens navigation and sees their correct data
 			const profileButton = screen.getByRole("button", { name: /profile/i });
-			await user.click(profileButton);
+			fastUserActions.click(profileButton);
+			await fastStateSync();
 			expect(screen.getByText(testUser.name)).toBeInTheDocument();
 			expect(screen.getByText(testUser.email)).toBeInTheDocument();
 
@@ -177,7 +183,6 @@ describe("NavigationPanel - User Workflows", () => {
 	});
 
 	it("users with projects access can manage projects effectively", async () => {
-		const user = userEvent.setup();
 		render(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
@@ -189,23 +194,25 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User opens navigation and sees projects section
 		const profileButton = screen.getByRole("button", { name: /profile/i });
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 		expect(screen.getByText("Projects")).toBeInTheDocument();
 
 		// User expands projects to see options
 		const projectsButton = screen.getByText("Projects");
-		await user.click(projectsButton);
+		fastUserActions.click(projectsButton);
+		await fastStateSync();
 		expect(screen.getByText("Create Project")).toBeInTheDocument();
 		expect(screen.getByText("Join Project")).toBeInTheDocument();
 
 		// User can create project
 		const createProjectButton = screen.getByText("Create Project");
-		await user.click(createProjectButton);
+		fastUserActions.click(createProjectButton);
+		await fastStateSync();
 		expect(mockOnPageChange).toHaveBeenCalledWith("teams");
 	});
 
 	it("users without projects access see limited navigation options", async () => {
-		const user = userEvent.setup();
 		render(
 			<NavigationPanel
 				onPageChange={mockOnPageChange}
@@ -217,7 +224,8 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User opens navigation but doesn't see projects section
 		const profileButton = screen.getByRole("button", { name: /profile/i });
-		await user.click(profileButton);
+		fastUserActions.click(profileButton);
+		await fastStateSync();
 		expect(screen.getByText("Basic User")).toBeInTheDocument();
 		expect(screen.queryByText("Projects")).not.toBeInTheDocument();
 	});

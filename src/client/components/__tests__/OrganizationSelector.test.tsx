@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup, act, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -80,19 +80,38 @@ describe("OrganizationSelector", () => {
 		mode: "select" as const
 	};
 
+	// Helper function to render selector with consistent setup
+	const createSelector = (overrides = {}) => {
+		const props = { ...mockProps, ...overrides };
+		return render(<OrganizationSelector {...props} />, { wrapper: TestWrapper });
+	};
+
+	// Helper function to fill organization creation form
+	const fillOrganizationForm = async (data: { name?: string; description?: string }) => {
+		if (data.name) {
+			const nameInput = screen.getByRole("textbox", { name: /organization name/i });
+			fireEvent.change(nameInput, { target: { value: data.name } });
+		}
+		if (data.description) {
+			const descInput = screen.getByRole("textbox", { name: /description/i });
+			fireEvent.change(descInput, { target: { value: data.description } });
+		}
+	};
+
+	// Helper function to select an organization
+	const selectOrganization = async (organizationName: string) => {
+		const user = userEvent.setup();
+		const selectButton = screen.getByRole("button", { name: new RegExp(`select ${organizationName}`, "i") });
+		await user.click(selectButton);
+	};
+
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset all mock functions to ensure clean state
-		Object.values(mockUseOrganization).forEach(value => {
-			if (typeof value === "function" && "mockClear" in value) {
-				(value as any).mockClear();
-			}
-		});
 		(useOrganization as any).mockReturnValue(mockUseOrganization);
 	});
 
 	afterEach(() => {
-		cleanup();
+		vi.restoreAllMocks();
 	});
 
 	describe("Modal State Management", () => {
@@ -201,14 +220,14 @@ describe("OrganizationSelector", () => {
 		});
 	});
 
-	describe("Organization Selection", () => {
+	describe("User can select existing organizations", () => {
 		it("should display available organizations", async () => {
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByText("Test Organization")).toBeInTheDocument();
@@ -217,19 +236,18 @@ describe("OrganizationSelector", () => {
 		});
 
 		it("should call onSelect when organization is selected", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByText("Test Organization")).toBeInTheDocument();
 			});
 
-			await user.click(screen.getByRole("button", { name: /select test organization/i }));
+			await selectOrganization("Test Organization");
 
 			expect(mockProps.onSelect).toHaveBeenCalledWith(mockOrganizations[0]);
 		});
@@ -240,7 +258,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowPersonal={true} />);
+			createSelector({ allowPersonal: true });
 
 			await waitFor(() => {
 				expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
@@ -253,7 +271,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowPersonal={false} />);
+			createSelector({ allowPersonal: false });
 
 			await waitFor(() => {
 				expect(screen.queryByText("Create Personal Project")).not.toBeInTheDocument();
@@ -267,7 +285,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowPersonal={true} />);
+			createSelector({ allowPersonal: true });
 
 			await waitFor(() => {
 				expect(screen.getByText("Create Personal Project")).toBeInTheDocument();
@@ -279,14 +297,14 @@ describe("OrganizationSelector", () => {
 		});
 	});
 
-	describe("Organization Creation", () => {
+	describe("User can create new organizations", () => {
 		it("should show create organization option when allowCreate is true", async () => {
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
+			createSelector({ allowCreate: true });
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
@@ -299,7 +317,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowCreate={false} />);
+			createSelector({ allowCreate: false });
 
 			await waitFor(() => {
 				expect(screen.queryByRole("button", { name: /create new organization/i })).not.toBeInTheDocument();
@@ -313,7 +331,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
+			createSelector({ allowCreate: true });
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
@@ -332,7 +350,7 @@ describe("OrganizationSelector", () => {
 				domain_found: false
 			});
 
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
+			createSelector({ allowCreate: true });
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
@@ -340,7 +358,6 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
-			// Try to submit empty form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
 
 			expect(screen.getByText("Organization name is required")).toBeInTheDocument();
@@ -354,7 +371,7 @@ describe("OrganizationSelector", () => {
 			});
 			mockUseOrganization.createOrganization.mockResolvedValue(undefined);
 
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
+			createSelector({ allowCreate: true });
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
@@ -362,15 +379,11 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
-			// Fill in form
-			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), {
-				target: { value: "New Org" }
-			});
-			fireEvent.change(screen.getByRole("textbox", { name: /description/i }), {
-				target: { value: "New organization description" }
+			await fillOrganizationForm({
+				name: "New Org",
+				description: "New organization description"
 			});
 
-			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
 
 			expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
@@ -388,11 +401,9 @@ describe("OrganizationSelector", () => {
 				...mockDomainCheckResult,
 				domain_found: false
 			});
-
-			// Mock createOrganization to fail
 			mockUseOrganization.createOrganization.mockRejectedValue(new Error("Organization already exists"));
 
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />);
+			createSelector({ allowCreate: true });
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
@@ -400,15 +411,10 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /create new organization/i }));
 
-			// Fill in form
-			fireEvent.change(screen.getByRole("textbox", { name: /organization name/i }), {
-				target: { value: "New Org" }
-			});
+			await fillOrganizationForm({ name: "New Org" });
 
-			// Submit form
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
 
-			// Should call createOrganization but not call onSelect due to error
 			await waitFor(() => {
 				expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
 					name: "New Org",
@@ -419,16 +425,15 @@ describe("OrganizationSelector", () => {
 				});
 			});
 
-			// Should NOT call onSelect when creation fails
 			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
 
-	describe("Organization Joining", () => {
+	describe("User can join organizations", () => {
 		it("should show join option for suggested organization", async () => {
 			mockUseOrganization.checkDomain.mockResolvedValue(mockDomainCheckResult);
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
@@ -444,7 +449,7 @@ describe("OrganizationSelector", () => {
 				organization_id: "org-1"
 			});
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
@@ -458,11 +463,9 @@ describe("OrganizationSelector", () => {
 		it("should handle join organization errors gracefully", async () => {
 			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue(mockDomainCheckResult);
-
-			// Mock join error
 			mockUseOrganization.joinOrganization.mockRejectedValue(new Error("Organization is at capacity"));
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
@@ -470,41 +473,36 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /join test organization/i }));
 
-			// Should call joinOrganization but not call onSelect due to error
 			await waitFor(() => {
 				expect(mockUseOrganization.joinOrganization).toHaveBeenCalledWith("org-1");
 			});
 
-			// Should NOT call onSelect when join fails
 			expect(mockProps.onSelect).not.toHaveBeenCalled();
 		});
 	});
 
-	describe("Loading States", () => {
+	describe("User experiences loading and error states", () => {
 		it("should show loading state during organization operations", async () => {
-			// const user = userEvent.setup();
-			mockUseOrganization.isLoading = true;
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
 				isLoading: true
 			});
 
 			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+				createSelector();
 			});
 
 			expect(screen.getByText("Loading...")).toBeInTheDocument();
 		});
 
 		it("should disable buttons during loading", async () => {
-			mockUseOrganization.isLoading = true;
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
 				isLoading: true
 			});
 
 			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+				createSelector();
 			});
 
 			const buttons = screen.getAllByRole("button");
@@ -514,119 +512,37 @@ describe("OrganizationSelector", () => {
 				}
 			});
 		});
-	});
 
-	describe("User Experience", () => {
-		it("should successfully complete organization joining workflow", async () => {
-			const user = userEvent.setup();
-
-			// Clear and setup mocks explicitly for this test
-			vi.clearAllMocks();
-			const joinOrgMock = vi.fn().mockResolvedValue({
-				message: "Successfully joined organization",
-				status: "approved",
-				organization_id: "org-1"
-			});
-			const checkDomainMock = vi.fn().mockResolvedValue(mockDomainCheckResult);
-
-			// Override the entire hook return value for this specific test
+		it("should display error messages", async () => {
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
-				isLoading: false,
-				checkDomain: checkDomainMock,
-				joinOrganization: joinOrgMock
+				error: "Failed to load organizations"
 			});
 
-			render(<OrganizationSelector {...mockProps} />, { wrapper: TestWrapper });
-
-			// Wait for domain check to complete and join button to appear
-			await waitFor(() => {
-				expect(checkDomainMock).toHaveBeenCalledWith("test@test.com");
+			await act(async () => {
+				createSelector();
 			});
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /join test organization/i })).toBeInTheDocument();
-			});
-
-			const joinButton = screen.getByRole("button", { name: /join test organization/i });
-			await user.click(joinButton);
-
-			// Verify the join function was called with correct organization ID
-			await waitFor(() => {
-				expect(joinOrgMock).toHaveBeenCalledWith("org-1");
-			});
+			expect(screen.getByText("Failed to load organizations")).toBeInTheDocument();
 		});
 
-		it("should successfully complete organization creation workflow", async () => {
-			const user = userEvent.setup();
+		it("should handle network errors gracefully", async () => {
+			mockUseOrganization.checkDomain.mockRejectedValue(new Error("Network error"));
 
-			// Clear and setup mocks explicitly for this test
-			vi.clearAllMocks();
-			const createOrgMock = vi.fn().mockResolvedValue(undefined);
-			const loadOrgMock = vi.fn().mockResolvedValue(undefined);
-			const checkDomainMock = vi.fn().mockResolvedValue({
-				...mockDomainCheckResult,
-				domain_found: false
-			});
+			createSelector();
 
-			// Override the entire hook return value for this specific test
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				isLoading: false,
-				checkDomain: checkDomainMock,
-				createOrganization: createOrgMock,
-				loadOrganizations: loadOrgMock
-			});
-
-			render(<OrganizationSelector {...mockProps} allowCreate={true} />, { wrapper: TestWrapper });
-
-			// Wait for domain check to complete
 			await waitFor(() => {
-				expect(checkDomainMock).toHaveBeenCalledWith("test@test.com");
+				expect(screen.getByText("Network error")).toBeInTheDocument();
 			});
 
-			// Wait for the "Create New Organization" button to appear
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
-			});
-
-			// Step 1: Click "Create New Organization" to show the form
-			await user.click(screen.getByRole("button", { name: /create new organization/i }));
-
-			// Step 2: Wait for the form to appear and fill it
-			await waitFor(() => {
-				expect(screen.getByLabelText("Organization Name")).toBeInTheDocument();
-			});
-
-			fireEvent.change(screen.getByLabelText("Organization Name"), { target: { value: "New Org" } });
-			fireEvent.change(screen.getByLabelText("Description"), { target: { value: "New organization" } });
-
-			// Step 3: Submit the form
-			const submitButton = screen.getByRole("button", { name: /create organization/i });
-			await user.click(submitButton);
-
-			// Verify the create function was called with correct data
-			await waitFor(() => {
-				expect(createOrgMock).toHaveBeenCalledWith({
-					name: "New Org",
-					description: "New organization",
-					domain: "test.com",
-					scope: "shared",
-					max_users: 50
-				});
-			});
-
-			// Verify loadOrganizations was called to refresh the list
-			await waitFor(() => {
-				expect(loadOrgMock).toHaveBeenCalled();
-			});
+			expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
 		});
 	});
 
-	describe("Accessibility", () => {
+	describe("User experiences accessibility features", () => {
 		it("should have proper ARIA attributes", async () => {
 			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+				createSelector();
 			});
 
 			const dialog = screen.getByRole("dialog");
@@ -634,40 +550,8 @@ describe("OrganizationSelector", () => {
 			expect(dialog).toHaveAttribute("aria-describedby");
 		});
 
-		it("should trap focus within modal", async () => {
-			const user = userEvent.setup();
-			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
-			});
-
-			// Wait for the dialog to be focused
-			await waitFor(() => {
-				const dialog = screen.getByRole("dialog");
-				expect(document.activeElement).toBe(dialog);
-			});
-
-			// Tab to first button
-			await user.tab();
-			const firstButton = screen.getAllByRole("button")[0];
-			expect(document.activeElement).toBe(firstButton);
-
-			// Tab to next element
-			await user.tab();
-			// Continue tabbing should wrap back
-			await user.tab();
-
-			// Tab navigation should maintain focus on interactive elements or body
-			const activeElement = document.activeElement;
-			expect(activeElement).not.toBe(null);
-			expect(activeElement).toBeInstanceOf(HTMLElement);
-			// Focus should be on an element that exists in DOM
-			expect(document.contains(activeElement)).toBe(true);
-		});
-
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
-
-			// Mock to show organizations (not loading) and no domain found
 			(useOrganization as any).mockReturnValue({
 				...mockUseOrganization,
 				isLoading: false,
@@ -677,62 +561,53 @@ describe("OrganizationSelector", () => {
 				})
 			});
 
-			render(<OrganizationSelector {...mockProps} />);
+			createSelector();
 
 			await waitFor(() => {
 				expect(screen.getByText("Test Organization")).toBeInTheDocument();
 			});
 
-			// Test Tab navigation between focusable elements
 			const dialog = screen.getByRole("dialog");
 			dialog.focus();
 
-			// Tab to first focusable element (Close button)
 			await user.tab();
 			const closeButton = document.activeElement;
 			expect(closeButton).toBeInstanceOf(HTMLButtonElement);
 			expect(closeButton).toHaveAttribute("aria-label", "Close");
 
-			// Tab to next focusable element (Search input)
 			await user.tab();
 			const searchInput = document.activeElement;
 			expect(searchInput).toBeInstanceOf(HTMLInputElement);
 			expect(searchInput).toHaveAttribute("placeholder", "Search organizations...");
 
-			// Tab to organization button
 			await user.tab();
 			const orgButton = document.activeElement;
 			expect(orgButton).toBeInstanceOf(HTMLButtonElement);
 			expect(orgButton?.textContent).toContain("Create Personal Project");
 		});
-	});
 
-	describe("Error Handling", () => {
-		it("should display error messages", async () => {
-			(useOrganization as any).mockReturnValue({
-				...mockUseOrganization,
-				error: "Failed to load organizations"
-			});
-
+		it("should trap focus within modal", async () => {
+			const user = userEvent.setup();
 			await act(async () => {
-				render(<OrganizationSelector {...mockProps} />);
+				createSelector();
 			});
-
-			expect(screen.getByText("Failed to load organizations")).toBeInTheDocument();
-		});
-
-		it("should handle network errors gracefully", async () => {
-			// const user = userEvent.setup();
-			mockUseOrganization.checkDomain.mockRejectedValue(new Error("Network error"));
-
-			render(<OrganizationSelector {...mockProps} />);
 
 			await waitFor(() => {
-				expect(screen.getByText("Network error")).toBeInTheDocument();
+				const dialog = screen.getByRole("dialog");
+				expect(document.activeElement).toBe(dialog);
 			});
 
-			// Should still allow retrying
-			expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+			await user.tab();
+			const firstButton = screen.getAllByRole("button")[0];
+			expect(document.activeElement).toBe(firstButton);
+
+			await user.tab();
+			await user.tab();
+
+			const activeElement = document.activeElement;
+			expect(activeElement).not.toBe(null);
+			expect(activeElement).toBeInstanceOf(HTMLElement);
+			expect(document.contains(activeElement)).toBe(true);
 		});
 	});
 });

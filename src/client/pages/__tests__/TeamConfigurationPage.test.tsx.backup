@@ -1,4 +1,6 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import React from "react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import TeamConfigurationPage from "../TeamConfigurationPage";
@@ -68,6 +70,7 @@ describe("TeamConfigurationPage", () => {
 		vi.restoreAllMocks();
 	});
 
+
 	// Helper function to render TeamConfigurationPage with required providers
 	const renderTeamConfigurationPage = () => {
 		return render(
@@ -77,20 +80,34 @@ describe("TeamConfigurationPage", () => {
 		);
 	};
 
+	// Helper function to fill team form
+	const fillTeamForm = async (data: { name?: string; description?: string }) => {
+		if (data.name) {
+			const nameInput = screen.getByLabelText(/team name/i);
+			await userEvent.setup().clear(nameInput);
+			fireEvent.change(nameInput, { target: { value: data.name } });
+		}
+		if (data.description) {
+			const descInput = screen.getByLabelText(/description/i);
+			await userEvent.setup().clear(descInput);
+			fireEvent.change(descInput, { target: { value: data.description } });
+		}
+	};
+
 	// Helper function to fill member form
-	const fillMemberForm = (data: { email?: string; role?: string }) => {
+	const fillMemberForm = async (data: { email?: string; role?: string }) => {
 		if (data.email) {
 			const emailInput = screen.getByLabelText(/email address/i);
 			fireEvent.change(emailInput, { target: { value: data.email } });
 		}
 		if (data.role) {
 			const roleSelect = screen.getByLabelText(/role/i);
-			fireEvent.change(roleSelect, { target: { value: data.role } });
+			await userEvent.setup().selectOptions(roleSelect, data.role);
 		}
 	};
 
 	// Helper function to fill sprint form
-	const fillSprintForm = (data: { name?: string; startDate?: string; endDate?: string }) => {
+	const fillSprintForm = async (data: { name?: string; startDate?: string; endDate?: string }) => {
 		if (data.name) {
 			const nameInput = screen.getByLabelText(/sprint name/i);
 			fireEvent.change(nameInput, { target: { value: data.name } });
@@ -105,13 +122,41 @@ describe("TeamConfigurationPage", () => {
 		}
 	};
 
+	// Helper function to submit form
+	const submitForm = async (buttonText: string) => {
+		const user = userEvent.setup();
+		const submitButton = screen.getByRole("button", { name: new RegExp(buttonText, "i") });
+		await user.click(submitButton);
+		
+		// Wait for async form submission
+		await act(async () => {
+			await Promise.resolve();
+		});
+		
+		return submitButton;
+	};
+
 	describe("loading state", () => {
 		it("should display loading spinner while fetching team configuration", async () => {
-			// Use immediate promises to avoid timing issues
+			// Setup controlled promises to capture loading state
+			let resolveTeam: (value: any) => void;
+			let resolveMembers: (value: any) => void;
+			let resolveSprints: (value: any) => void;
+
+			const teamPromise = new Promise(resolve => {
+				resolveTeam = resolve;
+			});
+			const membersPromise = new Promise(resolve => {
+				resolveMembers = resolve;
+			});
+			const sprintsPromise = new Promise(resolve => {
+				resolveSprints = resolve;
+			});
+
 			mockFetch
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
-				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
+				.mockReturnValueOnce(teamPromise)
+				.mockReturnValueOnce(membersPromise)
+				.mockReturnValueOnce(sprintsPromise);
 
 			render(
 				<ToastProvider>
@@ -123,13 +168,24 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText(/loading team configuration/i)).toBeInTheDocument();
 			expect(screen.getByRole("heading", { name: /team configuration/i })).toBeInTheDocument();
 
-			// Wait for loading to complete
-			await act(async () => {
-				await Promise.resolve();
+			// Resolve promises to complete loading
+			resolveTeam!({
+				ok: true,
+				json: async () => mockTeam
+			});
+			resolveMembers!({
+				ok: true,
+				json: async () => mockTeamMembers
+			});
+			resolveSprints!({
+				ok: true,
+				json: async () => mockSprints
 			});
 
-			// After loading completes, content should be visible
-			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
+			// Wait for loading to complete
+			await waitFor(() => {
+				expect(screen.queryByText(/loading team configuration/i)).not.toBeInTheDocument();
+			});
 		});
 	});
 
@@ -143,23 +199,20 @@ describe("TeamConfigurationPage", () => {
 				</ToastProvider>
 			);
 
-			await act(async () => {
-				await Promise.resolve();
+			await waitFor(() => {
+				expect(screen.getByText(/unable to load configuration/i)).toBeInTheDocument();
+				expect(screen.getByText(/network error/i)).toBeInTheDocument();
 			});
-
-			expect(screen.getByText(/unable to load configuration/i)).toBeInTheDocument();
-			expect(screen.getByText(/network error/i)).toBeInTheDocument();
 
 			const retryButton = screen.getByRole("button", { name: /retry/i });
 			expect(retryButton).toBeInTheDocument();
 		});
 
 		it("should retry loading configuration when retry button is clicked", async () => {
-			// All initial calls fail
-			mockFetch
-				.mockRejectedValueOnce(new Error("Network error"))
-				.mockRejectedValueOnce(new Error("Network error"))
-				.mockRejectedValueOnce(new Error("Network error"));
+			const user = userEvent.setup();
+
+			// First call fails
+			mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
 			render(
 				<ToastProvider>
@@ -167,11 +220,9 @@ describe("TeamConfigurationPage", () => {
 				</ToastProvider>
 			);
 
-			await act(async () => {
-				await Promise.resolve();
+			await waitFor(() => {
+				expect(screen.getByText(/network error/i)).toBeInTheDocument();
 			});
-
-			expect(screen.getByText(/network error/i)).toBeInTheDocument();
 
 			// Setup successful retry
 			mockFetch
@@ -180,18 +231,17 @@ describe("TeamConfigurationPage", () => {
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockSprints) });
 
 			const retryButton = screen.getByRole("button", { name: /retry/i });
-			fireEvent.click(retryButton);
+			await user.click(retryButton);
 
-			await act(async () => {
-				await Promise.resolve();
+			await waitFor(() => {
+				expect(screen.getByText(/test team/i)).toBeInTheDocument();
+				expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
 			});
-
-			expect(screen.getByText(/test team/i)).toBeInTheDocument();
-			expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
 		});
 	});
 
 	describe("team information form", () => {
+
 		it("should display team information form with current values", async () => {
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
@@ -200,12 +250,10 @@ describe("TeamConfigurationPage", () => {
 
 			renderTeamConfigurationPage();
 
-			await act(async () => {
-				await Promise.resolve();
+			await waitFor(() => {
+				expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
+				expect(screen.getByDisplayValue("Test team description")).toBeInTheDocument();
 			});
-
-			expect(screen.getByDisplayValue("Test Team")).toBeInTheDocument();
-			expect(screen.getByDisplayValue("Test team description")).toBeInTheDocument();
 
 			// Check working days checkboxes
 			expect(screen.getByRole("checkbox", { name: /monday/i })).toBeChecked();
@@ -237,16 +285,8 @@ describe("TeamConfigurationPage", () => {
 				json: () => Promise.resolve({ ...mockTeam, name: "Updated Team" })
 			});
 
-			const nameInput = screen.getByLabelText(/team name/i);
-			fireEvent.change(nameInput, { target: { value: "" } });
-			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
-
-			const saveButton = screen.getByRole("button", { name: /save team information/i });
-			fireEvent.click(saveButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
+			await fillTeamForm({ name: "Updated Team" });
+			await submitForm("save team information");
 
 			expect(screen.getByText(/team information updated successfully/i)).toBeInTheDocument();
 
@@ -265,6 +305,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should toggle working days when checkboxes are clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -280,18 +322,20 @@ describe("TeamConfigurationPage", () => {
 
 			// Add Saturday
 			const saturdayCheckbox = screen.getByRole("checkbox", { name: /saturday/i });
-			fireEvent.click(saturdayCheckbox);
+			await user.click(saturdayCheckbox);
 
 			expect(saturdayCheckbox).toBeChecked();
 
 			// Remove Friday
 			const fridayCheckbox = screen.getByRole("checkbox", { name: /friday/i });
-			fireEvent.click(fridayCheckbox);
+			await user.click(fridayCheckbox);
 
 			expect(fridayCheckbox).not.toBeChecked();
 		});
 
 		it("should display error toast when team update fails", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -309,11 +353,11 @@ describe("TeamConfigurationPage", () => {
 			mockFetch.mockRejectedValueOnce(new Error("Update failed"));
 
 			const nameInput = screen.getByLabelText(/team name/i);
-			fireEvent.change(nameInput, { target: { value: "" } });
+			await user.clear(nameInput);
 			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 			const saveButton = screen.getByRole("button", { name: /save team information/i });
-			fireEvent.click(saveButton);
+			await user.click(saveButton);
 
 			await act(async () => {
 				await Promise.resolve();
@@ -324,6 +368,7 @@ describe("TeamConfigurationPage", () => {
 	});
 
 	describe("velocity settings form", () => {
+
 		it("should display velocity settings form with current values", async () => {
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
@@ -347,6 +392,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should update velocity settings when form is submitted", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -367,17 +414,15 @@ describe("TeamConfigurationPage", () => {
 			});
 
 			const velocityInput = screen.getByLabelText(/story points per sprint/i);
-			fireEvent.change(velocityInput, { target: { value: "" } });
+			await user.clear(velocityInput);
 			fireEvent.change(velocityInput, { target: { value: "60" } });
 
 			const saveButton = screen.getByRole("button", { name: /save velocity settings/i });
-			fireEvent.click(saveButton);
+			await user.click(saveButton);
 
-			await act(async () => {
-				await Promise.resolve();
+			await waitFor(() => {
+				expect(screen.getByText(/velocity settings updated successfully/i)).toBeInTheDocument();
 			});
-
-			expect(screen.getByText(/velocity settings updated successfully/i)).toBeInTheDocument();
 
 			expect(mockFetch).toHaveBeenCalledWith("/api/v1/teams/1", {
 				method: "PUT",
@@ -392,6 +437,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should update sprint length when dropdown is changed", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -408,13 +455,14 @@ describe("TeamConfigurationPage", () => {
 			const sprintLengthSelect = screen.getByLabelText(/sprint length/i);
 			expect(sprintLengthSelect).toHaveValue("2");
 
-			fireEvent.change(sprintLengthSelect, { target: { value: "3" } });
+			await user.selectOptions(sprintLengthSelect, "3");
 
 			expect(sprintLengthSelect).toHaveValue("3");
 		});
 	});
 
 	describe("team member management", () => {
+
 		it("should display team members list", async () => {
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
@@ -429,11 +477,14 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText("John Doe")).toBeInTheDocument();
 			expect(screen.getByText("jane.smith@example.com")).toBeInTheDocument();
-			expect(screen.getByText("Team Lead")).toBeInTheDocument();
-			expect(screen.getByText("Team Member")).toBeInTheDocument();
+				expect(screen.getByText("Team Lead")).toBeInTheDocument();
+				expect(screen.getByText("Team Member")).toBeInTheDocument();
+			});
 		});
 
 		it("should open add member modal when add button is clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -448,7 +499,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText("John Doe")).toBeInTheDocument();
 
 			const addButton = screen.getByRole("button", { name: /add team member/i });
-			fireEvent.click(addButton);
+			await user.click(addButton);
 
 			expect(screen.getByRole("heading", { name: /add team member/i })).toBeInTheDocument();
 			expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
@@ -456,6 +507,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should add team member when form is submitted with valid data", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -477,16 +530,11 @@ describe("TeamConfigurationPage", () => {
 
 			// Open modal
 			const addButton = screen.getByRole("button", { name: /add team member/i });
-			fireEvent.click(addButton);
+			await user.click(addButton);
 
 			// Fill form and submit
-			fillMemberForm({ email: "new.member@example.com", role: "member" });
-			const submitButton = screen.getByRole("button", { name: /add member/i });
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
+			await fillMemberForm({ email: "new.member@example.com", role: "member" });
+			await submitForm("add member");
 
 			expect(screen.getByText(/team member added successfully/i)).toBeInTheDocument();
 
@@ -503,6 +551,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should remove team member when remove button is clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -526,7 +576,7 @@ describe("TeamConfigurationPage", () => {
 			});
 
 			const removeButtons = screen.getAllByText(/remove/i);
-			fireEvent.click(removeButtons[0]);
+			await user.click(removeButtons[0]);
 
 			await act(async () => {
 				await Promise.resolve();
@@ -543,6 +593,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should close add member modal when cancel button is clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -558,19 +610,20 @@ describe("TeamConfigurationPage", () => {
 
 			// Open modal
 			const addButton = screen.getByRole("button", { name: /add team member/i });
-			fireEvent.click(addButton);
+			await user.click(addButton);
 
 			expect(screen.getByRole("heading", { name: /add team member/i })).toBeInTheDocument();
 
 			// Cancel modal
 			const cancelButton = screen.getByRole("button", { name: /cancel/i });
-			fireEvent.click(cancelButton);
+			await user.click(cancelButton);
 
 			expect(screen.queryByRole("heading", { name: /add team member/i })).not.toBeInTheDocument();
 		});
 	});
 
 	describe("sprint management", () => {
+
 		it("should display sprints list", async () => {
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
@@ -590,6 +643,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should open create sprint modal when create button is clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -604,7 +659,7 @@ describe("TeamConfigurationPage", () => {
 			expect(screen.getByText("Sprint 1")).toBeInTheDocument();
 
 			const createButton = screen.getByRole("button", { name: /create new sprint/i });
-			fireEvent.click(createButton);
+			await user.click(createButton);
 
 			expect(screen.getByRole("heading", { name: /create new sprint/i })).toBeInTheDocument();
 			expect(screen.getByLabelText(/sprint name/i)).toBeInTheDocument();
@@ -613,6 +668,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should create sprint when form is submitted with valid data", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -629,28 +686,16 @@ describe("TeamConfigurationPage", () => {
 			// Mock successful sprint creation
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
-				json: () =>
-					Promise.resolve({
-						id: "3",
-						name: "Sprint 3",
-						start_date: "2025-02-01",
-						end_date: "2025-02-14",
-						status: "planned"
-					})
+				json: () => Promise.resolve({ id: "3", name: "Sprint 3", start_date: "2025-02-01", end_date: "2025-02-14", status: "planned" })
 			});
 
 			// Open modal
 			const createButton = screen.getByRole("button", { name: /create new sprint/i });
-			fireEvent.click(createButton);
+			await user.click(createButton);
 
 			// Fill form and submit
-			fillSprintForm({ name: "Sprint 3", startDate: "2025-02-01", endDate: "2025-02-14" });
-			const submitButton = screen.getByRole("button", { name: /create sprint/i });
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
+			await fillSprintForm({ name: "Sprint 3", startDate: "2025-02-01", endDate: "2025-02-14" });
+			await submitForm("create sprint");
 
 			expect(screen.getByText(/sprint created successfully/i)).toBeInTheDocument();
 
@@ -669,6 +714,8 @@ describe("TeamConfigurationPage", () => {
 		});
 
 		it("should validate sprint dates", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -684,7 +731,7 @@ describe("TeamConfigurationPage", () => {
 
 			// Open modal
 			const createButton = screen.getByRole("button", { name: /create new sprint/i });
-			fireEvent.click(createButton);
+			await user.click(createButton);
 
 			// Fill form with invalid dates (end date before start date)
 			const nameInput = screen.getByLabelText(/sprint name/i);
@@ -697,12 +744,14 @@ describe("TeamConfigurationPage", () => {
 			fireEvent.change(endDateInput, { target: { value: "2025-02-01" } });
 
 			const submitButton = screen.getByRole("button", { name: /create sprint/i });
-			fireEvent.click(submitButton);
+			await user.click(submitButton);
 
 			expect(screen.getByText(/end date must be after start date/i)).toBeInTheDocument();
 		});
 
 		it("should show generate multiple sprints alert", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -716,13 +765,11 @@ describe("TeamConfigurationPage", () => {
 
 			expect(screen.getByText("Sprint 1")).toBeInTheDocument();
 
-			// 🚀 PERFORMANCE PATTERN: Window Object Mocking
-			// ✅ Mock browser APIs for predictable, fast tests
-			// ✅ Prevents actual alerts/confirms from blocking tests
+			// Mock window.alert
 			const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
 			const generateButton = screen.getByRole("button", { name: /generate multiple sprints/i });
-			fireEvent.click(generateButton);
+			await user.click(generateButton);
 
 			expect(alertSpy).toHaveBeenCalledWith("Generate Multiple Sprints feature coming soon!");
 
@@ -731,7 +778,10 @@ describe("TeamConfigurationPage", () => {
 	});
 
 	describe("toast notifications", () => {
+
 		it("should dismiss toast when close button is clicked", async () => {
+			const user = userEvent.setup();
+
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeamMembers) })
@@ -752,11 +802,11 @@ describe("TeamConfigurationPage", () => {
 			});
 
 			const nameInput = screen.getByLabelText(/team name/i);
-			fireEvent.change(nameInput, { target: { value: "" } });
+			await user.clear(nameInput);
 			fireEvent.change(nameInput, { target: { value: "Updated Team" } });
 
 			const saveButton = screen.getByRole("button", { name: /save team information/i });
-			fireEvent.click(saveButton);
+			await user.click(saveButton);
 
 			await act(async () => {
 				await Promise.resolve();
@@ -766,13 +816,14 @@ describe("TeamConfigurationPage", () => {
 
 			// Close toast
 			const closeButton = screen.getByRole("button", { name: /dismiss notification/i });
-			fireEvent.click(closeButton);
+			await user.click(closeButton);
 
 			expect(screen.queryByText(/team information updated successfully/i)).not.toBeInTheDocument();
 		});
 	});
 
 	describe("empty states", () => {
+
 		it("should display empty state for team members", async () => {
 			mockFetch
 				.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(mockTeam) })

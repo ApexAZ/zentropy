@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, act, fireEvent } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import CalendarPage from "../CalendarPage";
 import { ToastProvider } from "../../contexts/ToastContext";
@@ -29,19 +28,18 @@ const mockUsers = [
 ];
 
 describe("CalendarPage", () => {
-	// Helper function to render CalendarPage with required providers
-	const renderCalendarPage = () => {
-		return render(
-			<ToastProvider>
-				<CalendarPage />
-			</ToastProvider>
-		);
-	};
-
 	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.clearAllMocks();
 		mockFetch.mockClear();
-		// Mock all CalendarPage API calls by default with robust URL-based implementation
+		// 🚀 PERFORMANCE PATTERN: Robust URL-based Mocking
+		// ✅ Use mockImplementation for complex/unpredictable API patterns
+		// ✅ Handles dynamic URLs and different HTTP methods
+		// ✅ More resilient than simple mockResolvedValueOnce chains
 		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/v1/teams") && url.includes("/users")) {
+				return Promise.resolve({ ok: true, json: async () => mockUsers });
+			}
 			if (url.includes("/api/v1/teams")) {
 				return Promise.resolve({ ok: true, json: async () => mockTeams });
 			}
@@ -55,15 +53,126 @@ describe("CalendarPage", () => {
 		});
 	});
 
-	it("renders calendar page with main elements", async () => {
+	afterEach(() => {
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	// 🚀 PERFORMANCE PATTERN: Optimized Render Helper
+	// ✅ Encapsulates component + provider setup
+	// ✅ Handles async initialization with act()
+	// ✅ Reusable across all tests in the file
+	const renderCalendarPage = async () => {
+		const result = render(
+			<ToastProvider>
+				<CalendarPage />
+			</ToastProvider>
+		);
+
+		// Wait for async initialization like EmailVerificationModal pattern
 		await act(async () => {
-			renderCalendarPage();
+			await Promise.resolve();
 		});
 
-		await waitFor(() => {
-			expect(screen.getByText("Team Calendar")).toBeInTheDocument();
+		return result;
+	};
+
+	const openCreateModal = () => {
+		const createButton = screen.getByRole("button", { name: "Add Calendar Entry" });
+		fireEvent.click(createButton);
+
+		expect(screen.getByLabelText("Title *")).toBeInTheDocument();
+
+		return createButton;
+	};
+
+	// 🚀 PERFORMANCE PATTERN: Hybrid Helper Function
+	// ✅ Uses fireEvent for immediate DOM events
+	// ✅ Uses act() only when React updates are needed
+	// ✅ Combines speed with proper async handling
+	const fillEntryForm = async (entryData: {
+		team?: string;
+		user?: string;
+		title?: string;
+		description?: string;
+		startDate?: string;
+		endDate?: string;
+		entryType?: string;
+	}) => {
+		if (entryData.team) {
+			fireEvent.change(screen.getByLabelText("Team *"), { target: { value: entryData.team } });
+			// Wait for team users to load after team selection
+			await act(async () => {
+				await Promise.resolve();
+			});
+		}
+		if (entryData.user) {
+			fireEvent.change(screen.getByLabelText("Team Member *"), { target: { value: entryData.user } });
+		}
+		if (entryData.title) {
+			fireEvent.change(screen.getByLabelText("Title *"), { target: { value: entryData.title } });
+		}
+		if (entryData.description) {
+			fireEvent.change(screen.getByLabelText("Description"), { target: { value: entryData.description } });
+		}
+		if (entryData.startDate) {
+			fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: entryData.startDate } });
+		}
+		if (entryData.endDate) {
+			fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: entryData.endDate } });
+		}
+		if (entryData.entryType) {
+			fireEvent.change(screen.getByLabelText("Entry Type *"), { target: { value: entryData.entryType } });
+		}
+	};
+
+	const submitForm = async (buttonName: string = "Add Entry") => {
+		const submitButton = screen.getByText(buttonName);
+		fireEvent.click(submitButton);
+
+		// Wait for async form submission like EmailVerificationModal pattern
+		await act(async () => {
+			await Promise.resolve();
 		});
 
+		return submitButton;
+	};
+
+	// Simple mock setup like EmailVerificationModal
+	const setupMockResponse = (entries: any[] = [], teams: any[] = mockTeams, users: any[] = mockUsers) => {
+		mockFetch.mockImplementation((url: string, options?: any) => {
+			if (url.includes("/api/v1/teams") && url.includes("/users")) {
+				return Promise.resolve({ ok: true, json: async () => users });
+			}
+			if (url.includes("/api/v1/teams")) {
+				return Promise.resolve({ ok: true, json: async () => teams });
+			}
+			if (url.includes("/api/v1/users")) {
+				return Promise.resolve({ ok: true, json: async () => users });
+			}
+			if (url.includes("/api/v1/calendar_entries") && options?.method === "POST") {
+				return Promise.resolve({ ok: true, json: async () => ({ id: "new-entry", ...entries[0] }) });
+			}
+			if (url.includes("/api/v1/calendar_entries") && options?.method === "PUT") {
+				return Promise.resolve({ ok: true, json: async () => ({ id: "updated-entry", ...entries[0] }) });
+			}
+			if (url.includes("/api/v1/calendar_entries") && options?.method === "DELETE") {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ message: "Calendar entry deleted successfully" })
+				});
+			}
+			if (url.includes("/api/v1/calendar_entries")) {
+				return Promise.resolve({ ok: true, json: async () => entries });
+			}
+			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
+		});
+	};
+
+	it("renders calendar page with main elements", async () => {
+		await renderCalendarPage();
+
+		expect(screen.getByText("Team Calendar")).toBeInTheDocument();
 		expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("All Teams")).toBeInTheDocument();
 		expect(screen.getByDisplayValue(/\d{4}/)).toBeInTheDocument(); // Month selector with year
@@ -71,26 +180,12 @@ describe("CalendarPage", () => {
 
 	it("shows teams and users after data loads", async () => {
 		// Mock successful API responses
-		mockFetch.mockClear();
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		setupMockResponse([], mockTeams, mockUsers);
 
-		renderCalendarPage();
+		await renderCalendarPage();
 
-		// Wait for teams to appear in the dropdown
-		await waitFor(() => {
-			expect(screen.getByText("Engineering Team")).toBeInTheDocument();
-		});
+		// Teams should be visible immediately after rendering
+		expect(screen.getByText("Engineering Team")).toBeInTheDocument();
 	});
 
 	it("loads and displays calendar entries", async () => {
@@ -110,46 +205,20 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Clear and set up robust mocking for this test
-		mockFetch.mockClear();
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => mockEntries });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		// Set up mock with entry data
+		setupMockResponse(mockEntries);
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByText("Summer Vacation")).toBeInTheDocument();
-		});
-
+		expect(screen.getByText("Summer Vacation")).toBeInTheDocument();
 		expect(screen.getByText("Annual summer vacation")).toBeInTheDocument();
 		expect(screen.getByText("PTO / Vacation")).toBeInTheDocument();
 	});
 
 	it("opens create modal when Create Entry button is clicked", async () => {
-		const user = userEvent.setup();
+		await renderCalendarPage();
 
-		await act(async () => {
-			renderCalendarPage();
-		});
-
-		await waitFor(() => {
-			expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
-		});
-
-		const createButton = screen.getByText("Add Calendar Entry");
-		await user.click(createButton);
+		openCreateModal();
 
 		expect(screen.getByLabelText("Title *")).toBeInTheDocument();
 		expect(screen.getByLabelText("Start Date *")).toBeInTheDocument();
@@ -157,23 +226,10 @@ describe("CalendarPage", () => {
 	});
 
 	it("validates form fields when creating entry", async () => {
-		const user = userEvent.setup();
-
-		await act(async () => {
-			renderCalendarPage();
-		});
-
-		await waitFor(() => {
-			expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
-		});
+		await renderCalendarPage();
 
 		// Open create modal
-		await user.click(screen.getByText("Add Calendar Entry"));
-
-		// Wait for modal form to be ready
-		await waitFor(() => {
-			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
-		});
+		openCreateModal();
 
 		// Verify that form is empty initially
 		const teamSelect = screen.getByLabelText("Team *") as HTMLSelectElement;
@@ -182,8 +238,7 @@ describe("CalendarPage", () => {
 		expect(titleInput.value).toBe("");
 
 		// Try to submit empty form - this should trigger validation
-		const submitButton = screen.getByText("Add Entry");
-		await user.click(submitButton);
+		await submitForm();
 
 		// Check immediately after form submission for validation errors
 		// The validation should happen synchronously when form is submitted
@@ -194,113 +249,61 @@ describe("CalendarPage", () => {
 	});
 
 	it("validates date range when creating entry", async () => {
-		const user = userEvent.setup();
-
-		await act(async () => {
-			renderCalendarPage();
-		});
-
-		await waitFor(() => {
-			expect(screen.getByText("Add Calendar Entry")).toBeInTheDocument();
-		});
+		await renderCalendarPage();
 
 		// Open create modal
-		await user.click(screen.getByText("Add Calendar Entry"));
-
-		// Wait for modal form to be ready
-		await waitFor(() => {
-			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
-		});
+		openCreateModal();
 
 		// Fill form with invalid date range (end before start)
-		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "Test Entry" } });
-		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-20" } });
-		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
+		await fillEntryForm({
+			title: "Test Entry",
+			startDate: "2025-07-20",
+			endDate: "2025-07-15"
+		});
 
-		const submitButton = screen.getByText("Add Entry");
-		await user.click(submitButton);
+		await submitForm();
 
 		expect(screen.getByText("End date must be after start date")).toBeInTheDocument();
 	});
 
 	it("successfully creates new calendar entry", async () => {
-		const user = userEvent.setup();
+		// Mock successful creation
+		setupMockResponse([]);
 
-		// Mock successful creation with robust implementation
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/teams") && url.includes("/users")) {
-				// Handle team users endpoint: /api/v1/teams/{teamId}/users
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "POST") {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({
-						id: "2",
-						title: "New Entry",
-						description: "Test description",
-						start_date: "2025-07-15",
-						end_date: "2025-07-15",
-						entry_type: "pto",
-						user_id: "user1",
-						team_id: "team1"
-					})
-				});
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
-
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
 		// Open create modal
-		await user.click(screen.getByText("Add Calendar Entry"));
+		openCreateModal();
 
 		// Fill form with valid data including team and user selection
-		await user.selectOptions(screen.getByLabelText("Team *"), "team1");
-
-		// Wait for team users to load
-		await waitFor(() => {
-			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		await fillEntryForm({
+			team: "team1",
+			user: "user1",
+			title: "New Entry",
+			description: "Test description",
+			startDate: "2025-07-15",
+			endDate: "2025-07-15",
+			entryType: "pto"
 		});
 
-		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
-		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "New Entry" } });
-		fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Test description" } });
-		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-15" } });
-		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
-		await user.selectOptions(screen.getByLabelText("Entry Type *"), "pto");
+		// Team users should be loaded immediately
+		expect(screen.getByText("John Doe")).toBeInTheDocument();
 
-		const submitButton = screen.getByText("Add Entry");
-		await user.click(submitButton);
+		await submitForm();
 
-		await waitFor(() => {
-			expect(screen.getByText("Calendar entry created successfully!")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Calendar entry created successfully!")).toBeInTheDocument();
 
 		// Modal should close after successful submission
-		await waitFor(() => {
-			expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
-		});
+		expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
 	});
 
 	it("handles API errors when creating entry", async () => {
-		const user = userEvent.setup();
+		// Mock API error only for POST request, not initial load
+		setupMockResponse([]);
 
-		// Mock API error with robust implementation
+		// Override fetch to fail only on POST
 		mockFetch.mockImplementation((url: string, options?: any) => {
 			if (url.includes("/api/v1/teams") && url.includes("/users")) {
-				// Handle team users endpoint: /api/v1/teams/{teamId}/users
 				return Promise.resolve({ ok: true, json: async () => mockUsers });
 			}
 			if (url.includes("/api/v1/teams")) {
@@ -322,108 +325,68 @@ describe("CalendarPage", () => {
 			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
 		});
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
 		// Open create modal and fill form with valid data
-		await user.click(screen.getByText("Add Calendar Entry"));
+		openCreateModal();
 
 		// Fill form with valid team and user selection
-		await user.selectOptions(screen.getByLabelText("Team *"), "team1");
-
-		// Wait for team users to load
-		await waitFor(() => {
-			expect(screen.getByText("John Doe")).toBeInTheDocument();
+		await fillEntryForm({
+			team: "team1",
+			user: "user1",
+			title: "Test Entry",
+			startDate: "2025-07-15",
+			endDate: "2025-07-15"
 		});
 
-		await user.selectOptions(screen.getByLabelText("Team Member *"), "user1");
-		fireEvent.change(screen.getByLabelText("Title *"), { target: { value: "Test Entry" } });
-		fireEvent.change(screen.getByLabelText("Start Date *"), { target: { value: "2025-07-15" } });
-		fireEvent.change(screen.getByLabelText("End Date *"), { target: { value: "2025-07-15" } });
+		// Team users should be loaded immediately
+		expect(screen.getByText("John Doe")).toBeInTheDocument();
 
-		const submitButton = screen.getByText("Add Entry");
-		await user.click(submitButton);
+		await submitForm();
 
 		// API errors are shown in toast notifications, not inline text
-		await waitFor(() => {
-			expect(screen.getByText("Invalid data provided")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Invalid data provided")).toBeInTheDocument();
 	});
 
 	it("filters entries by team selection", async () => {
 		// Clear and set up robust mocking for this test
-		mockFetch.mockClear();
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				// Handle both initial load and filtered load
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		setupMockResponse([]);
 
-		const user = userEvent.setup();
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByDisplayValue("All Teams")).toBeInTheDocument();
-		});
+		expect(screen.getByDisplayValue("All Teams")).toBeInTheDocument();
 
 		const teamFilter = screen.getByDisplayValue("All Teams");
-		await user.selectOptions(teamFilter, "team1");
+		fireEvent.change(teamFilter, { target: { value: "team1" } });
 
 		// Should trigger API call with team filter
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?team_id=team1&month=07&year=2025");
+		await act(async () => {
+			await Promise.resolve();
 		});
+
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?team_id=team1&month=07&year=2025");
 	});
 
 	it("filters entries by month selection", async () => {
 		// Clear and set up robust mocking for this test
-		mockFetch.mockClear();
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				// Handle both initial load and filtered load
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		setupMockResponse([]);
 
-		const user = userEvent.setup();
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByDisplayValue(/\d{4}/)).toBeInTheDocument();
-		});
+		expect(screen.getByDisplayValue(/\d{4}/)).toBeInTheDocument();
 
 		const monthFilter = screen.getByDisplayValue(/\d{4}/); // Current year
-		await user.selectOptions(monthFilter, "2025-08");
+		fireEvent.change(monthFilter, { target: { value: "2025-08" } });
 
 		// Should trigger API call with month filter
-		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?month=08&year=2025");
+		await act(async () => {
+			await Promise.resolve();
 		});
+
+		expect(mockFetch).toHaveBeenCalledWith("/api/v1/calendar_entries?month=08&year=2025");
 	});
 
 	it("opens edit modal when entry is clicked", async () => {
-		const user = userEvent.setup();
-
 		const mockEntries = [
 			{
 				id: "1",
@@ -441,38 +404,23 @@ describe("CalendarPage", () => {
 		];
 
 		// Mock initial load with entry data
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => mockEntries });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		setupMockResponse(mockEntries);
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByText("Existing Entry")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Existing Entry")).toBeInTheDocument();
 
 		// Click on the edit button for the entry
 		const editButton = screen.getByTitle("Edit entry");
-		await user.click(editButton);
+		await act(async () => {
+			fireEvent.click(editButton);
+		});
 
 		expect(screen.getByText("Edit Calendar Entry")).toBeInTheDocument();
 		expect(screen.getByDisplayValue("Existing Entry")).toBeInTheDocument();
 	});
 
 	it("successfully updates existing entry", async () => {
-		const user = userEvent.setup();
-
 		const mockEntries = [
 			{
 				id: "1",
@@ -489,57 +437,27 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Mock initial load and update with robust implementation
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "PUT") {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({
-						...mockEntries[0],
-						title: "Updated Entry"
-					})
-				});
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => mockEntries });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		// Mock initial load and update
+		setupMockResponse(mockEntries);
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByText("Original Entry")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Original Entry")).toBeInTheDocument();
 
 		// Click to edit
 		const editButton = screen.getByTitle("Edit entry");
-		await user.click(editButton);
+		fireEvent.click(editButton);
 
 		// Update title
 		const titleInput = screen.getByDisplayValue("Original Entry");
-		await user.clear(titleInput);
 		fireEvent.change(titleInput, { target: { value: "Updated Entry" } });
 
-		const updateButton = screen.getByText("Update Entry");
-		await user.click(updateButton);
+		await submitForm("Update Entry");
 
-		await waitFor(() => {
-			expect(screen.getByText("Calendar entry updated successfully!")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Calendar entry updated successfully!")).toBeInTheDocument();
 	});
 
 	it("successfully deletes entry", async () => {
-		const user = userEvent.setup();
-
 		const mockEntries = [
 			{
 				id: "1",
@@ -556,107 +474,58 @@ describe("CalendarPage", () => {
 			}
 		];
 
-		// Mock initial load and deletion with robust implementation
-		mockFetch.mockImplementation((url: string, options?: any) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries") && options?.method === "DELETE") {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ message: "Calendar entry deleted successfully" })
-				});
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => mockEntries });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		// Mock initial load and deletion
+		setupMockResponse(mockEntries);
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByText("Entry to Delete")).toBeInTheDocument();
-		});
+		expect(screen.getByText("Entry to Delete")).toBeInTheDocument();
 
 		// Click delete button
 		const deleteButton = screen.getByTitle("Delete entry");
-		await user.click(deleteButton);
+		fireEvent.click(deleteButton);
 
 		// Confirm deletion
 		const confirmButton = screen.getByText("Delete Entry");
-		await user.click(confirmButton);
+		fireEvent.click(confirmButton);
 
-		await waitFor(() => {
-			expect(screen.getByText("Calendar entry deleted successfully!")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+
+		expect(screen.getByText("Calendar entry deleted successfully!")).toBeInTheDocument();
 	});
 
 	it("closes modal when cancel button is clicked", async () => {
-		const user = userEvent.setup();
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
 		// Open create modal using the specific button (not the modal header)
-		await user.click(screen.getByRole("button", { name: "Add Calendar Entry" }));
-
-		// Wait for modal to be open
-		await waitFor(() => {
-			expect(screen.getByLabelText("Title *")).toBeInTheDocument();
-		});
+		openCreateModal();
 
 		// Click cancel
-		await user.click(screen.getByText("Cancel"));
+		fireEvent.click(screen.getByText("Cancel"));
 
 		// Modal should close - check that form fields are no longer visible
-		await waitFor(() => {
-			expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
-		});
+		expect(screen.queryByLabelText("Title *")).not.toBeInTheDocument();
 	});
 
 	it("displays empty state when no entries", async () => {
 		// Mock empty entries response
-		mockFetch.mockImplementation((url: string) => {
-			if (url.includes("/api/v1/teams")) {
-				return Promise.resolve({ ok: true, json: async () => mockTeams });
-			}
-			if (url.includes("/api/v1/users")) {
-				return Promise.resolve({ ok: true, json: async () => mockUsers });
-			}
-			if (url.includes("/api/v1/calendar_entries")) {
-				return Promise.resolve({ ok: true, json: async () => [] });
-			}
-			return Promise.reject(new Error(`Unhandled API call in mock: ${url}`));
-		});
+		setupMockResponse([]);
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
-		await waitFor(() => {
-			expect(screen.getByText("No calendar entries for the selected period.")).toBeInTheDocument();
-		});
+		expect(screen.getByText("No calendar entries for the selected period.")).toBeInTheDocument();
 	});
 
 	it("handles network errors gracefully", async () => {
 		// Mock network error for all initialization calls
 		mockFetch.mockRejectedValue(new Error("Network error"));
 
-		await act(async () => {
-			renderCalendarPage();
-		});
+		await renderCalendarPage();
 
 		// Network errors during initialization show error state with "Unable to Load Calendar" and the specific error message
-		await waitFor(() => {
-			expect(screen.getByText("Unable to Load Calendar")).toBeInTheDocument();
-		});
-
+		expect(screen.getByText("Unable to Load Calendar")).toBeInTheDocument();
 		expect(screen.getByText("Network error")).toBeInTheDocument();
 	});
 });
