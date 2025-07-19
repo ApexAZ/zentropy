@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { screen, cleanup } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Header navigation tests require userEvent for flyout menu interactions and focus management
 import userEvent from "@testing-library/user-event";
@@ -39,7 +40,7 @@ describe("Header", () => {
 	});
 
 	it("renders Zentropy logo", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -54,7 +55,7 @@ describe("Header", () => {
 	});
 
 	it("renders flyout navigation menu button", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="about"
 				onPageChange={mockOnPageChange}
@@ -71,7 +72,7 @@ describe("Header", () => {
 
 	it("opens flyout navigation and calls onPageChange when link is clicked", async () => {
 		const user = userEvent.setup();
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -93,7 +94,7 @@ describe("Header", () => {
 	});
 
 	it("renders navigation panel", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -108,7 +109,7 @@ describe("Header", () => {
 	});
 
 	it("has proper semantic structure", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -128,7 +129,7 @@ describe("Header", () => {
 
 	it("renders flyout navigation with all links when opened", async () => {
 		const user = userEvent.setup();
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -148,7 +149,7 @@ describe("Header", () => {
 	});
 
 	it("does not show email verification elements for verified users", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -163,7 +164,7 @@ describe("Header", () => {
 	});
 
 	it("shows email verification elements for unverified users", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -186,7 +187,7 @@ describe("Header", () => {
 			logout: vi.fn()
 		};
 
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -201,7 +202,7 @@ describe("Header", () => {
 	});
 
 	it("positions email verification elements correctly in header", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -233,7 +234,7 @@ describe("Header", () => {
 	it("shows Enter Code button when onShowVerification is provided", () => {
 		const mockOnShowVerification = vi.fn();
 
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -250,7 +251,7 @@ describe("Header", () => {
 	});
 
 	it("does not show Enter Code button when onShowVerification is not provided", () => {
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}
@@ -269,7 +270,7 @@ describe("Header", () => {
 		const user = userEvent.setup();
 		const mockOnShowVerification = vi.fn();
 
-		render(
+		renderWithFullEnvironment(
 			<Header
 				currentPage="home"
 				onPageChange={mockOnPageChange}

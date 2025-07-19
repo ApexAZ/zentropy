@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
@@ -18,7 +19,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("renders the menu button with proper accessibility attributes", () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 		expect(menuButton).toBeInTheDocument();
@@ -28,7 +29,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("shows the list icon in the menu button", () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const icon = screen.getByRole("button", { name: /navigation menu/i }).querySelector("svg");
 		expect(icon).toBeInTheDocument();
@@ -36,14 +37,14 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("does not show the dropdown menu initially", () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		expect(screen.queryByText("About")).not.toBeInTheDocument();
 		expect(screen.queryByText("Contact")).not.toBeInTheDocument();
 	});
 
 	it("shows the dropdown menu when button is clicked", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 		fastUserActions.click(menuButton);
@@ -55,7 +56,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("hides the dropdown menu when button is clicked again", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 
@@ -72,7 +73,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("calls onPageChange when About is clicked", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		// Open menu
 		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
@@ -86,7 +87,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("calls onPageChange when Contact is clicked", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		// Open menu
 		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
@@ -100,7 +101,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("closes the menu after clicking a navigation item", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 
@@ -119,7 +120,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("highlights the current page in the dropdown", async () => {
-		render(<FlyoutNavigation {...defaultProps} currentPage="about" />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} currentPage="about" />);
 
 		// Open menu
 		fastUserActions.click(screen.getByRole("button", { name: /navigation menu/i }));
@@ -155,7 +156,7 @@ describe("FlyoutNavigation", () => {
 	});
 
 	it("does not close the menu when clicking inside the dropdown", async () => {
-		render(<FlyoutNavigation {...defaultProps} />);
+		renderWithFullEnvironment(<FlyoutNavigation {...defaultProps} />);
 
 		const menuButton = screen.getByRole("button", { name: /navigation menu/i });
 

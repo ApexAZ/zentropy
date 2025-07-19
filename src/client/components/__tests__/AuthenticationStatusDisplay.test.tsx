@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
 import { AuthenticationStatusDisplay } from "../AuthenticationStatusDisplay";
@@ -26,7 +27,7 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User can immediately understand their authentication status", () => {
 		it("should show 'Email Only' badge for email-only authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
 			expect(providerBadge).toHaveTextContent("Email Only");
@@ -34,7 +35,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should show 'Email + Google' badge for hybrid authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
 			expect(providerBadge).toHaveTextContent("Email + Google");
@@ -42,7 +43,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should show 'No Authentication' badge when no methods are active", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
 			expect(providerBadge).toHaveTextContent("No Authentication");
@@ -52,7 +53,7 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User sees security strength indicators", () => {
 		it("should show 'Strong Security' for hybrid authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveTextContent("Strong Security");
@@ -60,7 +61,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should show 'Moderate Security' for email-only authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveTextContent("Moderate Security");
@@ -68,7 +69,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should show 'Weak Security' when no authentication methods are active", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
 
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveTextContent("Weak Security");
@@ -78,21 +79,21 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User gets helpful security recommendations", () => {
 		it("should show security tip for email-only authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			expect(screen.getByText("Security Tip:")).toBeInTheDocument();
 			expect(screen.getByText(/Consider adding Google authentication for enhanced security/)).toBeInTheDocument();
 		});
 
 		it("should show security tip for no authentication", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
 
 			expect(screen.getByText("Security Tip:")).toBeInTheDocument();
 			expect(screen.getByText(/Enable authentication methods to secure your account/)).toBeInTheDocument();
 		});
 
 		it("should not show security tip for strong security", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			expect(screen.queryByText("Security Tip:")).not.toBeInTheDocument();
 		});
@@ -100,14 +101,14 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User gets helpful explanations through tooltips", () => {
 		it("should provide helpful tooltip for provider badge", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
 			expect(providerBadge).toHaveAttribute("title", "Email and password authentication only");
 		});
 
 		it("should provide helpful tooltip for security strength badge", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveAttribute(
@@ -117,7 +118,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should provide helpful tooltips for authentication status indicators", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const emailIndicator = screen.getByTestId("email-auth-indicator");
 			expect(emailIndicator).toHaveAttribute("title", "Email authentication is enabled");
@@ -127,7 +128,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should provide helpful tooltips for status badges", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const emailStatus = screen.getByTestId("email-auth-status");
 			expect(emailStatus).toHaveAttribute(
@@ -145,7 +146,7 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User has accessible experience", () => {
 		it("should provide comprehensive ARIA labels for screen readers", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			// Check provider badge accessibility
 			const providerBadge = screen.getByTestId("auth-provider-badge");
@@ -173,7 +174,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should use semantic HTML structure with proper headings", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			// Should have proper heading hierarchy
 			expect(screen.getByRole("heading", { level: 3, name: "Authentication Status" })).toBeInTheDocument();
@@ -182,7 +183,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should provide meaningful color contrast and visual hierarchy", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			// Success states should use success colors
 			expect(screen.getByTestId("email-auth-status")).toHaveClass("bg-success-light", "text-success");
@@ -199,7 +200,7 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User understands individual authentication methods", () => {
 		it("should display email authentication details correctly", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			expect(screen.getByText("Email Authentication")).toBeInTheDocument();
 			expect(screen.getByText("Password-based authentication")).toBeInTheDocument();
@@ -207,7 +208,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should display Google authentication details correctly", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			expect(screen.getByText("Google Authentication")).toBeInTheDocument();
 			expect(screen.getByText("john@gmail.com")).toBeInTheDocument();
@@ -215,7 +216,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should show generic OAuth description when Google is not linked", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			expect(screen.getByText("OAuth-based authentication")).toBeInTheDocument();
 		});
@@ -223,7 +224,7 @@ describe("AuthenticationStatusDisplay", () => {
 
 	describe("User sees consistent visual design", () => {
 		it("should use consistent badge styling across all status indicators", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			// All badges should have consistent rounded-full styling
 			expect(screen.getByTestId("auth-provider-badge")).toHaveClass(
@@ -257,7 +258,7 @@ describe("AuthenticationStatusDisplay", () => {
 		});
 
 		it("should use consistent spacing and layout", () => {
-			render(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
+			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			// Should find the main container with proper spacing
 			const container = screen.getByTestId("auth-provider-badge").parentElement;

@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Modal tests require userEvent for keyboard navigation and focus management accessibility testing
 import userEvent from "@testing-library/user-event";
@@ -238,7 +239,9 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User experiences accessible design", () => {
 		it("should provide proper ARIA attributes", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} title="Confirm Action" message="Are you sure?" />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} title="Confirm Action" message="Are you sure?" />
+			);
 
 			const dialog = screen.getByRole("dialog");
 			expect(dialog).toHaveAttribute("aria-labelledby");
@@ -250,7 +253,9 @@ describe("EnhancedConfirmationModal", () => {
 
 		it("should support keyboard navigation", async () => {
 			const user = userEvent.setup();
-			render(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />
+			);
 
 			// Password input should be focused initially
 			expect(screen.getByLabelText(/password/i)).toHaveFocus();
@@ -264,7 +269,7 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should handle escape key to close", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} />);
+			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} />);
 
 			const dialog = screen.getByRole("dialog");
 			fireEvent.keyDown(dialog, { key: "Escape" });
@@ -272,13 +277,17 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should focus appropriate element when opened", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />
+			);
 
 			expect(screen.getByLabelText(/password/i)).toHaveFocus();
 		});
 
 		it("should focus confirm button when no password required", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={false} />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={false} />
+			);
 
 			expect(screen.getByRole("button", { name: "Confirm" })).toHaveFocus();
 		});
@@ -286,21 +295,21 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User sees appropriate visual styling", () => {
 		it("should use destructive styling for destructive actions", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} actionType="destructive" />);
+			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} actionType="destructive" />);
 
 			const confirmButton = screen.getByRole("button", { name: "Confirm" });
 			expect(confirmButton).toHaveClass("bg-red-600", "hover:bg-red-700");
 		});
 
 		it("should use critical styling for critical actions", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} actionType="critical" />);
+			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} actionType="critical" />);
 
 			const modal = screen.getByRole("dialog");
 			expect(modal).toHaveClass("border-error");
 		});
 
 		it("should use normal styling for normal actions", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} actionType="normal" />);
+			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} actionType="normal" />);
 
 			const confirmButton = screen.getByRole("button", { name: "Confirm" });
 			expect(confirmButton).toHaveClass("bg-interactive", "hover:bg-interactive-hover");
@@ -309,7 +318,7 @@ describe("EnhancedConfirmationModal", () => {
 
 	describe("User can cancel actions safely", () => {
 		it("should close modal when cancel button is clicked", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} />);
+			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} />);
 
 			clickCancelButton();
 
@@ -334,7 +343,9 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should handle loading state properly", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} loading={true} loadingText="Processing..." />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} loading={true} loadingText="Processing..." />
+			);
 
 			const confirmButton = screen.getByRole("button", { name: "Processing..." });
 			const cancelButton = screen.getByRole("button", { name: "Cancel" });
@@ -358,7 +369,9 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should clear validation errors when password is corrected", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} requiresPasswordConfirmation={true} />
+			);
 
 			const passwordInput = screen.getByLabelText(/password/i);
 			// Trigger validation error
@@ -371,7 +384,9 @@ describe("EnhancedConfirmationModal", () => {
 		});
 
 		it("should show loading text during confirmation", () => {
-			render(<EnhancedConfirmationModal {...defaultProps} loading={true} loadingText="Unlinking account..." />);
+			renderWithFullEnvironment(
+				<EnhancedConfirmationModal {...defaultProps} loading={true} loadingText="Unlinking account..." />
+			);
 
 			expect(screen.getAllByText("Unlinking account...")[0]).toBeInTheDocument();
 		});

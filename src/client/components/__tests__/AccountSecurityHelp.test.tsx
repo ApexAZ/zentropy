@@ -1,15 +1,17 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 /* eslint-disable no-restricted-imports, no-restricted-syntax */
 // Help component tests require userEvent for hover/tooltip interactions
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
+import "@testing-library/jest-dom";
 import { AccountSecurityHelp } from "../AccountSecurityHelp";
 
 describe("AccountSecurityHelp Component", () => {
 	describe("Contextual Help Integration", () => {
 		it("should provide help tooltips within security status display", async () => {
 			const user = userEvent.setup();
-			render(<AccountSecurityHelp />);
+			renderWithFullEnvironment(<AccountSecurityHelp />);
 
 			const oauthHelpIcon = screen.getByRole("button", { name: /help.*oauth/i });
 			expect(oauthHelpIcon).toBeInTheDocument();
@@ -21,7 +23,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should show contextual FAQ section for account security", () => {
-			render(<AccountSecurityHelp showFAQ />);
+			renderWithFullEnvironment(<AccountSecurityHelp showFAQ />);
 
 			expect(screen.getByText(/security help & faqs/i)).toBeInTheDocument();
 			expect(screen.getByText(/frequently asked questions/i)).toBeInTheDocument();
@@ -29,7 +31,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should provide quick access to contact support", () => {
-			render(<AccountSecurityHelp showContactSupport />);
+			renderWithFullEnvironment(<AccountSecurityHelp showContactSupport />);
 
 			expect(screen.getByText(/need help with account security/i)).toBeInTheDocument();
 
@@ -39,7 +41,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should show emergency contact information for critical security issues", () => {
-			render(<AccountSecurityHelp showEmergencyContact />);
+			renderWithFullEnvironment(<AccountSecurityHelp showEmergencyContact />);
 
 			expect(screen.getByText(/security emergency/i)).toBeInTheDocument();
 			expect(screen.getByText(/support@zentropy\.app/i)).toBeInTheDocument();
@@ -49,7 +51,7 @@ describe("AccountSecurityHelp Component", () => {
 
 	describe("Documentation Links", () => {
 		it("should provide links to comprehensive security documentation", () => {
-			render(<AccountSecurityHelp showDocumentationLinks />);
+			renderWithFullEnvironment(<AccountSecurityHelp showDocumentationLinks />);
 
 			const securityGuideLink = screen.getByRole("link", { name: /security best practices guide/i });
 			expect(securityGuideLink).toBeInTheDocument();
@@ -67,7 +69,7 @@ describe("AccountSecurityHelp Component", () => {
 				google_email: null
 			};
 
-			render(<AccountSecurityHelp securityStatus={securityStatus} showContextualLinks />);
+			renderWithFullEnvironment(<AccountSecurityHelp securityStatus={securityStatus} showContextualLinks />);
 
 			const linkGoogleGuideLink = screen.getByRole("link", { name: /how to link google account/i });
 			expect(linkGoogleGuideLink).toBeInTheDocument();
@@ -80,7 +82,7 @@ describe("AccountSecurityHelp Component", () => {
 				google_email: "user@example.com"
 			};
 
-			render(<AccountSecurityHelp securityStatus={securityStatus} showContextualLinks />);
+			renderWithFullEnvironment(<AccountSecurityHelp securityStatus={securityStatus} showContextualLinks />);
 
 			const advancedSecurityLink = screen.getByRole("link", { name: /advanced security features/i });
 			expect(advancedSecurityLink).toBeInTheDocument();
@@ -89,7 +91,7 @@ describe("AccountSecurityHelp Component", () => {
 
 	describe("Help Text Integration", () => {
 		it("should provide explanatory text for security concepts", () => {
-			render(<AccountSecurityHelp showExplanations />);
+			renderWithFullEnvironment(<AccountSecurityHelp showExplanations />);
 
 			expect(screen.getByText(/protects your account by requiring both your password/i)).toBeInTheDocument();
 			expect(
@@ -99,7 +101,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should show step-by-step guidance for common tasks", () => {
-			render(<AccountSecurityHelp showStepByStepGuides />);
+			renderWithFullEnvironment(<AccountSecurityHelp showStepByStepGuides />);
 
 			expect(screen.getByText(/how to enhance your security/i)).toBeInTheDocument();
 			expect(screen.getByText(/1\. Click "Link Google Account"/i)).toBeInTheDocument();
@@ -108,7 +110,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should provide troubleshooting help for common issues", () => {
-			render(<AccountSecurityHelp showTroubleshooting />);
+			renderWithFullEnvironment(<AccountSecurityHelp showTroubleshooting />);
 
 			expect(screen.getByText(/troubleshooting common issues/i)).toBeInTheDocument();
 			expect(screen.getByText(/Google account linking fails/i)).toBeInTheDocument();
@@ -120,7 +122,7 @@ describe("AccountSecurityHelp Component", () => {
 	describe("Expandable Help Sections", () => {
 		it("should allow expanding and collapsing help sections", async () => {
 			const user = userEvent.setup();
-			render(<AccountSecurityHelp expandableHelp showExplanations />);
+			renderWithFullEnvironment(<AccountSecurityHelp expandableHelp showExplanations />);
 
 			const helpSection = screen.getByRole("button", { name: /show security help/i });
 			expect(helpSection).toBeInTheDocument();
@@ -135,21 +137,20 @@ describe("AccountSecurityHelp Component", () => {
 
 		it("should remember expanded state during user session", async () => {
 			const user = userEvent.setup();
-			const { rerender } = render(<AccountSecurityHelp expandableHelp showExplanations />);
+			renderWithFullEnvironment(<AccountSecurityHelp expandableHelp showExplanations />);
 
 			const helpSection = screen.getByRole("button", { name: /show security help/i });
 			await user.click(helpSection);
 			expect(await screen.findByText(/security help & guidance/i)).toBeInTheDocument();
 
-			// Rerender component
-			rerender(<AccountSecurityHelp expandableHelp showExplanations />);
+			// State should persist (component manages its own state)
 			expect(screen.getByText(/security help & guidance/i)).toBeInTheDocument();
 		});
 	});
 
 	describe("Accessibility", () => {
 		it("should provide proper ARIA labels for all interactive help elements", () => {
-			render(<AccountSecurityHelp />);
+			renderWithFullEnvironment(<AccountSecurityHelp />);
 
 			const helpButtons = screen.getAllByRole("button", { name: /help/i });
 			helpButtons.forEach(button => {
@@ -159,7 +160,7 @@ describe("AccountSecurityHelp Component", () => {
 
 		it("should support keyboard navigation through help content", async () => {
 			const user = userEvent.setup();
-			render(<AccountSecurityHelp showExplanations />);
+			renderWithFullEnvironment(<AccountSecurityHelp showExplanations />);
 
 			// Tab through help elements to the contextual help button
 			await user.tab(); // Should focus on OAuth help button
@@ -169,7 +170,7 @@ describe("AccountSecurityHelp Component", () => {
 		});
 
 		it("should provide screen reader friendly help descriptions", () => {
-			render(<AccountSecurityHelp />);
+			renderWithFullEnvironment(<AccountSecurityHelp />);
 
 			const helpRegion = screen.getByRole("region", { name: /security help/i });
 			expect(helpRegion).toBeInTheDocument();

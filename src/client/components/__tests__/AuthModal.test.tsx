@@ -1,11 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import AuthModal from "../AuthModal";
 import { AuthService } from "../../services/AuthService";
 import { useGoogleOAuth } from "../../hooks/useGoogleOAuth";
-import { ToastProvider } from "../../contexts/ToastContext";
 
 // Mock AuthService
 vi.mock("../../services/AuthService", () => ({
@@ -60,23 +60,19 @@ describe("AuthModal", () => {
 		vi.restoreAllMocks();
 	});
 
-	const renderWithToast = (ui: React.ReactElement) => {
-		return render(<ToastProvider>{ui}</ToastProvider>);
-	};
-
 	it("should show sign in form by default", () => {
-		renderWithToast(<AuthModal {...mockProps} />);
+		renderWithFullEnvironment(<AuthModal {...mockProps} />);
 		expect(screen.getByText("Welcome back to Zentropy")).toBeInTheDocument();
 	});
 
 	it("should show signup form when initialMode is signup", () => {
-		renderWithToast(<AuthModal {...mockProps} initialMode="signup" />);
+		renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signup" />);
 		expect(screen.getByRole("heading", { name: "Create Your Account" })).toBeInTheDocument();
 	});
 
 	it("should allow user to sign in with valid credentials", async () => {
 		(AuthService.signIn as any).mockResolvedValue({ token: "mock-token", user: {} });
-		renderWithToast(<AuthModal {...mockProps} initialMode="signin" />);
+		renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
 
 		fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "test@example.com" } });
 		fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "password123" } });
@@ -91,7 +87,7 @@ describe("AuthModal", () => {
 	it("should allow user to register with valid information", async () => {
 		(AuthService.signUp as any).mockResolvedValue({ message: "Success" });
 		const propsWithVerification = { ...mockProps, onShowVerification: vi.fn() };
-		renderWithToast(<AuthModal {...propsWithVerification} initialMode="signup" />);
+		renderWithFullEnvironment(<AuthModal {...propsWithVerification} initialMode="signup" />);
 
 		fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: "John" } });
 		fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: "Doe" } });
