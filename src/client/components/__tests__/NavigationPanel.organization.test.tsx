@@ -1,4 +1,4 @@
-import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -293,9 +293,10 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /join organization/i })).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByRole("button", { name: /join organization/i })).toBeInTheDocument();
 		});
 
 		it("should show create organization button", async () => {
@@ -303,9 +304,10 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await waitFor(() => {
-				expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByRole("button", { name: /create organization/i })).toBeInTheDocument();
 		});
 
 		it("should open project creation modal", async () => {
@@ -322,7 +324,7 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await waitFor(async () => {
+			await act(async () => {
 				const joinButton = screen.getByRole("button", { name: /join organization/i });
 				await user.click(joinButton);
 			});
@@ -519,7 +521,7 @@ describe("NavigationPanel - Organization Features", () => {
 
 			await openOrganizationDropdown();
 
-			await waitFor(async () => {
+			await act(async () => {
 				const joinButton = screen.getByRole("button", { name: /join organization/i });
 				await user.click(joinButton);
 			});

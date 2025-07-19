@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { useMicrosoftOAuth } from "../useMicrosoftOAuth";
@@ -32,9 +32,10 @@ describe("useMicrosoftOAuth", () => {
 
 	// Helper function to wait for hook to be ready
 	const waitForReady = async (result: any) => {
-		await waitFor(() => {
-			expect(result.current.isReady || result.current.error !== null).toBe(true);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.isReady || result.current.error !== null).toBe(true);
 	};
 
 	beforeEach(() => {
@@ -135,11 +136,10 @@ describe("useMicrosoftOAuth", () => {
 
 			const { result } = createHook();
 
-			await waitFor(() => {
-				expect(result.current.error).toBe(
-					"VITE_MICROSOFT_CLIENT_ID is not configured in environment variables"
-				);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.error).toBe("VITE_MICROSOFT_CLIENT_ID is not configured in environment variables");
 
 			expect(result.current.isReady).toBe(false);
 			expect(mockOnError).toHaveBeenCalledWith(
@@ -153,9 +153,10 @@ describe("useMicrosoftOAuth", () => {
 			const { result } = createHook();
 
 			// Wait for error state
-			await waitFor(() => {
-				expect(result.current.isReady).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isReady).toBe(false);
 
 			// Try to trigger OAuth when not ready
 			act(() => {
@@ -173,9 +174,10 @@ describe("useMicrosoftOAuth", () => {
 			const { result } = createHook();
 
 			// Should have error due to missing client ID
-			await waitFor(() => {
-				expect(result.current.error).not.toBeNull();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.error).not.toBeNull();
 
 			// Clear error
 			act(() => {
@@ -242,9 +244,10 @@ describe("useMicrosoftOAuth", () => {
 
 			const { result } = createHook();
 
-			await waitFor(() => {
-				expect(result.current.error).not.toBeNull();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.error).not.toBeNull();
 
 			// Clear error multiple times rapidly
 			act(() => {

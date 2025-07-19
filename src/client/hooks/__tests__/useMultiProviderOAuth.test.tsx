@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -321,9 +321,10 @@ describe("useMultiProviderOAuth", () => {
 			await user.click(unlinkButton);
 
 			// User should receive an error message about Microsoft unlinking not being supported
-			await waitFor(() => {
-				expect(mockOnError).toHaveBeenCalledWith("Unlinking microsoft is not yet supported");
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(mockOnError).toHaveBeenCalledWith("Unlinking microsoft is not yet supported");
 		});
 	});
 

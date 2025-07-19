@@ -537,9 +537,10 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByText("Network error")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByText("Network error")).toBeInTheDocument();
 
 			expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
 		});
@@ -569,9 +570,10 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByText("Test Organization")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByText("Test Organization")).toBeInTheDocument();
 
 			const dialog = screen.getByRole("dialog");
 			dialog.focus();
@@ -598,10 +600,11 @@ describe("OrganizationSelector", () => {
 				createSelector();
 			});
 
-			await waitFor(() => {
-				const dialog = screen.getByRole("dialog");
-				expect(document.activeElement).toBe(dialog);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			const dialog = screen.getByRole("dialog");
+			expect(document.activeElement).toBe(dialog);
 
 			await user.tab();
 			const firstButton = screen.getAllByRole("button")[0];

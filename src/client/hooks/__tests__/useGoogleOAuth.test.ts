@@ -1,4 +1,4 @@
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
 import { useGoogleOAuth } from "../useGoogleOAuth";
@@ -53,10 +53,11 @@ describe("useGoogleOAuth", () => {
 			);
 
 			// Should eventually become ready (assuming environment is properly configured)
-			await waitFor(() => {
-				// Hook should either be ready for use or show a specific error
-				expect(result.current.isReady || result.current.error !== null).toBe(true);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			// Hook should either be ready for use or show a specific error
+			expect(result.current.isReady || result.current.error !== null).toBe(true);
 
 			// If there's no error, the hook should be ready
 			if (!result.current.error) {
@@ -93,9 +94,10 @@ describe("useGoogleOAuth", () => {
 			);
 
 			// Wait for initialization
-			await waitFor(() => {
-				expect(mockInitialize).toHaveBeenCalled();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(mockInitialize).toHaveBeenCalled();
 
 			// Simulate successful credential response
 			const mockCredentialResponse = {
@@ -136,9 +138,10 @@ describe("useGoogleOAuth", () => {
 				})
 			);
 
-			await waitFor(() => {
-				expect(mockInitialize).toHaveBeenCalled();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(mockInitialize).toHaveBeenCalled();
 
 			// Simulate empty credential response
 			const emptyCredentialResponse = { credential: "" };
@@ -256,9 +259,10 @@ describe("useGoogleOAuth", () => {
 				})
 			);
 
-			await waitFor(() => {
-				expect(result.current.isReady).toBe(true);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isReady).toBe(true);
 
 			// User triggers OAuth
 			await act(async () => {
@@ -267,9 +271,10 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should handle dismissal gracefully
-			await waitFor(() => {
-				expect(result.current.error).toBe("Google Sign-In was dismissed or unavailable");
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.error).toBe("Google Sign-In was dismissed or unavailable");
 
 			expect(mockOnError).toHaveBeenCalledWith("Google Sign-In was dismissed or unavailable");
 			expect(result.current.isLoading).toBe(false);
@@ -297,9 +302,10 @@ describe("useGoogleOAuth", () => {
 				})
 			);
 
-			await waitFor(() => {
-				expect(result.current.isReady).toBe(true);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isReady).toBe(true);
 
 			// Initially not loading
 			expect(result.current.isLoading).toBe(false);
@@ -352,10 +358,9 @@ describe("useGoogleOAuth", () => {
 
 			// Should still set error state even without callback
 			await act(async () => {
-				await waitFor(() => {
-					expect(result.current.error).toContain("not available");
-				});
+				await Promise.resolve();
 			});
+			expect(result.current.error).toContain("not available");
 			expect(result.current.isReady).toBe(false);
 			// Should not crash when onError callback is missing
 			act(() => {
