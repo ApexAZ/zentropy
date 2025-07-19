@@ -1,4 +1,4 @@
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -54,9 +54,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for error state to appear
-		await waitFor(() => {
-			expect(screen.getByText("Unable to Load Dashboard")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Unable to Load Dashboard")).toBeInTheDocument();
 
 		// Verify error message and retry button
 		expect(screen.getByText(errorMessage)).toBeInTheDocument();
@@ -67,10 +68,11 @@ describe("DashboardPage", () => {
 		await user.click(retryButton);
 
 		// Verify services are called again
-		await waitFor(() => {
-			expect(DashboardService.getDashboardStats).toHaveBeenCalledTimes(2);
-			expect(DashboardService.getTeams).toHaveBeenCalledTimes(2);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(DashboardService.getDashboardStats).toHaveBeenCalledTimes(2);
+		expect(DashboardService.getTeams).toHaveBeenCalledTimes(2);
 	});
 
 	it("should display dashboard stats cards with correct data", async () => {
@@ -100,9 +102,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("5")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("5")).toBeInTheDocument();
 
 		// Verify all stats cards display correct data
 		expect(screen.getByText("Total Teams")).toBeInTheDocument();
@@ -154,9 +157,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Teams Overview")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Teams Overview")).toBeInTheDocument();
 
 		// Verify teams table headers
 		expect(screen.getByText("Team Name")).toBeInTheDocument();
@@ -201,9 +205,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Teams Overview")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Teams Overview")).toBeInTheDocument();
 
 		// Verify empty state message and create team button
 		expect(screen.getByText("No teams found. Create your first team to get started.")).toBeInTheDocument();
@@ -237,9 +242,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Quick Actions")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Quick Actions")).toBeInTheDocument();
 
 		// Verify all quick action buttons are present
 		expect(screen.getByText("+ Create New Team")).toBeInTheDocument();
@@ -274,9 +280,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Recent Activity")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Recent Activity")).toBeInTheDocument();
 
 		// Verify recent activity section
 		expect(screen.getByText("No recent activity to display.")).toBeInTheDocument();
@@ -316,9 +323,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("New Team")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("New Team")).toBeInTheDocument();
 
 		// Verify "Not set" is displayed for velocity
 		expect(screen.getByText("Not set")).toBeInTheDocument();
@@ -351,9 +359,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Minimal Team")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Minimal Team")).toBeInTheDocument();
 
 		// Verify team name is displayed without description
 		expect(screen.getByText("Minimal Team")).toBeInTheDocument();
@@ -387,9 +396,10 @@ describe("DashboardPage", () => {
 		render(<DashboardPage />);
 
 		// Wait for data to load
-		await waitFor(() => {
-			expect(screen.getByText("Test Team")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Test Team")).toBeInTheDocument();
 
 		// Verify both services were called exactly once
 		expect(DashboardService.getDashboardStats).toHaveBeenCalledTimes(1);

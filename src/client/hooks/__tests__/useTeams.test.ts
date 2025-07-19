@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useTeams } from "../useTeams";
 import { TeamService } from "../../services/TeamService";
@@ -72,11 +72,12 @@ describe("useTeams", () => {
 			expect(result.current.error).toBe("");
 
 			// Wait for async operation to complete
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
 
 			// Assert: Teams loaded successfully
+			expect(result.current.isLoading).toBe(false);
 			expect(result.current.teams).toEqual(mockTeams);
 			expect(result.current.error).toBe("");
 			expect(mockTeamService.getTeams).toHaveBeenCalledTimes(1);
@@ -91,11 +92,12 @@ describe("useTeams", () => {
 			const { result } = renderHook(() => useTeams());
 
 			// Wait for async operation to complete
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
 
 			// Assert: Error state is set correctly
+			expect(result.current.isLoading).toBe(false);
 			expect(result.current.teams).toEqual([]);
 			expect(result.current.error).toBe(errorMessage);
 		});
@@ -108,11 +110,12 @@ describe("useTeams", () => {
 			const { result } = renderHook(() => useTeams());
 
 			// Wait for async operation to complete
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
 
 			// Assert: Empty state handled correctly
+			expect(result.current.isLoading).toBe(false);
 			expect(result.current.teams).toEqual([]);
 			expect(result.current.error).toBe("");
 			expect(result.current.isLoading).toBe(false);
@@ -137,9 +140,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Create team
 			await act(async () => {
@@ -161,9 +165,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Attempt to create team
 			await act(async () => {
@@ -183,9 +188,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Attempt to create team
 			await act(async () => {
@@ -217,9 +223,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Update team
 			await act(async () => {
@@ -241,9 +248,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Attempt team update
 			await act(async () => {
@@ -269,9 +277,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Delete team
 			await act(async () => {
@@ -293,9 +302,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Act: Attempt team deletion
 			await act(async () => {
@@ -320,9 +330,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Verify initial state
 			expect(result.current.teams).toEqual(initialTeams);
@@ -345,9 +356,10 @@ describe("useTeams", () => {
 
 			// Act: Render hook and wait for initial load
 			const { result } = renderHook(() => useTeams());
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Verify initial state
 			expect(result.current.teams).toEqual(mockTeams);
@@ -373,9 +385,10 @@ describe("useTeams", () => {
 			const { result, rerender } = renderHook(() => useTeams());
 
 			// Wait for initial load
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 
 			// Store initial function references
 			const initialFunctions = {
@@ -418,9 +431,10 @@ describe("useTeams", () => {
 			expect(typeof result.current.deleteTeam).toBe("function");
 
 			// Wait for initial load to complete to avoid act warnings
-			await waitFor(() => {
-				expect(result.current.isLoading).toBe(false);
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(result.current.isLoading).toBe(false);
 		});
 	});
 });

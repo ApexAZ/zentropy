@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { useAccountSecurity } from "../useAccountSecurity";
 import { UserService } from "../../services/UserService";
@@ -84,9 +84,10 @@ describe("useAccountSecurity", () => {
 		expect(result.current.optimisticSecurityStatus).toBeNull();
 
 		// Wait for loading to complete
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		expect(result.current.securityStatus).toEqual(mockEmailOnlyResponse);
 		expect(UserService.getAccountSecurity).toHaveBeenCalledTimes(1);
@@ -104,9 +105,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Trigger Google linking
 		act(() => {
@@ -141,9 +143,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Trigger unlinking
 		await act(async () => {
@@ -164,9 +167,10 @@ describe("useAccountSecurity", () => {
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		expect(result.current.error).toBe("Connection problem. Please check your internet connection and try again.");
 		expect(result.current.errorResolution).toBe("Check your internet connection and try again in a moment.");
@@ -182,9 +186,10 @@ describe("useAccountSecurity", () => {
 
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		expect(result.current.error).toBe("Unable to load account security information.");
 		expect(result.current.errorResolution).toBe("Please try again. If the problem persists, contact support.");
@@ -201,9 +206,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Trigger Google linking
 		act(() => {
@@ -227,9 +233,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Trigger unlinking - should throw error with enhanced message
 		await act(async () => {
@@ -250,9 +257,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Trigger Google linking
 		act(() => {
@@ -275,9 +283,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Should initially have no optimistic update
 		expect(result.current.optimisticSecurityStatus).toBeNull();
@@ -315,9 +324,10 @@ describe("useAccountSecurity", () => {
 		expect(result.current.oauthLoading).toBe(true);
 
 		// Wait for async operations to complete to prevent act() warnings
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 	});
 
 	it("should allow manual security status refresh", async () => {
@@ -326,9 +336,10 @@ describe("useAccountSecurity", () => {
 		const { result } = renderHook(() => useAccountSecurity(defaultProps));
 
 		// Wait for initial load
-		await waitFor(() => {
-			expect(result.current.loading).toBe(false);
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(result.current.loading).toBe(false);
 
 		// Clear the mock call count
 		vi.clearAllMocks();

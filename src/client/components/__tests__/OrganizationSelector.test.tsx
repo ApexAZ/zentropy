@@ -169,9 +169,10 @@ describe("OrganizationSelector", () => {
 
 			render(<OrganizationSelector {...mockProps} />);
 
-			await waitFor(() => {
-				expect(mockUseOrganization.checkDomain).toHaveBeenCalledWith("test@test.com");
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(mockUseOrganization.checkDomain).toHaveBeenCalledWith("test@test.com");
 		});
 
 		it("should display domain check results", async () => {
@@ -179,14 +180,16 @@ describe("OrganizationSelector", () => {
 
 			render(<OrganizationSelector {...mockProps} />);
 
-			await waitFor(() => {
-				// Use getAllByText since "Test Organization" appears in multiple places
-				const testOrgElements = screen.getAllByText("Test Organization");
-				expect(testOrgElements.length).toBeGreaterThan(0);
-				expect(
-					screen.getByText("Organization 'Test Organization' exists for test.com. You can request to join.")
-				).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			// Use getAllByText since "Test Organization" appears in multiple places
+			const testOrgElements = screen.getAllByText("Test Organization");
+			expect(testOrgElements.length).toBeGreaterThan(0);
+			expect(
+				screen.getByText("Organization 'Test Organization' exists for test.com. You can request to join.")
+			).toBeInTheDocument();
 		});
 
 		it("should handle domain check errors", async () => {
@@ -229,10 +232,12 @@ describe("OrganizationSelector", () => {
 
 			createSelector();
 
-			await waitFor(() => {
-				expect(screen.getByText("Test Organization")).toBeInTheDocument();
-				expect(screen.getByText("Another Org")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			expect(screen.getByText("Test Organization")).toBeInTheDocument();
+			expect(screen.getByText("Another Org")).toBeInTheDocument();
 		});
 
 		it("should call onSelect when organization is selected", async () => {
@@ -415,14 +420,15 @@ describe("OrganizationSelector", () => {
 
 			await user.click(screen.getByRole("button", { name: /create organization/i }));
 
-			await waitFor(() => {
-				expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
-					name: "New Org",
-					description: "",
-					domain: "test.com",
-					scope: "shared",
-					max_users: 50
-				});
+			await act(async () => {
+				await Promise.resolve();
+			});
+			expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
+				name: "New Org",
+				description: "",
+				domain: "test.com",
+				scope: "shared",
+				max_users: 50
 			});
 
 			expect(mockProps.onSelect).not.toHaveBeenCalled();

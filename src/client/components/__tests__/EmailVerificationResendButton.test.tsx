@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
@@ -83,14 +83,17 @@ describe("EmailVerificationResendButton", () => {
 		fastUserActions.click(button);
 		await fastStateSync();
 
-		await waitFor(() => {
-			expect(mockOnResendSuccess).toHaveBeenCalled();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(mockOnResendSuccess).toHaveBeenCalled();
 
 		// Should start countdown timer after successful send
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+
+		expect(screen.getByRole("button", { name: "60s" })).toBeInTheDocument();
 
 		// Button should be disabled during countdown
 		expect(screen.getByRole("button", { name: "60s" })).toBeDisabled();
@@ -162,9 +165,10 @@ describe("EmailVerificationResendButton", () => {
 		// Second click - succeeds
 		fastUserActions.click(button);
 		await fastStateSync();
-		await waitFor(() => {
-			expect(mockOnResendSuccess).toHaveBeenCalled();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(mockOnResendSuccess).toHaveBeenCalled();
 
 		expect(mockSendEmailVerification).toHaveBeenCalledTimes(2);
 	});

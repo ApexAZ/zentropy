@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -163,9 +163,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Should display all three providers
 		expect(screen.getByTestId("provider-card-google")).toBeInTheDocument();
@@ -189,11 +190,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByTestId("provider-status-google")).toHaveTextContent("Linked");
-			expect(screen.getByTestId("provider-status-microsoft")).toHaveTextContent("Not linked");
-			expect(screen.getByTestId("provider-status-github")).toHaveTextContent("Not linked");
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByTestId("provider-status-google")).toHaveTextContent("Linked");
+		expect(screen.getByTestId("provider-status-microsoft")).toHaveTextContent("Not linked");
+		expect(screen.getByTestId("provider-status-github")).toHaveTextContent("Not linked");
 	});
 
 	it("should handle provider linking successfully", async () => {
@@ -210,9 +212,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByTestId("link-button-microsoft")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByTestId("link-button-microsoft")).toBeInTheDocument();
 
 		await clickProviderButton(user, "microsoft", "link");
 
@@ -233,17 +236,19 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByTestId("unlink-button-google")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByTestId("unlink-button-google")).toBeInTheDocument();
 
 		await clickProviderButton(user, "google", "unlink");
 
 		// Should show password confirmation modal
-		await waitFor(() => {
-			expect(screen.getByRole("dialog")).toBeInTheDocument();
-			expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
 
 		// Enter password and confirm
 		await enterPasswordInModal(user, "user-password");
@@ -252,9 +257,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		await user.click(confirmButton);
 
 		// Should call unlinkProvider with password
-		await waitFor(() => {
-			expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "user-password");
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(mockUnlinkProvider).toHaveBeenCalledWith("google", "user-password");
 	});
 
 	it("should show loading states for individual providers", async () => {
@@ -268,11 +274,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByTestId("link-button-microsoft")).toHaveTextContent("Linking...");
-			expect(screen.getByTestId("link-button-google")).toHaveTextContent("Link Google");
-			expect(screen.getByTestId("link-button-github")).toHaveTextContent("Link GitHub");
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByTestId("link-button-microsoft")).toHaveTextContent("Linking...");
+		expect(screen.getByTestId("link-button-google")).toHaveTextContent("Link Google");
+		expect(screen.getByTestId("link-button-github")).toHaveTextContent("Link GitHub");
 
 		// Loading provider should have disabled buttons
 		expect(screen.getByTestId("link-button-microsoft")).toBeDisabled();
@@ -292,9 +299,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByTestId("provider-card-github")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByTestId("provider-card-github")).toBeInTheDocument();
 
 		// Error should be handled gracefully - provider should still be displayed
 		// but functionality may be limited
@@ -312,16 +320,17 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			// Google is linked
-			expect(screen.getByTestId("provider-status-google")).toHaveTextContent("Linked");
-
-			// Microsoft is loading
-			expect(screen.getByTestId("link-button-microsoft")).toHaveTextContent("Linking...");
-
-			// GitHub is linked
-			expect(screen.getByTestId("provider-status-github")).toHaveTextContent("Linked");
+		await act(async () => {
+			await Promise.resolve();
 		});
+		// Google is linked
+		expect(screen.getByTestId("provider-status-google")).toHaveTextContent("Linked");
+
+		// Microsoft is loading
+		expect(screen.getByTestId("link-button-microsoft")).toHaveTextContent("Linking...");
+
+		// GitHub is linked
+		expect(screen.getByTestId("provider-status-github")).toHaveTextContent("Linked");
 	});
 
 	it("should handle OAuth success callbacks correctly", async () => {
@@ -358,9 +367,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Check that all provider cards are accessible
 		expect(screen.getByTestId("provider-card-google")).toBeInTheDocument();
@@ -381,9 +391,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		render(<AccountSecuritySection {...defaultProps} />);
 
-		await waitFor(() => {
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Account Security")).toBeInTheDocument();
 
 		// Should not crash and should show the main container
 		expect(screen.getByTestId("account-security-container")).toBeInTheDocument();
@@ -407,9 +418,10 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		await clickProviderButton(user, "google", "unlink");
 
 		// Should show password confirmation modal
-		await waitFor(() => {
-			expect(screen.getByRole("dialog")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
 
 		// Try with wrong password
 		await enterPasswordInModal(user, "wrong-password");
@@ -418,8 +430,9 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 		await user.click(confirmButton);
 
 		// Should show error in modal
-		await waitFor(() => {
-			expect(screen.getByText("Incorrect password")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByText("Incorrect password")).toBeInTheDocument();
 	});
 });

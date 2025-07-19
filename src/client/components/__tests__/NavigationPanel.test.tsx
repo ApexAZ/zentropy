@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
@@ -92,9 +92,10 @@ describe("NavigationPanel - User Workflows", () => {
 		expect(mockOnPageChange).toHaveBeenCalledWith("profile");
 
 		// Navigation panel closes after navigation
-		await waitFor(() => {
-			expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 
 		// User can sign out
 		fastUserActions.click(profileButton);
@@ -133,9 +134,10 @@ describe("NavigationPanel - User Workflows", () => {
 		expect(mockOnShowSignIn).toHaveBeenCalledOnce();
 
 		// Panel closes after action
-		await waitFor(() => {
-			expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
 
 		// User can access registration
 		fastUserActions.click(profileButton);
@@ -253,15 +255,17 @@ describe("NavigationPanel - User Workflows", () => {
 
 		// User can close with Escape
 		await user.keyboard("{Escape}");
-		await waitFor(() => {
-			expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 
 		// User can close by clicking outside
 		await user.click(profileButton);
 		await user.click(screen.getByTestId("outside"));
-		await waitFor(() => {
-			expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
 	});
 });

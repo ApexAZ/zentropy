@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, act } from "@testing-library/react";
 import { fastUserActions, fastStateSync } from "./utils";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -227,9 +227,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Wait for modal to appear
-			await waitFor(() => {
-				expect(screen.getByText("Create Your Account")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			expect(screen.getByText("Create Your Account")).toBeInTheDocument();
 
 			// Click Google OAuth button (this will trigger the mocked OAuth flow)
 			const googleButton = screen.getByRole("button", { name: /continue with google/i });
@@ -319,9 +321,11 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			await fastStateSync();
 
 			// Should show error message and NOT call auth.login
-			await waitFor(() => {
-				expect(screen.getByText(/google oauth.*failed/i)).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+
+			expect(screen.getByText(/google oauth.*failed/i)).toBeInTheDocument();
 
 			expect(mockLogin).not.toHaveBeenCalled();
 			// Registration modal should remain open to show error

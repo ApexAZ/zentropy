@@ -1,4 +1,4 @@
-import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom";
@@ -50,9 +50,10 @@ describe("AccountSecuritySection", () => {
 
 	// Helper function to fill password confirmation dialog
 	const fillPasswordConfirmation = async (password: string) => {
-		await waitFor(() => {
-			expect(document.getElementById("password")).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(document.getElementById("password")).toBeInTheDocument();
 		const passwordInput = document.getElementById("password") as HTMLInputElement;
 		fireEvent.change(passwordInput, { target: { value: password } });
 	};
@@ -60,9 +61,10 @@ describe("AccountSecuritySection", () => {
 	// Helper function to trigger Google account linking
 	const linkGoogleAccount = async () => {
 		const user = userEvent.setup();
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByRole("button", { name: "Link Google Account" })).toBeInTheDocument();
 		const linkButton = screen.getByRole("button", { name: "Link Google Account" });
 		await user.click(linkButton);
 	};
@@ -70,9 +72,10 @@ describe("AccountSecuritySection", () => {
 	// Helper function to trigger Google account unlinking
 	const unlinkGoogleAccount = async () => {
 		const user = userEvent.setup();
-		await waitFor(() => {
-			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
+		await act(async () => {
+			await Promise.resolve();
 		});
+		expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
 		await user.click(unlinkButton);
 	};
@@ -261,10 +264,11 @@ describe("AccountSecuritySection", () => {
 
 			await unlinkGoogleAccount();
 
-			await waitFor(() => {
-				expect(screen.getByRole("dialog")).toBeInTheDocument();
-				expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByRole("dialog")).toBeInTheDocument();
+			expect(screen.getByRole("heading", { name: "Unlink Google Account" })).toBeInTheDocument();
 
 			await fillPasswordConfirmation("current-password");
 
@@ -300,9 +304,10 @@ describe("AccountSecuritySection", () => {
 
 			await unlinkGoogleAccount();
 
-			await waitFor(() => {
-				expect(screen.getByRole("dialog")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByRole("dialog")).toBeInTheDocument();
 
 			const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 			await user.click(confirmButton);
@@ -342,9 +347,10 @@ describe("AccountSecuritySection", () => {
 			const confirmButton = screen.getByRole("button", { name: "Yes, Unlink Account" });
 			await user.click(confirmButton);
 
-			await waitFor(() => {
-				expect(screen.getByText("Incorrect password")).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(screen.getByText("Incorrect password")).toBeInTheDocument();
 		});
 	});
 
@@ -418,11 +424,12 @@ describe("AccountSecuritySection", () => {
 
 			createAccountSecurity(mockSecurity);
 
-			await waitFor(() => {
-				expect(
-					screen.getByText("Connection problem. Please check your internet connection and try again.")
-				).toBeInTheDocument();
+			await act(async () => {
+				await Promise.resolve();
 			});
+			expect(
+				screen.getByText("Connection problem. Please check your internet connection and try again.")
+			).toBeInTheDocument();
 
 			const retryButton = screen.getByRole("button", { name: "Retry" });
 			await user.click(retryButton);
