@@ -308,8 +308,16 @@ export interface CustomError extends Error {
 }
 
 // Account Security types
+export interface OAuthProviderStatus {
+	provider: string;
+	linked: boolean;
+	identifier?: string;
+}
+
 export interface AccountSecurityResponse {
 	email_auth_linked: boolean;
+	oauth_providers: OAuthProviderStatus[];
+	// Backwards compatibility - deprecated but maintained
 	google_auth_linked: boolean;
 	google_email?: string;
 }

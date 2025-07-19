@@ -306,6 +306,114 @@ class TestAccountLinking:
 
         assert response.status_code == 403
 
+    def test_get_account_security_multi_provider_format(
+        self, client: TestClient, db: Session, current_user: User, auth_headers: dict
+    ):
+        """Test that security endpoint returns multi-provider format."""
+        response = client.get("/api/v1/users/me/security", headers=auth_headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # Check new multi-provider format
+        assert "oauth_providers" in data
+        assert isinstance(data["oauth_providers"], list)
+        assert len(data["oauth_providers"]) == 3
+        
+        # Verify all three providers are included
+        provider_names = [provider["provider"] for provider in data["oauth_providers"]]
+        assert "google" in provider_names
+        assert "microsoft" in provider_names
+        assert "github" in provider_names
+        
+        # Verify structure of each provider
+        for provider in data["oauth_providers"]:
+            assert "provider" in provider
+            assert "linked" in provider
+            assert "identifier" in provider
+            assert isinstance(provider["linked"], bool)
+        
+        # Backwards compatibility - old fields should still exist
+        assert "email_auth_linked" in data
+        assert "google_auth_linked" in data
+        assert "google_email" in data
+
+    def test_get_account_security_with_multiple_providers_linked(
+        self, client: TestClient, db: Session
+    ):
+        """Test security status when multiple OAuth providers are linked."""
+        # Create user with multiple OAuth providers linked
+        multi_provider_user = User(
+            email="multi@example.com",
+            first_name="Multi",
+            last_name="Provider",
+            auth_provider=AuthProvider.HYBRID,
+            google_id="google123",
+            microsoft_id="microsoft456", 
+            github_id="github789",
+            password_hash=get_password_hash("password123"),
+            email_verified=True,
+        )
+        db.add(multi_provider_user)
+        db.commit()
+
+        from api.auth import create_access_token
+        token = create_access_token(data={"sub": str(multi_provider_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        response = client.get("/api/v1/users/me/security", headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # All providers should show as linked
+        providers_by_name = {p["provider"]: p for p in data["oauth_providers"]}
+        
+        assert providers_by_name["google"]["linked"] is True
+        assert providers_by_name["google"]["identifier"] == "multi@example.com"
+        
+        assert providers_by_name["microsoft"]["linked"] is True
+        assert providers_by_name["microsoft"]["identifier"] == "multi@example.com"
+        
+        assert providers_by_name["github"]["linked"] is True
+        assert providers_by_name["github"]["identifier"] == "multi@example.com"
+        
+        # Email auth should also be linked
+        assert data["email_auth_linked"] is True
+
+    def test_get_account_security_no_providers_linked(
+        self, client: TestClient, db: Session
+    ):
+        """Test security status when no OAuth providers are linked."""
+        # Create user with no OAuth providers
+        local_user = User(
+            email="local@example.com",
+            first_name="Local",
+            last_name="User",
+            auth_provider=AuthProvider.LOCAL,
+            password_hash=get_password_hash("password123"),
+            email_verified=True,
+        )
+        db.add(local_user)
+        db.commit()
+
+        from api.auth import create_access_token
+        token = create_access_token(data={"sub": str(local_user.id)})
+        headers = {"Authorization": f"Bearer {token}"}
+
+        response = client.get("/api/v1/users/me/security", headers=headers)
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        # All OAuth providers should show as unlinked
+        for provider in data["oauth_providers"]:
+            assert provider["linked"] is False
+            assert provider["identifier"] is None
+        
+        # Email auth should be linked
+        assert data["email_auth_linked"] is True
+
 
 class TestMicrosoftAccountLinking:
     """Test Microsoft OAuth account linking functionality."""

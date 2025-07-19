@@ -277,8 +277,42 @@ def get_account_security(
     current_user: database.User = Depends(get_current_active_user),
 ) -> AccountSecurityResponse:
     """Get current user's account security status"""
+    from api.schemas import OAuthProviderStatus
+
+    # Build OAuth providers list
+    oauth_providers = []
+
+    # Google provider
+    oauth_providers.append(
+        OAuthProviderStatus(
+            provider="google",
+            linked=current_user.google_id is not None,
+            identifier=current_user.email if current_user.google_id else None,
+        )
+    )
+
+    # Microsoft provider
+    oauth_providers.append(
+        OAuthProviderStatus(
+            provider="microsoft",
+            linked=current_user.microsoft_id is not None,
+            identifier=current_user.email if current_user.microsoft_id else None,
+        )
+    )
+
+    # GitHub provider
+    oauth_providers.append(
+        OAuthProviderStatus(
+            provider="github",
+            linked=current_user.github_id is not None,
+            identifier=current_user.email if current_user.github_id else None,
+        )
+    )
+
     return AccountSecurityResponse(
         email_auth_linked=current_user.password_hash is not None,
+        oauth_providers=oauth_providers,
+        # Backwards compatibility
         google_auth_linked=current_user.google_id is not None,
         google_email=current_user.email if current_user.google_id else None,
     )

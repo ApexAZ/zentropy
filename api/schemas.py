@@ -284,8 +284,16 @@ class UnlinkGitHubAccountRequest(BaseModel):
     )
 
 
+class OAuthProviderStatus(BaseModel):
+    provider: str
+    linked: bool
+    identifier: Optional[str] = None
+
+
 class AccountSecurityResponse(BaseModel):
     email_auth_linked: bool
+    oauth_providers: List[OAuthProviderStatus]
+    # Backwards compatibility - deprecated but maintained
     google_auth_linked: bool
     google_email: Optional[str] = None
 

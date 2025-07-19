@@ -665,6 +665,10 @@ class User(Base):
         default=AuthProvider.LOCAL,
     )
     google_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True)
+    microsoft_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, unique=True
+    )
+    github_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, unique=True)
 
     # Registration tracking
     registration_type: Mapped[RegistrationType] = mapped_column(
