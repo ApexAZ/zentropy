@@ -6,7 +6,8 @@ import type {
 	PasswordValidationResult,
 	APIError,
 	CustomError,
-	SecurityOperationType
+	SecurityOperationType,
+	OperationTokenResponse
 } from "../types";
 
 export class AuthService {
@@ -212,6 +213,35 @@ export class AuthService {
 
 		const data = await response.json();
 		return { message: data.message || "Security code sent! Please check your inbox." };
+	}
+
+	/**
+	 * Verify security code and receive operation token (unified verification system)
+	 */
+	static async verifySecurityCode(
+		email: string,
+		code: string,
+		operationType: SecurityOperationType
+	): Promise<OperationTokenResponse> {
+		const response = await fetch("/api/v1/auth/verify-security-code", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				email,
+				code,
+				operation_type: operationType
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.detail || "Invalid verification code");
+		}
+
+		const data: OperationTokenResponse = await response.json();
+		return data;
 	}
 
 	/**
