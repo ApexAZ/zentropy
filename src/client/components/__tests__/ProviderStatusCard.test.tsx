@@ -160,6 +160,8 @@ describe("ProviderStatusCard", () => {
 					isLinked={true}
 					onLink={mockOnLink}
 					onUnlink={mockOnUnlink}
+					hasEmailAuth={true}
+					totalLinkedMethods={2}
 				/>
 			);
 
@@ -199,6 +201,8 @@ describe("ProviderStatusCard", () => {
 					isLinked={true}
 					onLink={mockOnLink}
 					onUnlink={mockOnUnlink}
+					hasEmailAuth={true}
+					totalLinkedMethods={2}
 				/>
 			);
 
@@ -393,6 +397,169 @@ describe("ProviderStatusCard", () => {
 		});
 	});
 
+	describe("Account Lockout Prevention", () => {
+		it("should prevent unlinking when it would cause account lockout (only auth method, no email)", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).toBeDisabled();
+			expect(unlinkButton).toHaveAttribute(
+				"title",
+				"You can't unlink your only authentication method. Set up email authentication first to safely remove Google."
+			);
+		});
+
+		it("should show warning message when unlinking would cause lockout", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			expect(screen.getByText("⚠️ Set up email authentication first")).toBeInTheDocument();
+		});
+
+		it("should allow unlinking when email authentication is available as backup", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={true}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).not.toBeDisabled();
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+		});
+
+		it("should allow unlinking when multiple auth methods are available", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={2}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).not.toBeDisabled();
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+		});
+
+		it("should allow unlinking when both email auth and multiple methods are available", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={true}
+					totalLinkedMethods={3}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).not.toBeDisabled();
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+		});
+
+		/* eslint-disable no-restricted-syntax */
+		it("should prevent onUnlink callback when lockout would occur", async () => {
+			const user = userEvent.setup();
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			await user.click(unlinkButton);
+
+			expect(mockOnUnlink).not.toHaveBeenCalled();
+		});
+		/* eslint-enable no-restricted-syntax */
+
+		it("should provide provider-specific lockout prevention message for Microsoft", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockMicrosoftProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink microsoft/i });
+			expect(unlinkButton).toHaveAttribute(
+				"title",
+				"You can't unlink your only authentication method. Set up email authentication first to safely remove Microsoft."
+			);
+		});
+
+		it("should provide provider-specific lockout prevention message for GitHub", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGitHubProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink github/i });
+			expect(unlinkButton).toHaveAttribute(
+				"title",
+				"You can't unlink your only authentication method. Set up email authentication first to safely remove GitHub."
+			);
+		});
+
+		it("should not show lockout prevention when provider is not linked", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={false}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={0}
+				/>
+			);
+
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /link google/i })).not.toBeDisabled();
+		});
+	});
+
 	describe("Edge Cases", () => {
 		it("should handle provider with no brand color gracefully", () => {
 			const providerWithoutColor = {
@@ -447,6 +614,42 @@ describe("ProviderStatusCard", () => {
 			// Should prioritize the unlinking state since the provider is linked
 			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
 			expect(unlinkButton).toBeDisabled();
+		});
+
+		it("should handle lockout prevention with zero total linked methods", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={0}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).toBeDisabled();
+			expect(screen.getByText("⚠️ Set up email authentication first")).toBeInTheDocument();
+		});
+
+		it("should handle lockout prevention when loading state overrides", () => {
+			renderWithFullEnvironment(
+				<ProviderStatusCard
+					provider={mockGoogleProvider}
+					isLinked={true}
+					onLink={mockOnLink}
+					onUnlink={mockOnUnlink}
+					hasEmailAuth={false}
+					totalLinkedMethods={1}
+					linkingLoading={true}
+				/>
+			);
+
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			// Should be disabled due to both lockout prevention AND loading state
+			expect(unlinkButton).toBeDisabled();
+			expect(screen.getByText("⚠️ Set up email authentication first")).toBeInTheDocument();
 		});
 	});
 });

@@ -133,12 +133,20 @@ describe("AccountSecuritySection", () => {
 				getProviderState: vi.fn().mockReturnValue({ isLoading: false })
 			};
 
-			createAccountSecurity(mockSecurity, mockOAuth);
+			// Directly mock the hooks instead of using createAccountSecurity helper
+			(useAccountSecurity as any).mockReturnValue(mockSecurity);
+			(useMultiProviderOAuth as any).mockReturnValue(mockOAuth);
+
+			renderWithToast(<AccountSecuritySection {...defaultProps} />);
 
 			expect(screen.getByText("Account Security")).toBeInTheDocument();
 			expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
 			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
-			expect(screen.getByText("john@gmail.com")).toBeInTheDocument();
+			expect(
+				screen.getAllByText(content => {
+					return content.includes("john@gmail.com");
+				})[0]
+			).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
 			expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
 		});
@@ -178,7 +186,7 @@ describe("AccountSecuritySection", () => {
 			expect(screen.getByText("Account Security")).toBeInTheDocument();
 			expect(screen.getByText("Google Authentication")).toBeInTheDocument();
 			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
-			expect(screen.getByText("linking...")).toBeInTheDocument();
+			expect(screen.getAllByText(content => content.includes("linking..."))[0]).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: "Unlink Google Account" })).toBeInTheDocument();
 			expect(screen.queryByRole("button", { name: "Link Google Account" })).not.toBeInTheDocument();
 		});
@@ -447,6 +455,218 @@ describe("AccountSecuritySection", () => {
 			expect(mockLoadSecurityStatus).toHaveBeenCalled();
 		});
 		/* eslint-enable no-restricted-syntax */
+	});
+
+	describe("Account Lockout Prevention", () => {
+		it("should pass correct lockout prevention data to ProviderStatusCard for Google-only authentication", () => {
+			const googleOnlySecurityStatus = {
+				email_auth_linked: false,
+				google_auth_linked: true,
+				google_email: "test@gmail.com"
+			};
+
+			const mockSecurity = {
+				securityStatus: googleOnlySecurityStatus,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(provider => provider === "google")
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// Google should be linked but with lockout prevention (unlink button disabled)
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).toBeDisabled();
+			expect(screen.getByText("⚠️ Set up email authentication first")).toBeInTheDocument();
+		});
+
+		it("should allow unlinking when email authentication is available as backup", () => {
+			const hybridSecurityStatus = {
+				email_auth_linked: true,
+				google_auth_linked: true,
+				google_email: "test@gmail.com"
+			};
+
+			const mockSecurity = {
+				securityStatus: hybridSecurityStatus,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(provider => provider === "google")
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// Google should be unlinkable when email auth is available
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).not.toBeDisabled();
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+		});
+
+		it("should calculate totalLinkedMethods correctly for multiple OAuth providers", () => {
+			const multiProviderSecurityStatus = {
+				email_auth_linked: true,
+				google_auth_linked: true,
+				google_email: "test@gmail.com"
+				// Future: microsoft_auth_linked, github_auth_linked would be included here
+			};
+
+			const mockSecurity = {
+				securityStatus: multiProviderSecurityStatus,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(provider => provider === "google")
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// With both email and Google auth, should be able to unlink safely
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).not.toBeDisabled();
+		});
+
+		it("should handle email-only authentication (no OAuth providers linked)", () => {
+			const emailOnlySecurityStatus = {
+				email_auth_linked: true,
+				google_auth_linked: false,
+				google_email: null
+			};
+
+			const mockSecurity = {
+				securityStatus: emailOnlySecurityStatus,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(() => false)
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// Should show link buttons for all providers since none are linked
+			// Use getAllByRole to handle multiple buttons and select the specific one from ProviderStatusCard
+			const linkButtons = screen.getAllByRole("button", { name: /link google/i });
+			expect(linkButtons.length).toBeGreaterThan(0);
+			expect(screen.getByRole("button", { name: /link microsoft/i })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /link github/i })).toBeInTheDocument();
+
+			// No lockout prevention warnings should be shown
+			expect(screen.queryByText("⚠️ Set up email authentication first")).not.toBeInTheDocument();
+		});
+
+		it("should handle multiple provider scenario correctly", () => {
+			// Future test scenario: when multiple OAuth providers are linked
+			const multiProviderSecurityStatus = {
+				email_auth_linked: false,
+				google_auth_linked: true,
+				google_email: "test@gmail.com"
+				// Future: microsoft_auth_linked: true, github_auth_linked: true
+			};
+
+			const mockSecurity = {
+				securityStatus: multiProviderSecurityStatus,
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(provider => provider === "google") // Only Google linked for now
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// Currently only Google is linked, no email auth - should prevent unlinking
+			const unlinkButton = screen.getByRole("button", { name: /unlink google/i });
+			expect(unlinkButton).toBeDisabled();
+			expect(screen.getByText("⚠️ Set up email authentication first")).toBeInTheDocument();
+		});
+
+		it("should pass hasEmailAuth correctly to each provider card", () => {
+			const mockSecurity = {
+				securityStatus: mockHybridResponse, // Has both email and Google auth
+				loading: false,
+				error: null,
+				linkingLoading: false,
+				unlinkingLoading: false,
+				googleOAuthReady: true,
+				oauthLoading: false,
+				optimisticSecurityStatus: null,
+				loadSecurityStatus: vi.fn(),
+				handleLinkGoogle: vi.fn(),
+				handleUnlinkGoogle: vi.fn()
+			};
+
+			const mockOAuth = {
+				...defaultMultiProviderOAuth,
+				getProviderState: vi.fn().mockReturnValue({ isLoading: false, isReady: true }),
+				isProviderLinked: vi.fn(provider => provider === "google")
+			};
+
+			createAccountSecurity(mockSecurity, mockOAuth);
+
+			// All provider cards should receive hasEmailAuth=true
+			// This enables safe unlinking for any OAuth provider
+			expect(screen.getByRole("button", { name: /unlink google/i })).not.toBeDisabled();
+		});
 	});
 
 	describe("User experiences accessibility and responsive design", () => {

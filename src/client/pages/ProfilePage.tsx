@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
-import { AuthService } from "../services/AuthService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { AccountSecuritySection } from "../components/AccountSecuritySection";
+import PasswordRequirements from "../components/PasswordRequirements";
 import { useToast } from "../contexts/ToastContext";
 
 const ProfilePage: React.FC = () => {
@@ -43,26 +43,41 @@ const ProfilePage: React.FC = () => {
 
 	// Load user data on component mount
 	useEffect(() => {
+		let isMounted = true;
+
 		const loadUserData = async () => {
 			try {
 				setIsLoading(true);
 				setError("");
 
 				const userData = await UserService.getCurrentUser();
-				setUser(userData);
-				setProfileData({
-					first_name: userData.first_name,
-					last_name: userData.last_name,
-					email: userData.email
-				});
+
+				// Only update state if component is still mounted
+				if (isMounted) {
+					setUser(userData);
+					setProfileData({
+						first_name: userData.first_name,
+						last_name: userData.last_name,
+						email: userData.email
+					});
+				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to load profile");
+				if (isMounted) {
+					setError(err instanceof Error ? err.message : "Failed to load profile");
+				}
 			} finally {
-				setIsLoading(false);
+				if (isMounted) {
+					setIsLoading(false);
+				}
 			}
 		};
 
 		void loadUserData();
+
+		// Cleanup function
+		return () => {
+			isMounted = false;
+		};
 	}, []);
 
 	// Retry function for error recovery
@@ -182,14 +197,17 @@ const ProfilePage: React.FC = () => {
 	};
 
 	// Security section handlers
-	const handleSecurityUpdate = (): void => {
+	const handleSecurityUpdate = useCallback((): void => {
 		// Refresh user data when security status changes
 		void retryLoadProfile();
-	};
+	}, []);
 
-	const handleSecurityError = (error: string): void => {
-		showError(error);
-	};
+	const handleSecurityError = useCallback(
+		(error: string): void => {
+			showError(error);
+		},
+		[showError]
+	);
 
 	if (isLoading) {
 		return (
@@ -506,74 +524,11 @@ const ProfilePage: React.FC = () => {
 											{passwordErrors.new_password}
 										</span>
 									)}
-									{passwordData.new_password && (
-										<div className="mt-2 space-y-1 text-xs">
-											{(() => {
-												const validation = AuthService.validatePassword(
-													passwordData.new_password,
-													passwordData.confirm_new_password
-												);
-												return (
-													<>
-														<div
-															className={
-																validation.requirements.length
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ At least 8 characters
-														</div>
-														<div
-															className={
-																validation.requirements.uppercase
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ One uppercase letter
-														</div>
-														<div
-															className={
-																validation.requirements.lowercase
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ One lowercase letter
-														</div>
-														<div
-															className={
-																validation.requirements.number
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ One number
-														</div>
-														<div
-															className={
-																validation.requirements.symbol
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ One special character
-														</div>
-														<div
-															className={
-																validation.requirements.match
-																	? "text-success"
-																	: "text-error"
-															}
-														>
-															✓ Passwords match
-														</div>
-													</>
-												);
-											})()}
-										</div>
-									)}
+									<PasswordRequirements
+										password={passwordData.new_password}
+										confirmPassword={passwordData.confirm_new_password}
+										showMatchRequirement={true}
+									/>
 								</div>
 
 								<div>

@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import TeamConfigurationPage from "./pages/TeamConfigurationPage";
 import EmailVerificationModal from "./components/EmailVerificationModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAuth } from "./hooks/useAuth";
 import { ToastProvider } from "./contexts/ToastContext";
 
@@ -67,8 +68,8 @@ function App(): React.JSX.Element {
 		setShowAuthModal(true);
 	};
 
-	const renderPage = (): React.JSX.Element => {
-		// Projects module pages that require special access
+	// Handle redirects in useEffect to prevent setState during render
+	useEffect(() => {
 		const projectsPages = ["teams", "calendar", "dashboard", "team-configuration"];
 
 		// Redirect to home if user tries to access Projects pages without permission
@@ -79,28 +80,66 @@ function App(): React.JSX.Element {
 			!auth.user.has_projects_access
 		) {
 			setCurrentPage("home");
-			return <HomePage />;
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentPage, auth.isAuthenticated, auth.user?.has_projects_access]); // auth.user is intentionally excluded to avoid unnecessary re-renders
 
+	const renderPage = (): React.JSX.Element => {
 		switch (currentPage) {
 			case "home":
-				return <HomePage />;
+				return (
+					<ErrorBoundary>
+						<HomePage />
+					</ErrorBoundary>
+				);
 			case "about":
-				return <AboutPage />;
+				return (
+					<ErrorBoundary>
+						<AboutPage />
+					</ErrorBoundary>
+				);
 			case "contact":
-				return <ContactPage />;
+				return (
+					<ErrorBoundary>
+						<ContactPage />
+					</ErrorBoundary>
+				);
 			case "teams":
-				return <TeamsPage />;
+				return (
+					<ErrorBoundary>
+						<TeamsPage />
+					</ErrorBoundary>
+				);
 			case "calendar":
-				return <CalendarPage />;
+				return (
+					<ErrorBoundary>
+						<CalendarPage />
+					</ErrorBoundary>
+				);
 			case "profile":
-				return <ProfilePage />;
+				return (
+					<ErrorBoundary>
+						<ProfilePage />
+					</ErrorBoundary>
+				);
 			case "dashboard":
-				return <DashboardPage />;
+				return (
+					<ErrorBoundary>
+						<DashboardPage />
+					</ErrorBoundary>
+				);
 			case "team-configuration":
-				return <TeamConfigurationPage />;
+				return (
+					<ErrorBoundary>
+						<TeamConfigurationPage />
+					</ErrorBoundary>
+				);
 			default:
-				return <HomePage />;
+				return (
+					<ErrorBoundary>
+						<HomePage />
+					</ErrorBoundary>
+				);
 		}
 	};
 
@@ -120,22 +159,26 @@ function App(): React.JSX.Element {
 					<p className="m-0 mx-auto max-w-[3840px]">&copy; 2025 Zentropy. All rights reserved.</p>
 				</footer>
 
-				<AuthModal
-					isOpen={showAuthModal}
-					onClose={handleCloseAuth}
-					onSuccess={handleAuthSuccess}
-					auth={auth}
-					initialMode={authModalMode}
-					onShowVerification={handleShowVerification}
-				/>
+				<ErrorBoundary>
+					<AuthModal
+						isOpen={showAuthModal}
+						onClose={handleCloseAuth}
+						onSuccess={handleAuthSuccess}
+						auth={auth}
+						initialMode={authModalMode}
+						onShowVerification={handleShowVerification}
+					/>
+				</ErrorBoundary>
 
 				{/* Email Verification Modal */}
-				<EmailVerificationModal
-					isOpen={showVerificationPage}
-					onClose={handleCloseVerification}
-					onSuccess={handleAuthSuccess}
-					initialEmail={verificationEmail}
-				/>
+				<ErrorBoundary>
+					<EmailVerificationModal
+						isOpen={showVerificationPage}
+						onClose={handleCloseVerification}
+						onSuccess={handleAuthSuccess}
+						initialEmail={verificationEmail}
+					/>
+				</ErrorBoundary>
 			</div>
 		</ToastProvider>
 	);

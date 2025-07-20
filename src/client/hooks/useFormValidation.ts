@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 
 /**
  * Validation function type that takes form data and returns validation result
@@ -57,6 +57,9 @@ export function useFormValidation<T extends Record<string, any>>(
 ): UseFormValidationReturn<T> {
 	const { initialValues, validate, onSubmit } = config;
 
+	// Store initial values in a ref to avoid dependency issues
+	const initialValuesRef = useRef<T>(initialValues);
+
 	// Form state
 	const [values, setValues] = useState<T>(initialValues);
 	const [errors, setErrors] = useState<Record<string, string>>({});
@@ -71,17 +74,17 @@ export function useFormValidation<T extends Record<string, any>>(
 	/**
 	 * Handle field value changes
 	 */
-	const handleChange = useCallback(
-		(name: keyof T, value: any) => {
-			setValues(prev => ({ ...prev, [name]: value }));
+	const handleChange = useCallback((name: keyof T, value: any) => {
+		setValues(prev => ({ ...prev, [name]: value }));
 
-			// Clear error when user starts typing
-			if (errors[name as string]) {
-				setErrors(prev => ({ ...prev, [name as string]: "" }));
+		// Clear error when user starts typing
+		setErrors(prev => {
+			if (prev[name as string]) {
+				return { ...prev, [name as string]: "" };
 			}
-		},
-		[errors]
-	);
+			return prev;
+		});
+	}, []);
 
 	/**
 	 * Set a specific field value
@@ -111,20 +114,24 @@ export function useFormValidation<T extends Record<string, any>>(
 		(name: keyof T) => {
 			if (!validate) return;
 
-			const result = validate(values);
-			const fieldError = result.errors[name as string];
+			setValues(currentValues => {
+				const result = validate(currentValues);
+				const fieldError = result.errors[name as string];
 
-			if (fieldError) {
-				setErrors(prev => ({ ...prev, [name as string]: fieldError }));
-			} else {
-				setErrors(prev => {
-					const newErrors = { ...prev };
-					delete newErrors[name as string];
-					return newErrors;
-				});
-			}
+				if (fieldError) {
+					setErrors(prev => ({ ...prev, [name as string]: fieldError }));
+				} else {
+					setErrors(prev => {
+						const newErrors = { ...prev };
+						delete newErrors[name as string];
+						return newErrors;
+					});
+				}
+
+				return currentValues; // Don't actually update values
+			});
 		},
-		[validate, values]
+		[validate]
 	);
 
 	/**
@@ -132,26 +139,35 @@ export function useFormValidation<T extends Record<string, any>>(
 	 */
 	const handleBlur = useCallback(
 		(name: keyof T) => {
-			setTouched(prev => ({ ...prev, [name as string]: true }));
+			setTouched(prev => {
+				const newTouched = { ...prev, [name as string]: true };
 
-			// Validate field on blur if validation function provided
-			if (validate && touched[name as string]) {
-				validateField(name);
-			}
+				// Validate field on blur if validation function provided and field was already touched
+				if (validate && prev[name as string]) {
+					validateField(name);
+				}
+
+				return newTouched;
+			});
 		},
-		[validate, touched, validateField]
+		[validate, validateField]
 	);
 
 	/**
 	 * Validate the entire form
 	 */
-	const validateForm = useCallback((): boolean => {
-		if (!validate) return true;
+	const validateForm = useCallback(
+		(currentValues?: T): boolean => {
+			if (!validate) return true;
 
-		const result = validate(values);
-		setErrors(result.errors);
-		return result.isValid;
-	}, [validate, values]);
+			// Use provided values or current state values
+			const valuesToValidate = currentValues || values;
+			const result = validate(valuesToValidate);
+			setErrors(result.errors);
+			return result.isValid;
+		},
+		[validate, values]
+	);
 
 	/**
 	 * Handle form submission
@@ -172,8 +188,8 @@ export function useFormValidation<T extends Record<string, any>>(
 			);
 			setTouched(allFieldsTouched);
 
-			// Validate form
-			const isFormValid = validateForm();
+			// Validate form with current values
+			const isFormValid = validateForm(values);
 			if (!isFormValid) {
 				return;
 			}
@@ -198,11 +214,11 @@ export function useFormValidation<T extends Record<string, any>>(
 	 * Reset form to initial state
 	 */
 	const resetForm = useCallback(() => {
-		setValues(initialValues);
+		setValues(initialValuesRef.current);
 		setErrors({});
 		setTouched({});
 		setIsSubmitting(false);
-	}, [initialValues]);
+	}, []);
 
 	return {
 		values,
@@ -219,63 +235,5 @@ export function useFormValidation<T extends Record<string, any>>(
 		setFieldTouched,
 		validateField,
 		validateForm
-	};
-}
-
-/**
- * Legacy helper functions for backward compatibility
- * These will be maintained for existing components that haven't migrated yet
- */
-export function useFormValidationLegacy<T extends Record<string, any>>(formData: T, requiredFields: (keyof T)[]) {
-	/**
-	 * Check if a field is empty or contains only whitespace
-	 */
-	const isFieldEmpty = useMemo(() => {
-		return (fieldName: keyof T): boolean => {
-			const value = formData[fieldName];
-
-			// Handle different data types
-			if (typeof value === "string") {
-				return !value || value.trim() === "";
-			}
-
-			if (typeof value === "number") {
-				return value === 0;
-			}
-
-			// For other types, check if falsy
-			return !value;
-		};
-	}, [formData]);
-
-	/**
-	 * Check if a field is marked as required
-	 */
-	const isFieldRequired = useMemo(() => {
-		return (fieldName: keyof T): boolean => {
-			return requiredFields.includes(fieldName);
-		};
-	}, [requiredFields]);
-
-	/**
-	 * Get the appropriate border class for a form field based on its state
-	 */
-	const getFieldBorderClass = useMemo(() => {
-		return (fieldName: keyof T, isRequired?: boolean): string => {
-			// Use explicit isRequired parameter or fall back to checking requiredFields
-			const fieldIsRequired = isRequired !== undefined ? isRequired : isFieldRequired(fieldName);
-
-			if (!fieldIsRequired) {
-				return "border-layout-background";
-			}
-
-			return isFieldEmpty(fieldName) ? "border-red-300" : "border-layout-background";
-		};
-	}, [isFieldEmpty, isFieldRequired]);
-
-	return {
-		isFieldEmpty,
-		isFieldRequired,
-		getFieldBorderClass
 	};
 }

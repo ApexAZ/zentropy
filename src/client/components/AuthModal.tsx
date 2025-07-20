@@ -4,6 +4,7 @@ import type { AuthUser, CustomError } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
+import PasswordRequirements from "./PasswordRequirements";
 import { setPendingVerification } from "../utils/pendingVerification";
 import { useToast } from "../contexts/ToastContext";
 
@@ -102,7 +103,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 			setIsLoading(true);
 			try {
 				const { token, user } = await AuthService.oauthSignIn("google", credential);
-				auth.login(token, user, false);
+				auth.login(token, user, true); // Google OAuth defaults to persistent login
 				showSuccess("Successfully signed in with Google!");
 				onSuccess();
 				setTimeout(() => onClose(), import.meta.env.NODE_ENV === "test" ? 0 : 1000);
@@ -119,7 +120,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		signInForm.resetForm();
 		signUpForm.resetForm();
 		setShowPasswords({ password: false, confirm_password: false });
-	}, [signInForm, signUpForm]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Intentionally omitting signInForm and signUpForm to prevent infinite loop
 
 	useEffect(() => {
 		if (isOpen) setMode(initialMode);
@@ -146,6 +148,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					}
 				});
 			} else {
+				// For sign-in authentication errors, add field-level error indication
+				if (
+					mode === "signin" &&
+					(message.toLowerCase().includes("invalid") ||
+						message.toLowerCase().includes("incorrect") ||
+						message.toLowerCase().includes("credential"))
+				) {
+					// Set field-level errors for better UX
+					signInForm.setFieldError("password", "Incorrect email or password");
+					signInForm.setFieldTouched("password", true);
+				}
 				showError(message);
 			}
 		} finally {
@@ -235,6 +248,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								</div>
 								{renderInput(signUpForm, "email", "email", "Email")}
 								{renderInput(signUpForm, "password", "password", "Password")}
+								<PasswordRequirements
+									password={signUpForm.values.password}
+									confirmPassword={signUpForm.values.confirm_password}
+									showMatchRequirement={true}
+								/>
 								{renderInput(signUpForm, "confirm_password", "password", "Confirm Password")}
 								<div className="flex items-start">
 									<input

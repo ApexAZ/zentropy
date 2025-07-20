@@ -50,7 +50,7 @@ class TestEmailVerificationDatabase:
 class TestEmailVerificationEndpoints:
     """Test email verification API endpoints."""
     
-    def test_register_sends_verification_email(self, client: TestClient, test_rate_limits):
+    def test_register_sends_verification_email(self, client: TestClient, test_rate_limits, auto_clean_mailpit):
         """Test that registration sends a verification email."""
         # Use random email to avoid conflicts with existing users
         random_id = random.randint(1000, 9999)
@@ -75,7 +75,7 @@ class TestEmailVerificationEndpoints:
         
         # Email will be automatically cleaned up by auto_clean_mailpit fixture
         
-    def test_send_verification_email_endpoint(self, client: TestClient):
+    def test_send_verification_email_endpoint(self, client: TestClient, auto_clean_mailpit):
         """Test endpoint to resend verification email."""
         # Updated for new verification code system
         response = client.post("/api/v1/auth/send-verification", json={"email": "test@example.com"})
@@ -85,7 +85,7 @@ class TestEmailVerificationEndpoints:
         assert "message" in data
         assert "verification" in data["message"].lower()
         
-    def test_verify_email_endpoint(self, client: TestClient, db: Session):
+    def test_verify_email_endpoint(self, client: TestClient, db: Session, auto_clean_mailpit):
         """Test endpoint to verify email with verification code."""
         # First, register a user to get a verification code
         random_id = random.randint(1000, 9999)

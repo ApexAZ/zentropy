@@ -102,7 +102,13 @@ vi.mock("../useAccountSecurity", () => ({
 }));
 
 // Test component that uses the hook
-function TestMultiProviderOAuthComponent() {
+function TestMultiProviderOAuthComponent({ securityStatus: customSecurityStatus }: { securityStatus?: any } = {}) {
+	const defaultSecurityStatus = {
+		email_auth_linked: true,
+		google_auth_linked: true,
+		google_email: "test@example.com"
+	};
+
 	const { providers, linkProvider, unlinkProvider, getProviderState, isProviderLinked } = useMultiProviderOAuth({
 		onSuccess: () => {
 			// This would normally trigger a toast, but we're testing the UI interaction
@@ -110,7 +116,9 @@ function TestMultiProviderOAuthComponent() {
 		},
 		onError: () => {
 			// Error callback for testing
-		}
+		},
+		securityStatus: customSecurityStatus || defaultSecurityStatus,
+		handleUnlinkGoogle: mockHandleUnlinkGoogle
 	});
 
 	return (
@@ -193,31 +201,16 @@ describe("useMultiProviderOAuth", () => {
 		/* eslint-disable no-restricted-syntax */
 		// OAuth linking tests require userEvent for provider interaction workflows
 		it("should allow user to link Google account by clicking button", async () => {
-			// Mock Google as unlinked so link button appears
-			const mockUseAccountSecurity = vi.fn(() => ({
-				securityStatus: {
-					email_auth_linked: true,
-					google_auth_linked: false,
-					google_email: undefined
-				},
-				loading: false,
-				error: null,
-				errorResolution: null,
-				linkingLoading: false,
-				unlinkingLoading: false,
-				googleOAuthReady: true,
-				oauthLoading: false,
-				optimisticSecurityStatus: null,
-				loadSecurityStatus: vi.fn(),
-				handleLinkGoogle: vi.fn(),
-				handleUnlinkGoogle: mockHandleUnlinkGoogle
-			}));
-
-			const { useAccountSecurity } = await import("../useAccountSecurity");
-			vi.mocked(useAccountSecurity).mockImplementation(mockUseAccountSecurity);
-
 			const user = userEvent.setup();
-			renderWithToast(<TestMultiProviderOAuthComponent />);
+
+			// Use test component with Google unlinked
+			const unlinkGoogleSecurityStatus = {
+				email_auth_linked: true,
+				google_auth_linked: false,
+				google_email: undefined
+			};
+
+			renderWithToast(<TestMultiProviderOAuthComponent securityStatus={unlinkGoogleSecurityStatus} />);
 
 			// User clicks the "Link Google" button
 			const linkButton = screen.getByTestId("link-google");

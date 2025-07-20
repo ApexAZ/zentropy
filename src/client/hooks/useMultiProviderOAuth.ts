@@ -3,13 +3,14 @@ import { OAuthProviderService } from "../services/OAuthProviderService";
 import { useGoogleOAuth } from "./useGoogleOAuth";
 import { useMicrosoftOAuth } from "./useMicrosoftOAuth";
 import { useGitHubOAuth } from "./useGitHubOAuth";
-import { useAccountSecurity } from "./useAccountSecurity";
-import type { OAuthProvider, OAuthProviderState } from "../types";
+import type { OAuthProvider, OAuthProviderState, AccountSecurityResponse } from "../types";
 import { logger } from "../utils/logger";
 
 interface UseMultiProviderOAuthProps {
 	onSuccess: (credential: string, provider: string) => void;
 	onError: (error: string) => void;
+	securityStatus: AccountSecurityResponse | null;
+	handleUnlinkGoogle: (password: string) => Promise<void>;
 }
 
 interface UseMultiProviderOAuthReturn {
@@ -22,17 +23,10 @@ interface UseMultiProviderOAuthReturn {
 
 export const useMultiProviderOAuth = ({
 	onSuccess,
-	onError
+	onError,
+	securityStatus,
+	handleUnlinkGoogle
 }: UseMultiProviderOAuthProps): UseMultiProviderOAuthReturn => {
-	const { securityStatus, handleUnlinkGoogle } = useAccountSecurity({
-		onSecurityUpdate: () => {
-			// Security status updated, no specific action needed
-		},
-		onError: (error: string) => {
-			onError(error);
-		}
-	});
-
 	// Get all available providers from the service
 	const providers = useMemo(() => {
 		try {

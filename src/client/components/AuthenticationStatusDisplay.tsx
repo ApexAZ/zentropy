@@ -20,21 +20,32 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 				level: "strong",
 				text: "Strong Security",
 				color: "bg-success-light text-success",
-				description: "Multiple authentication methods provide excellent security"
+				description: "You have multiple authentication methods for maximum security",
+				recommendation: null
 			};
 		} else if (securityStatus.email_auth_linked) {
 			return {
 				level: "moderate",
 				text: "Moderate Security",
 				color: "bg-warning-light text-warning",
-				description: "Consider adding Google authentication for enhanced security"
+				description: "Email authentication is active",
+				recommendation: "Add Google authentication for one-click sign-in convenience"
+			};
+		} else if (securityStatus.google_auth_linked) {
+			return {
+				level: "moderate",
+				text: "Moderate Security",
+				color: "bg-warning-light text-warning",
+				description: "Google authentication is active",
+				recommendation: "Add email authentication as a backup sign-in method"
 			};
 		} else {
 			return {
 				level: "weak",
 				text: "Weak Security",
 				color: "bg-error-light text-error",
-				description: "Enable authentication methods to secure your account"
+				description: "No authentication methods are active",
+				recommendation: "Set up authentication to secure your account"
 			};
 		}
 	};
@@ -47,19 +58,25 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 			return {
 				text: "Email + Google",
 				color: "bg-success-light text-success",
-				description: "Hybrid authentication with both email and Google OAuth"
+				description: "You can sign in with either email/password or Google"
 			};
 		} else if (securityStatus.email_auth_linked) {
 			return {
 				text: "Email Only",
 				color: "bg-warning-light text-warning",
-				description: "Email and password authentication only"
+				description: "You can sign in with email and password"
+			};
+		} else if (securityStatus.google_auth_linked) {
+			return {
+				text: "Google Only",
+				color: "bg-warning-light text-warning",
+				description: "You can sign in with Google"
 			};
 		} else {
 			return {
-				text: "No Authentication",
+				text: "Setup Required",
 				color: "bg-error-light text-error",
-				description: "No active authentication methods"
+				description: "No authentication methods configured"
 			};
 		}
 	};
@@ -96,10 +113,10 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 				</div>
 
 				{/* Security Strength Recommendation */}
-				{securityStrength.level !== "strong" && (
+				{securityStrength.recommendation && (
 					<div className="bg-interactive-light rounded-md p-3 text-sm">
 						<p className="text-interactive-dark">
-							💡 <strong>Security Tip:</strong> {securityStrength.description}
+							💡 <strong>Security Tip:</strong> {securityStrength.recommendation}
 						</p>
 					</div>
 				)}
@@ -117,21 +134,38 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 					/>
 					<div>
 						<h4 className="text-primary font-medium">Email Authentication</h4>
-						<p className="text-secondary text-sm">Password-based authentication</p>
+						<p className="text-secondary text-sm">
+							{securityStatus.email_auth_linked
+								? "Sign in with email and password"
+								: "Set up email and password as backup sign-in"}
+						</p>
 					</div>
 				</div>
-				<span
-					data-testid="email-auth-status"
-					aria-label={`Email authentication is ${securityStatus.email_auth_linked ? "active" : "inactive"}`}
-					className={`rounded-full px-3 py-1 text-sm font-medium ${
-						securityStatus.email_auth_linked
-							? "bg-success-light text-success"
-							: "bg-neutral-light text-neutral"
-					}`}
-					title={`Email authentication: ${securityStatus.email_auth_linked ? "Your account can be accessed with email and password" : "Email authentication is not configured"}`}
-				>
-					{securityStatus.email_auth_linked ? "Active" : "Inactive"}
-				</span>
+				<div className="flex items-center space-x-2">
+					<span
+						data-testid="email-auth-status"
+						aria-label={`Email authentication is ${securityStatus.email_auth_linked ? "active" : "inactive"}`}
+						className={`rounded-full px-3 py-1 text-sm font-medium ${
+							securityStatus.email_auth_linked
+								? "bg-success-light text-success"
+								: "bg-neutral-light text-neutral"
+						}`}
+						title={`Email authentication: ${securityStatus.email_auth_linked ? "Your account can be accessed with email and password" : "Email authentication is not configured"}`}
+					>
+						{securityStatus.email_auth_linked ? "Active" : "Not linked"}
+					</span>
+					{!securityStatus.email_auth_linked && (
+						<button
+							className="bg-interactive hover:bg-interactive-hover rounded px-3 py-1 text-sm font-medium text-white transition-colors"
+							onClick={() => {
+								// TODO: Open password setup modal or navigate to setup flow
+								console.log("Setup email authentication");
+							}}
+						>
+							Set Password
+						</button>
+					)}
+				</div>
 			</div>
 
 			{/* Google Authentication Status */}
@@ -151,23 +185,36 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 						</div>
 						<p className="text-secondary text-sm">
 							{securityStatus.google_auth_linked && securityStatus.google_email
-								? securityStatus.google_email
-								: "OAuth-based authentication"}
+								? `One-click sign-in with ${securityStatus.google_email}`
+								: "One-click sign-in with Google account"}
 						</p>
 					</div>
 				</div>
-				<span
-					data-testid="google-auth-status"
-					aria-label={`Google authentication is ${securityStatus.google_auth_linked ? "active" : "not linked"}`}
-					className={`rounded-full px-3 py-1 text-sm font-medium ${
-						securityStatus.google_auth_linked
-							? "bg-success-light text-success"
-							: "bg-neutral-light text-neutral"
-					}`}
-					title={`Google authentication: ${securityStatus.google_auth_linked ? "Your account can be accessed with Google OAuth" : "Google authentication is not configured"}`}
-				>
-					{securityStatus.google_auth_linked ? "Active" : "Not linked"}
-				</span>
+				<div className="flex items-center space-x-2">
+					<span
+						data-testid="google-auth-status"
+						aria-label={`Google authentication is ${securityStatus.google_auth_linked ? "active" : "not linked"}`}
+						className={`rounded-full px-3 py-1 text-sm font-medium ${
+							securityStatus.google_auth_linked
+								? "bg-success-light text-success"
+								: "bg-neutral-light text-neutral"
+						}`}
+						title={`Google authentication: ${securityStatus.google_auth_linked ? "Your account can be accessed with Google OAuth" : "Google authentication is not configured"}`}
+					>
+						{securityStatus.google_auth_linked ? "Active" : "Not linked"}
+					</span>
+					{!securityStatus.google_auth_linked && (
+						<button
+							className="bg-interactive hover:bg-interactive-hover rounded px-3 py-1 text-sm font-medium text-white transition-colors"
+							onClick={() => {
+								// TODO: Trigger Google OAuth linking flow
+								console.log("Link Google authentication");
+							}}
+						>
+							Link Google
+						</button>
+					)}
+				</div>
 			</div>
 		</div>
 	);

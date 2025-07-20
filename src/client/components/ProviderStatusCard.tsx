@@ -18,6 +18,10 @@ interface ProviderStatusCardProps {
 	linkingLoading?: boolean;
 	/** When true, shows loading state for unlinking operation */
 	unlinkingLoading?: boolean;
+	/** Whether email authentication is available as backup */
+	hasEmailAuth?: boolean;
+	/** Total number of linked authentication methods */
+	totalLinkedMethods?: number;
 }
 
 const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
@@ -27,7 +31,9 @@ const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
 	onLink,
 	onUnlink,
 	linkingLoading = false,
-	unlinkingLoading = false
+	unlinkingLoading = false,
+	hasEmailAuth = false,
+	totalLinkedMethods = 0
 }) => {
 	// Validate provider prop for security
 	const isValidProvider = useMemo(() => {
@@ -47,6 +53,19 @@ const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
 		const colorRegex = /^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/;
 		return colorRegex.test(provider.brandColor) ? provider.brandColor : "#666";
 	}, [provider.brandColor]);
+
+	// Determine if unlinking this provider would cause account lockout
+	const wouldCauseLockout = useMemo(() => {
+		if (!isLinked) return false;
+		// If this is the only linked method and no email auth, unlinking would cause lockout
+		return totalLinkedMethods <= 1 && !hasEmailAuth;
+	}, [isLinked, totalLinkedMethods, hasEmailAuth]);
+
+	// Generate tooltip message for disabled unlink button
+	const unlinkDisabledReason = useMemo(() => {
+		if (!wouldCauseLockout) return null;
+		return `You can't unlink your only authentication method. Set up email authentication first to safely remove ${provider.displayName}.`;
+	}, [wouldCauseLockout, provider.displayName]);
 
 	const statusContent = useMemo(() => {
 		if (isLinked) {
@@ -74,17 +93,27 @@ const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
 
 	const actionButton = useMemo(() => {
 		if (isLinked) {
+			const isUnlinkDisabled = linkingLoading || wouldCauseLockout;
+
 			return (
-				<Button
-					variant="secondary"
-					onClick={handleUnlink}
-					isLoading={unlinkingLoading}
-					loadingText={`Unlinking ${provider.displayName}`}
-					aria-label={`Unlink ${provider.displayName} Account`}
-					disabled={linkingLoading}
-				>
-					Unlink {provider.displayName}
-				</Button>
+				<div className="flex flex-col items-end">
+					<Button
+						variant="secondary"
+						onClick={handleUnlink}
+						isLoading={unlinkingLoading}
+						loadingText={`Unlinking ${provider.displayName}`}
+						aria-label={`Unlink ${provider.displayName} Account`}
+						disabled={isUnlinkDisabled}
+						title={wouldCauseLockout ? unlinkDisabledReason || undefined : undefined}
+					>
+						Unlink {provider.displayName}
+					</Button>
+					{wouldCauseLockout && (
+						<p className="text-warning mt-1 max-w-xs text-right text-xs">
+							⚠️ Set up email authentication first
+						</p>
+					)}
+				</div>
 			);
 		}
 
@@ -100,7 +129,16 @@ const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
 				Link {provider.displayName}
 			</Button>
 		);
-	}, [isLinked, provider.displayName, handleLink, handleUnlink, linkingLoading, unlinkingLoading]);
+	}, [
+		isLinked,
+		provider.displayName,
+		handleLink,
+		handleUnlink,
+		linkingLoading,
+		unlinkingLoading,
+		wouldCauseLockout,
+		unlinkDisabledReason
+	]);
 
 	// Early return if invalid provider
 	if (!isValidProvider) {

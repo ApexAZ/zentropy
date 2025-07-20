@@ -89,7 +89,12 @@ describe("UserService", () => {
 			const result = await UserService.getCurrentUser();
 
 			expect(result).toEqual(mockUser);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me");
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me", {
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "application/json"
+				}
+			});
 		});
 
 		it("should handle unauthorized error", async () => {
@@ -128,6 +133,7 @@ describe("UserService", () => {
 			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me", {
 				method: "PUT",
 				headers: {
+					Authorization: "Bearer mock-token",
 					"Content-Type": "application/json"
 				},
 				body: JSON.stringify(profileData)
@@ -177,9 +183,10 @@ describe("UserService", () => {
 			const result = await UserService.updatePassword(passwordData);
 
 			expect(result).toEqual(successResponse);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/password", {
-				method: "PUT",
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/change-password", {
+				method: "POST",
 				headers: {
+					Authorization: "Bearer mock-token",
 					"Content-Type": "application/json"
 				},
 				body: JSON.stringify({
@@ -284,7 +291,12 @@ describe("UserService", () => {
 			const result = await UserService.getAllUsers();
 
 			expect(result).toEqual(mockUsers);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users");
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users", {
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "application/json"
+				}
+			});
 		});
 
 		it("should handle empty users list", async () => {
@@ -293,7 +305,12 @@ describe("UserService", () => {
 			const result = await UserService.getAllUsers();
 
 			expect(result).toEqual([]);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users");
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users", {
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "application/json"
+				}
+			});
 		});
 
 		it("should handle API errors when retrieving all users", async () => {

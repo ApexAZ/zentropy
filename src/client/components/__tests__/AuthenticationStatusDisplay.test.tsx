@@ -42,11 +42,11 @@ describe("AuthenticationStatusDisplay", () => {
 			expect(providerBadge).toHaveClass("bg-success-light", "text-success");
 		});
 
-		it("should show 'No Authentication' badge when no methods are active", () => {
+		it("should show 'Setup Required' badge when no methods are active", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
-			expect(providerBadge).toHaveTextContent("No Authentication");
+			expect(providerBadge).toHaveTextContent("Setup Required");
 			expect(providerBadge).toHaveClass("bg-error-light", "text-error");
 		});
 	});
@@ -82,14 +82,14 @@ describe("AuthenticationStatusDisplay", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			expect(screen.getByText("Security Tip:")).toBeInTheDocument();
-			expect(screen.getByText(/Consider adding Google authentication for enhanced security/)).toBeInTheDocument();
+			expect(screen.getByText(/Add Google authentication for one-click sign-in convenience/)).toBeInTheDocument();
 		});
 
 		it("should show security tip for no authentication", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockNoAuthResponse} />);
 
 			expect(screen.getByText("Security Tip:")).toBeInTheDocument();
-			expect(screen.getByText(/Enable authentication methods to secure your account/)).toBeInTheDocument();
+			expect(screen.getByText(/Set up authentication to secure your account/)).toBeInTheDocument();
 		});
 
 		it("should not show security tip for strong security", () => {
@@ -104,7 +104,7 @@ describe("AuthenticationStatusDisplay", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			const providerBadge = screen.getByTestId("auth-provider-badge");
-			expect(providerBadge).toHaveAttribute("title", "Email and password authentication only");
+			expect(providerBadge).toHaveAttribute("title", "You can sign in with email and password");
 		});
 
 		it("should provide helpful tooltip for security strength badge", () => {
@@ -113,7 +113,7 @@ describe("AuthenticationStatusDisplay", () => {
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveAttribute(
 				"title",
-				"Multiple authentication methods provide excellent security"
+				"You have multiple authentication methods for maximum security"
 			);
 		});
 
@@ -152,14 +152,14 @@ describe("AuthenticationStatusDisplay", () => {
 			const providerBadge = screen.getByTestId("auth-provider-badge");
 			expect(providerBadge).toHaveAttribute(
 				"aria-label",
-				"Authentication provider: Email Only. Email and password authentication only"
+				"Authentication provider: Email Only. You can sign in with email and password"
 			);
 
 			// Check security strength badge accessibility
 			const strengthBadge = screen.getByTestId("security-strength-badge");
 			expect(strengthBadge).toHaveAttribute(
 				"aria-label",
-				"Security strength: Moderate Security. Consider adding Google authentication for enhanced security"
+				"Security strength: Moderate Security. Email authentication is active"
 			);
 
 			// Check individual authentication status accessibility
@@ -203,7 +203,7 @@ describe("AuthenticationStatusDisplay", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
 			expect(screen.getByText("Email Authentication")).toBeInTheDocument();
-			expect(screen.getByText("Password-based authentication")).toBeInTheDocument();
+			expect(screen.getByText("Sign in with email and password")).toBeInTheDocument();
 			expect(screen.getByTestId("email-auth-status")).toHaveTextContent("Active");
 		});
 
@@ -211,14 +211,14 @@ describe("AuthenticationStatusDisplay", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockHybridResponse} />);
 
 			expect(screen.getByText("Google Authentication")).toBeInTheDocument();
-			expect(screen.getByText("john@gmail.com")).toBeInTheDocument();
+			expect(screen.getByText(content => content.includes("john@gmail.com"))).toBeInTheDocument();
 			expect(screen.getByTestId("google-auth-status")).toHaveTextContent("Active");
 		});
 
 		it("should show generic OAuth description when Google is not linked", () => {
 			renderWithFullEnvironment(<AuthenticationStatusDisplay securityStatus={mockEmailOnlyResponse} />);
 
-			expect(screen.getByText("OAuth-based authentication")).toBeInTheDocument();
+			expect(screen.getByText("One-click sign-in with Google account")).toBeInTheDocument();
 		});
 	});
 

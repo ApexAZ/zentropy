@@ -105,4 +105,17 @@ describe("AuthModal", () => {
 
 		expect(propsWithVerification.onShowVerification).toHaveBeenCalledWith("john@example.com");
 	});
+
+	it("should display field-level error for incorrect password", async () => {
+		(AuthService.signIn as any).mockRejectedValue(new Error("Invalid credentials"));
+		renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+		fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "test@example.com" } });
+		fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "wrongpassword" } });
+		fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+		await act(async () => {});
+
+		expect(screen.getByText("Incorrect email or password")).toBeInTheDocument();
+	});
 });

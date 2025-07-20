@@ -18,7 +18,7 @@ from api.schemas import UserCreate, GoogleOAuthRequest
 class TestUserRegistrationWithoutOrganization:
     """Test user registration without organization assignment."""
     
-    def test_user_registration_without_organization_id(self, client, db):
+    def test_user_registration_without_organization_id(self, client, db, auto_clean_mailpit):
         """Test that users can register without providing organization_id and get access token."""
         user_data = {
             "email": "no-org@example.com",
@@ -45,7 +45,7 @@ class TestUserRegistrationWithoutOrganization:
         assert user.registration_type == RegistrationType.EMAIL
         assert user.auth_provider == AuthProvider.LOCAL
     
-    def test_user_registration_with_explicit_null_organization_id(self, client, db):
+    def test_user_registration_with_explicit_null_organization_id(self, client, db, auto_clean_mailpit):
         """Test that users can register with explicit null organization_id."""
         user_data = {
             "email": "explicit-null@example.com",
@@ -64,7 +64,7 @@ class TestUserRegistrationWithoutOrganization:
         assert user is not None
         assert user.organization_id is None
     
-    def test_multiple_users_registration_without_organization(self, client, db, test_rate_limits):
+    def test_multiple_users_registration_without_organization(self, client, db, test_rate_limits, auto_clean_mailpit):
         """Test that multiple users can register without organizations."""
         users_data = [
             {
@@ -126,7 +126,7 @@ class TestGoogleOAuthRegistrationWithoutOrganization:
     """Test Google OAuth registration without organization assignment."""
     
     @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_registration_without_organization(self, mock_verify_token, client, db):
+    def test_google_oauth_registration_without_organization(self, mock_verify_token, client, db, auto_clean_mailpit):
         """Test that Google OAuth users can register without organization."""
         # Mock Google token verification to return valid user info
         mock_verify_token.return_value = {
@@ -360,7 +360,7 @@ class TestUserQueryingWithNullOrganizations:
 class TestJustInTimeOrganizationReadiness:
     """Test that the system is ready for just-in-time organization assignment."""
     
-    def test_user_can_be_updated_with_organization_later(self, client, db, test_rate_limits):
+    def test_user_can_be_updated_with_organization_later(self, client, db, test_rate_limits, auto_clean_mailpit):
         """Test that users created without organization can be assigned to one later."""
         # First, register user without organization
         user_data = {
@@ -389,7 +389,7 @@ class TestJustInTimeOrganizationReadiness:
         
         assert user.organization_id == test_org_id
     
-    def test_registration_flow_supports_frictionless_signup(self, client, test_rate_limits):
+    def test_registration_flow_supports_frictionless_signup(self, client, test_rate_limits, auto_clean_mailpit):
         """Test that registration requires minimal information (no organization)."""
         # Minimal registration data - just what's required for frictionless signup
         minimal_user_data = {
@@ -413,7 +413,7 @@ class TestJustInTimeOrganizationReadiness:
 class TestDuplicateEmailRegistration:
     """Test handling of duplicate email registration attempts."""
     
-    def test_duplicate_email_registration_returns_helpful_error(self, client, db, test_rate_limits):
+    def test_duplicate_email_registration_returns_helpful_error(self, client, db, test_rate_limits, auto_clean_mailpit):
         """Test that registering with existing email returns helpful error message with sign-in guidance."""
         # First, register a user
         user_data = {
@@ -460,7 +460,7 @@ class TestDuplicateEmailRegistration:
         assert "error_type" in error_detail
         assert error_detail["error_type"] == "email_already_exists"
     
-    def test_duplicate_email_case_insensitive(self, client, db, test_rate_limits):
+    def test_duplicate_email_case_insensitive(self, client, db, test_rate_limits, auto_clean_mailpit):
         """Test that duplicate email detection is case insensitive."""
         # Register with lowercase email
         user_data = {

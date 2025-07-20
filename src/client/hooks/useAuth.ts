@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
 import { AuthService } from "../services/AuthService";
+import { UserService } from "../services/UserService";
 import type { AuthUser, AuthState } from "../types";
 
 export const useAuth = () => {
@@ -17,20 +18,18 @@ export const useAuth = () => {
 
 	// Check for existing token on mount
 	useEffect(() => {
-		// Check for token in localStorage (remember me) or sessionStorage (session only)
-		// Priority: sessionStorage first (current session), then localStorage (remember me)
-		const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
-		if (token) {
-			// Validate token with API and get user info
-			fetch("/api/v1/users/me", {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json"
-				}
-			})
-				.then(async response => {
-					if (response.ok) {
-						const userData = await response.json();
+		let isMounted = true;
+
+		const validateExistingToken = async () => {
+			// Check for token in localStorage (remember me) or sessionStorage (session only)
+			// Priority: sessionStorage first (current session), then localStorage (remember me)
+			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
+			if (token) {
+				try {
+					// Validate token with API and get user info using service layer
+					const userData = await UserService.validateTokenAndGetUser(token);
+
+					if (isMounted) {
 						setAuthState({
 							isAuthenticated: true,
 							user: {
@@ -43,27 +42,29 @@ export const useAuth = () => {
 						});
 						// Reset activity tracking when token is validated
 						lastActivityRef.current = Date.now();
-					} else {
-						// Token is invalid, clear tokens using AuthService
-						await AuthService.signOut();
+					}
+				} catch (error) {
+					logger.warn("Failed to validate token", { error });
+					// Token is invalid, clear tokens using AuthService
+					await AuthService.signOut();
+
+					if (isMounted) {
 						setAuthState({
 							isAuthenticated: false,
 							user: null,
 							token: null
 						});
 					}
-				})
-				.catch(async error => {
-					logger.warn("Failed to validate token", { error });
-					// Token validation failed, clear tokens using AuthService
-					await AuthService.signOut();
-					setAuthState({
-						isAuthenticated: false,
-						user: null,
-						token: null
-					});
-				});
-		}
+				}
+			}
+		};
+
+		void validateExistingToken();
+
+		// Cleanup function
+		return () => {
+			isMounted = false;
+		};
 	}, []);
 
 	const login = (token: string, user: AuthUser, rememberMe: boolean = false) => {
@@ -211,7 +212,8 @@ export const useAuth = () => {
 				timeoutRef.current = null;
 			}
 		};
-	}, [authState.isAuthenticated, TIMEOUT_DURATION, logoutDueToInactivity]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [authState.isAuthenticated, logoutDueToInactivity]); // Intentionally omitting TIMEOUT_DURATION as it's a constant
 
 	return {
 		...authState,

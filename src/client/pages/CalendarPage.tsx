@@ -41,26 +41,43 @@ const CalendarPage: React.FC = () => {
 
 	// Load initial data on component mount
 	useEffect(() => {
+		let isMounted = true;
+
 		const initializeData = async () => {
 			try {
 				setIsLoading(true);
 				setError("");
 
 				const { teams: teamsData, users: usersData } = await CalendarService.getInitializationData();
-				setTeams(teamsData);
-				setUsers(usersData);
+
+				// Only update state if component is still mounted
+				if (isMounted) {
+					setTeams(teamsData);
+					setUsers(usersData);
+				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to load calendar data");
+				if (isMounted) {
+					setError(err instanceof Error ? err.message : "Failed to load calendar data");
+				}
 			} finally {
-				setIsLoading(false);
+				if (isMounted) {
+					setIsLoading(false);
+				}
 			}
 		};
 
 		void initializeData();
+
+		// Cleanup function
+		return () => {
+			isMounted = false;
+		};
 	}, []);
 
 	// Load entries when filters change
 	useEffect(() => {
+		let isMounted = true;
+
 		const loadCalendarEntries = async () => {
 			try {
 				const filters: { team_id?: string; month?: string; year?: string } = {};
@@ -76,13 +93,24 @@ const CalendarPage: React.FC = () => {
 				}
 
 				const data = await CalendarService.getCalendarEntries(filters);
-				setEntries(data);
+
+				// Only update state if component is still mounted
+				if (isMounted) {
+					setEntries(data);
+				}
 			} catch (err) {
-				setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
+				if (isMounted) {
+					setError(err instanceof Error ? err.message : "Error loading calendar entries. Please try again.");
+				}
 			}
 		};
 
 		void loadCalendarEntries();
+
+		// Cleanup function
+		return () => {
+			isMounted = false;
+		};
 	}, [selectedTeam, selectedMonth]);
 
 	// Refresh entries function for post-operation updates

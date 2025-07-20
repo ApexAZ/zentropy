@@ -41,7 +41,8 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		errorResolution,
 		unlinkingLoading,
 		optimisticSecurityStatus,
-		loadSecurityStatus
+		loadSecurityStatus,
+		handleUnlinkGoogle
 	} = useAccountSecurity({ onSecurityUpdate, onError });
 
 	// Multi-provider OAuth hook for new functionality
@@ -53,7 +54,9 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		onError: error => {
 			// Handle OAuth errors
 			onError(error);
-		}
+		},
+		securityStatus,
+		handleUnlinkGoogle
 	});
 
 	// Use optimistic security status if available, otherwise use actual status
@@ -180,6 +183,14 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 								const providerEmail =
 									provider.name === "google" ? displaySecurityStatus?.google_email : undefined;
 
+								// Calculate lockout prevention data
+								const hasEmailAuth = displaySecurityStatus?.email_auth_linked || false;
+								const totalLinkedMethods = [
+									displaySecurityStatus?.email_auth_linked,
+									displaySecurityStatus?.google_auth_linked
+									// Add other OAuth providers as they're implemented
+								].filter(Boolean).length;
+
 								return (
 									<ProviderStatusCard
 										key={provider.name}
@@ -192,6 +203,8 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 										unlinkingLoading={
 											currentUnlinkingProvider === provider.name && unlinkingLoading
 										}
+										hasEmailAuth={hasEmailAuth}
+										totalLinkedMethods={totalLinkedMethods}
 									/>
 								);
 							})}

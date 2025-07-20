@@ -33,7 +33,22 @@ export class UserService {
 	 * Get current user profile
 	 */
 	static async getCurrentUser(): Promise<User> {
-		const response = await fetch("/api/v1/users/me");
+		const response = await fetch("/api/v1/users/me", {
+			headers: createAuthHeaders()
+		});
+		return this.handleResponse<User>(response);
+	}
+
+	/**
+	 * Validate token and get user info
+	 */
+	static async validateTokenAndGetUser(token: string): Promise<User> {
+		const response = await fetch("/api/v1/users/me", {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				"Content-Type": "application/json"
+			}
+		});
 		return this.handleResponse<User>(response);
 	}
 
@@ -43,9 +58,7 @@ export class UserService {
 	static async updateProfile(profileData: ProfileUpdateData): Promise<User> {
 		const response = await fetch("/api/v1/users/me", {
 			method: "PUT",
-			headers: {
-				"Content-Type": "application/json"
-			},
+			headers: createAuthHeaders(),
 			body: JSON.stringify(profileData)
 		});
 		return this.handleResponse<User>(response);
@@ -55,11 +68,9 @@ export class UserService {
 	 * Update user password
 	 */
 	static async updatePassword(passwordData: PasswordUpdateData): Promise<{ message: string }> {
-		const response = await fetch("/api/v1/users/me/password", {
-			method: "PUT",
-			headers: {
-				"Content-Type": "application/json"
-			},
+		const response = await fetch("/api/v1/users/me/change-password", {
+			method: "POST",
+			headers: createAuthHeaders(),
 			body: JSON.stringify({
 				current_password: passwordData.current_password,
 				new_password: passwordData.new_password
@@ -79,7 +90,9 @@ export class UserService {
 	 * Get all users (for dropdown selections)
 	 */
 	static async getAllUsers(): Promise<User[]> {
-		const response = await fetch("/api/v1/users");
+		const response = await fetch("/api/v1/users", {
+			headers: createAuthHeaders()
+		});
 		return this.handleResponse<User[]>(response);
 	}
 

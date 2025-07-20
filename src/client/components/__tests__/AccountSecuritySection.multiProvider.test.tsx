@@ -151,8 +151,12 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 	};
 
 	const enterPasswordInModal = async (user: ReturnType<typeof userEvent.setup>, password: string) => {
-		const passwordInput = screen.getByLabelText(/password/i);
-		await user.type(passwordInput, password);
+		// Use more specific selector to avoid conflicts with other password fields
+		const passwordInput = screen.getByRole("dialog").querySelector('input[type="password"]');
+		if (!passwordInput) {
+			throw new Error("Password input not found in modal dialog");
+		}
+		await user.type(passwordInput as HTMLInputElement, password);
 	};
 
 	it("should display all available OAuth providers", async () => {
@@ -354,11 +358,13 @@ describe("AccountSecuritySection - Multi-Provider", () => {
 
 		renderWithFullEnvironment(<AccountSecuritySection {...defaultProps} />);
 
-		// Verify hook was called with correct callbacks
-		expect(useMultiProviderOAuth).toHaveBeenCalledWith({
-			onSuccess: expect.any(Function),
-			onError: expect.any(Function)
-		});
+		// Verify hook was called with correct callbacks (may include additional parameters)
+		expect(useMultiProviderOAuth).toHaveBeenCalledWith(
+			expect.objectContaining({
+				onSuccess: expect.any(Function),
+				onError: expect.any(Function)
+			})
+		);
 	});
 
 	it("should maintain accessibility for multi-provider UI", async () => {

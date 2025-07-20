@@ -80,6 +80,8 @@ export interface User {
 	first_name: string;
 	last_name: string;
 	role: string;
+	has_projects_access: boolean;
+	email_verified: boolean;
 	created_at?: string;
 	updated_at?: string;
 }

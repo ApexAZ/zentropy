@@ -53,9 +53,10 @@ class Logger {
 		}
 
 		// In production, send to logging service
-		if (!this.isDevelopment) {
-			this.sendToProductionLogging(entry);
-		}
+		// TEMP: Disabled production logging to prevent infinite loop
+		// if (!this.isDevelopment) {
+		// 	this.sendToProductionLogging(entry);
+		// }
 	}
 
 	debug(message: string, data?: unknown): void {
@@ -82,110 +83,8 @@ class Logger {
 		this.logHistory = [];
 	}
 
-	private async sendToProductionLogging(entry: LogEntry): Promise<void> {
-		try {
-			// Configuration for production logging
-			const config = {
-				endpoint: import.meta.env.VITE_LOGGING_ENDPOINT || "/api/v1/logs",
-				maxRetries: 3,
-				retryDelay: 1000,
-				batchSize: 10,
-				flushInterval: 5000 // 5 seconds
-			};
-
-			// Only send error and warn level logs in production to reduce noise
-			if (entry.level !== "error" && entry.level !== "warn") {
-				return;
-			}
-
-			// Prepare log payload
-			const payload = {
-				timestamp: entry.timestamp.toISOString(),
-				level: entry.level,
-				message: entry.message,
-				data: entry.data,
-				userAgent: navigator.userAgent,
-				url: window.location.href,
-				userId: this.getUserId(),
-				sessionId: this.getSessionId()
-			};
-
-			// Send to logging endpoint with retry logic
-			await this.sendWithRetry(config.endpoint, payload, config.maxRetries, config.retryDelay);
-		} catch (error) {
-			// Fail silently in production to avoid breaking the app
-			// Store failed logs for potential retry
-			console.warn("Failed to send log to production service:", error);
-		}
-	}
-
-	private async sendWithRetry(
-		endpoint: string,
-		payload: unknown,
-		maxRetries: number,
-		retryDelay: number
-	): Promise<void> {
-		for (let attempt = 1; attempt <= maxRetries; attempt++) {
-			try {
-				const response = await fetch(endpoint, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify(payload)
-				});
-
-				if (response.ok) {
-					return; // Success
-				}
-
-				// If it's the last attempt, throw an error
-				if (attempt === maxRetries) {
-					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-				}
-
-				// Wait before retrying
-				await new Promise(resolve => setTimeout(resolve, retryDelay));
-				retryDelay *= 2; // Exponential backoff
-			} catch (error) {
-				if (attempt === maxRetries) {
-					throw error;
-				}
-
-				// Wait before retrying
-				await new Promise(resolve => setTimeout(resolve, retryDelay));
-				retryDelay *= 2; // Exponential backoff
-			}
-		}
-	}
-
-	private getUserId(): string | null {
-		// Try to get user ID from localStorage (set by auth system)
-		try {
-			const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-			if (token) {
-				// Parse JWT token to get user ID (basic parsing, not validation)
-				const parts = token.split(".");
-				if (parts.length >= 3 && parts[1]) {
-					const payload = JSON.parse(atob(parts[1]));
-					return payload.sub || payload.user_id || null;
-				}
-			}
-		} catch {
-			// Ignore errors when parsing token
-		}
-		return null;
-	}
-
-	private getSessionId(): string {
-		// Generate or retrieve session ID for tracking
-		let sessionId = sessionStorage.getItem("logger_session_id");
-		if (!sessionId) {
-			sessionId = crypto.randomUUID();
-			sessionStorage.setItem("logger_session_id", sessionId);
-		}
-		return sessionId;
-	}
+	// TODO: Production logging implementation will be added in the future
+	// when the logging infrastructure is properly set up to avoid infinite loops
 }
 
 export const logger = new Logger();
