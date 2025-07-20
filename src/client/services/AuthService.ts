@@ -5,7 +5,8 @@ import type {
 	AuthResponse,
 	PasswordValidationResult,
 	APIError,
-	CustomError
+	CustomError,
+	SecurityOperationType
 } from "../types";
 
 export class AuthService {
@@ -178,6 +179,39 @@ export class AuthService {
 
 		const data = await response.json();
 		return { message: data.message || "Verification email sent! Please check your inbox." };
+	}
+
+	/**
+	 * Send security code for various operations (unified verification system)
+	 */
+	static async sendSecurityCode(
+		email: string,
+		operationType: SecurityOperationType
+	): Promise<{ message: string; rate_limit_seconds_remaining?: number }> {
+		const response = await fetch("/api/v1/auth/send-security-code", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				email,
+				operation_type: operationType
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			// Preserve HTTP response structure for rate limiting
+			const error = new Error(errorData.detail?.message || errorData.detail || "Failed to send security code");
+			(error as any).response = {
+				status: response.status,
+				data: errorData
+			};
+			throw error;
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Security code sent! Please check your inbox." };
 	}
 
 	/**

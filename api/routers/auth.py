@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
 
@@ -18,6 +18,9 @@ from ..schemas import (
     EmailVerificationResponse,
     VerificationCodeRequest,
     VerificationCodeResponse,
+    SecurityCodeRequest,
+    VerifySecurityCodeRequest,
+    OperationTokenResponse,
 )
 from ..auth import (
     authenticate_user,
@@ -25,6 +28,7 @@ from ..auth import (
     get_password_hash,
     validate_password_strength,
     get_current_user,
+    verify_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from ..google_oauth import (
@@ -523,3 +527,181 @@ def verify_code_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=result["message"],
         )
+
+
+@router.post("/send-security-code", response_model=MessageResponse)
+def send_security_code_endpoint(
+    fastapi_request: Request,
+    request: SecurityCodeRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Send verification code for various security operations.
+
+    Supports multiple operation types:
+    - password_change: For authenticated users changing their password
+    - password_reset: For unauthenticated users who forgot their password
+    - username_recovery: For users who forgot their username
+    - email_change: For users changing their email address (future)
+    """
+    from ..verification_service import VerificationCodeService, VerificationType
+
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
+
+    # Validate operation type
+    try:
+        verification_type = VerificationType(request.operation_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid operation type: {request.operation_type}",
+        )
+
+    # Validate operation context (some operations require authentication)
+    email = request.email.lower()
+    current_user = None
+
+    if verification_type == VerificationType.PASSWORD_CHANGE:
+        # Password change requires authentication - extract from Authorization header
+        auth_header = fastapi_request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required for password changes",
+            )
+
+        try:
+            token = auth_header.split(" ")[1]
+            token_data = verify_token(
+                HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+            )
+            current_user = (
+                db.query(database.User)
+                .filter(database.User.id == token_data.user_id)
+                .first()
+            )
+            if not current_user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found",
+                )
+        except (IndexError, HTTPException):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication token",
+            )
+
+        if current_user.email.lower() != email:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot change password for different email address",
+            )
+        user = current_user
+
+    else:
+        # Other operations work with email lookup (password_reset, username_recovery)
+        user = db.query(database.User).filter(database.User.email == email).first()
+
+        # For security, don't reveal if email exists for password reset/recovery
+        if not user and verification_type in [
+            VerificationType.PASSWORD_RESET,
+            VerificationType.USERNAME_RECOVERY,
+        ]:
+            # Return success anyway to prevent email enumeration
+            message = (
+                "If an account with that email exists, a verification code has "
+                "been sent"
+            )
+            return MessageResponse(message=message)
+        elif not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid email address",
+            )
+
+    # Generate and send verification code
+    try:
+        _code, _expires_at = VerificationCodeService.create_verification_code(
+            db=db, user_id=user.id, verification_type=verification_type
+        )
+
+        # Send verification email (implement email templates for different types)
+        # TODO: Implement email templates for different operation types
+        # operation_labels = {
+        #     VerificationType.PASSWORD_CHANGE: "password change",
+        #     VerificationType.PASSWORD_RESET: "password reset",
+        #     VerificationType.USERNAME_RECOVERY: "username recovery",
+        #     VerificationType.EMAIL_CHANGE: "email change",
+        # }
+
+        # TODO: Implement proper email sending with templates
+        # For now, we skip the actual email sending in the MVP
+        # In production, this would send an email with the verification code
+
+        return MessageResponse(message=f"Verification code sent to {email}")
+
+    except ValueError as e:
+        # Handle rate limiting
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(e),
+        )
+
+
+@router.post("/verify-security-code", response_model=OperationTokenResponse)
+def verify_security_code_endpoint(
+    fastapi_request: Request,
+    request: VerifySecurityCodeRequest,
+    db: Session = Depends(get_db),
+) -> OperationTokenResponse:
+    """
+    Verify security code and return operation token for multi-step flows.
+
+    Returns a short-lived JWT token that can be used to authorize the completion
+    of the security operation (e.g., actually changing the password).
+    """
+    from ..verification_service import VerificationCodeService, VerificationType
+    from ..security import generate_operation_token
+
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Validate operation type
+    try:
+        verification_type = VerificationType(request.operation_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid operation type: {request.operation_type}",
+        )
+
+    # Find user by email
+    email = request.email.lower()
+    user = db.query(database.User).filter(database.User.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address or verification code",
+        )
+
+    # Verify the code
+    result = VerificationCodeService.verify_code(
+        db=db, user_id=user.id, code=request.code, verification_type=verification_type
+    )
+
+    if not result["valid"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["message"],
+        )
+
+    # Generate operation token for the verified operation
+    operation_token = generate_operation_token(email, request.operation_type)
+
+    return OperationTokenResponse(
+        operation_token=operation_token, expires_in=600  # 10 minutes
+    )

@@ -428,3 +428,34 @@ export interface OAuthOperationResponse {
 	/** Provider-specific identifier (email, username, etc.) */
 	provider_identifier?: string;
 }
+
+// Security Operation types for unified email verification
+export enum SecurityOperationType {
+	EMAIL_VERIFICATION = "email_verification",
+	PASSWORD_RESET = "password_reset",
+	PASSWORD_CHANGE = "password_change",
+	USERNAME_RECOVERY = "username_recovery",
+	EMAIL_CHANGE = "email_change",
+	TWO_FACTOR_SETUP = "two_factor_setup"
+}
+
+export interface SecurityCodeRequest {
+	email: string;
+	operation_type: SecurityOperationType;
+}
+
+export interface VerifySecurityCodeRequest {
+	email: string;
+	code: string;
+	operation_type: SecurityOperationType;
+}
+
+export interface OperationTokenResponse {
+	operation_token: string;
+	expires_in: number;
+}
+
+export interface SecurityCodeFlowStep {
+	step: "input" | "verification" | "complete";
+	data?: any;
+}

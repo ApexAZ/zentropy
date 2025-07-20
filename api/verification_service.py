@@ -31,6 +31,9 @@ class VerificationType(PyEnum):
     EMAIL_VERIFICATION = "email_verification"
     TWO_FACTOR_AUTH = "two_factor_auth"
     PASSWORD_RESET = "password_reset"
+    PASSWORD_CHANGE = "password_change"
+    USERNAME_RECOVERY = "username_recovery"
+    EMAIL_CHANGE = "email_change"
     ACCOUNT_RECOVERY = "account_recovery"
     SENSITIVE_ACTION = "sensitive_action"
 
@@ -111,6 +114,21 @@ class VerificationCodeService:
             "expiration_minutes": 30,
             "max_attempts": 5,
             "rate_limit_minutes": 2,
+        },
+        VerificationType.PASSWORD_CHANGE: {
+            "expiration_minutes": 15,
+            "max_attempts": 3,
+            "rate_limit_minutes": 1,
+        },
+        VerificationType.USERNAME_RECOVERY: {
+            "expiration_minutes": 20,
+            "max_attempts": 3,
+            "rate_limit_minutes": 2,
+        },
+        VerificationType.EMAIL_CHANGE: {
+            "expiration_minutes": 15,
+            "max_attempts": 3,
+            "rate_limit_minutes": 1,
         },
         VerificationType.ACCOUNT_RECOVERY: {
             "expiration_minutes": 60,

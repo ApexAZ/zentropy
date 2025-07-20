@@ -105,7 +105,7 @@ class TestOrganizationEdgeCases:
         assert "capacity" in error_data["detail"].lower()
 
     def test_personal_organization_single_user_limit(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test personal organization scope can only have one user."""
         # Create personal organization
@@ -179,7 +179,7 @@ class TestOrganizationEdgeCases:
         assert "capacity" in error_data["detail"].lower()
 
     def test_enterprise_organization_creation_admin_only(
-        self, client: TestClient, db: Session, admin_auth_headers, test_rate_limits
+        self, client: TestClient, db: Session, admin_auth_headers, test_rate_limits, auto_clean_mailpit
     ):
         """Test enterprise organization creation requires admin privileges."""
         # Regular user tries to create enterprise organization
@@ -225,7 +225,7 @@ class TestOrganizationEdgeCases:
         assert admin_org_response.status_code == 201
 
     def test_duplicate_organization_domain_handling(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test handling of duplicate organization domains."""
         # Create first organization
@@ -281,7 +281,7 @@ class TestProjectEdgeCases:
     """Test edge cases for project management."""
 
     def test_project_visibility_constraints(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test project visibility constraints and edge cases."""
         # Create user without organization
@@ -329,7 +329,7 @@ class TestProjectEdgeCases:
         assert response.status_code == 201
 
     def test_project_organization_id_validation(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test validation of organization_id in project creation."""
         # Create organization
@@ -392,7 +392,7 @@ class TestProjectEdgeCases:
         assert user.organization_id == org.id
 
     def test_project_archive_restore_edge_cases(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test project archive and restore edge cases."""
         # Create user and personal project
@@ -465,7 +465,7 @@ class TestAuthenticationEdgeCases:
     """Test authentication and authorization edge cases."""
 
     def test_expired_token_handling(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test handling of expired authentication tokens."""
         # Create user
@@ -515,7 +515,7 @@ class TestAuthenticationEdgeCases:
         assert data["domain_found"] is False
 
     def test_organization_member_permissions(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test organization member permission edge cases."""
         # Create organization and two users
@@ -721,7 +721,7 @@ class TestPerformanceEdgeCases:
         assert failed_joins == 1  # Exceeded capacity
 
     def test_project_list_pagination_edge_cases(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test project list pagination with edge cases."""
         # Create user
@@ -790,7 +790,7 @@ class TestDataIntegrityEdgeCases:
     """Test data integrity and consistency edge cases."""
 
     def test_orphaned_project_handling(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test handling of projects when organization is deleted."""
         # Create organization and user
@@ -861,7 +861,7 @@ class TestDataIntegrityEdgeCases:
             pass
 
     def test_user_organization_consistency(
-        self, client: TestClient, db: Session, test_rate_limits
+        self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test user-organization relationship consistency."""
         # Create organization

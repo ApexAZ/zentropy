@@ -23,7 +23,7 @@ from api.database import User, Organization, Project, RegistrationType, AuthProv
 class TestRegistrationWithOrganizationDiscovery:
     """Test registration flow with organization discovery integration."""
 
-    def test_registration_with_domain_matching_organization(self, client: TestClient, db: Session):
+    def test_registration_with_domain_matching_organization(self, client: TestClient, db: Session, auto_clean_mailpit):
         """Test user registration when email domain matches existing organization."""
         # Create organization first
         org = Organization(
@@ -54,7 +54,7 @@ class TestRegistrationWithOrganizationDiscovery:
         assert user is not None
         assert user.organization_id is None  # Just-in-time assignment
 
-    def test_registration_with_no_matching_organization(self, client: TestClient, db: Session):
+    def test_registration_with_no_matching_organization(self, client: TestClient, db: Session, auto_clean_mailpit):
         """Test user registration when no organization exists for domain (just-in-time system)."""
         # Register user (just-in-time organization system - no domain checking during registration)
         user_data = {
@@ -142,7 +142,7 @@ class TestRegistrationWithOrganizationDiscovery:
 class TestProjectCreationWithOrganizationWorkflow:
     """Test project creation with just-in-time organization assignment."""
 
-    def test_project_creation_with_organization_assignment(self, client: TestClient, db: Session, test_rate_limits):
+    def test_project_creation_with_organization_assignment(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test project creation that assigns user to organization."""
         # Create organization
         org = Organization(
@@ -208,7 +208,7 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project is not None
         assert project.organization_id == org.id
 
-    def test_project_creation_personal_without_organization(self, client: TestClient, db: Session, test_rate_limits):
+    def test_project_creation_personal_without_organization(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test creating personal project without organization assignment."""
         # Create user without organization
         user_data = {
@@ -255,7 +255,7 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project.organization_id is None
         assert project.visibility.value == "personal"
 
-    def test_project_creation_with_organization_discovery_and_joining(self, client: TestClient, db: Session, test_rate_limits):
+    def test_project_creation_with_organization_discovery_and_joining(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test complete workflow: registration -> organization discovery -> project creation -> organization joining."""
         # Create organization
         org = Organization(
@@ -327,7 +327,7 @@ class TestProjectCreationWithOrganizationWorkflow:
 class TestCompleteUserWorkflows:
     """Test complete user workflows from registration to project management."""
 
-    def test_complete_individual_user_workflow(self, client: TestClient, db: Session, test_rate_limits):
+    def test_complete_individual_user_workflow(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test complete workflow for individual user (no organization)."""
         # Step 1: Register
         user_data = {
@@ -387,7 +387,7 @@ class TestCompleteUserWorkflows:
         assert user is not None
         assert user.organization_id is None
 
-    def test_complete_team_user_workflow(self, client: TestClient, db: Session, test_rate_limits):
+    def test_complete_team_user_workflow(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test complete workflow for team user with organization."""
         # Step 1: Create organization
         org = Organization(
@@ -477,7 +477,7 @@ class TestCompleteUserWorkflows:
         assert user is not None
         assert user.organization_id == org.id
 
-    def test_user_workflow_with_multiple_organizations(self, client: TestClient, db: Session, test_rate_limits):
+    def test_user_workflow_with_multiple_organizations(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test user workflow with multiple organization options."""
         # Create multiple organizations with different domains
         org1 = Organization(

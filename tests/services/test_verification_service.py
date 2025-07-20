@@ -90,6 +90,9 @@ class TestVerificationCodeCreation:
             VerificationType.EMAIL_VERIFICATION: {"expiration_minutes": 15, "max_attempts": 3},
             VerificationType.TWO_FACTOR_AUTH: {"expiration_minutes": 5, "max_attempts": 3},
             VerificationType.PASSWORD_RESET: {"expiration_minutes": 30, "max_attempts": 5},
+            VerificationType.PASSWORD_CHANGE: {"expiration_minutes": 15, "max_attempts": 3},
+            VerificationType.USERNAME_RECOVERY: {"expiration_minutes": 20, "max_attempts": 3},
+            VerificationType.EMAIL_CHANGE: {"expiration_minutes": 15, "max_attempts": 3},
             VerificationType.ACCOUNT_RECOVERY: {"expiration_minutes": 60, "max_attempts": 3},
             VerificationType.SENSITIVE_ACTION: {"expiration_minutes": 10, "max_attempts": 2},
         }
@@ -519,3 +522,170 @@ class TestVerificationCodeSecurity:
         # Each position should have multiple different digits
         for pos in range(6):
             assert len(digit_positions[pos]) >= 5  # At least 5 different digits per position
+
+
+class TestNewVerificationTypes:
+    """Test newly added verification types for unified security operations."""
+
+    def test_password_change_verification_type(self, db: Session, mailpit_disabled):
+        """Test PASSWORD_CHANGE verification type configuration and behavior."""
+        user_id = uuid.uuid4()
+        
+        # Create password change verification code
+        code, expires_at = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.PASSWORD_CHANGE
+        )
+        
+        # Check code properties
+        assert len(code) == 6
+        assert code.isdigit()
+        
+        # Check database record
+        db_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user_id,
+            VerificationCode.verification_type == VerificationType.PASSWORD_CHANGE
+        ).first()
+        
+        assert db_code is not None
+        assert db_code.code == code
+        assert db_code.max_attempts == 3  # PASSWORD_CHANGE config
+        assert db_code.attempts == 0
+        assert db_code.is_used is False
+        
+        # Check expiration time (should be 15 minutes)
+        expected_expiration = db_code.created_at + timedelta(minutes=15)
+        time_diff = abs((db_code.expires_at - expected_expiration).total_seconds())
+        assert time_diff < 60  # Within 1 minute tolerance
+
+    def test_username_recovery_verification_type(self, db: Session, mailpit_disabled):
+        """Test USERNAME_RECOVERY verification type configuration and behavior."""
+        user_id = uuid.uuid4()
+        
+        # Create username recovery verification code
+        code, expires_at = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.USERNAME_RECOVERY
+        )
+        
+        # Check code properties
+        assert len(code) == 6
+        assert code.isdigit()
+        
+        # Check database record
+        db_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user_id,
+            VerificationCode.verification_type == VerificationType.USERNAME_RECOVERY
+        ).first()
+        
+        assert db_code is not None
+        assert db_code.code == code
+        assert db_code.max_attempts == 3  # USERNAME_RECOVERY config
+        assert db_code.attempts == 0
+        assert db_code.is_used is False
+        
+        # Check expiration time (should be 20 minutes)
+        expected_expiration = db_code.created_at + timedelta(minutes=20)
+        time_diff = abs((db_code.expires_at - expected_expiration).total_seconds())
+        assert time_diff < 60  # Within 1 minute tolerance
+
+    def test_email_change_verification_type(self, db: Session, mailpit_disabled):
+        """Test EMAIL_CHANGE verification type configuration and behavior."""
+        user_id = uuid.uuid4()
+        
+        # Create email change verification code
+        code, expires_at = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.EMAIL_CHANGE
+        )
+        
+        # Check code properties
+        assert len(code) == 6
+        assert code.isdigit()
+        
+        # Check database record
+        db_code = db.query(VerificationCode).filter(
+            VerificationCode.user_id == user_id,
+            VerificationCode.verification_type == VerificationType.EMAIL_CHANGE
+        ).first()
+        
+        assert db_code is not None
+        assert db_code.code == code
+        assert db_code.max_attempts == 3  # EMAIL_CHANGE config
+        assert db_code.attempts == 0
+        assert db_code.is_used is False
+        
+        # Check expiration time (should be 15 minutes)
+        expected_expiration = db_code.created_at + timedelta(minutes=15)
+        time_diff = abs((db_code.expires_at - expected_expiration).total_seconds())
+        assert time_diff < 60  # Within 1 minute tolerance
+
+    def test_new_verification_types_isolation(self, db: Session, mailpit_disabled):
+        """Test that new verification types are properly isolated from each other."""
+        user_id = uuid.uuid4()
+        
+        # Create codes for the new verification types
+        password_change_code, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.PASSWORD_CHANGE
+        )
+        
+        username_recovery_code, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.USERNAME_RECOVERY
+        )
+        
+        email_change_code, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.EMAIL_CHANGE
+        )
+        
+        # Password change code should not work for username recovery
+        result = VerificationCodeService.verify_code(
+            db=db, user_id=user_id, code=password_change_code, 
+            verification_type=VerificationType.USERNAME_RECOVERY
+        )
+        assert result["valid"] is False
+        
+        # Username recovery code should not work for email change
+        result = VerificationCodeService.verify_code(
+            db=db, user_id=user_id, code=username_recovery_code, 
+            verification_type=VerificationType.EMAIL_CHANGE
+        )
+        assert result["valid"] is False
+        
+        # Email change code should not work for password change
+        result = VerificationCodeService.verify_code(
+            db=db, user_id=user_id, code=email_change_code, 
+            verification_type=VerificationType.PASSWORD_CHANGE
+        )
+        assert result["valid"] is False
+        
+        # But each should work for its correct type
+        result = VerificationCodeService.verify_code(
+            db=db, user_id=user_id, code=password_change_code, 
+            verification_type=VerificationType.PASSWORD_CHANGE
+        )
+        assert result["valid"] is True
+
+    def test_rate_limiting_applies_to_new_types(self, db: Session, mailpit_disabled):
+        """Test that rate limiting applies to new verification types."""
+        user_id = uuid.uuid4()
+        
+        # First PASSWORD_CHANGE request should succeed
+        code1, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.PASSWORD_CHANGE
+        )
+        assert code1 is not None
+        
+        # Second request immediately should fail due to rate limiting (1 minute)
+        with pytest.raises(ValueError, match="Please wait 1 minute"):
+            VerificationCodeService.create_verification_code(
+                db=db, user_id=user_id, verification_type=VerificationType.PASSWORD_CHANGE
+            )
+        
+        # First USERNAME_RECOVERY request should succeed
+        code2, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user_id, verification_type=VerificationType.USERNAME_RECOVERY
+        )
+        assert code2 is not None
+        
+        # Second request immediately should fail due to rate limiting (2 minutes)
+        with pytest.raises(ValueError, match="Please wait 2 minute"):
+            VerificationCodeService.create_verification_code(
+                db=db, user_id=user_id, verification_type=VerificationType.USERNAME_RECOVERY
+            )

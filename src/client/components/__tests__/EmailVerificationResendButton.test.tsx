@@ -6,11 +6,13 @@ import { fastUserActions, fastStateSync } from "../../__tests__/utils";
 import "@testing-library/jest-dom";
 import EmailVerificationResendButton from "../EmailVerificationResendButton";
 import { AuthService } from "../../services/AuthService";
+import { SecurityOperationType } from "../../types";
 
 // Mock the AuthService
 vi.mock("../../services/AuthService", () => ({
 	AuthService: {
-		sendEmailVerification: vi.fn()
+		sendEmailVerification: vi.fn(),
+		sendSecurityCode: vi.fn()
 	}
 }));
 
@@ -25,6 +27,7 @@ vi.mock("../../utils/logger", () => ({
 describe("EmailVerificationResendButton", () => {
 	const mockEmail = "test@example.com";
 	const mockSendEmailVerification = vi.mocked(AuthService.sendEmailVerification);
+	const mockSendSecurityCode = vi.mocked(AuthService.sendSecurityCode);
 
 	beforeEach(() => {
 		vi.useFakeTimers(); // Use fake timers for predictable timing
@@ -47,7 +50,7 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("shows loading state when button is clicked", async () => {
-		mockSendEmailVerification.mockImplementation(() => new Promise(() => {})); // Never resolves
+		mockSendSecurityCode.mockImplementation(() => new Promise(() => {})); // Never resolves
 
 		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -59,8 +62,8 @@ describe("EmailVerificationResendButton", () => {
 		expect(screen.getByRole("button", { name: "Sending..." })).toBeDisabled();
 	});
 
-	it("calls AuthService.sendEmailVerification with correct email", async () => {
-		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
+	it("calls AuthService.sendSecurityCode with correct email and default operation type", async () => {
+		mockSendSecurityCode.mockResolvedValue({ message: "Email sent successfully" });
 
 		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -68,12 +71,12 @@ describe("EmailVerificationResendButton", () => {
 		fastUserActions.click(button);
 		await fastStateSync();
 
-		expect(mockSendEmailVerification).toHaveBeenCalledWith(mockEmail);
+		expect(mockSendSecurityCode).toHaveBeenCalledWith(mockEmail, SecurityOperationType.EMAIL_VERIFICATION);
 	});
 
 	it("calls onResendSuccess callback and starts countdown after successful email send", async () => {
 		const mockOnResendSuccess = vi.fn();
-		mockSendEmailVerification.mockResolvedValue({
+		mockSendSecurityCode.mockResolvedValue({
 			message: "Email sent successfully",
 			rate_limit_seconds_remaining: 60
 		});
@@ -104,7 +107,7 @@ describe("EmailVerificationResendButton", () => {
 
 	it("does not manage success state internally (parent handles it)", async () => {
 		const mockOnResendSuccess = vi.fn();
-		mockSendEmailVerification.mockResolvedValue({
+		mockSendSecurityCode.mockResolvedValue({
 			message: "Email sent successfully",
 			rate_limit_seconds_remaining: 60
 		});
@@ -130,7 +133,7 @@ describe("EmailVerificationResendButton", () => {
 	});
 
 	it("returns to normal state after error", async () => {
-		mockSendEmailVerification.mockRejectedValue(new Error("Network error"));
+		mockSendSecurityCode.mockRejectedValue(new Error("Network error"));
 
 		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -149,7 +152,7 @@ describe("EmailVerificationResendButton", () => {
 
 	it("can be clicked again after an error", async () => {
 		const mockOnResendSuccess = vi.fn();
-		mockSendEmailVerification
+		mockSendSecurityCode
 			.mockRejectedValueOnce(new Error("Network error"))
 			.mockResolvedValueOnce({ message: "Email sent successfully" });
 
@@ -173,7 +176,7 @@ describe("EmailVerificationResendButton", () => {
 		});
 		expect(mockOnResendSuccess).toHaveBeenCalled();
 
-		expect(mockSendEmailVerification).toHaveBeenCalledTimes(2);
+		expect(mockSendSecurityCode).toHaveBeenCalledTimes(2);
 	});
 
 	it("has proper accessibility attributes", () => {
@@ -193,6 +196,127 @@ describe("EmailVerificationResendButton", () => {
 		expect(button).toHaveClass("!px-2", "!py-1", "!bg-interactive", "!text-white", "!border-none");
 	});
 
+	describe("Operation Type Support", () => {
+		it("defaults to EMAIL_VERIFICATION operation type for backward compatibility", async () => {
+			mockSendSecurityCode.mockResolvedValue({ message: "Email sent successfully" });
+
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			fastUserActions.click(button);
+			await fastStateSync();
+
+			expect(mockSendSecurityCode).toHaveBeenCalledWith(mockEmail, SecurityOperationType.EMAIL_VERIFICATION);
+		});
+
+		it("uses provided operation type when specified", async () => {
+			mockSendSecurityCode.mockResolvedValue({ message: "Email sent successfully" });
+
+			renderWithFullEnvironment(
+				<EmailVerificationResendButton
+					userEmail={mockEmail}
+					operationType={SecurityOperationType.PASSWORD_CHANGE}
+				/>
+			);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			fastUserActions.click(button);
+			await fastStateSync();
+
+			expect(mockSendSecurityCode).toHaveBeenCalledWith(mockEmail, SecurityOperationType.PASSWORD_CHANGE);
+		});
+
+		it("supports all security operation types", async () => {
+			const operationTypes = [
+				SecurityOperationType.EMAIL_VERIFICATION,
+				SecurityOperationType.PASSWORD_RESET,
+				SecurityOperationType.PASSWORD_CHANGE,
+				SecurityOperationType.USERNAME_RECOVERY,
+				SecurityOperationType.EMAIL_CHANGE,
+				SecurityOperationType.TWO_FACTOR_SETUP
+			];
+
+			for (const operationType of operationTypes) {
+				// Clear all state before each iteration
+				vi.clearAllMocks();
+				localStorage.clear();
+
+				mockSendSecurityCode.mockResolvedValue({ message: "Email sent successfully" });
+
+				const testEnv = renderWithFullEnvironment(
+					<EmailVerificationResendButton userEmail={mockEmail} operationType={operationType} />
+				);
+
+				const button = screen.getByRole("button", { name: "Resend" });
+				fastUserActions.click(button);
+				await fastStateSync();
+
+				expect(mockSendSecurityCode).toHaveBeenCalledWith(mockEmail, operationType);
+
+				testEnv.cleanup();
+			}
+		});
+
+		it("maintains backward compatibility - uses EMAIL_VERIFICATION by default", async () => {
+			// When no operationType is provided, should default to EMAIL_VERIFICATION
+			mockSendSecurityCode.mockResolvedValue({ message: "Email sent successfully" });
+
+			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			fastUserActions.click(button);
+			await fastStateSync();
+
+			// Should use the unified method with default EMAIL_VERIFICATION type
+			expect(mockSendSecurityCode).toHaveBeenCalledWith(mockEmail, SecurityOperationType.EMAIL_VERIFICATION);
+			expect(mockSendEmailVerification).not.toHaveBeenCalled();
+		});
+
+		it("handles errors from sendSecurityCode properly", async () => {
+			mockSendSecurityCode.mockRejectedValue(new Error("Network error"));
+
+			renderWithFullEnvironment(
+				<EmailVerificationResendButton
+					userEmail={mockEmail}
+					operationType={SecurityOperationType.PASSWORD_CHANGE}
+				/>
+			);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			fastUserActions.click(button);
+			await fastStateSync();
+
+			await fastStateSync();
+			expect(screen.getByRole("button", { name: "Resend" })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Resend" })).not.toBeDisabled();
+		});
+
+		it("calls onResendSuccess callback after successful sendSecurityCode", async () => {
+			const mockOnResendSuccess = vi.fn();
+			mockSendSecurityCode.mockResolvedValue({
+				message: "Email sent successfully",
+				rate_limit_seconds_remaining: 60
+			});
+
+			renderWithFullEnvironment(
+				<EmailVerificationResendButton
+					userEmail={mockEmail}
+					operationType={SecurityOperationType.PASSWORD_RESET}
+					onResendSuccess={mockOnResendSuccess}
+				/>
+			);
+
+			const button = screen.getByRole("button", { name: "Resend" });
+			fastUserActions.click(button);
+			await fastStateSync();
+
+			await act(async () => {
+				await Promise.resolve();
+			});
+			expect(mockOnResendSuccess).toHaveBeenCalled();
+		});
+	});
+
 	describe("Rate Limiting", () => {
 		it("handles rate limit error and shows countdown", async () => {
 			// Mock HTTP 429 rate limit error with updated error structure
@@ -207,7 +331,7 @@ describe("EmailVerificationResendButton", () => {
 					}
 				}
 			};
-			mockSendEmailVerification.mockRejectedValue(rateError);
+			mockSendSecurityCode.mockRejectedValue(rateError);
 
 			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -233,7 +357,7 @@ describe("EmailVerificationResendButton", () => {
 					}
 				}
 			};
-			mockSendEmailVerification.mockRejectedValue(rateError);
+			mockSendSecurityCode.mockRejectedValue(rateError);
 
 			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -258,7 +382,7 @@ describe("EmailVerificationResendButton", () => {
 					}
 				}
 			};
-			mockSendEmailVerification.mockRejectedValue(rateError);
+			mockSendSecurityCode.mockRejectedValue(rateError);
 
 			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -283,7 +407,7 @@ describe("EmailVerificationResendButton", () => {
 					}
 				}
 			};
-			mockSendEmailVerification.mockRejectedValue(rateError);
+			mockSendSecurityCode.mockRejectedValue(rateError);
 
 			renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
@@ -354,7 +478,7 @@ describe("EmailVerificationResendButton", () => {
 		});
 
 		it("persists rate limit state after successful sends", async () => {
-			mockSendEmailVerification.mockResolvedValue({
+			mockSendSecurityCode.mockResolvedValue({
 				message: "Email sent successfully",
 				rate_limit_seconds_remaining: 60
 			});

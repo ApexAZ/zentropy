@@ -237,6 +237,40 @@ class VerificationCodeResponse(BaseModel):
     user_id: Optional[UUID] = None
 
 
+# Unified security code schemas
+class SecurityCodeRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "user@example.com",
+                "operation_type": "password_change",
+            }
+        }
+    )
+
+    email: EmailStr
+    operation_type: str = Field(
+        ...,
+        description="Type of security operation (password_change, "
+        "password_reset, username_recovery, etc.)",
+    )
+
+
+class VerifySecurityCodeRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6, pattern="^[0-9]{6}$")
+    operation_type: str = Field(
+        ...,
+        description="Type of security operation (password_change, "
+        "password_reset, username_recovery, etc.)",
+    )
+
+
+class OperationTokenResponse(BaseModel):
+    operation_token: str
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+
+
 # Generic response schemas
 class MessageResponse(BaseModel):
     message: str

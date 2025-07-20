@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Button from "./atoms/Button";
 import { AuthService } from "../services/AuthService";
 import { logger } from "../utils/logger";
+import { SecurityOperationType } from "../types";
 
 // Rate limit timer persistence utilities
 const RATE_LIMIT_STORAGE_KEY = "emailResendRateLimit";
@@ -44,11 +45,13 @@ const clearRateLimitTimer = (): void => {
 
 interface EmailVerificationResendButtonProps {
 	userEmail: string;
+	operationType?: SecurityOperationType; // NEW: Support different operation types
 	onResendSuccess?: () => void;
 }
 
 const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps> = ({
 	userEmail,
+	operationType = SecurityOperationType.EMAIL_VERIFICATION, // Default to existing behavior
 	onResendSuccess
 }) => {
 	const [isResending, setIsResending] = useState(false);
@@ -80,10 +83,14 @@ const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps
 		try {
 			setIsResending(true);
 
-			const response = await AuthService.sendEmailVerification(userEmail);
+			// Use unified sendSecurityCode method with operation type
+			const response = await AuthService.sendSecurityCode(userEmail, operationType);
 
 			// Log success for debugging
-			logger.info("Verification email resent successfully", { email: userEmail });
+			logger.info("Security code sent successfully", {
+				email: userEmail,
+				operationType
+			});
 
 			// Start rate limit timer using info from backend response
 			const rateLimitDuration = (response as any).rate_limit_seconds_remaining || 60;
@@ -93,7 +100,7 @@ const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps
 			// Notify parent component of success
 			onResendSuccess?.();
 		} catch (error: any) {
-			logger.error("Resend verification error", { error });
+			logger.error("Resend verification error", { error, operationType });
 
 			// Check for rate limiting error from HTTP 429 response
 			if (error.response?.status === 429 && error.response?.data?.detail?.rate_limit_seconds_remaining) {
