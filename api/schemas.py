@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -366,6 +366,19 @@ class AccountSecurityResponse(BaseModel):
     # Backwards compatibility - deprecated but maintained
     google_auth_linked: bool
     google_email: Optional[str] = None
+
+
+class RecoverUsernameRequest(BaseModel):
+    operation_token: str = Field(
+        ..., min_length=1, description="Operation token from verified security code"
+    )
+
+    @field_validator("operation_token")
+    @classmethod
+    def validate_token_not_empty(cls, v):
+        if not v.strip():
+            raise ValueError("Operation token cannot be empty or whitespace")
+        return v
 
 
 # Project schemas

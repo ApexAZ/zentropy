@@ -8,8 +8,9 @@ import PasswordRequirements from "./PasswordRequirements";
 import { setPendingVerification } from "../utils/pendingVerification";
 import { useToast } from "../contexts/ToastContext";
 import { ForgotPasswordFlow } from "./ForgotPasswordFlow";
+import { UsernameRecoveryFlow } from "./UsernameRecoveryFlow";
 
-type AuthMode = "signin" | "signup" | "forgot-password";
+type AuthMode = "signin" | "signup" | "forgot-password" | "forgot-username";
 
 interface AuthModalProps {
 	isOpen: boolean;
@@ -217,6 +218,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
 								}}
 								onCancel={() => setMode("signin")}
 							/>
+						) : mode === "forgot-username" ? (
+							<UsernameRecoveryFlow
+								onComplete={() => {
+									setMode("signin");
+									showSuccess("Username sent! Check your email and then try signing in.");
+								}}
+								onCancel={() => setMode("signin")}
+							/>
 						) : (
 							<>
 								<div className="text-center">
@@ -250,13 +259,20 @@ const AuthModal: React.FC<AuthModalProps> = ({
 										>
 											{isLoading ? "Signing In..." : "Sign In"}
 										</button>
-										<div className="text-center">
+										<div className="space-y-2 text-center">
 											<button
 												type="button"
 												onClick={() => setMode("forgot-password")}
-												className="text-interactive hover:text-interactive-hover text-sm"
+												className="text-interactive hover:text-interactive-hover block w-full text-sm"
 											>
 												Forgot your password?
+											</button>
+											<button
+												type="button"
+												onClick={() => setMode("forgot-username")}
+												className="text-interactive hover:text-interactive-hover block w-full text-sm"
+											>
+												Forgot your username?
 											</button>
 										</div>
 									</form>

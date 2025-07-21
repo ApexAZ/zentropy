@@ -388,3 +388,78 @@ def send_password_reset_email(email: str, token: str, user_name: str) -> bool:
         html_content=html_content,
         text_content=text_content,
     )
+
+
+def send_username_recovery_email(email: str, user_name: str, username: str) -> bool:
+    """
+    Send username recovery email to user.
+
+    Args:
+        email: User's email address
+        user_name: User's display name
+        username: Username to send (typically the email address)
+
+    Returns:
+        bool: True if email was sent successfully, False otherwise
+    """
+    subject = "Your Zentropy username"
+
+    # HTML version of the email (escape user input for security)
+    escaped_user_name = html.escape(user_name)
+    escaped_username = html.escape(username)
+    html_content = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #6A8BA7;">Username Recovery</h2>
+            <p>Hello {escaped_user_name},</p>
+            <p>You requested to recover your username for your Zentropy account.
+               Your username is:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <div style="background-color: #f8f9fa; border: 2px solid #6A8BA7;
+                           border-radius: 8px; padding: 20px; display: inline-block;">
+                    <h3 style="font-size: 20px; margin: 0; color: #6A8BA7;
+                              font-weight: bold; word-break: break-all;">
+                        {escaped_username}
+                    </h3>
+                    <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">
+                        Your Username
+                    </p>
+                </div>
+            </div>
+
+            <p>You can use this email address to sign in to your Zentropy account.</p>
+            <p>If you didn't request your username, please ignore this email or
+               contact support if you have concerns about your account security.</p>
+            <br>
+            <p>Best regards,<br>The Zentropy Team</p>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Plain text version
+    text_content = f"""
+    Username Recovery
+
+    Hello {user_name},
+
+    You requested to recover your username for your Zentropy account.
+    Your username is: {username}
+
+    You can use this email address to sign in to your Zentropy account.
+
+    If you didn't request your username, please ignore this email or
+    contact support if you have concerns about your account security.
+
+    Best regards,
+    The Zentropy Team
+    """
+
+    return email_service.send_email_sync(
+        to_email=email,
+        subject=subject,
+        html_content=html_content,
+        text_content=text_content,
+    )

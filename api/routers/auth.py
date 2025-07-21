@@ -22,6 +22,7 @@ from ..schemas import (
     VerifySecurityCodeRequest,
     OperationTokenResponse,
     ResetPasswordRequest,
+    RecoverUsernameRequest,
 )
 from ..auth import (
     authenticate_user,
@@ -49,6 +50,7 @@ from ..email_verification import (
     send_verification_email,
     resend_verification_email,
 )
+from ..email_service import send_username_recovery_email
 
 router = APIRouter()
 
@@ -762,3 +764,48 @@ def reset_password(
     db.commit()
 
     return MessageResponse(message="Password reset successfully")
+
+
+@router.post("/recover-username", response_model=MessageResponse)
+def recover_username(
+    request: RecoverUsernameRequest,
+    fastapi_request: Request,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Send username to user's email after verification.
+    Requires a valid operation token obtained by verifying a security code.
+    """
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Verify operation token
+    try:
+        email = verify_operation_token(request.operation_token, "username_recovery")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token",
+        )
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token",
+        )
+
+    # Find user by email (case-insensitive)
+    user = db.query(User).filter(User.email.ilike(email)).first()
+
+    if user:
+        # Send username via email
+        user_name = f"{user.first_name} {user.last_name}".strip()
+        if not user_name:
+            user_name = "User"
+
+        # Username is the email address in this system
+        send_username_recovery_email(user.email, user_name, user.email)
+
+    # Always return success for security (don't reveal if email exists)
+    return MessageResponse(message="If the email exists, the username has been sent")
