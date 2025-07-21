@@ -1,15 +1,17 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import PasswordRequirements from "../PasswordRequirements";
 
 describe("PasswordRequirements", () => {
 	it("should not render when password is empty", () => {
-		const { container } = render(<PasswordRequirements password="" />);
-		expect(container.firstChild).toBeNull();
+		const { result } = renderWithFullEnvironment(<PasswordRequirements password="" />);
+		expect(result.container.firstChild).toBeNull();
 	});
 
 	it("should show all requirements as failing for empty password when password has content", () => {
-		render(<PasswordRequirements password="a" />);
+		renderWithFullEnvironment(<PasswordRequirements password="a" />);
 
 		expect(screen.getByText("✓ At least 8 characters")).toHaveClass("text-error");
 		expect(screen.getByText("✓ One uppercase letter")).toHaveClass("text-error");
@@ -19,7 +21,7 @@ describe("PasswordRequirements", () => {
 	});
 
 	it("should show all requirements as passing for strong password", () => {
-		render(<PasswordRequirements password="StrongPass123!" />);
+		renderWithFullEnvironment(<PasswordRequirements password="StrongPass123!" />);
 
 		expect(screen.getByText("✓ At least 8 characters")).toHaveClass("text-success");
 		expect(screen.getByText("✓ One uppercase letter")).toHaveClass("text-success");
@@ -29,7 +31,7 @@ describe("PasswordRequirements", () => {
 	});
 
 	it("should show password match requirement when enabled", () => {
-		render(
+		renderWithFullEnvironment(
 			<PasswordRequirements
 				password="StrongPass123!"
 				confirmPassword="StrongPass123!"
@@ -41,7 +43,7 @@ describe("PasswordRequirements", () => {
 	});
 
 	it("should show password mismatch when passwords don't match", () => {
-		render(
+		renderWithFullEnvironment(
 			<PasswordRequirements
 				password="StrongPass123!"
 				confirmPassword="DifferentPass123!"
@@ -53,7 +55,7 @@ describe("PasswordRequirements", () => {
 	});
 
 	it("should not show match requirement when disabled", () => {
-		render(
+		renderWithFullEnvironment(
 			<PasswordRequirements
 				password="StrongPass123!"
 				confirmPassword="StrongPass123!"
@@ -65,7 +67,7 @@ describe("PasswordRequirements", () => {
 	});
 
 	it("should handle partial password requirements", () => {
-		render(<PasswordRequirements password="password123" />);
+		renderWithFullEnvironment(<PasswordRequirements password="password123" />);
 
 		expect(screen.getByText("✓ At least 8 characters")).toHaveClass("text-success");
 		expect(screen.getByText("✓ One uppercase letter")).toHaveClass("text-error");

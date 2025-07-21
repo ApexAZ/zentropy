@@ -80,6 +80,28 @@ class PasswordUpdate(BaseModel):
     new_password: str
 
 
+class SecurePasswordChangeRequest(BaseModel):
+    current_password: str = Field(
+        ..., min_length=1, description="User's current password"
+    )
+    new_password: str = Field(
+        ..., min_length=8, max_length=128, description="New password to set"
+    )
+    operation_token: str = Field(
+        ..., min_length=1, description="Operation token from email verification"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "current_password": "CurrentPassword123!",
+                "new_password": "NewSecurePassword456!",
+                "operation_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            }
+        }
+    )
+
+
 # Google OAuth schemas
 class GoogleLoginRequest(BaseModel):
     google_token: str

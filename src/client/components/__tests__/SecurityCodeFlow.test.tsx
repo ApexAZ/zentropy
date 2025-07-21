@@ -1,6 +1,8 @@
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { screen, fireEvent, act } from "@testing-library/react";
 import { vi, beforeEach, afterEach, describe, it, expect } from "vitest";
+import "@testing-library/jest-dom";
+import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import SecurityCodeFlow from "../SecurityCodeFlow";
 import { SecurityOperationType } from "../../types";
 
@@ -56,27 +58,27 @@ describe("SecurityCodeFlow", () => {
 				onCodeVerified: vi.fn()
 			};
 
-			render(<SecurityCodeFlow {...minimalProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...minimalProps} />);
 
 			expect(screen.getByText("Verify Your Email")).toBeInTheDocument();
 			expect(screen.getByText("Enter the verification code sent to your email")).toBeInTheDocument();
 		});
 
 		it("should render with custom title and description", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			expect(screen.getByText("Test Verification")).toBeInTheDocument();
 			expect(screen.getByText("Enter test code")).toBeInTheDocument();
 		});
 
 		it("should display the user email", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			expect(screen.getByText("Code sent to: test@example.com")).toBeInTheDocument();
 		});
 
 		it("should render code input field with correct attributes", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			expect(codeInput).toBeInTheDocument();
@@ -86,14 +88,14 @@ describe("SecurityCodeFlow", () => {
 		});
 
 		it("should render verify button initially disabled", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 			expect(verifyButton).toBeDisabled();
 		});
 
 		it("should render cancel button when onCancel is provided", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
 		});
@@ -102,13 +104,13 @@ describe("SecurityCodeFlow", () => {
 			const propsWithoutCancel = { ...mockProps };
 			delete propsWithoutCancel.onCancel;
 
-			render(<SecurityCodeFlow {...propsWithoutCancel} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...propsWithoutCancel} />);
 
 			expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument();
 		});
 
 		it("should render EmailVerificationResendButton with correct props", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			const resendButton = screen.getByTestId("resend-button");
 			expect(resendButton).toBeInTheDocument();
@@ -118,7 +120,7 @@ describe("SecurityCodeFlow", () => {
 
 	describe("Code Input Validation", () => {
 		it("should only allow numeric input", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 
 			// Try to enter letters and symbols
@@ -129,7 +131,7 @@ describe("SecurityCodeFlow", () => {
 		});
 
 		it("should limit input to 6 digits", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 
 			fireEvent.change(codeInput, { target: { value: "1234567890" } });
@@ -138,7 +140,7 @@ describe("SecurityCodeFlow", () => {
 		});
 
 		it("should enable verify button when 6 digits are entered", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -148,7 +150,7 @@ describe("SecurityCodeFlow", () => {
 		});
 
 		it("should keep verify button disabled with less than 6 digits", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -163,7 +165,7 @@ describe("SecurityCodeFlow", () => {
 			const mockResponse = { operation_token: "test-token", expires_in: 600 };
 			(AuthService.verifySecurityCode as any).mockResolvedValue(mockResponse);
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -185,7 +187,7 @@ describe("SecurityCodeFlow", () => {
 			const mockResponse = { operation_token: "test-token", expires_in: 600 };
 			(AuthService.verifySecurityCode as any).mockResolvedValue(mockResponse);
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -207,7 +209,7 @@ describe("SecurityCodeFlow", () => {
 			});
 			(AuthService.verifySecurityCode as any).mockReturnValue(controllablePromise);
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -236,7 +238,7 @@ describe("SecurityCodeFlow", () => {
 			const errorMessage = "Invalid verification code";
 			(AuthService.verifySecurityCode as any).mockRejectedValue(new Error(errorMessage));
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -254,7 +256,7 @@ describe("SecurityCodeFlow", () => {
 			const errorMessage = "Invalid verification code";
 			(AuthService.verifySecurityCode as any).mockRejectedValue(new Error(errorMessage));
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -288,7 +290,7 @@ describe("SecurityCodeFlow", () => {
 		it("should handle verification failure with fallback error message", async () => {
 			(AuthService.verifySecurityCode as any).mockRejectedValue(new Error());
 
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			const verifyButton = screen.getByRole("button", { name: /verify code/i });
 
@@ -305,7 +307,7 @@ describe("SecurityCodeFlow", () => {
 
 	describe("User Interactions", () => {
 		it("should call onCancel when cancel button is clicked", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const cancelButton = screen.getByRole("button", { name: /cancel/i });
 
 			fireEvent.click(cancelButton);
@@ -314,7 +316,7 @@ describe("SecurityCodeFlow", () => {
 		});
 
 		it("should format code input to have consistent styling", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 
 			// Input should have specific styling classes for better UX
@@ -326,7 +328,7 @@ describe("SecurityCodeFlow", () => {
 
 	describe("Integration with EmailVerificationResendButton", () => {
 		it("should pass correct operationType to EmailVerificationResendButton", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			const resendButton = screen.getByTestId("resend-button");
 			expect(resendButton).toHaveTextContent("password_change");
@@ -338,7 +340,7 @@ describe("SecurityCodeFlow", () => {
 				operationType: SecurityOperationType.PASSWORD_RESET
 			};
 
-			render(<SecurityCodeFlow {...propsWithDifferentType} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...propsWithDifferentType} />);
 
 			const resendButton = screen.getByTestId("resend-button");
 			expect(resendButton).toHaveTextContent("password_reset");
@@ -347,14 +349,14 @@ describe("SecurityCodeFlow", () => {
 
 	describe("Accessibility", () => {
 		it("should have proper label association for code input", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
 			expect(codeInput).toHaveAttribute("id", "verification-code");
 		});
 
 		it("should have proper button roles and names", () => {
-			render(<SecurityCodeFlow {...mockProps} />);
+			renderWithFullEnvironment(<SecurityCodeFlow {...mockProps} />);
 
 			expect(screen.getByRole("button", { name: /verify code/i })).toBeInTheDocument();
 			expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();

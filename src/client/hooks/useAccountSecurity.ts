@@ -111,7 +111,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 			setLoading(false);
 			if (timeoutId) clearTimeout(timeoutId);
 		}
-	}, []); // Remove onError from dependencies to prevent infinite loop
+	}, [onError]); // Include onError - parent should provide stable reference
 
 	/**
 	 * Handle successful Google OAuth credential with enhanced error handling and timeout
@@ -155,7 +155,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 				if (timeoutId) clearTimeout(timeoutId);
 			}
 		},
-		[showSuccess] // Remove all callback dependencies to prevent infinite loop
+		[showSuccess, loadSecurityStatus, onError, onSecurityUpdate] // Include all dependencies
 	);
 
 	/**
@@ -170,7 +170,7 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 			// Clear optimistic update on error
 			setOptimisticSecurityStatus(null);
 		},
-		[] // Remove onError to prevent infinite loop
+		[onError] // Include onError - parent should provide stable reference
 	);
 
 	/**
@@ -243,13 +243,13 @@ export function useAccountSecurity({ onSecurityUpdate, onError }: UseAccountSecu
 				if (timeoutId) clearTimeout(timeoutId);
 			}
 		},
-		[showSuccess] // Remove callback dependencies to prevent infinite loop
+		[showSuccess, loadSecurityStatus, onSecurityUpdate] // Include all dependencies
 	);
 
 	// Load security status on mount only
 	useEffect(() => {
 		loadSecurityStatus();
-	}, []); // Empty dependency array - only run on mount
+	}, [loadSecurityStatus]); // Include loadSecurityStatus dependency
 
 	return {
 		// Security status data

@@ -87,6 +87,33 @@ export class UserService {
 	}
 
 	/**
+	 * Secure password change with email verification and operation token
+	 */
+	static async changePassword(
+		currentPassword: string,
+		newPassword: string,
+		operationToken: string
+	): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/users/me/secure-change-password", {
+			method: "POST",
+			headers: createAuthHeaders(),
+			body: JSON.stringify({
+				current_password: currentPassword,
+				new_password: newPassword,
+				operation_token: operationToken
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+			throw new Error(errorData.detail || errorData.message || "Failed to change password");
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Password changed successfully!" };
+	}
+
+	/**
 	 * Get all users (for dropdown selections)
 	 */
 	static async getAllUsers(): Promise<User[]> {

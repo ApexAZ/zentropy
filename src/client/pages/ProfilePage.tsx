@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import type { User, ProfileUpdateData, PasswordUpdateData } from "../types";
+import type { User, ProfileUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { AccountSecuritySection } from "../components/AccountSecuritySection";
-import PasswordRequirements from "../components/PasswordRequirements";
+import PasswordChangeForm from "../components/PasswordChangeForm";
 import { useToast } from "../contexts/ToastContext";
 
 const ProfilePage: React.FC = () => {
@@ -24,19 +24,8 @@ const ProfilePage: React.FC = () => {
 		last_name: "",
 		email: ""
 	});
-	const [passwordData, setPasswordData] = useState<PasswordUpdateData>({
-		current_password: "",
-		new_password: "",
-		confirm_new_password: ""
-	});
 
 	const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
-	const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
-	const [showPasswords, setShowPasswords] = useState({
-		current: false,
-		new: false,
-		confirm: false
-	});
 
 	// Tab state management
 	const [activeTab, setActiveTab] = useState("profile");
@@ -81,7 +70,7 @@ const ProfilePage: React.FC = () => {
 	}, []);
 
 	// Retry function for error recovery
-	const retryLoadProfile = async (): Promise<void> => {
+	const retryLoadProfile = useCallback(async (): Promise<void> => {
 		try {
 			setIsLoading(true);
 			setError("");
@@ -98,7 +87,7 @@ const ProfilePage: React.FC = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, []);
 
 	const handleEditProfile = (): void => {
 		setIsEditingProfile(true);
@@ -142,65 +131,11 @@ const ProfilePage: React.FC = () => {
 		}
 	};
 
-	const handleChangePassword = (): void => {
-		setIsChangingPassword(true);
-		setPasswordData({
-			current_password: "",
-			new_password: "",
-			confirm_new_password: ""
-		});
-		setPasswordErrors({});
-	};
-
-	const handleCancelPasswordChange = (): void => {
-		setIsChangingPassword(false);
-		setPasswordData({
-			current_password: "",
-			new_password: "",
-			confirm_new_password: ""
-		});
-		setPasswordErrors({});
-	};
-
-	const validatePasswordForm = (): boolean => {
-		const validation = UserService.validatePasswordUpdate(passwordData);
-		setPasswordErrors(validation.errors);
-		return validation.isValid;
-	};
-
-	const handlePasswordSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
-		if (!validatePasswordForm()) {
-			return;
-		}
-
-		try {
-			await UserService.updatePassword(passwordData);
-			setIsChangingPassword(false);
-			setPasswordData({
-				current_password: "",
-				new_password: "",
-				confirm_new_password: ""
-			});
-			showSuccess("Password updated successfully!");
-		} catch (err) {
-			showError(err instanceof Error ? err.message : "Failed to update password");
-		}
-	};
-
-	const togglePasswordVisibility = (field: "current" | "new" | "confirm"): void => {
-		setShowPasswords(prev => ({
-			...prev,
-			[field]: !prev[field]
-		}));
-	};
-
 	// Security section handlers
 	const handleSecurityUpdate = useCallback((): void => {
 		// Refresh user data when security status changes
 		void retryLoadProfile();
-	}, []);
+	}, [retryLoadProfile]);
 
 	const handleSecurityError = useCallback(
 		(error: string): void => {
@@ -449,162 +384,59 @@ const ProfilePage: React.FC = () => {
 					<AccountSecuritySection onSecurityUpdate={handleSecurityUpdate} onError={handleSecurityError} />
 
 					{/* Password Security Section */}
-					<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-						<div className="mb-6 flex items-center justify-between">
+					<div className="mb-8">
+						<div className="mb-6">
 							<h3 className="text-text-contrast text-xl font-semibold">Password & Security</h3>
-							{!isChangingPassword && (
-								<button
-									onClick={handleChangePassword}
-									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
-								>
-									<span>🔒</span>
-									Change Password
-								</button>
-							)}
+							<p className="text-text-primary mt-1 text-sm">
+								Manage your password with enhanced security verification
+							</p>
 						</div>
 
-						{isChangingPassword ? (
-							<form onSubmit={e => void handlePasswordSubmit(e)} className="space-y-6">
-								<div>
-									<label
-										htmlFor="current-password"
-										className="text-text-primary mb-2 block font-medium"
-									>
-										Current Password
-									</label>
-									<div className="relative">
-										<input
-											id="current-password"
-											type={showPasswords.current ? "text" : "password"}
-											value={passwordData.current_password}
-											onChange={e =>
-												setPasswordData({ ...passwordData, current_password: e.target.value })
-											}
-											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										/>
+						{!isChangingPassword ? (
+							<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+								<div className="space-y-4">
+									<div>
+										<div className="mb-1 block text-sm font-medium text-gray-500">Password</div>
+										<div className="flex items-center gap-4">
+											<span className="text-gray-400">••••••••••••</span>
+											<span className="text-text-primary text-sm">Last changed: Recent</span>
+										</div>
+									</div>
+
+									<div>
+										<div className="mb-1 block text-sm font-medium text-gray-500">
+											Security Status
+										</div>
+										<div className="flex items-center gap-2">
+											<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-sm font-medium text-green-800">
+												<span>🛡️</span>
+												Secure
+											</span>
+											<span className="text-text-primary text-sm">
+												Your account meets all security requirements
+											</span>
+										</div>
+									</div>
+
+									<div className="border-layout-background border-t pt-4">
 										<button
-											type="button"
-											onClick={() => togglePasswordVisibility("current")}
-											className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
+											onClick={() => setIsChangingPassword(true)}
+											className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
 										>
-											{showPasswords.current ? "🙈" : "👁️"}
+											<span>🔒</span>
+											Change Password
 										</button>
-									</div>
-									{passwordErrors.current_password && (
-										<span className="mt-1 block text-sm text-red-600">
-											{passwordErrors.current_password}
-										</span>
-									)}
-								</div>
-
-								<div>
-									<label htmlFor="new-password" className="text-text-primary mb-2 block font-medium">
-										New Password
-									</label>
-									<div className="relative">
-										<input
-											id="new-password"
-											type={showPasswords.new ? "text" : "password"}
-											value={passwordData.new_password}
-											onChange={e =>
-												setPasswordData({ ...passwordData, new_password: e.target.value })
-											}
-											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										/>
-										<button
-											type="button"
-											onClick={() => togglePasswordVisibility("new")}
-											className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
-										>
-											{showPasswords.new ? "🙈" : "👁️"}
-										</button>
-									</div>
-									{passwordErrors.new_password && (
-										<span className="mt-1 block text-sm text-red-600">
-											{passwordErrors.new_password}
-										</span>
-									)}
-									<PasswordRequirements
-										password={passwordData.new_password}
-										confirmPassword={passwordData.confirm_new_password}
-										showMatchRequirement={true}
-									/>
-								</div>
-
-								<div>
-									<label
-										htmlFor="confirm-password"
-										className="text-text-primary mb-2 block font-medium"
-									>
-										Confirm New Password
-									</label>
-									<div className="relative">
-										<input
-											id="confirm-password"
-											type={showPasswords.confirm ? "text" : "password"}
-											value={passwordData.confirm_new_password}
-											onChange={e =>
-												setPasswordData({
-													...passwordData,
-													confirm_new_password: e.target.value
-												})
-											}
-											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 pr-12 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
-										/>
-										<button
-											type="button"
-											onClick={() => togglePasswordVisibility("confirm")}
-											className="hover:text-text-primary absolute top-1/2 right-3 -translate-y-1/2 transform text-gray-500"
-										>
-											{showPasswords.confirm ? "🙈" : "👁️"}
-										</button>
-									</div>
-									{passwordErrors.confirm_new_password && (
-										<span className="mt-1 block text-sm text-red-600">
-											{passwordErrors.confirm_new_password}
-										</span>
-									)}
-								</div>
-
-								<div className="border-layout-background flex justify-end gap-4 border-t pt-4">
-									<button
-										type="button"
-										onClick={handleCancelPasswordChange}
-										className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
-									>
-										Cancel
-									</button>
-									<button
-										type="submit"
-										className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
-									>
-										Update Password
-									</button>
-								</div>
-							</form>
-						) : (
-							<div className="space-y-4">
-								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Password</div>
-									<div className="flex items-center gap-4">
-										<span className="text-gray-400">••••••••••••</span>
-										<span className="text-text-primary text-sm">Last changed: Recent</span>
-									</div>
-								</div>
-
-								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Security Status</div>
-									<div className="flex items-center gap-2">
-										<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-sm font-medium text-green-800">
-											<span>🛡️</span>
-											Secure
-										</span>
-										<span className="text-text-primary text-sm">
-											Your account meets all security requirements
-										</span>
 									</div>
 								</div>
 							</div>
+						) : (
+							<PasswordChangeForm
+								onSuccess={() => {
+									setIsChangingPassword(false);
+									showSuccess("Password changed successfully! Your account is now more secure.");
+								}}
+								onCancel={() => setIsChangingPassword(false)}
+							/>
 						)}
 					</div>
 				</div>

@@ -71,7 +71,7 @@ export const useMicrosoftOAuth = ({ onSuccess, onError }: UseMicrosoftOAuthProps
 			setError(errorMessage);
 			onError?.(errorMessage);
 		}
-	}, [clientId]);
+	}, [clientId, onError]);
 
 	// Initialize Microsoft OAuth when component mounts
 	useEffect(() => {
@@ -96,7 +96,7 @@ export const useMicrosoftOAuth = ({ onSuccess, onError }: UseMicrosoftOAuthProps
 
 		// For mock implementation, initialize immediately
 		initializeMicrosoftOAuth();
-	}, [clientId]);
+	}, [clientId, onError]);
 
 	const triggerOAuth = useCallback(() => {
 		// Clear any previous errors before starting

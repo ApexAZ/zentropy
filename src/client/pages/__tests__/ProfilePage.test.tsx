@@ -477,7 +477,7 @@ describe("ProfilePage", () => {
 		expect(screen.getByText("My Profile")).toBeInTheDocument();
 	});
 
-	it("successfully updates password with valid data", async () => {
+	it("shows password change functionality in Security tab", async () => {
 		testEnv = renderWithFullEnvironment(<ProfilePage />, {
 			providers: { toast: true },
 			mocks: {
@@ -486,9 +486,6 @@ describe("ProfilePage", () => {
 					getAccountSecurity: vi.fn().mockResolvedValue({
 						email_auth_linked: true,
 						google_auth_linked: false
-					}),
-					updatePassword: vi.fn().mockResolvedValue({
-						message: "Password updated successfully"
 					})
 				}),
 				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
@@ -506,186 +503,9 @@ describe("ProfilePage", () => {
 			await Promise.resolve();
 		});
 
+		// Verify the password security section and change password button are present
+		expect(screen.getByText("Password & Security")).toBeInTheDocument();
 		expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-		// Open password change form with proper act() wrapping
-		await act(async () => {
-			const changePasswordButton = screen.getByText("Change Password");
-			fastUserActions.click(changePasswordButton);
-			await Promise.resolve();
-		});
-
-		// Fill with valid data
-		fastUserActions.type(screen.getByLabelText("Current Password"), "current123");
-		fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
-		fastUserActions.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
-
-		const submitButton = screen.getByText("Update Password");
-		fastUserActions.click(submitButton);
-
-		await fastStateSync();
-
-		expect(screen.getByText("Password updated successfully!")).toBeInTheDocument();
-
-		// Should exit password change mode
-		expect(screen.queryByLabelText("Current Password")).not.toBeInTheDocument();
-	});
-
-	it("handles password update API errors", async () => {
-		// Override the updatePassword mock to return an error
-		(UserService.updatePassword as any).mockRejectedValue(new Error("Current password is incorrect"));
-
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
-			providers: { toast: true }
-		});
-
-		await fastStateSync();
-
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
-
-		// Navigate to Security tab with proper act() wrapping
-		await act(async () => {
-			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fastUserActions.click(securityTab);
-			await Promise.resolve();
-		});
-
-		expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-		// Open password change form and submit with proper act() wrapping
-		await act(async () => {
-			const changePasswordButton = screen.getByText("Change Password");
-			fastUserActions.click(changePasswordButton);
-			await Promise.resolve();
-		});
-
-		fastUserActions.type(screen.getByLabelText("Current Password"), "wrong123");
-		fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
-		fastUserActions.type(screen.getByLabelText("Confirm New Password"), "NewStrongPass123!");
-		fastUserActions.click(screen.getByText("Update Password"));
-
-		await fastStateSync();
-
-		expect(screen.getByText("Current password is incorrect")).toBeInTheDocument();
-	});
-
-	it("cancels password change and clears form", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
-			providers: { toast: true },
-			mocks: {
-				userService: UserServiceScenarios.standardUser(),
-				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
-			}
-		});
-
-		await fastStateSync();
-
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
-
-		// Navigate to Security tab with proper act() wrapping
-		await act(async () => {
-			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fastUserActions.click(securityTab);
-			await Promise.resolve();
-		});
-
-		expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-		// Open password change form with proper act() wrapping
-		await act(async () => {
-			const changePasswordButton = screen.getByText("Change Password");
-			fastUserActions.click(changePasswordButton);
-			await Promise.resolve();
-		});
-
-		// Fill form
-		await act(async () => {
-			fastUserActions.type(screen.getByLabelText("Current Password"), "current123");
-			fastUserActions.type(screen.getByLabelText("New Password"), "NewStrongPass123!");
-		});
-
-		// Cancel
-		await act(async () => {
-			const cancelButton = screen.getByText("Cancel");
-			fastUserActions.click(cancelButton);
-		});
-
-		// Should exit password change mode
-		expect(screen.queryByLabelText("Current Password")).not.toBeInTheDocument();
-	});
-
-	it("toggles password visibility", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
-			providers: { toast: true },
-			mocks: {
-				userService: UserServiceScenarios.standardUser(),
-				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
-			}
-		});
-
-		await fastStateSync();
-
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
-
-		// Navigate to Security tab with proper act() wrapping
-		await act(async () => {
-			const securityTab = screen.getByRole("tab", { name: "Security" });
-			fastUserActions.click(securityTab);
-			await Promise.resolve();
-		});
-
-		expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-		// Open password change form with proper act() wrapping
-		await act(async () => {
-			const changePasswordButton = screen.getByText("Change Password");
-			fastUserActions.click(changePasswordButton);
-			await Promise.resolve();
-		});
-
-		const currentPasswordInput = screen.getByLabelText("Current Password") as HTMLInputElement;
-		const newPasswordInput = screen.getByLabelText("New Password") as HTMLInputElement;
-		const confirmPasswordInput = screen.getByLabelText("Confirm New Password") as HTMLInputElement;
-
-		// Initially passwords should be hidden
-		expect(currentPasswordInput.type).toBe("password");
-		expect(newPasswordInput.type).toBe("password");
-		expect(confirmPasswordInput.type).toBe("password");
-
-		// Toggle visibility - find by emoji
-		const eyeButtons = screen.getAllByText("👁️");
-		await act(async () => {
-			fastUserActions.click(eyeButtons[0]); // Current password
-			await Promise.resolve();
-		});
-		expect(currentPasswordInput.type).toBe("text");
-		expect(screen.getByText("🙈")).toBeInTheDocument();
-
-		await act(async () => {
-			fastUserActions.click(eyeButtons[1]); // New password
-			await Promise.resolve();
-		});
-		expect(newPasswordInput.type).toBe("text");
-
-		await act(async () => {
-			fastUserActions.click(eyeButtons[2]); // Confirm password
-			await Promise.resolve();
-		});
-		expect(confirmPasswordInput.type).toBe("text");
-	});
-
-	it("displays password requirements help text", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
-			providers: { toast: true },
-			mocks: {
-				userService: UserServiceScenarios.standardUser(),
-				oauthProviderService: OAuthProviderServiceScenarios.googleOnly()
-			}
-		});
-
-		await fastStateSync();
-
-		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
 	});
 
 	it("displays security status and account information", async () => {

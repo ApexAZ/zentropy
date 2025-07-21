@@ -71,7 +71,7 @@ export const useGitHubOAuth = ({ onSuccess, onError }: UseGitHubOAuthProps): Use
 			setError(errorMessage);
 			onError?.(errorMessage);
 		}
-	}, [clientId]);
+	}, [clientId, onError]);
 
 	// Initialize GitHub OAuth when component mounts
 	useEffect(() => {
@@ -96,7 +96,7 @@ export const useGitHubOAuth = ({ onSuccess, onError }: UseGitHubOAuthProps): Use
 
 		// For mock implementation, initialize immediately
 		initializeGitHubOAuth();
-	}, [clientId]);
+	}, [clientId, onError]);
 
 	const triggerOAuth = useCallback(() => {
 		// Clear any previous errors before starting
