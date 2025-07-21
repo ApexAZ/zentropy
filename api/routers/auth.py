@@ -21,6 +21,7 @@ from ..schemas import (
     SecurityCodeRequest,
     VerifySecurityCodeRequest,
     OperationTokenResponse,
+    ResetPasswordRequest,
 )
 from ..auth import (
     authenticate_user,
@@ -41,7 +42,8 @@ from ..google_oauth import (
     GoogleRateLimitError,
 )
 from .. import database
-from ..database import AuthProvider, Organization
+from ..database import AuthProvider, Organization, User
+from ..security import verify_operation_token
 from ..email_verification import (
     create_verification_code,
     send_verification_email,
@@ -705,3 +707,58 @@ def verify_security_code_endpoint(
     return OperationTokenResponse(
         operation_token=operation_token, expires_in=600  # 10 minutes
     )
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(
+    request: ResetPasswordRequest,
+    fastapi_request: Request,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Reset user password using operation token from email verification.
+
+    For unauthenticated users who forgot their password. Requires a valid
+    operation token obtained by verifying a security code sent to their email.
+    """
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Verify operation token
+    try:
+        email = verify_operation_token(request.operation_token, "password_reset")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    # Find user by email (case-insensitive)
+    user = db.query(User).filter(User.email.ilike(email)).first()
+
+    if not user:
+        # Don't reveal if email exists, return success anyway for security
+        return MessageResponse(message="Password reset successfully")
+
+    # Validate new password strength
+    try:
+        validate_password_strength(request.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Update password
+    user.password_hash = get_password_hash(request.new_password)
+
+    # Update the user's updated_at timestamp to indicate password change
+    user.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+
+    return MessageResponse(message="Password reset successfully")

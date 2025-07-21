@@ -293,6 +293,20 @@ class OperationTokenResponse(BaseModel):
     expires_in: int = Field(..., description="Token expiration time in seconds")
 
 
+class ResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=8, max_length=128)
+    operation_token: str = Field(..., min_length=1)
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "new_password": "NewSecurePassword123!",
+                "operation_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+            }
+        }
+    )
+
+
 # Generic response schemas
 class MessageResponse(BaseModel):
     message: str
