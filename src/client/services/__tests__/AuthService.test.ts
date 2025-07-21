@@ -382,6 +382,88 @@ describe("AuthService", () => {
 			await expect(AuthService.sendEmailVerification(testEmail)).rejects.toThrow("Network timeout");
 		});
 	});
+
+	describe("resetPassword", () => {
+		const newPassword = "NewSecurePass123!";
+		const operationToken = "valid-operation-token-123";
+
+		it("should reset password successfully with valid token", async () => {
+			const mockResponse = { message: "Password reset successfully" };
+
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: true,
+				json: () => Promise.resolve(mockResponse)
+			} as Response);
+
+			const result = await AuthService.resetPassword(newPassword, operationToken);
+
+			expect(result).toEqual({ message: "Password reset successfully" });
+
+			expect(fetch).toHaveBeenCalledWith("/api/v1/auth/reset-password", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					new_password: newPassword,
+					operation_token: operationToken
+				})
+			});
+		});
+
+		it("should handle invalid operation token error", async () => {
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: false,
+				status: 400,
+				json: () => Promise.resolve({ detail: "Invalid or expired reset token" })
+			} as Response);
+
+			await expect(AuthService.resetPassword(newPassword, operationToken)).rejects.toThrow(
+				"Invalid or expired reset token"
+			);
+		});
+
+		it("should handle password validation errors", async () => {
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: false,
+				status: 400,
+				json: () => Promise.resolve({ detail: "Password does not meet requirements" })
+			} as Response);
+
+			await expect(AuthService.resetPassword("weak", operationToken)).rejects.toThrow(
+				"Password does not meet requirements"
+			);
+		});
+
+		it("should handle password reset failure with fallback message", async () => {
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: false,
+				status: 500,
+				json: () => Promise.resolve({})
+			} as Response);
+
+			await expect(AuthService.resetPassword(newPassword, operationToken)).rejects.toThrow(
+				"Failed to reset password"
+			);
+		});
+
+		it("should handle network errors during password reset", async () => {
+			vi.mocked(fetch).mockRejectedValueOnce(new Error("Network connection failed"));
+
+			await expect(AuthService.resetPassword(newPassword, operationToken)).rejects.toThrow(
+				"Network connection failed"
+			);
+		});
+
+		it("should handle malformed JSON response", async () => {
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: false,
+				json: () => Promise.reject(new Error("Invalid JSON"))
+			} as Response);
+
+			await expect(AuthService.resetPassword(newPassword, operationToken)).rejects.toThrow("Invalid JSON");
+		});
+	});
 });
 
 describe("AuthService.validatePassword", () => {

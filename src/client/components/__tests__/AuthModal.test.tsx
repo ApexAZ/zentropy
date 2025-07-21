@@ -23,6 +23,17 @@ vi.mock("../../hooks/useGoogleOAuth", () => ({
 	useGoogleOAuth: vi.fn()
 }));
 
+// Mock ForgotPasswordFlow component
+vi.mock("../ForgotPasswordFlow", () => ({
+	ForgotPasswordFlow: ({ onComplete, onCancel }: any) => (
+		<div data-testid="forgot-password-flow">
+			<h3>Reset Your Password</h3>
+			<button onClick={onComplete}>Complete Reset</button>
+			<button onClick={onCancel}>Cancel Reset</button>
+		</div>
+	)
+}));
+
 describe("AuthModal", () => {
 	const mockAuth = {
 		isAuthenticated: false,
@@ -117,5 +128,88 @@ describe("AuthModal", () => {
 		await act(async () => {});
 
 		expect(screen.getByText("Incorrect email or password")).toBeInTheDocument();
+	});
+
+	describe("Forgot Password Flow", () => {
+		it("should show forgot password link in sign in mode", () => {
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+			expect(screen.getByText("Forgot your password?")).toBeInTheDocument();
+		});
+
+		it("should not show forgot password link in sign up mode", () => {
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signup" />);
+
+			expect(screen.queryByText("Forgot your password?")).not.toBeInTheDocument();
+		});
+
+		it("should navigate to forgot password flow when link is clicked", async () => {
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+			fireEvent.click(screen.getByText("Forgot your password?"));
+
+			await act(async () => {});
+
+			expect(screen.getByTestId("forgot-password-flow")).toBeInTheDocument();
+			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
+		});
+
+		it("should return to sign in mode when forgot password is cancelled", async () => {
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+			// Navigate to forgot password
+			fireEvent.click(screen.getByText("Forgot your password?"));
+			await act(async () => {});
+
+			// Cancel forgot password
+			fireEvent.click(screen.getByText("Cancel Reset"));
+			await act(async () => {});
+
+			// Should be back on sign in form
+			expect(screen.getByRole("heading", { name: "Sign In" })).toBeInTheDocument();
+			expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+			expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+		});
+
+		it("should return to sign in mode and show success message when password reset is completed", async () => {
+			const mockShowSuccess = vi.fn();
+			vi.doMock("../../contexts/ToastContext", () => ({
+				useToast: () => ({
+					showSuccess: mockShowSuccess,
+					showError: vi.fn(),
+					showInfo: vi.fn(),
+					showCriticalError: vi.fn()
+				})
+			}));
+
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+			// Navigate to forgot password
+			fireEvent.click(screen.getByText("Forgot your password?"));
+			await act(async () => {});
+
+			// Complete password reset
+			fireEvent.click(screen.getByText("Complete Reset"));
+			await act(async () => {});
+
+			// Should be back on sign in form
+			expect(screen.getByRole("heading", { name: "Sign In" })).toBeInTheDocument();
+			expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+			expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+		});
+
+		it("should hide other UI elements when in forgot password mode", async () => {
+			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
+
+			// Navigate to forgot password
+			fireEvent.click(screen.getByText("Forgot your password?"));
+			await act(async () => {});
+
+			// Should not show regular sign in/up UI
+			expect(screen.queryByText("Welcome back to Zentropy")).not.toBeInTheDocument();
+			expect(screen.queryByText("Continue with Google")).not.toBeInTheDocument();
+			expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
+			expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+		});
 	});
 });

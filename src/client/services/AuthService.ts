@@ -276,4 +276,28 @@ export class AuthService {
 			user_id: data.user_id
 		};
 	}
+
+	/**
+	 * Reset password using operation token from verification
+	 */
+	static async resetPassword(newPassword: string, operationToken: string): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/auth/reset-password", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				new_password: newPassword,
+				operation_token: operationToken
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.detail || "Failed to reset password");
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Password reset successfully" };
+	}
 }
