@@ -9,6 +9,7 @@ from sqlalchemy import (
     text,
     Enum,
     CheckConstraint,
+    Index,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -926,6 +927,37 @@ class PasswordHistory(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="password_history")
+
+
+# Operation token tracking for single-use enforcement
+class UsedOperationToken(Base):
+    """
+    Track used operation tokens to prevent reuse attacks.
+
+    Operation tokens should only be used once for security. This model
+    stores the JTI (JWT ID) of tokens that have been consumed.
+    """
+
+    __tablename__ = "used_operation_tokens"
+
+    jti: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID as string
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    operation_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    used_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    # Relationships
+    user: Mapped["User"] = relationship("User")
+
+    __table_args__ = (
+        Index("idx_used_tokens_cleanup", "expires_at"),
+        Index("idx_used_tokens_lookup", "jti", "user_id"),
+    )
 
 
 # Session model removed - JWT authentication is used instead

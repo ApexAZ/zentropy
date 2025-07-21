@@ -16,6 +16,8 @@ import os
 import uuid
 import jwt
 from datetime import datetime, timedelta, timezone
+from sqlalchemy.orm import Session
+from typing import Optional
 
 
 class OperationTokenError(Exception):
@@ -38,6 +40,18 @@ class ExpiredTokenError(OperationTokenError):
 
 class InvalidOperationError(OperationTokenError):
     """Raised when token operation type doesn't match expected."""
+
+    pass
+
+
+class TokenAlreadyUsedError(OperationTokenError):
+    """Raised when trying to use a token that has already been consumed."""
+
+    pass
+
+
+class TokenUserMismatchError(OperationTokenError):
+    """Raised when token email doesn't match the expected user."""
 
     pass
 
@@ -85,13 +99,21 @@ class OperationTokenManager:
 
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
-    def verify_token(self, token: str, expected_operation: str) -> str:
+    def verify_token(
+        self,
+        token: str,
+        expected_operation: str,
+        db: Optional[Session] = None,
+        user_id: Optional[str] = None,
+    ) -> str:
         """
         Verify an operation token and return the email if valid.
 
         Args:
             token: JWT token to verify
             expected_operation: Expected operation type
+            db: Database session for single-use token tracking (optional)
+            user_id: Expected user ID for cross-user prevention (optional)
 
         Returns:
             str: Email address if token is valid
@@ -100,9 +122,11 @@ class OperationTokenManager:
             InvalidTokenError: If token is malformed or has invalid signature
             ExpiredTokenError: If token has expired
             InvalidOperationError: If operation type doesn't match
+            TokenAlreadyUsedError: If token has already been used
+            TokenUserMismatchError: If token email doesn't match user
 
         Example:
-            email = manager.verify_token(token, "password_reset")
+            email = manager.verify_token(token, "password_reset", db, str(user.id))
         """
         try:
             payload = jwt.decode(
@@ -127,6 +151,68 @@ class OperationTokenManager:
         email = payload.get("email")
         if not email:
             raise InvalidTokenError("Token missing email claim")
+
+        jti = payload.get("jti")
+        if not jti:
+            raise InvalidTokenError("Token missing JTI claim")
+
+        # Enhanced security checks if database session is provided
+        if db is not None:
+            # Import here to avoid circular import
+            from api.database import UsedOperationToken, User
+
+            # Check if token has already been used (single-use enforcement)
+            used_token = (
+                db.query(UsedOperationToken)
+                .filter(UsedOperationToken.jti == jti)
+                .first()
+            )
+
+            if used_token:
+                raise TokenAlreadyUsedError("Operation token has already been used")
+
+            # Cross-user token prevention
+            if user_id:
+                # Convert string UUID to UUID object if needed
+                import uuid as uuid_module
+
+                try:
+                    user_id_uuid = uuid_module.UUID(user_id)
+                except ValueError:
+                    raise InvalidTokenError("Invalid user ID format")
+
+                # Find the user by ID to get their email
+                user = db.query(User).filter(User.id == user_id_uuid).first()
+                if user and user.email.lower() != email.lower():
+                    raise TokenUserMismatchError(
+                        f"Token email '{email}' does not match user email "
+                        f"'{user.email}'"
+                    )
+
+            # Mark token as used to prevent reuse
+            expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
+            used_token_record = UsedOperationToken(
+                jti=jti,
+                user_id=user_id if user_id else None,
+                operation_type=token_operation,
+                email=email,
+                used_at=datetime.now(timezone.utc),
+                expires_at=expires_at,
+            )
+
+            # Set the user_id appropriately - only add record if we have a valid user
+            if user_id:
+                used_token_record.user_id = user_id_uuid
+                db.add(used_token_record)
+                db.commit()
+            else:
+                # For unauthenticated operations, try to find user by email
+                user = db.query(User).filter(User.email.ilike(email)).first()
+                if user:
+                    used_token_record.user_id = user.id
+                    db.add(used_token_record)
+                    db.commit()
+                # If no user found, don't track the token (for non-existent users)
 
         return email
 
@@ -184,6 +270,13 @@ def generate_operation_token(email: str, operation_type: str) -> str:
     return get_operation_token_manager().generate_token(email, operation_type)
 
 
-def verify_operation_token(token: str, expected_operation: str) -> str:
-    """Convenience function to verify an operation token."""
-    return get_operation_token_manager().verify_token(token, expected_operation)
+def verify_operation_token(
+    token: str,
+    expected_operation: str,
+    db: Optional[Session] = None,
+    user_id: Optional[str] = None,
+) -> str:
+    """Convenience function to verify an operation token with enhanced security."""
+    return get_operation_token_manager().verify_token(
+        token, expected_operation, db, user_id
+    )

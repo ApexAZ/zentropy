@@ -11,6 +11,8 @@ from ..security import (
     InvalidTokenError,
     ExpiredTokenError,
     InvalidOperationError,
+    TokenAlreadyUsedError,
+    TokenUserMismatchError,
 )
 from ..schemas import (
     UserResponse,
@@ -273,17 +275,22 @@ def secure_change_password(
     client_ip = get_client_ip(request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
 
-    # Verify operation token for password_change operation
+    # Verify operation token with enhanced security (single-use + cross-user prevention)
     try:
         verified_email = verify_operation_token(
-            password_change.operation_token, "password_change"
+            password_change.operation_token, "password_change", db, str(current_user.id)
         )
     except ExpiredTokenError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Operation token has expired",
         )
-    except (InvalidTokenError, InvalidOperationError):
+    except (
+        InvalidTokenError,
+        InvalidOperationError,
+        TokenAlreadyUsedError,
+        TokenUserMismatchError,
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid operation token"
         )

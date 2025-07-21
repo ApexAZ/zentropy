@@ -374,8 +374,8 @@ class TestSecurePasswordChangeWorkflow:
         assert verify_password(new_password, current_user.password_hash)
         assert not verify_password(current_password, current_user.password_hash)
 
-    def test_workflow_token_reuse_within_validity_period(self, client: TestClient, db: Session, current_user: User, test_rate_limits, auto_clean_mailpit):
-        """Test that operation tokens can be reused within their validity period (JWT design)."""
+    def test_workflow_token_single_use_enforcement(self, client: TestClient, db: Session, current_user: User, test_rate_limits, auto_clean_mailpit):
+        """Test that operation tokens are single-use only (enhanced security)."""
         # Arrange: Complete workflow to get an operation token
         current_password = "CurrentPassword123!"
         current_user.password_hash = get_password_hash(current_password)
@@ -411,20 +411,21 @@ class TestSecurePasswordChangeWorkflow:
         first_response = client.post("/api/v1/users/me/secure-change-password", json=change_request, headers=headers)
         assert first_response.status_code == 200
         
-        # Act: Try to use the same token again with updated current password
+        # Act: Try to use the same token again (should fail due to single-use enforcement)
         change_request["new_password"] = "SecondNewPassword123!"
         change_request["current_password"] = "FirstNewPassword123!"  # Updated current password
         
         second_response = client.post("/api/v1/users/me/secure-change-password", json=change_request, headers=headers)
         
-        # Assert: Second use should succeed (JWT tokens can be reused within validity period)
-        assert second_response.status_code == 200
-        assert "Password changed successfully" in second_response.json()["message"]
+        # Assert: Second use should fail (single-use token enforcement)
+        assert second_response.status_code == 400
+        assert "Invalid operation token" in second_response.json()["detail"]
         
-        # Verify password was changed again
+        # Verify password was only changed once (first change succeeded)
         db.refresh(current_user)
-        assert verify_password("SecondNewPassword123!", current_user.password_hash)
-        assert not verify_password("FirstNewPassword123!", current_user.password_hash)
+        assert verify_password("FirstNewPassword123!", current_user.password_hash)
+        assert not verify_password("SecondNewPassword123!", current_user.password_hash)
+        assert not verify_password(current_password, current_user.password_hash)
 
 
 @patch.dict(os.environ, {'SECRET_KEY': 'test-secret-key-for-secure-password-change'})

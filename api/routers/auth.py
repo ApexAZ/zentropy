@@ -727,10 +727,44 @@ def reset_password(
     client_ip = get_client_ip(fastapi_request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
 
-    # Verify operation token
+    # Find user by email first for enhanced security checks
+    email_candidate = None
     try:
-        email = verify_operation_token(request.operation_token, "password_reset")
+        # First do basic token validation to get email
+        from api.security import get_operation_token_manager
+
+        token_info = get_operation_token_manager().get_token_info(
+            request.operation_token
+        )
+        email_candidate = token_info.get("email")
     except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    if not email_candidate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    # Find user by email (case-insensitive)
+    user = db.query(User).filter(User.email.ilike(email_candidate)).first()
+
+    # Verify operation token with enhanced security (single-use + cross-user prevention)
+    try:
+        email = verify_operation_token(
+            request.operation_token,
+            "password_reset",
+            db,
+            str(user.id) if user else None,
+        )
+    except Exception as e:
+        # Log the specific error for debugging while returning generic message
+        import logging
+
+        logging.warning(f"Password reset token verification failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",
@@ -741,9 +775,6 @@ def reset_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired reset token",
         )
-
-    # Find user by email (case-insensitive)
-    user = db.query(User).filter(User.email.ilike(email)).first()
 
     if not user:
         # Don't reveal if email exists, return success anyway for security
@@ -780,10 +811,44 @@ def recover_username(
     client_ip = get_client_ip(fastapi_request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
 
-    # Verify operation token
+    # Find user by email first for enhanced security checks
+    email_candidate = None
     try:
-        email = verify_operation_token(request.operation_token, "username_recovery")
+        # First do basic token validation to get email
+        from api.security import get_operation_token_manager
+
+        token_info = get_operation_token_manager().get_token_info(
+            request.operation_token
+        )
+        email_candidate = token_info.get("email")
     except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token",
+        )
+
+    if not email_candidate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired token",
+        )
+
+    # Find user by email (case-insensitive)
+    user = db.query(User).filter(User.email.ilike(email_candidate)).first()
+
+    # Verify operation token with enhanced security (single-use + cross-user prevention)
+    try:
+        email = verify_operation_token(
+            request.operation_token,
+            "username_recovery",
+            db,
+            str(user.id) if user else None,
+        )
+    except Exception as e:
+        # Log the specific error for debugging while returning generic message
+        import logging
+
+        logging.warning(f"Username recovery token verification failed: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired token",
@@ -794,9 +859,6 @@ def recover_username(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired token",
         )
-
-    # Find user by email (case-insensitive)
-    user = db.query(User).filter(User.email.ilike(email)).first()
 
     if user:
         # Send username via email
