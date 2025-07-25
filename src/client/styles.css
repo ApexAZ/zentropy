@@ -20,26 +20,42 @@
 	--radius-xl: 0.75rem;   /* 12px - large containers */
 	
 	/* Semantic color system - Tailwind v4 format */
-	--color-layout-background: #F0F0F0;      /* Cool light gray - page backgrounds, borders, sections */
-	--color-content-background: #FFFFFF;     /* White - form containers, input fields */
-	--color-interactive: #6A8BA7;            /* Steel blue - buttons, links, focus states */
-	--color-interactive-hover: #B8D4F0;      /* Pastel blue - hover feedback */
-	--color-text-primary: #4A4A4A;           /* Dark gray - headings, body text, labels */
-	--color-text-contrast: #000000;          /* Black - high contrast when needed */
+	/* Original cool color scheme - commented for potential revert */
+	/* --color-layout-background: #F0F0F0;      Cool light gray - page backgrounds, borders, sections */
+	/* --color-content-background: #FFFFFF;     White - form containers, input fields */
+	/* --color-interactive: #6A8BA7;            Steel blue - buttons, links, focus states */
+	/* --color-interactive-hover: #B8D4F0;      Pastel blue - hover feedback */
+	/* --color-text-primary: #4A4A4A;           Dark gray - headings, body text, labels */
+	/* --color-text-contrast: #000000;          Black - high contrast when needed */
 	
-	/* Semantic state colors */
-	--color-error: #DC2626;                  /* Red - error text, required asterisks, failed validation */
-	--color-error-background: #FEF2F2;       /* Light red - error message backgrounds */
-	--color-error-border: #FECACA;           /* Red border - error containers */
-	--color-success: #16A34A;                /* Green - success text, valid states */
-	--color-success-background: #F0FDF4;     /* Light green - success message backgrounds */
-	--color-success-border: #BBF7D0;         /* Green border - success containers */
-	--color-warning: #D97706;                /* Orange/yellow - warning text */
-	--color-warning-background: #FFFBEB;     /* Light yellow - warning backgrounds */
-	--color-warning-border: #FED7AA;         /* Yellow border - warning containers */
-	--color-neutral: #6B7280;                /* Gray - loading states, disabled elements */
-	--color-neutral-background: #F9FAFB;     /* Light gray - subtle backgrounds */
-	--color-neutral-border: #D1D5DB;         /* Gray border - neutral containers, loading spinners */
+	/* Core UI Colors - flow-inspired pastel palette */
+	--color-layout-background: #F0F4FF;      /* Soft lavender mist - calming page backgrounds, airy feeling */
+	--color-content-background: #FEFEFF;     /* Pure white with hint of cool - clean forms, crisp inputs */
+	--color-interactive: #6B8DD6;            /* Soft cornflower blue - buttons, links, flow state focus */
+	--color-interactive-hover: #A3C1F0;      /* Light sky blue - brighter blue variation with better contrast */
+	--color-text-primary: #2D3748;           /* Cool charcoal - crisp readability with modern feel */
+	--color-text-contrast: #1A202C;          /* Deep slate - strong contrast for accessibility */
+	
+	/* State Colors - flow-harmonized pastels */
+	--color-error: #D97B85;                  /* Soft coral pink - error text, gentle but clear warnings */
+	--color-error-background: #FDF2F3;       /* Pale rose - error message backgrounds */
+	--color-error-border: #F0D4D7;           /* Soft pink border - error containers */
+	--color-success: #66C2A5;                /* Soft teal mint - success text, fresh validation */
+	--color-success-background: #F0FDFA;     /* Pale mint - success message backgrounds */
+	--color-success-border: #C1F0E6;         /* Light teal border - success containers */
+	--color-warning: #E8B855;                /* Soft golden yellow - warning text, warm alerting */
+	--color-warning-background: #FFFCF2;     /* Pale cream - warning backgrounds */
+	--color-warning-border: #F5E6C1;         /* Light gold border - warning containers */
+	--color-neutral: #9CA3AF;                /* Cool gray - loading states, disabled elements */
+	--color-neutral-background: #F8FAFC;     /* Soft blue-white - subtle backgrounds */
+	--color-neutral-border: #E5E7EB;         /* Light gray border - neutral containers, loading spinners */
+
+	/* Icon Colors - semantic category colors */
+	--color-icon-projects: #8B5FBF;          /* Soft purple - projects, planning, organization */
+	--color-icon-teams: #66C2A5;             /* Soft teal - teams, collaboration, social */
+	--color-icon-calendar: #E8B855;          /* Soft golden - calendar, time, scheduling */
+	--color-icon-dashboard: #6B8DD6;         /* Soft blue - dashboard, analytics, overview */
+	--color-icon-settings: #9CA3AF;          /* Neutral gray - settings, configuration */
 	
 	/* Semantic typography system - purpose-driven naming */
 
@@ -156,4 +172,25 @@ body {
 
 .font-code {
 	@apply font-mono;
+}
+
+/* Semantic icon color utility classes */
+.text-icon-projects {
+	color: var(--color-icon-projects);
+}
+
+.text-icon-teams {
+	color: var(--color-icon-teams);
+}
+
+.text-icon-calendar {
+	color: var(--color-icon-calendar);
+}
+
+.text-icon-dashboard {
+	color: var(--color-icon-dashboard);
+}
+
+.text-icon-settings {
+	color: var(--color-icon-settings);
 }

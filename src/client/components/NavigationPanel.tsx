@@ -154,78 +154,103 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 						className="border-layout-background bg-content-background visible fixed top-0 right-0 z-[1000] h-screen w-80 translate-x-0 overflow-y-auto border-l opacity-100 shadow-lg transition-all duration-[600ms] ease-out"
 						role="menu"
 					>
-						<div className="border-layout-background bg-layout-background flex items-center gap-3 border-b p-8">
-							<div className="bg-layout-background text-interactive flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full">
-								<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-									<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-								</svg>
-							</div>
-							<div className="min-w-0 flex-grow">
-								{auth.isAuthenticated ? (
-									<>
-										<div className="text-text-contrast text-sm font-semibold">
-											{auth.user?.name}
+						<div className="border-layout-background bg-layout-background border-b p-8">
+							{auth.isAuthenticated ? (
+								<div className="group relative">
+									<div
+										className="flex w-full transform cursor-pointer items-center gap-3 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0.5"
+										onClick={() => handleMenuItemClick("profile")}
+										role="button"
+										tabIndex={0}
+										aria-label="Go to profile"
+										onKeyDown={e => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												handleMenuItemClick("profile");
+											}
+										}}
+									>
+										<div className="bg-layout-background flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full">
+											<svg
+												className="text-interactive group-hover:text-interactive-hover transition-colors duration-200"
+												width="30"
+												height="30"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+											</svg>
 										</div>
-										<div className="text-text-primary mt-0.5 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
-											{auth.user?.email}
-										</div>
-									</>
-								) : (
-									<div className="-ml-3 flex items-center gap-1">
-										{pendingVerification ? (
-											<div className="text-warning w-full text-center text-sm font-medium">
-												Please verify your email
+										<div className="min-w-0 flex-grow select-none">
+											<div className="text-text-contrast text-sm font-semibold">
+												{auth.user?.name}
 											</div>
-										) : (
-											<>
-												<button
-													className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-													onClick={handleShowSignIn}
-													aria-label="Sign in"
-												>
-													<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-														<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-													</svg>
-													Sign in
-												</button>
-												<button
-													className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
-													onClick={handleShowRegistration}
-													aria-label="Register"
-												>
-													<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-														<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-													</svg>
-													Register
-												</button>
-											</>
-										)}
+											<div className="text-text-primary mt-0.5 overflow-hidden text-xs text-ellipsis whitespace-nowrap">
+												{auth.user?.email}
+											</div>
+										</div>
 									</div>
-								)}
-							</div>
+									<div className="bg-neutral pointer-events-none absolute -top-8 left-1/2 z-50 -translate-x-1/2 transform rounded px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+										Profile
+									</div>
+								</div>
+							) : (
+								<div className="flex items-center gap-3">
+									<div className="bg-layout-background text-interactive flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full">
+										<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+											<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+										</svg>
+									</div>
+									<div className="min-w-0 flex-grow">
+										<div className="-ml-3 flex items-center gap-1">
+											{pendingVerification ? (
+												<div className="text-warning w-full text-center text-sm font-medium">
+													Please verify your email
+												</div>
+											) : (
+												<>
+													<button
+														className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
+														onClick={handleShowSignIn}
+														aria-label="Sign in"
+													>
+														<svg
+															width="13"
+															height="13"
+															viewBox="0 0 24 24"
+															fill="currentColor"
+														>
+															<path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
+														</svg>
+														Sign in
+													</button>
+													<button
+														className="text-interactive hover:text-interactive-hover focus:outline-interactive flex items-center gap-1.5 border-none bg-transparent px-1.5 py-1 text-sm font-medium transition-colors duration-200 focus:outline-2 focus:outline-offset-2"
+														onClick={handleShowRegistration}
+														aria-label="Register"
+													>
+														<svg
+															width="13"
+															height="13"
+															viewBox="0 0 24 24"
+															fill="currentColor"
+														>
+															<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+														</svg>
+														Register
+													</button>
+												</>
+											)}
+										</div>
+									</div>
+								</div>
+							)}
 						</div>
 
 						<div className="bg-layout-background my-2 h-px"></div>
 
 						{auth.isAuthenticated && (
 							<>
-								<button
-									className="text-text-primary hover:bg-interactive-hover hover:text-text-primary focus:bg-interactive-hover flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-4 px-8 text-sm no-underline transition-colors duration-200 focus:outline-none"
-									role="menuitem"
-									onClick={() => handleMenuItemClick("profile")}
-								>
-									<svg
-										className="text-interactive flex-shrink-0"
-										width="18"
-										height="18"
-										viewBox="0 0 24 24"
-										fill="currentColor"
-									>
-										<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-									</svg>
-									<span>My Profile</span>
-								</button>
-
 								{auth.user?.has_projects_access && (
 									<>
 										{/* Projects Section - Expandable */}
@@ -237,13 +262,13 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 										>
 											<div className="flex items-center gap-3">
 												<svg
-													className="text-interactive flex-shrink-0"
+													className="text-icon-projects flex-shrink-0"
 													width="18"
 													height="18"
 													viewBox="0 0 24 24"
 													fill="currentColor"
 												>
-													<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+													<path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14l-5-5 1.41-1.41L14 14.17l3.59-3.58L19 12l-5 5z" />
 												</svg>
 												<span>Projects</span>
 											</div>
@@ -269,7 +294,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 													onClick={() => handleMenuItemClick("teams")}
 												>
 													<svg
-														className="text-interactive flex-shrink-0"
+														className="text-icon-projects flex-shrink-0"
 														width="16"
 														height="16"
 														viewBox="0 0 24 24"
@@ -286,7 +311,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 													onClick={() => handleMenuItemClick("teams")}
 												>
 													<svg
-														className="text-interactive flex-shrink-0"
+														className="text-icon-projects flex-shrink-0"
 														width="16"
 														height="16"
 														viewBox="0 0 24 24"
@@ -305,15 +330,15 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 											onClick={() => handleMenuItemClick("teams")}
 										>
 											<svg
-												className="text-text-primary flex-shrink-0"
+												className="text-icon-teams flex-shrink-0"
 												width="18"
 												height="18"
 												viewBox="0 0 24 24"
 												fill="currentColor"
 											>
-												<path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-4h3v4h2v-7H7v2H4V8h3V7H2v11h2zm11-1c-1.11 0-2-.89-2-2s.89-2 2-2 2 .89 2 2-.89 2-2 2zm-1-9v3h2v-3h-2z" />
+												<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
 											</svg>
-											<span>My Teams</span>
+											<span>Teams</span>
 										</button>
 
 										<button
@@ -322,7 +347,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 											onClick={() => handleMenuItemClick("calendar")}
 										>
 											<svg
-												className="text-text-primary flex-shrink-0"
+												className="text-icon-calendar flex-shrink-0"
 												width="18"
 												height="18"
 												viewBox="0 0 24 24"
@@ -339,13 +364,13 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 											onClick={() => handleMenuItemClick("dashboard")}
 										>
 											<svg
-												className="text-text-primary flex-shrink-0"
+												className="text-icon-dashboard flex-shrink-0"
 												width="18"
 												height="18"
 												viewBox="0 0 24 24"
 												fill="currentColor"
 											>
-												<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+												<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
 											</svg>
 											<span>Dashboard</span>
 										</button>
@@ -356,7 +381,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 											onClick={() => handleMenuItemClick("team-configuration")}
 										>
 											<svg
-												className="text-text-primary flex-shrink-0"
+												className="text-icon-teams flex-shrink-0"
 												width="18"
 												height="18"
 												viewBox="0 0 24 24"
