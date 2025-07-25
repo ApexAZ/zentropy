@@ -340,7 +340,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 								{currentOrganization && currentOrganization.scope !== "personal" && (
 									<button
 										onClick={() => setShowLeaveConfirmation(true)}
-										className="border-layout-background flex-1 rounded border px-3 py-2 text-xs text-red-600 transition-colors hover:bg-red-50"
+										className="border-layout-background text-error hover:bg-error-background flex-1 rounded border px-3 py-2 text-xs transition-colors"
 										aria-label="Leave Organization"
 									>
 										Leave Org
@@ -544,7 +544,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 
 								<button
 									onClick={() => void handleLogout()}
-									className="flex w-full items-center gap-3 rounded px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+									className="text-error hover:bg-error-background flex w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors"
 									role="menuitem"
 								>
 									<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -591,7 +591,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
 						<div className="flex gap-3">
 							<button
 								onClick={handleLeaveOrganization}
-								className="flex-1 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+								className="bg-error hover:bg-error flex-1 rounded px-4 py-2 text-white hover:opacity-90"
 								aria-label="Confirm"
 							>
 								Leave

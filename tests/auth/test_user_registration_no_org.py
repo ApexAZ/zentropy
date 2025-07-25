@@ -534,8 +534,8 @@ class TestUserOrganizationUtilityMethods:
         
         assert user.is_organization_assigned() is True
     
-    def test_can_create_personal_projects_active_user(self, db):
-        """Test can_create_personal_projects for active user with projects access."""
+    def test_can_create_individual_projects_active_user(self, db):
+        """Test can_create_individual_projects for active user with projects access."""
         user = User(
             email="personal-projects@example.com",
             first_name="PersonalProjects",
@@ -552,10 +552,10 @@ class TestUserOrganizationUtilityMethods:
         db.commit()
         db.refresh(user)
         
-        assert user.can_create_personal_projects() is True
+        assert user.can_create_individual_projects() is True
     
-    def test_can_create_personal_projects_inactive_user(self, db):
-        """Test can_create_personal_projects for inactive user."""
+    def test_can_create_individual_projects_inactive_user(self, db):
+        """Test can_create_individual_projects for inactive user."""
         user = User(
             email="inactive-projects@example.com",
             first_name="InactiveProjects",
@@ -572,10 +572,10 @@ class TestUserOrganizationUtilityMethods:
         db.commit()
         db.refresh(user)
         
-        assert user.can_create_personal_projects() is False
+        assert user.can_create_individual_projects() is False
     
-    def test_can_create_personal_projects_no_access(self, db):
-        """Test can_create_personal_projects for user without projects access."""
+    def test_can_create_individual_projects_no_access(self, db):
+        """Test can_create_individual_projects for user without projects access."""
         user = User(
             email="no-access-projects@example.com",
             first_name="NoAccessProjects",
@@ -592,7 +592,7 @@ class TestUserOrganizationUtilityMethods:
         db.commit()
         db.refresh(user)
         
-        assert user.can_create_personal_projects() is False
+        assert user.can_create_individual_projects() is False
     
     def test_get_organization_status_no_organization(self, db):
         """Test get_organization_status for user without organization."""
@@ -612,7 +612,7 @@ class TestUserOrganizationUtilityMethods:
         
         status = user.get_organization_status()
         assert "No organization" in status
-        assert "personal projects" in status
+        assert "individual projects" in status
     
     def test_get_organization_status_with_organization(self, db):
         """Test get_organization_status for user with organization."""

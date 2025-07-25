@@ -24,13 +24,13 @@ class TestOrganizationScope:
     
     def test_organization_scope_enum_values(self):
         """Test that OrganizationScope enum has correct values."""
-        assert OrganizationScope.PERSONAL.value == "personal"
+        assert OrganizationScope.INDIVIDUAL.value == "individual"
         assert OrganizationScope.SHARED.value == "shared"
         assert OrganizationScope.ENTERPRISE.value == "enterprise"
     
     def test_organization_scope_enum_from_string(self):
         """Test that OrganizationScope can be created from string values."""
-        assert OrganizationScope("personal") == OrganizationScope.PERSONAL
+        assert OrganizationScope("individual") == OrganizationScope.INDIVIDUAL
         assert OrganizationScope("shared") == OrganizationScope.SHARED
         assert OrganizationScope("enterprise") == OrganizationScope.ENTERPRISE
     
@@ -41,15 +41,15 @@ class TestOrganizationScope:
     
     def test_get_default_max_users(self):
         """Test that get_default_max_users returns correct defaults."""
-        assert OrganizationScope.get_default_max_users(OrganizationScope.PERSONAL) == 1
+        assert OrganizationScope.get_default_max_users(OrganizationScope.INDIVIDUAL) == 1
         assert OrganizationScope.get_default_max_users(OrganizationScope.SHARED) == 50
         assert OrganizationScope.get_default_max_users(OrganizationScope.ENTERPRISE) is None
     
-    def test_validate_max_users_personal(self):
-        """Test max_users validation for personal scope."""
-        assert OrganizationScope.validate_max_users(OrganizationScope.PERSONAL, 1) == True
-        assert OrganizationScope.validate_max_users(OrganizationScope.PERSONAL, 2) == False
-        assert OrganizationScope.validate_max_users(OrganizationScope.PERSONAL, None) == False
+    def test_validate_max_users_individual(self):
+        """Test max_users validation for individual scope."""
+        assert OrganizationScope.validate_max_users(OrganizationScope.INDIVIDUAL, 1) == True
+        assert OrganizationScope.validate_max_users(OrganizationScope.INDIVIDUAL, 2) == False
+        assert OrganizationScope.validate_max_users(OrganizationScope.INDIVIDUAL, None) == False
     
     def test_validate_max_users_shared(self):
         """Test max_users validation for shared scope."""
@@ -177,15 +177,15 @@ class TestOrganizationModel:
             db.add(invalid_enterprise)
             db.commit()
         
-        # Test that personal organizations with wrong max_users fail database constraint
+        # Test that individual organizations with wrong max_users fail database constraint
         with pytest.raises(Exception):  # Should raise IntegrityError due to constraint
-            invalid_personal = Organization(
+            invalid_individual = Organization(
                 name="Invalid Personal",
-                scope=OrganizationScope.PERSONAL,
-                max_users=5,  # This violates the personal_scope_single_user constraint
+                scope=OrganizationScope.INDIVIDUAL,
+                max_users=5,  # This violates the individual_scope_single_user constraint
                 created_by=user.id
             )
-            db.add(invalid_personal)
+            db.add(invalid_individual)
             db.commit()
         
         # Test that negative max_users fail database constraint
@@ -268,8 +268,8 @@ class TestOrganizationModel:
         assert found_org.name == "Example Corp"
         assert found_org.domain == "example.com"
     
-    def test_organization_scope_personal_for_individual_users(self, db, mailpit_disabled):
-        """Test that personal scope organizations work for individual users."""
+    def test_organization_scope_individual_for_individual_users(self, db, mailpit_disabled):
+        """Test that individual scope organizations work for individual users."""
         # Create a user to be the organization creator
         user = User(
             email="individual@example.com",
@@ -283,20 +283,20 @@ class TestOrganizationModel:
         db.commit()
         db.refresh(user)
         
-        # Create personal organization (for individual projects)
-        personal_org = Organization(
+        # Create individual organization (for individual projects)
+        individual_org = Organization(
             name="Jane Individual's Personal Workspace",
-            scope=OrganizationScope.PERSONAL,
+            scope=OrganizationScope.INDIVIDUAL,
             max_users=1,
             created_by=user.id
         )
-        db.add(personal_org)
+        db.add(individual_org)
         db.commit()
-        db.refresh(personal_org)
+        db.refresh(individual_org)
         
-        assert personal_org.scope == OrganizationScope.PERSONAL
-        assert personal_org.max_users == 1
-        assert personal_org.created_by == user.id
+        assert individual_org.scope == OrganizationScope.INDIVIDUAL
+        assert individual_org.max_users == 1
+        assert individual_org.created_by == user.id
     
     def test_organization_scope_enterprise_for_large_teams(self, db, mailpit_disabled):
         """Test that enterprise scope organizations work for large teams."""
@@ -349,13 +349,13 @@ class TestOrganizationValidation:
         db.refresh(user)
         
         # Test valid combinations
-        personal_org = Organization(
+        individual_org = Organization(
             name="Personal Workspace",
-            scope=OrganizationScope.PERSONAL,
+            scope=OrganizationScope.INDIVIDUAL,
             max_users=1,
             created_by=user.id
         )
-        assert personal_org.validate_scope_and_max_users() == []
+        assert individual_org.validate_scope_and_max_users() == []
         
         shared_org = Organization(
             name="Shared Workspace",
@@ -389,15 +389,15 @@ class TestOrganizationValidation:
         db.refresh(user)
         
         # Test invalid combinations
-        invalid_personal = Organization(
+        invalid_individual = Organization(
             name="Invalid Personal",
-            scope=OrganizationScope.PERSONAL,
+            scope=OrganizationScope.INDIVIDUAL,
             max_users=5,  # Should be 1
             created_by=user.id
         )
-        errors = invalid_personal.validate_scope_and_max_users()
+        errors = invalid_individual.validate_scope_and_max_users()
         assert len(errors) == 1
-        assert "Personal organizations must have exactly 1 max user" in errors[0]
+        assert "Individual organizations must have exactly 1 max user" in errors[0]
         
         invalid_enterprise = Organization(
             name="Invalid Enterprise",
@@ -413,8 +413,8 @@ class TestOrganizationValidation:
 class TestOrganizationFactoryMethods:
     """Test cases for organization factory methods."""
     
-    def test_create_personal_workspace(self, db, mailpit_disabled):
-        """Test creating a personal workspace."""
+    def test_create_individual_workspace(self, db, mailpit_disabled):
+        """Test creating a individual workspace."""
         # Create a user
         user = User(
             email="user@example.com",
@@ -428,14 +428,14 @@ class TestOrganizationFactoryMethods:
         db.commit()
         db.refresh(user)
         
-        # Create personal workspace
-        personal_org = Organization.create_personal_workspace(user.id, "Jane Doe")
+        # Create individual workspace
+        individual_org = Organization.create_individual_workspace(user.id, "Jane Doe")
         
-        assert personal_org.name == "Jane Doe's Personal Workspace"
-        assert personal_org.scope == OrganizationScope.PERSONAL
-        assert personal_org.max_users == 1
-        assert personal_org.created_by == user.id
-        assert personal_org.validate_scope_and_max_users() == []
+        assert individual_org.name == "Jane Doe's Individual Workspace"
+        assert individual_org.scope == OrganizationScope.INDIVIDUAL
+        assert individual_org.max_users == 1
+        assert individual_org.created_by == user.id
+        assert individual_org.validate_scope_and_max_users() == []
     
     def test_create_shared_workspace(self, db, mailpit_disabled):
         """Test creating a shared workspace."""

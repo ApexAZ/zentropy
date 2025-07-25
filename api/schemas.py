@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -17,6 +17,7 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
+    phone_number: Optional[str] = None
     role: UserRole = UserRole.BASIC_USER
     has_projects_access: bool = True
 
@@ -30,6 +31,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    phone_number: Optional[str] = None
     organization_id: Optional[UUID] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
@@ -368,24 +370,11 @@ class AccountSecurityResponse(BaseModel):
     google_email: Optional[str] = None
 
 
-class RecoverUsernameRequest(BaseModel):
-    operation_token: str = Field(
-        ..., min_length=1, description="Operation token from verified security code"
-    )
-
-    @field_validator("operation_token")
-    @classmethod
-    def validate_token_not_empty(cls, v):
-        if not v.strip():
-            raise ValueError("Operation token cannot be empty or whitespace")
-        return v
-
-
 # Project schemas
 class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
-    visibility: ProjectVisibility = ProjectVisibility.PERSONAL
+    visibility: ProjectVisibility = ProjectVisibility.INDIVIDUAL
     status: ProjectStatus = ProjectStatus.ACTIVE
 
 

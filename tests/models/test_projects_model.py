@@ -68,10 +68,10 @@ class TestProjectModel:
         assert project.updated_at is not None
 
     def test_project_model_without_organization(self, db):
-        """Test creating a personal project without organization."""
+        """Test creating a individual project without organization."""
         # Create user without organization
         user = User(
-            email="personal-project@example.com",
+            email="individual-project@example.com",
             first_name="Personal",
             last_name="User",
             password_hash="hashed_password",
@@ -81,13 +81,13 @@ class TestProjectModel:
         db.commit()
         db.refresh(user)
 
-        # Create personal project
+        # Create individual project
         project = Project(
             name="Personal Project",
-            description="A personal project",
+            description="A individual project",
             organization_id=None,
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         
@@ -95,11 +95,11 @@ class TestProjectModel:
         db.commit()
         db.refresh(project)
 
-        # Verify personal project was created correctly
+        # Verify individual project was created correctly
         assert project.name == "Personal Project"
         assert project.organization_id is None
         assert project.created_by == user.id
-        assert project.visibility == ProjectVisibility.PERSONAL
+        assert project.visibility == ProjectVisibility.INDIVIDUAL
         assert project.status == ProjectStatus.ACTIVE
 
     def test_project_organization_relationship(self, db):
@@ -159,7 +159,7 @@ class TestProjectModel:
         project = Project(
             name="Creator Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         
         db.add(project)
@@ -184,20 +184,20 @@ class TestProjectModel:
         db.commit()
         db.refresh(user)
 
-        # Test personal project visibility
-        personal_project = Project(
+        # Test individual project visibility
+        individual_project = Project(
             name="Personal Visibility Test",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             organization_id=None
         )
-        db.add(personal_project)
+        db.add(individual_project)
         db.commit()
-        db.refresh(personal_project)
+        db.refresh(individual_project)
 
-        # Verify personal project constraints
-        assert personal_project.visibility == ProjectVisibility.PERSONAL
-        assert personal_project.organization_id is None
+        # Verify individual project constraints
+        assert individual_project.visibility == ProjectVisibility.INDIVIDUAL
+        assert individual_project.organization_id is None
 
     def test_project_status_enum(self, db):
         """Test project status enum values."""
@@ -224,7 +224,7 @@ class TestProjectModel:
             project = Project(
                 name=f"Status Test {status.value}",
                 created_by=user.id,
-                visibility=ProjectVisibility.PERSONAL,
+                visibility=ProjectVisibility.INDIVIDUAL,
                 status=status
             )
             db.add(project)
@@ -250,7 +250,7 @@ class TestProjectModel:
         project = Project(
             name="Timestamp Test",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         db.add(project)
         db.commit()
@@ -271,13 +271,13 @@ class TestProjectVisibilityEnum:
 
     def test_project_visibility_enum_values(self):
         """Test that ProjectVisibility enum has correct values."""
-        assert ProjectVisibility.PERSONAL.value == "personal"
+        assert ProjectVisibility.INDIVIDUAL.value == "individual"
         assert ProjectVisibility.TEAM.value == "team"
         assert ProjectVisibility.ORGANIZATION.value == "organization"
 
     def test_project_visibility_enum_count(self):
         """Test that ProjectVisibility enum has exactly 3 values."""
-        expected_values = ["personal", "team", "organization"]
+        expected_values = ["individual", "team", "organization"]
         actual_values = [pv.value for pv in ProjectVisibility]
         assert len(actual_values) == 3
         assert set(actual_values) == set(expected_values)
@@ -285,7 +285,7 @@ class TestProjectVisibilityEnum:
     def test_project_visibility_validation_logic(self):
         """Test ProjectVisibility validation logic."""
         # Test that validation methods exist and return expected results
-        assert ProjectVisibility.requires_organization(ProjectVisibility.PERSONAL) is False
+        assert ProjectVisibility.requires_organization(ProjectVisibility.INDIVIDUAL) is False
         assert ProjectVisibility.requires_organization(ProjectVisibility.TEAM) is True
         assert ProjectVisibility.requires_organization(ProjectVisibility.ORGANIZATION) is True
 
@@ -311,11 +311,11 @@ class TestProjectStatusEnum:
 class TestProjectJustInTimeOrganizationIntegration:
     """Test Project model integration with just-in-time organization system."""
 
-    def test_personal_project_creation_without_organization(self, db):
-        """Test creating personal project without organization assignment."""
+    def test_individual_project_creation_without_organization(self, db):
+        """Test creating individual project without organization assignment."""
         # Create user without organization
         user = User(
-            email="personal-jit@example.com",
+            email="individual-jit@example.com",
             first_name="PersonalJIT",
             last_name="User",
             password_hash="hashed_password",
@@ -325,12 +325,12 @@ class TestProjectJustInTimeOrganizationIntegration:
         db.commit()
         db.refresh(user)
 
-        # Create personal project
+        # Create individual project
         project = Project(
             name="Personal JIT Project",
             description="Personal project for just-in-time testing",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             organization_id=None
         )
         
@@ -338,9 +338,9 @@ class TestProjectJustInTimeOrganizationIntegration:
         db.commit()
         db.refresh(project)
 
-        # Verify personal project creation
+        # Verify individual project creation
         assert project.organization_id is None
-        assert project.visibility == ProjectVisibility.PERSONAL
+        assert project.visibility == ProjectVisibility.INDIVIDUAL
         assert project.created_by == user.id
         assert user.is_organization_assigned() is False
 
@@ -452,24 +452,24 @@ class TestProjectJustInTimeOrganizationIntegration:
         db.refresh(user)
 
         # Personal project should work without organization
-        personal_project = Project(
+        individual_project = Project(
             name="Personal Constraint Test",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             organization_id=None
         )
-        db.add(personal_project)
+        db.add(individual_project)
         db.commit()
-        db.refresh(personal_project)
+        db.refresh(individual_project)
 
-        # Verify personal project constraints
-        assert personal_project.visibility == ProjectVisibility.PERSONAL
-        assert personal_project.organization_id is None
-        assert personal_project.validate_visibility_constraints() == []
+        # Verify individual project constraints
+        assert individual_project.visibility == ProjectVisibility.INDIVIDUAL
+        assert individual_project.organization_id is None
+        assert individual_project.validate_visibility_constraints() == []
 
     def test_project_can_be_updated_with_organization_later(self, db):
         """Test that projects can be updated with organization assignment later."""
-        # Create user and personal project
+        # Create user and individual project
         user = User(
             email="update-org@example.com",
             first_name="UpdateOrg",
@@ -481,11 +481,11 @@ class TestProjectJustInTimeOrganizationIntegration:
         db.commit()
         db.refresh(user)
 
-        # Create personal project
+        # Create individual project
         project = Project(
             name="Update Organization Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             organization_id=None
         )
         db.add(project)
@@ -494,7 +494,7 @@ class TestProjectJustInTimeOrganizationIntegration:
 
         # Verify project starts without organization
         assert project.organization_id is None
-        assert project.visibility == ProjectVisibility.PERSONAL
+        assert project.visibility == ProjectVisibility.INDIVIDUAL
 
         # Create organization and assign user
         org = Organization(
@@ -596,19 +596,19 @@ class TestProjectBusinessLogicMethods:
         db.commit()
         db.refresh(user)
 
-        # Test personal project validation
-        personal_project = Project(
+        # Test individual project validation
+        individual_project = Project(
             name="Personal Validation",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             organization_id=None
         )
-        db.add(personal_project)
+        db.add(individual_project)
         db.commit()
-        db.refresh(personal_project)
+        db.refresh(individual_project)
 
         # Should have no validation errors
-        errors = personal_project.validate_visibility_constraints()
+        errors = individual_project.validate_visibility_constraints()
         assert len(errors) == 0
 
     def test_project_get_visibility_description(self, db):
@@ -628,7 +628,7 @@ class TestProjectBusinessLogicMethods:
         project = Project(
             name="Description Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         db.add(project)
         db.commit()
@@ -643,11 +643,11 @@ class TestProjectBusinessLogicMethods:
 class TestProjectFactoryMethods:
     """Test Project model factory methods."""
 
-    def test_create_personal_project(self, db):
-        """Test creating personal project via factory method."""
+    def test_create_individual_project(self, db):
+        """Test creating individual project via factory method."""
         # Create user
         user = User(
-            email="factory-personal@example.com",
+            email="factory-individual@example.com",
             first_name="FactoryPersonal",
             last_name="User",
             password_hash="hashed_password"
@@ -656,8 +656,8 @@ class TestProjectFactoryMethods:
         db.commit()
         db.refresh(user)
 
-        # Create personal project via factory
-        project = Project.create_personal_project(
+        # Create individual project via factory
+        project = Project.create_individual_project(
             name="Factory Personal Project",
             description="Created via factory method",
             creator_id=user.id
@@ -668,7 +668,7 @@ class TestProjectFactoryMethods:
         db.refresh(project)
 
         # Verify factory creation
-        assert project.visibility == ProjectVisibility.PERSONAL
+        assert project.visibility == ProjectVisibility.INDIVIDUAL
         assert project.organization_id is None
         assert project.created_by == user.id
         assert project.status == ProjectStatus.ACTIVE
@@ -777,7 +777,7 @@ class TestProjectDatabaseConstraints:
             project = Project(
                 name=None,  # Required field
                 created_by=user.id,
-                visibility=ProjectVisibility.PERSONAL
+                visibility=ProjectVisibility.INDIVIDUAL
             )
             db.add(project)
             db.commit()
@@ -789,7 +789,7 @@ class TestProjectDatabaseConstraints:
             project = Project(
                 name="No Creator Project",
                 created_by=None,  # Required field
-                visibility=ProjectVisibility.PERSONAL
+                visibility=ProjectVisibility.INDIVIDUAL
             )
             db.add(project)
             db.commit()
@@ -818,7 +818,7 @@ class TestProjectDatabaseConstraints:
         db.refresh(project)
         
         # Should have default visibility
-        assert project.visibility == ProjectVisibility.PERSONAL
+        assert project.visibility == ProjectVisibility.INDIVIDUAL
 
 
 class TestProjectQueryingAndFiltering:
@@ -854,26 +854,26 @@ class TestProjectQueryingAndFiltering:
             organization_id=org.id,
             visibility=ProjectVisibility.TEAM
         )
-        personal_project = Project(
+        individual_project = Project(
             name="Personal Project",
             created_by=user.id,
             organization_id=None,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         
         db.add(org_project)
-        db.add(personal_project)
+        db.add(individual_project)
         db.commit()
 
         # Query projects by organization
         org_projects = db.query(Project).filter(Project.organization_id == org.id).all()
-        personal_projects = db.query(Project).filter(Project.organization_id.is_(None)).all()
+        individual_projects = db.query(Project).filter(Project.organization_id.is_(None)).all()
 
         # Verify filtering
         assert len(org_projects) >= 1
-        assert len(personal_projects) >= 1
+        assert len(individual_projects) >= 1
         assert any(p.name == "Organization Project" for p in org_projects)
-        assert any(p.name == "Personal Project" for p in personal_projects)
+        assert any(p.name == "Personal Project" for p in individual_projects)
 
     def test_query_projects_by_creator(self, db):
         """Test querying projects by creator."""
@@ -901,12 +901,12 @@ class TestProjectQueryingAndFiltering:
         project1 = Project(
             name="Creator 1 Project",
             created_by=creator1.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         project2 = Project(
             name="Creator 2 Project",
             created_by=creator2.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         
         db.add(project1)
@@ -937,23 +937,23 @@ class TestProjectQueryingAndFiltering:
         db.refresh(user)
 
         # Create projects with different visibility
-        personal_project = Project(
+        individual_project = Project(
             name="Personal Visibility Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL
+            visibility=ProjectVisibility.INDIVIDUAL
         )
         
-        db.add(personal_project)
+        db.add(individual_project)
         db.commit()
 
         # Query projects by visibility
-        personal_projects = db.query(Project).filter(
-            Project.visibility == ProjectVisibility.PERSONAL
+        individual_projects = db.query(Project).filter(
+            Project.visibility == ProjectVisibility.INDIVIDUAL
         ).all()
 
         # Verify filtering
-        assert len(personal_projects) >= 1
-        assert any(p.name == "Personal Visibility Project" for p in personal_projects)
+        assert len(individual_projects) >= 1
+        assert any(p.name == "Personal Visibility Project" for p in individual_projects)
 
     def test_query_projects_by_status(self, db):
         """Test querying projects by status."""
@@ -972,13 +972,13 @@ class TestProjectQueryingAndFiltering:
         active_project = Project(
             name="Active Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         archived_project = Project(
             name="Archived Project",
             created_by=user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ARCHIVED
         )
         

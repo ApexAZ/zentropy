@@ -100,7 +100,7 @@ describe("Toast", () => {
 			);
 
 			const toast = screen.getByRole("alert");
-			expect(toast).toHaveClass("border-green-200", "bg-green-50", "text-green-700");
+			expect(toast).toHaveClass("border-success-border", "bg-success-background", "text-success");
 		});
 
 		it("should apply error styling classes", () => {
@@ -109,7 +109,7 @@ describe("Toast", () => {
 			);
 
 			const toast = screen.getByRole("alert");
-			expect(toast).toHaveClass("border-red-200", "bg-red-50", "text-red-700");
+			expect(toast).toHaveClass("border-error-border", "bg-error-background", "text-error");
 		});
 
 		it("should apply info styling classes", () => {
@@ -118,7 +118,7 @@ describe("Toast", () => {
 			);
 
 			const toast = screen.getByRole("alert");
-			expect(toast).toHaveClass("border-blue-200", "bg-blue-50", "text-blue-700");
+			expect(toast).toHaveClass("border-neutral-border", "bg-neutral-background", "text-text-primary");
 		});
 
 		it("should apply warning styling classes", () => {
@@ -127,7 +127,7 @@ describe("Toast", () => {
 			);
 
 			const toast = screen.getByRole("alert");
-			expect(toast).toHaveClass("border-yellow-200", "bg-yellow-50", "text-yellow-700");
+			expect(toast).toHaveClass("border-warning-border", "bg-warning-background", "text-warning");
 		});
 
 		it("should apply custom className", () => {

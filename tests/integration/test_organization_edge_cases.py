@@ -104,38 +104,38 @@ class TestOrganizationEdgeCases:
         error_data = join_response.json()
         assert "capacity" in error_data["detail"].lower()
 
-    def test_personal_organization_single_user_limit(
+    def test_individual_organization_single_user_limit(
         self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
-        """Test personal organization scope can only have one user."""
-        # Create personal organization
+        """Test individual organization scope can only have one user."""
+        # Create individual organization
         user_data = {
-            "email": "personal@example.com",
+            "email": "individual@example.com",
             "password": "SecurePass123!",
-            "first_name": "Personal",
+            "first_name": "Individual",
             "last_name": "User",
             "terms_agreement": True,
         }
         reg_response = client.post("/api/v1/auth/register", json=user_data)
         assert reg_response.status_code == 201
 
-        user = db.query(User).filter(User.email == "personal@example.com").first()
+        user = db.query(User).filter(User.email == "individual@example.com").first()
         assert user is not None
         user.email_verified = True
         db.commit()
 
-        login_data = {"email": "personal@example.com", "password": "SecurePass123!"}
+        login_data = {"email": "individual@example.com", "password": "SecurePass123!"}
         login_response = client.post("/api/v1/auth/login-json", json=login_data)
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Create personal organization
+        # Create individual organization
         org_data = {
-            "name": "Personal Workspace",
-            "domain": "personal-workspace.com",
-            "short_name": "PERSONAL",
-            "scope": "personal",
+            "name": "Individual Workspace",
+            "domain": "individual-workspace.com",
+            "short_name": "INDIVIDUAL",
+            "scope": "individual",
         }
         org_response = client.post(
             "/api/v1/organizations/", json=org_data, headers=headers
@@ -143,26 +143,26 @@ class TestOrganizationEdgeCases:
         assert org_response.status_code == 201
         org = org_response.json()
 
-        # Try to add second user to personal organization (should fail)
+        # Try to add second user to individual organization (should fail)
         user2_data = {
-            "email": "user2@personal-workspace.com",
+            "email": "user2@individual-workspace.com",
             "password": "SecurePass123!",
             "first_name": "User2",
-            "last_name": "Personal",
+            "last_name": "Individual",
             "terms_agreement": True,
         }
         reg_response2 = client.post("/api/v1/auth/register", json=user2_data)
         assert reg_response2.status_code == 201
 
         user2 = (
-            db.query(User).filter(User.email == "user2@personal-workspace.com").first()
+            db.query(User).filter(User.email == "user2@individual-workspace.com").first()
         )
         assert user2 is not None
         user2.email_verified = True
         db.commit()
 
         login_data2 = {
-            "email": "user2@personal-workspace.com",
+            "email": "user2@individual-workspace.com",
             "password": "SecurePass123!",
         }
         login_response2 = client.post("/api/v1/auth/login-json", json=login_data2)
@@ -170,7 +170,7 @@ class TestOrganizationEdgeCases:
         token2 = login_response2.json()["access_token"]
         headers2 = {"Authorization": f"Bearer {token2}"}
 
-        # Attempt to join personal organization should fail
+        # Attempt to join individual organization should fail
         join_response = client.post(
             f"/api/v1/organizations/{org['id']}/join", headers=headers2
         )
@@ -323,8 +323,8 @@ class TestProjectEdgeCases:
         response = client.post("/api/v1/projects/", json=project_data, headers=headers)
         assert response.status_code == 400
 
-        # Personal project should work
-        project_data["visibility"] = "personal"
+        # Individual project should work
+        project_data["visibility"] = "individual"
         response = client.post("/api/v1/projects/", json=project_data, headers=headers)
         assert response.status_code == 201
 
@@ -395,7 +395,7 @@ class TestProjectEdgeCases:
         self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit
     ):
         """Test project archive and restore edge cases."""
-        # Create user and personal project
+        # Create user and individual project
         user_data = {
             "email": "user@example.com",
             "password": "SecurePass123!",
@@ -422,7 +422,7 @@ class TestProjectEdgeCases:
             "name": "Test Project",
             "description": "Test project",
             "status": "active",
-            "visibility": "personal",
+            "visibility": "individual",
         }
         response = client.post("/api/v1/projects/", json=project_data, headers=headers)
         assert response.status_code == 201
@@ -752,7 +752,7 @@ class TestPerformanceEdgeCases:
                 "name": f"Project {i:02d}",
                 "description": f"Project number {i}",
                 "status": "active",
-                "visibility": "personal",
+                "visibility": "individual",
             }
             response = client.post(
                 "/api/v1/projects/", json=project_data, headers=headers

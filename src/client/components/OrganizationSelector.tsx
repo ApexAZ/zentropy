@@ -254,7 +254,9 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 
 					{/* Domain Check Results */}
 					{domainCheckLoading && (
-						<div className="mb-4 rounded-lg bg-blue-100 p-3 text-blue-800">Checking domain...</div>
+						<div className="bg-neutral-background text-interactive mb-4 rounded-lg p-3">
+							Checking domain...
+						</div>
 					)}
 
 					{domainCheckError && (
@@ -272,7 +274,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 								Organization Found for {domainCheckResult.domain}
 							</h3>
 							<div className="mt-2">
-								<p className="text-blue-800">{domainCheckResult.organization.name}</p>
+								<p className="text-interactive">{domainCheckResult.organization.name}</p>
 								<p className="text-text-primary text-sm">{domainCheckResult.suggestions.message}</p>
 							</div>
 							{domainCheckResult.suggestions.can_join && (
@@ -395,7 +397,7 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 
 							{/* Loading State */}
 							{isLoading && (
-								<div className="mb-4 rounded-lg bg-blue-100 p-3 text-center text-blue-800">
+								<div className="text-interactive mb-4 rounded-lg bg-blue-100 p-3 text-center">
 									Loading...
 								</div>
 							)}

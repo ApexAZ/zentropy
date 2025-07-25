@@ -57,9 +57,9 @@ const Input: React.FC<InputProps> = ({
 	const inputId = id || label.toLowerCase().replace(/\s+/g, "-");
 
 	const baseClasses =
-		"border-layout-background bg-content-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(106,139,167,0.2)] focus:outline-none";
+		"border-layout-background bg-content-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-interactive focus:outline-none";
 	const disabledClasses = props.disabled ? "opacity-50" : "";
-	const errorClasses = error ? "border-red-500" : "";
+	const errorClasses = error ? "border-error" : "";
 
 	const inputClasses = [baseClasses, disabledClasses, errorClasses, className].filter(Boolean).join(" ");
 
@@ -112,7 +112,7 @@ const Input: React.FC<InputProps> = ({
 
 			{helper && <small className="text-text-primary mt-1 block text-sm">{helper}</small>}
 
-			{error && <span className="mt-1 block text-sm text-red-500">{error}</span>}
+			{error && <span className="text-error mt-1 block text-sm">{error}</span>}
 		</div>
 	);
 };

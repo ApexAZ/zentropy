@@ -61,13 +61,13 @@ export function Toast({
 		return null;
 	}
 
-	// Type-specific styling following existing patterns
+	// Type-specific styling using semantic colors
 	const typeClasses = {
-		success: "border-green-200 bg-green-50 text-green-700",
-		error: "border-red-200 bg-red-50 text-red-700",
-		info: "border-blue-200 bg-blue-50 text-blue-700",
-		warning: "border-yellow-200 bg-yellow-50 text-yellow-700",
-		"critical-error": "border-red-500 bg-red-100 text-red-800"
+		success: "border-success-border bg-success-background text-success",
+		error: "border-error-border bg-error-background text-error",
+		info: "border-neutral-border bg-neutral-background text-text-primary",
+		warning: "border-warning-border bg-warning-background text-warning",
+		"critical-error": "border-error-border bg-error-background text-error"
 	};
 
 	// Icon for each type
@@ -81,7 +81,7 @@ export function Toast({
 
 	return (
 		<div
-			className={`animate-slide-in fixed top-5 right-5 z-[1100] max-w-[500px] min-w-[300px] rounded-md shadow-lg ${typeClasses[type]} border ${className} `}
+			className={`animate-slide-in max-w-[500px] min-w-[300px] rounded-md shadow-lg ${typeClasses[type]} border ${className}`}
 			role="alert"
 			aria-live="polite"
 			aria-atomic="true"

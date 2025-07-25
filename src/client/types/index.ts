@@ -75,13 +75,14 @@ export interface TeamValidationResult {
 // User types
 export interface User {
 	id: string;
-	username: string;
 	email: string;
 	first_name: string;
 	last_name: string;
+	phone_number?: string;
 	role: string;
 	has_projects_access: boolean;
 	email_verified: boolean;
+	organization_id?: string;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -90,6 +91,7 @@ export interface ProfileUpdateData {
 	first_name: string;
 	last_name: string;
 	email: string;
+	phone_number?: string;
 }
 
 export interface PasswordUpdateData {
@@ -434,7 +436,6 @@ export enum SecurityOperationType {
 	EMAIL_VERIFICATION = "email_verification",
 	PASSWORD_RESET = "password_reset",
 	PASSWORD_CHANGE = "password_change",
-	USERNAME_RECOVERY = "username_recovery",
 	EMAIL_CHANGE = "email_change",
 	TWO_FACTOR_SETUP = "two_factor_setup"
 }

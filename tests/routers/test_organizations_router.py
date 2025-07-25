@@ -67,7 +67,7 @@ class TestOrganizationDomainCheckingAPI:
         assert "detail" in data
     
     def test_check_domain_personal_email_domain(self, client):
-        """Test domain checking with personal email domains."""
+        """Test domain checking with individual email domains."""
         personal_domains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]
         
         for domain in personal_domains:
@@ -78,9 +78,9 @@ class TestOrganizationDomainCheckingAPI:
             assert data["domain_found"] is False
             assert data["domain"] == domain
             assert data["organization"] is None
-            assert data["suggestions"]["action"] == "personal"
+            assert data["suggestions"]["action"] == "individual"
             assert data["suggestions"]["can_create"] is False
-            assert "personal email" in data["suggestions"]["message"].lower()
+            assert "individual email" in data["suggestions"]["message"].lower()
     
     def test_check_domain_extraction_from_email(self, client):
         """Test that domain is properly extracted from email."""
@@ -152,13 +152,13 @@ class TestOrganizationManagementAPI:
         assert data["scope"] == "enterprise"
         assert data["max_users"] is None
     
-    def test_create_organization_personal_scope(self, client, auth_headers, db):
-        """Test creating a personal organization."""
+    def test_create_organization_individual_scope(self, client, auth_headers, db):
+        """Test creating an individual organization."""
         org_data = {
-            "name": "Personal Workspace",
-            "scope": "personal",
+            "name": "Individual Workspace",
+            "scope": "individual",
             "max_users": 1,
-            "description": "Personal workspace"
+            "description": "Individual workspace"
         }
         
         response = client.post(
@@ -169,8 +169,8 @@ class TestOrganizationManagementAPI:
         assert response.status_code == 201
         
         data = response.json()
-        assert data["name"] == "Personal Workspace"
-        assert data["scope"] == "personal"
+        assert data["name"] == "Individual Workspace"
+        assert data["scope"] == "individual"
         assert data["max_users"] == 1
     
     def test_create_organization_validation_errors(self, client, auth_headers):
@@ -194,18 +194,18 @@ class TestOrganizationManagementAPI:
         )
         assert response.status_code == 422
         
-        # Invalid max_users for personal scope
+        # Invalid max_users for individual scope
         response = client.post(
             "/api/v1/organizations/",
             json={
-                "name": "Invalid Personal Org",
-                "scope": "personal",
-                "max_users": 5  # Personal should have max 1
+                "name": "Invalid Individual Org",
+                "scope": "individual",
+                "max_users": 5  # Individual should have max 1
             },
             headers=auth_headers
         )
         assert response.status_code == 400
-        assert "Personal organizations cannot have more than 1 user" in response.json()["detail"]
+        assert "Individual organizations cannot have more than 1 user" in response.json()["detail"]
     
     def test_get_organization_by_id(self, client, auth_headers, db):
         """Test retrieving organization by ID."""
@@ -394,7 +394,7 @@ class TestOrganizationJoinWorkflowAPI:
         org = Organization(
             name="Full Capacity Org",
             domain="fullcapacity.com",
-            scope=OrganizationScope.PERSONAL,
+            scope=OrganizationScope.INDIVIDUAL,
             max_users=1
         )
         db.add(org)

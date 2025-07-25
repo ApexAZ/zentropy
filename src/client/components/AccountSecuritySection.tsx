@@ -45,16 +45,24 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 		handleUnlinkGoogle
 	} = useAccountSecurity({ onSecurityUpdate, onError });
 
-	// Multi-provider OAuth hook for new functionality
-	const { providers, linkProvider, unlinkProvider, getProviderState, isProviderLinked } = useMultiProviderOAuth({
-		onSuccess: () => {
-			// Handle successful OAuth linking
-			onSecurityUpdate();
-		},
-		onError: error => {
+	// Memoized callbacks to prevent unnecessary re-renders
+	const handleOAuthSuccess = useCallback(() => {
+		// Handle successful OAuth linking
+		onSecurityUpdate();
+	}, [onSecurityUpdate]);
+
+	const handleOAuthError = useCallback(
+		(error: string) => {
 			// Handle OAuth errors
 			onError(error);
 		},
+		[onError]
+	);
+
+	// Multi-provider OAuth hook for new functionality
+	const { providers, linkProvider, unlinkProvider, getProviderState, isProviderLinked } = useMultiProviderOAuth({
+		onSuccess: handleOAuthSuccess,
+		onError: handleOAuthError,
 		securityStatus,
 		handleUnlinkGoogle
 	});

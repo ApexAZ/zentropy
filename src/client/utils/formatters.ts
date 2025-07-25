@@ -51,11 +51,11 @@ export const getRoleLabel = (role: string): string => {
  */
 export const getRoleBadgeColor = (role: string): string => {
 	const colors = {
-		team_member: "bg-blue-100 text-blue-800",
-		team_lead: "bg-green-100 text-green-800",
-		admin: "bg-purple-100 text-purple-800"
+		team_member: "bg-neutral-background text-interactive",
+		team_lead: "bg-success-background text-success",
+		admin: "bg-warning-background text-warning"
 	};
-	return colors[role as keyof typeof colors] || "bg-gray-100 text-text-contrast";
+	return colors[role as keyof typeof colors] || "bg-neutral-background text-text-primary";
 };
 
 /**
@@ -65,12 +65,12 @@ export const getRoleBadgeColor = (role: string): string => {
  */
 export const getEntryTypeColor = (type: string): string => {
 	const colors = {
-		pto: "bg-blue-100 text-blue-800",
-		holiday: "bg-green-100 text-green-800",
-		sick: "bg-red-100 text-red-800",
-		personal: "bg-purple-100 text-purple-800"
+		pto: "bg-neutral-background text-interactive",
+		holiday: "bg-success-background text-success",
+		sick: "bg-error-background text-error",
+		personal: "bg-warning-background text-warning"
 	};
-	return colors[type as keyof typeof colors] ?? "bg-gray-100 text-text-contrast";
+	return colors[type as keyof typeof colors] ?? "bg-neutral-background text-text-primary";
 };
 
 /**
@@ -93,12 +93,12 @@ export const getVelocityStatus = (velocity: number): { label: string; color: str
 		return { label: "Not Set", color: "text-text-primary" };
 	}
 	if (velocity < 20) {
-		return { label: "Low", color: "text-orange-600" };
+		return { label: "Low", color: "text-warning" };
 	}
 	if (velocity < 40) {
 		return { label: "Medium", color: "text-interactive" };
 	}
-	return { label: "High", color: "text-green-600" };
+	return { label: "High", color: "text-success" };
 };
 
 /**

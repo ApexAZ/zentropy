@@ -88,11 +88,13 @@ vi.mock("../../hooks/useMultiProviderOAuth", () => ({
 // User data with actual AuthUser type compatibility
 const profileUser = {
 	id: "user-123",
-	username: "testuser",
 	email: "test@example.com",
 	first_name: "Test",
 	last_name: "User",
 	role: "team_member",
+	organization_id: "org-456",
+	has_projects_access: true,
+	email_verified: true,
 	created_at: "2025-01-01T00:00:00Z",
 	updated_at: "2025-01-01T00:00:00Z"
 };
@@ -178,9 +180,27 @@ describe("ProfilePage", () => {
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 		expect(screen.getByText("Test User")).toBeInTheDocument();
 		expect(screen.getByText("test@example.com")).toBeInTheDocument();
+		expect(screen.getByText("Organization Member")).toBeInTheDocument();
 		expect(screen.getAllByText("Team Member")).toHaveLength(2); // Role label and badge
-		expect(screen.getByText("testuser")).toBeInTheDocument();
-		expect(screen.getByText("user-123")).toBeInTheDocument();
+	});
+
+	it("displays Individual Account when no organization", async () => {
+		// Mock user without organization
+		const individualUser = {
+			...profileUser,
+			organization_id: null
+		};
+		(UserService.getCurrentUser as any).mockResolvedValue(individualUser);
+
+		const testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			providers: { toast: true }
+		});
+
+		await fastStateSync();
+
+		expect(screen.getByText("Individual Account")).toBeInTheDocument();
+
+		testEnv.cleanup();
 	});
 
 	it("handles API errors gracefully", async () => {
@@ -503,8 +523,9 @@ describe("ProfilePage", () => {
 			await Promise.resolve();
 		});
 
-		// Verify the password security section and change password button are present
-		expect(screen.getByText("Password & Security")).toBeInTheDocument();
+		// Verify the new security structure with SecurityOverview and SignInMethods
+		expect(screen.getByText("Security Overview")).toBeInTheDocument();
+		expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 		expect(screen.getByText("Change Password")).toBeInTheDocument();
 	});
 
@@ -525,9 +546,8 @@ describe("ProfilePage", () => {
 
 		await fastStateSync();
 
-		// Check Account Information in Profile tab
-		expect(screen.getByText("Account Information")).toBeInTheDocument();
-		expect(screen.getByText("Active")).toBeInTheDocument();
+		// Check Profile Information tab is displayed
+		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 
 		// Navigate to Security tab to check password security
 		expect(screen.getByRole("tab", { name: "Security" })).toBeInTheDocument();
@@ -539,18 +559,17 @@ describe("ProfilePage", () => {
 			await Promise.resolve();
 		});
 
-		expect(screen.getByText("Password & Security")).toBeInTheDocument();
-		expect(screen.getByText("••••••••••••")).toBeInTheDocument();
-		expect(screen.getByText("Last changed: Recent")).toBeInTheDocument();
-		expect(screen.getByText("Secure")).toBeInTheDocument();
-		expect(screen.getByText("Your account meets all security requirements")).toBeInTheDocument();
+		// Verify SecurityOverview component displays key security information
+		expect(screen.getByText("Security Overview")).toBeInTheDocument();
+		expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
+		expect(screen.getByText("Security Score")).toBeInTheDocument();
+		expect(screen.getByText("Active Sign-In Methods")).toBeInTheDocument();
 	});
 
-	it("formats dates correctly", async () => {
+	it("formats member since date correctly", async () => {
 		const userWithDates = {
 			...profileUser,
-			created_at: "2024-12-25T00:00:00Z",
-			updated_at: "2025-01-15T00:00:00Z"
+			created_at: "2024-12-25T00:00:00Z"
 		};
 
 		// Override the getCurrentUser mock for this specific test
@@ -564,7 +583,6 @@ describe("ProfilePage", () => {
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
 		expect(screen.getByText("December 24, 2024")).toBeInTheDocument();
-		expect(screen.getByText("January 14, 2025")).toBeInTheDocument();
 	});
 
 	it("auto-dismisses toast after 5 seconds", async () => {
@@ -729,7 +747,6 @@ describe("ProfilePage", () => {
 
 			expect(screen.getByText("Profile Information")).toBeInTheDocument();
 			expect(screen.getByText("Edit Profile")).toBeInTheDocument();
-			expect(screen.getByText("Account Information")).toBeInTheDocument();
 		});
 
 		it("should show Security content in Security tab", async () => {
@@ -752,8 +769,9 @@ describe("ProfilePage", () => {
 				await Promise.resolve();
 			});
 
-			expect(screen.getByText("Account Security")).toBeInTheDocument();
-			expect(screen.getByText("Password & Security")).toBeInTheDocument();
+			// Verify security content is displayed with new structure
+			expect(screen.getByText("Security Overview")).toBeInTheDocument();
+			expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
 		});
 

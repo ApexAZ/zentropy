@@ -152,7 +152,7 @@ const TeamsPage: React.FC = () => {
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Teams</h3>
+						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Teams</h3>
 						<p className="text-text-primary mb-6">{error}</p>
 						<Button onClick={() => void refreshTeams()} variant="secondary">
 							Retry
@@ -172,7 +172,7 @@ const TeamsPage: React.FC = () => {
 			</div>
 
 			{teams.length === 0 ? (
-				<div className="border-layout-background text-text-primary rounded-md border border-dashed bg-gray-50 p-8 text-center italic">
+				<div className="border-layout-background text-text-primary bg-neutral-background rounded-md border border-dashed p-8 text-center italic">
 					<div className="mx-auto max-w-sm">
 						<h3 className="text-text-primary mb-3 text-xl font-semibold">No Teams Yet</h3>
 						<p className="text-text-primary mb-6">
@@ -310,7 +310,7 @@ const TeamsPage: React.FC = () => {
 							<p className="text-text-primary mb-4">
 								Are you sure you want to delete <strong>{currentTeam.name}</strong>?
 							</p>
-							<p className="text-sm text-red-600">
+							<p className="text-error text-sm">
 								This action cannot be undone. All team data and calendar entries will be permanently
 								removed.
 							</p>

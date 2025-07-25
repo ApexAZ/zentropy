@@ -367,7 +367,7 @@ class TestProjectSchemas:
         project = ProjectBase(**project_data)
         assert project.name == "Test Project"
         assert project.description is None  # Default
-        assert project.visibility == ProjectVisibility.PERSONAL  # Default
+        assert project.visibility == ProjectVisibility.INDIVIDUAL  # Default
         assert project.status == ProjectStatus.ACTIVE  # Default
     
     def test_project_create_with_organization(self):

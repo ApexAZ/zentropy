@@ -6,7 +6,7 @@ These tests verify the calendar entries management system with comprehensive cov
 - Calendar entry retrieval with filtering (team_id, start_date, end_date)
 - Calendar entry updates with authorization checks
 - Calendar entry deletion with proper permission validation
-- Access control for team-based and personal calendar entries
+- Access control for team-based and individual calendar entries
 - Error handling and edge cases
 
 All tests use the mandatory isolated test database system for reliability.
@@ -27,12 +27,12 @@ from tests.conftest import create_test_user, create_test_team
 class TestCalendarEntryCreation:
     """Test POST /api/v1/calendar_entries/ - Creating calendar entries"""
     
-    def test_create_personal_calendar_entry_success(self, client, db, auth_headers, current_user):
-        """Test creating a personal calendar entry"""
+    def test_create_individual_calendar_entry_success(self, client, db, auth_headers, current_user):
+        """Test creating a individual calendar entry"""
         # Arrange: Create valid calendar entry data
         entry_data = {
-            "title": "Personal Meeting",
-            "description": "Important personal meeting",
+            "title": "Individual Meeting",
+            "description": "Important individual meeting",
             "start_date": "2024-01-15T10:00:00Z",
             "end_date": "2024-01-15T11:00:00Z",
             "all_day": False,
@@ -49,8 +49,8 @@ class TestCalendarEntryCreation:
         # Assert: Verify successful creation
         assert response.status_code == 200
         data = response.json()
-        assert data["title"] == "Personal Meeting"
-        assert data["description"] == "Important personal meeting"
+        assert data["title"] == "Individual Meeting"
+        assert data["description"] == "Important individual meeting"
         assert data["user_id"] == str(current_user.id)
         assert data["team_id"] is None
         assert data["all_day"] is False
@@ -58,7 +58,7 @@ class TestCalendarEntryCreation:
         # Verify database entry
         db_entry = db.query(CalendarEntry).filter(CalendarEntry.id == uuid.UUID(data["id"])).first()
         assert db_entry is not None
-        assert db_entry.title == "Personal Meeting"
+        assert db_entry.title == "Individual Meeting"
         assert db_entry.user_id == current_user.id
     
     def test_create_team_calendar_entry_success(self, client, db, auth_headers, current_user):
@@ -196,11 +196,11 @@ class TestCalendarEntryCreation:
 class TestCalendarEntryRetrieval:
     """Test GET endpoints - calendar entry listing and individual entry details"""
     
-    def test_get_personal_calendar_entries_success(self, client, db, auth_headers, current_user):
-        """Test retrieving personal calendar entries"""
-        # Arrange: Create personal calendar entries
+    def test_get_individual_calendar_entries_success(self, client, db, auth_headers, current_user):
+        """Test retrieving individual calendar entries"""
+        # Arrange: Create individual calendar entries
         entry1 = CalendarEntry(
-            title="Personal Meeting 1",
+            title="Individual Meeting 1",
             description="First meeting",
             start_date=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
             end_date=datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc),
@@ -208,7 +208,7 @@ class TestCalendarEntryRetrieval:
             user_id=current_user.id
         )
         entry2 = CalendarEntry(
-            title="Personal Meeting 2",
+            title="Individual Meeting 2",
             description="Second meeting",
             start_date=datetime(2024, 1, 16, 14, 0, tzinfo=timezone.utc),
             end_date=datetime(2024, 1, 16, 15, 0, tzinfo=timezone.utc),
@@ -218,21 +218,21 @@ class TestCalendarEntryRetrieval:
         db.add_all([entry1, entry2])
         db.commit()
         
-        # Act: Get personal calendar entries
+        # Act: Get individual calendar entries
         response = client.get(
             "/api/v1/calendar_entries/",
             headers=auth_headers
         )
         
-        # Assert: Verify personal entries returned
+        # Assert: Verify individual entries returned
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 2
         
         # Verify entries are ordered by start_date
         titles = [entry["title"] for entry in data]
-        assert "Personal Meeting 1" in titles
-        assert "Personal Meeting 2" in titles
+        assert "Individual Meeting 1" in titles
+        assert "Individual Meeting 2" in titles
         
         # Verify all entries belong to current user
         for entry in data:

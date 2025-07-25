@@ -300,7 +300,7 @@ describe("EnhancedConfirmationModal", () => {
 			renderWithFullEnvironment(<EnhancedConfirmationModal {...defaultProps} actionType="destructive" />);
 
 			const confirmButton = screen.getByRole("button", { name: "Confirm" });
-			expect(confirmButton).toHaveClass("bg-red-600", "hover:bg-red-700");
+			expect(confirmButton).toHaveClass("bg-error", "hover:bg-error");
 		});
 
 		it("should use critical styling for critical actions", () => {

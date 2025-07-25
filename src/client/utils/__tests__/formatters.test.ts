@@ -134,61 +134,61 @@ describe("formatters", () => {
 
 	describe("getRoleBadgeColor", () => {
 		it("should return correct color classes for team member", () => {
-			expect(getRoleBadgeColor("team_member")).toBe("bg-blue-100 text-blue-800");
+			expect(getRoleBadgeColor("team_member")).toBe("bg-neutral-background text-interactive");
 		});
 
 		it("should return correct color classes for team lead", () => {
-			expect(getRoleBadgeColor("team_lead")).toBe("bg-green-100 text-green-800");
+			expect(getRoleBadgeColor("team_lead")).toBe("bg-success-background text-success");
 		});
 
 		it("should return correct color classes for admin", () => {
-			expect(getRoleBadgeColor("admin")).toBe("bg-purple-100 text-purple-800");
+			expect(getRoleBadgeColor("admin")).toBe("bg-warning-background text-warning");
 		});
 
 		it("should return default color classes for unknown roles", () => {
-			expect(getRoleBadgeColor("unknown")).toBe("bg-gray-100 text-text-contrast");
-			expect(getRoleBadgeColor("custom_role")).toBe("bg-gray-100 text-text-contrast");
+			expect(getRoleBadgeColor("unknown")).toBe("bg-neutral-background text-text-primary");
+			expect(getRoleBadgeColor("custom_role")).toBe("bg-neutral-background text-text-primary");
 		});
 
 		it("should handle empty string with default color", () => {
-			expect(getRoleBadgeColor("")).toBe("bg-gray-100 text-text-contrast");
+			expect(getRoleBadgeColor("")).toBe("bg-neutral-background text-text-primary");
 		});
 
 		it("should handle null and undefined gracefully", () => {
-			expect(getRoleBadgeColor(null as any)).toBe("bg-gray-100 text-text-contrast");
-			expect(getRoleBadgeColor(undefined as any)).toBe("bg-gray-100 text-text-contrast");
+			expect(getRoleBadgeColor(null as any)).toBe("bg-neutral-background text-text-primary");
+			expect(getRoleBadgeColor(undefined as any)).toBe("bg-neutral-background text-text-primary");
 		});
 	});
 
 	describe("getEntryTypeColor", () => {
 		it("should return correct color classes for PTO", () => {
-			expect(getEntryTypeColor("pto")).toBe("bg-blue-100 text-blue-800");
+			expect(getEntryTypeColor("pto")).toBe("bg-neutral-background text-interactive");
 		});
 
 		it("should return correct color classes for holiday", () => {
-			expect(getEntryTypeColor("holiday")).toBe("bg-green-100 text-green-800");
+			expect(getEntryTypeColor("holiday")).toBe("bg-success-background text-success");
 		});
 
 		it("should return correct color classes for sick leave", () => {
-			expect(getEntryTypeColor("sick")).toBe("bg-red-100 text-red-800");
+			expect(getEntryTypeColor("sick")).toBe("bg-error-background text-error");
 		});
 
 		it("should return correct color classes for personal time", () => {
-			expect(getEntryTypeColor("personal")).toBe("bg-purple-100 text-purple-800");
+			expect(getEntryTypeColor("personal")).toBe("bg-warning-background text-warning");
 		});
 
 		it("should return default color classes for unknown entry types", () => {
-			expect(getEntryTypeColor("unknown")).toBe("bg-gray-100 text-text-contrast");
-			expect(getEntryTypeColor("custom_type")).toBe("bg-gray-100 text-text-contrast");
+			expect(getEntryTypeColor("unknown")).toBe("bg-neutral-background text-text-primary");
+			expect(getEntryTypeColor("custom_type")).toBe("bg-neutral-background text-text-primary");
 		});
 
 		it("should handle empty string with default color", () => {
-			expect(getEntryTypeColor("")).toBe("bg-gray-100 text-text-contrast");
+			expect(getEntryTypeColor("")).toBe("bg-neutral-background text-text-primary");
 		});
 
 		it("should handle null and undefined gracefully", () => {
-			expect(getEntryTypeColor(null as any)).toBe("bg-gray-100 text-text-contrast");
-			expect(getEntryTypeColor(undefined as any)).toBe("bg-gray-100 text-text-contrast");
+			expect(getEntryTypeColor(null as any)).toBe("bg-neutral-background text-text-primary");
+			expect(getEntryTypeColor(undefined as any)).toBe("bg-neutral-background text-text-primary");
 		});
 	});
 
@@ -247,12 +247,12 @@ describe("formatters", () => {
 
 		it('should return "Low" for velocity less than 20', () => {
 			const result = getVelocityStatus(10);
-			expect(result).toEqual({ label: "Low", color: "text-orange-600" });
+			expect(result).toEqual({ label: "Low", color: "text-warning" });
 		});
 
 		it('should return "Low" for velocity exactly 19', () => {
 			const result = getVelocityStatus(19);
-			expect(result).toEqual({ label: "Low", color: "text-orange-600" });
+			expect(result).toEqual({ label: "Low", color: "text-warning" });
 		});
 
 		it('should return "Medium" for velocity 20-39', () => {
@@ -267,24 +267,24 @@ describe("formatters", () => {
 
 		it('should return "High" for velocity 40 and above', () => {
 			const result = getVelocityStatus(40);
-			expect(result).toEqual({ label: "High", color: "text-green-600" });
+			expect(result).toEqual({ label: "High", color: "text-success" });
 		});
 
 		it('should return "High" for very high velocities', () => {
 			const result = getVelocityStatus(100);
-			expect(result).toEqual({ label: "High", color: "text-green-600" });
+			expect(result).toEqual({ label: "High", color: "text-success" });
 		});
 
 		it("should handle negative velocities as Low", () => {
 			const result = getVelocityStatus(-5);
-			expect(result).toEqual({ label: "Low", color: "text-orange-600" });
+			expect(result).toEqual({ label: "Low", color: "text-warning" });
 		});
 
 		it("should handle decimal velocities correctly", () => {
-			expect(getVelocityStatus(19.9)).toEqual({ label: "Low", color: "text-orange-600" });
+			expect(getVelocityStatus(19.9)).toEqual({ label: "Low", color: "text-warning" });
 			expect(getVelocityStatus(20.1)).toEqual({ label: "Medium", color: "text-interactive" });
 			expect(getVelocityStatus(39.9)).toEqual({ label: "Medium", color: "text-interactive" });
-			expect(getVelocityStatus(40.1)).toEqual({ label: "High", color: "text-green-600" });
+			expect(getVelocityStatus(40.1)).toEqual({ label: "High", color: "text-success" });
 		});
 	});
 
@@ -471,9 +471,9 @@ describe("formatters", () => {
 
 			expect(formatDate(date)).toBe("Jun 15, 2024");
 			expect(getRoleLabel(role)).toBe("Team Lead");
-			expect(getRoleBadgeColor(role)).toBe("bg-green-100 text-green-800");
+			expect(getRoleBadgeColor(role)).toBe("bg-success-background text-success");
 			expect(getEntryTypeLabel(entryType)).toBe("PTO / Vacation");
-			expect(getEntryTypeColor(entryType)).toBe("bg-blue-100 text-blue-800");
+			expect(getEntryTypeColor(entryType)).toBe("bg-neutral-background text-interactive");
 			expect(getVelocityStatus(velocity)).toEqual({ label: "Medium", color: "text-interactive" });
 			expect(formatVelocity(velocity)).toBe("35 points");
 			expect(formatSprintLength(sprintLength)).toBe("14 days");
@@ -502,9 +502,9 @@ describe("formatters", () => {
 
 			expect(formatDate(invalidDate)).toBe("Invalid Date");
 			expect(getRoleLabel(unknownRole)).toBe("unknown_role");
-			expect(getRoleBadgeColor(unknownRole)).toBe("bg-gray-100 text-text-contrast");
+			expect(getRoleBadgeColor(unknownRole)).toBe("bg-neutral-background text-text-primary");
 			expect(getEntryTypeLabel(unknownType)).toBe("unknown_type");
-			expect(getEntryTypeColor(unknownType)).toBe("bg-gray-100 text-text-contrast");
+			expect(getEntryTypeColor(unknownType)).toBe("bg-neutral-background text-text-primary");
 			expect(getVelocityStatus(zeroVelocity)).toEqual({ label: "Not Set", color: "text-text-primary" });
 			expect(formatVelocity(zeroVelocity)).toBe("Not set");
 			expect(getDayName(invalidDay)).toBe("Unknown");

@@ -208,13 +208,13 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project is not None
         assert project.organization_id == org.id
 
-    def test_project_creation_personal_without_organization(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
-        """Test creating personal project without organization assignment."""
+    def test_project_creation_individual_without_organization(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
+        """Test creating individual project without organization assignment."""
         # Create user without organization
         user_data = {
-            "email": "personal@example.com",
+            "email": "individual@example.com",
             "password": "SecurePass123!",
-            "first_name": "Personal",
+            "first_name": "Individual",
             "last_name": "User",
             "terms_agreement": True
         }
@@ -222,22 +222,22 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert reg_response.status_code == 201
 
         # Verify email to enable login
-        user = db.query(User).filter(User.email == "personal@example.com").first()
+        user = db.query(User).filter(User.email == "individual@example.com").first()
         user.email_verified = True
         db.commit()
 
         # Login to get token
-        login_data = {"email": "personal@example.com", "password": "SecurePass123!"}
+        login_data = {"email": "individual@example.com", "password": "SecurePass123!"}
         login_response = client.post("/api/v1/auth/login-json", json=login_data)
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
 
-        # Create personal project
+        # Create individual project
         project_data = {
-            "name": "Personal Project",
-            "description": "A personal project",
+            "name": "Individual Project",
+            "description": "A individual project",
             "status": "active",
-            "visibility": "personal"
+            "visibility": "individual"
         }
         
         headers = {"Authorization": f"Bearer {token}"}
@@ -245,15 +245,15 @@ class TestProjectCreationWithOrganizationWorkflow:
         assert project_response.status_code == 201
 
         # Verify user still has no organization
-        user = db.query(User).filter(User.email == "personal@example.com").first()
+        user = db.query(User).filter(User.email == "individual@example.com").first()
         assert user is not None
         assert user.organization_id is None
 
         # Verify project was created without organization
-        project = db.query(Project).filter(Project.name == "Personal Project").first()
+        project = db.query(Project).filter(Project.name == "Individual Project").first()
         assert project is not None
         assert project.organization_id is None
-        assert project.visibility.value == "personal"
+        assert project.visibility.value == "individual"
 
     def test_project_creation_with_organization_discovery_and_joining(self, client: TestClient, db: Session, test_rate_limits, auto_clean_mailpit):
         """Test complete workflow: registration -> organization discovery -> project creation -> organization joining."""
@@ -357,14 +357,14 @@ class TestCompleteUserWorkflows:
         user_data = user_response.json()
         assert user_data["organization_id"] is None
 
-        # Step 4: Create personal projects
+        # Step 4: Create individual projects
         projects = []
         for i in range(3):
             project_data = {
-                "name": f"Personal Project {i+1}",
-                "description": f"Personal project {i+1}",
+                "name": f"Individual Project {i+1}",
+                "description": f"Individual project {i+1}",
                 "status": "active",
-                "visibility": "personal"
+                "visibility": "individual"
             }
             project_response = client.post("/api/v1/projects/", json=project_data, headers=headers)
             assert project_response.status_code == 201
@@ -377,9 +377,9 @@ class TestCompleteUserWorkflows:
         project_list = project_list_response["projects"]
         assert len(project_list) == 3
 
-        # Verify all projects are personal
+        # Verify all projects are individual
         for project in project_list:
-            assert project["visibility"] == "personal"
+            assert project["visibility"] == "individual"
             assert project["organization_id"] is None
 
         # Verify user never got organization
@@ -449,15 +449,15 @@ class TestCompleteUserWorkflows:
             assert project_response.status_code == 201
             team_projects.append(project_response.json())
 
-        # Step 7: Create personal project (mixed usage)
-        personal_project_data = {
-            "name": "Personal Side Project",
-            "description": "Personal work",
+        # Step 7: Create individual project (mixed usage)
+        individual_project_data = {
+            "name": "Individual Side Project",
+            "description": "Individual work",
             "status": "active",
-            "visibility": "personal"
+            "visibility": "individual"
         }
-        personal_response = client.post("/api/v1/projects/", json=personal_project_data, headers=headers)
-        assert personal_response.status_code == 201
+        individual_response = client.post("/api/v1/projects/", json=individual_project_data, headers=headers)
+        assert individual_response.status_code == 201
 
         # Step 8: List all projects
         projects_response = client.get("/api/v1/projects/", headers=headers)
@@ -468,9 +468,9 @@ class TestCompleteUserWorkflows:
 
         # Verify project types
         team_project_count = sum(1 for p in project_list if p["visibility"] == "team")
-        personal_project_count = sum(1 for p in project_list if p["visibility"] == "personal")
+        individual_project_count = sum(1 for p in project_list if p["visibility"] == "individual")
         assert team_project_count == 2
-        assert personal_project_count == 1
+        assert individual_project_count == 1
 
         # Verify user organization assignment
         user = db.query(User).filter(User.email == "member@teamcorp.com").first()
@@ -572,7 +572,7 @@ class TestDataMigrationReadiness:
         user = db.query(User).filter(User.email == "existing@legacy.com").first()
         assert user is not None
         assert user.organization_id is None
-        assert user.can_create_personal_projects() is True
+        assert user.can_create_individual_projects() is True
 
     def test_system_handles_mixed_organization_states(self, client: TestClient, db: Session):
         """Test system handles mix of users with and without organizations."""
@@ -610,9 +610,9 @@ class TestDataMigrationReadiness:
                 auth_provider=AuthProvider.LOCAL
             ),
             User(
-                email="personal@personal.com",
+                email="individual@individual.com",
                 password_hash="hash3",
-                first_name="Personal",
+                first_name="Individual",
                 last_name="User",
                 organization_id=None,
                 registration_type=RegistrationType.EMAIL,
@@ -660,7 +660,7 @@ class TestDataMigrationReadiness:
         for user in legacy_users:
             db.refresh(user)
             assert user.organization_id is None
-            assert user.can_create_personal_projects() is True
+            assert user.can_create_individual_projects() is True
 
         # Test that system works with all users having no organization
         all_users = db.query(User).all()

@@ -40,7 +40,10 @@ describe("UserService", () => {
 		email: "john@example.com",
 		first_name: "John",
 		last_name: "Doe",
+		phone_number: "+1 (555) 123-4567",
 		role: "developer",
+		has_projects_access: true,
+		email_verified: true,
 		created_at: "2025-01-08T12:00:00Z",
 		updated_at: "2025-01-08T12:00:00Z"
 	};
@@ -53,7 +56,10 @@ describe("UserService", () => {
 			email: "jane@example.com",
 			first_name: "Jane",
 			last_name: "Smith",
+			phone_number: "+1 (555) 987-6543",
 			role: "manager",
+			has_projects_access: true,
+			email_verified: true,
 			created_at: "2025-01-08T12:00:00Z",
 			updated_at: "2025-01-08T12:00:00Z"
 		}
@@ -120,7 +126,8 @@ describe("UserService", () => {
 		const profileData: ProfileUpdateData = {
 			first_name: "John",
 			last_name: "Updated",
-			email: "john.updated@example.com"
+			email: "john.updated@example.com",
+			phone_number: "+1 (555) 123-4567"
 		};
 
 		it("should update user profile successfully", async () => {
@@ -162,6 +169,53 @@ describe("UserService", () => {
 			mockNetworkError();
 
 			await expect(UserService.updateProfile(profileData)).rejects.toThrow("Network error");
+		});
+
+		it("should update profile with phone number", async () => {
+			const profileDataWithPhone: ProfileUpdateData = {
+				first_name: "Jane",
+				last_name: "Smith",
+				email: "jane@example.com",
+				phone_number: "+1 (555) 987-6543"
+			};
+
+			const updatedUser = { ...mockUser, ...profileDataWithPhone };
+			mockSuccessResponse(updatedUser);
+
+			const result = await UserService.updateProfile(profileDataWithPhone);
+
+			expect(result).toEqual(updatedUser);
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me", {
+				method: "PUT",
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(profileDataWithPhone)
+			});
+		});
+
+		it("should update profile without phone number", async () => {
+			const profileDataNoPhone: ProfileUpdateData = {
+				first_name: "Jane",
+				last_name: "Smith",
+				email: "jane@example.com"
+			};
+
+			const updatedUser = { ...mockUser, ...profileDataNoPhone };
+			mockSuccessResponse(updatedUser);
+
+			const result = await UserService.updateProfile(profileDataNoPhone);
+
+			expect(result).toEqual(updatedUser);
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me", {
+				method: "PUT",
+				headers: {
+					Authorization: "Bearer mock-token",
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(profileDataNoPhone)
+			});
 		});
 	});
 
@@ -505,6 +559,109 @@ describe("UserService", () => {
 			expect(result.errors.first_name).toBe("First name is required");
 			expect(result.errors.last_name).toBe("Last name must be less than 100 characters");
 			expect(result.errors.email).toBe("Please enter a valid email address");
+		});
+
+		// Phone number validation tests
+		it("should validate valid phone number formats", () => {
+			const validPhoneNumbers = [
+				"+1 (555) 123-4567",
+				"555-123-4567",
+				"(555) 123-4567",
+				"+1 555 123 4567",
+				"+12345678901",
+				"555.123.4567"
+			];
+
+			validPhoneNumbers.forEach(phoneNumber => {
+				const profileData: ProfileUpdateData = {
+					first_name: "John",
+					last_name: "Doe",
+					email: "john@example.com",
+					phone_number: phoneNumber
+				};
+
+				const result = UserService.validateProfile(profileData);
+
+				expect(result.isValid).toBe(true);
+				expect(result.errors.phone_number).toBeUndefined();
+			});
+		});
+
+		it("should validate when phone number is empty or undefined", () => {
+			const profileDataEmpty: ProfileUpdateData = {
+				first_name: "John",
+				last_name: "Doe",
+				email: "john@example.com",
+				phone_number: ""
+			};
+
+			const profileDataUndefined: ProfileUpdateData = {
+				first_name: "John",
+				last_name: "Doe",
+				email: "john@example.com"
+			};
+
+			const resultEmpty = UserService.validateProfile(profileDataEmpty);
+			const resultUndefined = UserService.validateProfile(profileDataUndefined);
+
+			expect(resultEmpty.isValid).toBe(true);
+			expect(resultEmpty.errors.phone_number).toBeUndefined();
+			expect(resultUndefined.isValid).toBe(true);
+			expect(resultUndefined.errors.phone_number).toBeUndefined();
+		});
+
+		it("should return error for invalid phone number formats", () => {
+			const invalidPhoneNumbers = [
+				"123-456",
+				"not-a-phone",
+				"555-555-555555555",
+				"++1 555 123 4567",
+				"555-abc-defg"
+			];
+
+			invalidPhoneNumbers.forEach(phoneNumber => {
+				const profileData: ProfileUpdateData = {
+					first_name: "John",
+					last_name: "Doe",
+					email: "john@example.com",
+					phone_number: phoneNumber
+				};
+
+				const result = UserService.validateProfile(profileData);
+
+				expect(result.isValid).toBe(false);
+				expect(result.errors.phone_number).toBe(
+					"Please enter a valid phone number (e.g., +1 (555) 123-4567, 555-123-4567)"
+				);
+			});
+		});
+
+		it("should return error for phone number that is too long", () => {
+			const profileData: ProfileUpdateData = {
+				first_name: "John",
+				last_name: "Doe",
+				email: "john@example.com",
+				phone_number: "+1234567890123456789012"
+			};
+
+			const result = UserService.validateProfile(profileData);
+
+			expect(result.isValid).toBe(false);
+			expect(result.errors.phone_number).toBe("Phone number must be less than 20 characters");
+		});
+
+		it("should validate profile with phone number and other fields", () => {
+			const profileData: ProfileUpdateData = {
+				first_name: "John",
+				last_name: "Doe",
+				email: "john@example.com",
+				phone_number: "+1 (555) 123-4567"
+			};
+
+			const result = UserService.validateProfile(profileData);
+
+			expect(result.isValid).toBe(true);
+			expect(result.errors).toEqual({});
 		});
 	});
 

@@ -300,27 +300,4 @@ export class AuthService {
 		const data = await response.json();
 		return { message: data.message || "Password reset successfully" };
 	}
-
-	/**
-	 * Recover username using operation token from verification
-	 */
-	static async recoverUsername(operationToken: string): Promise<{ message: string }> {
-		const response = await fetch("/api/v1/auth/recover-username", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({
-				operation_token: operationToken
-			})
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(errorData.detail || "Failed to recover username");
-		}
-
-		const data = await response.json();
-		return { message: data.message || "Username recovery initiated" };
-	}
 }

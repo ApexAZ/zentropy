@@ -41,8 +41,37 @@
 	--color-neutral-background: #F9FAFB;     /* Light gray - subtle backgrounds */
 	--color-neutral-border: #D1D5DB;         /* Gray border - neutral containers, loading spinners */
 	
-	/* Box shadow for focus states */
-	--shadow-interactive: 0 0 0 3px rgba(106, 139, 167, 0.2); /* Focus ring using interactive color */
+	/* Semantic typography system - purpose-driven naming */
+
+	/* Tailwind font weight integration - semantic naming */
+	--font-weight-body: 400;        /* Normal reading text */
+	--font-weight-interface: 400;   /* UI elements, buttons */
+	--font-weight-heading: 700;     /* All headings */
+	--font-weight-emphasis: 700;    /* Bold emphasis within content */
+
+	/* Tailwind font size integration - semantic naming */
+	--font-size-caption: 0.75rem;   /* Footnotes, timestamps, metadata */
+	--font-size-label: 0.875rem;    /* Form labels, button text, secondary info */
+	--font-size-body: 1rem;         /* Main content, paragraphs */
+	--font-size-heading-small: 1.25rem;   /* h4-h6, card titles */
+	--font-size-heading-medium: 1.5rem;   /* h3, section headers */
+	--font-size-heading-large: 1.875rem;  /* h2, page sections */
+	--font-size-heading-hero: 2.25rem;    /* h1, hero content */
+
+	/* Tailwind line height integration - semantic naming */
+	--line-height-compact: 1.25;     /* Headings, UI elements */
+	--line-height-comfortable: 1.5;  /* Body text, optimal reading */
+	--line-height-relaxed: 1.75;     /* Long-form content, articles */
+
+	/* Typography features */
+	--font-feature-settings: "liga" 0;  /* Disable ligatures (fi, fl, ff combinations) */
+
+	/* Tailwind font family integration */
+	--font-sans: "lato", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+
+	/* Tailwind box shadow integration */
+	--box-shadow-interactive: 0 0 0 3px rgba(106, 139, 167, 0.2); /* Focus ring using interactive color */
 	
 	/* Animation keyframes */
 	--animate-slide-in: slideIn 0.3s ease;
@@ -53,13 +82,78 @@
 	}
 }
 
-/* Custom focus shadow using semantic colors */
-:root {
-	--focus-shadow: 0 0 0 3px rgba(106, 139, 167, 0.2); /* Interactive color with transparency */
+/* Global font application */
+body {
+	@apply font-sans;
+}
+
+/* Global font features */
+* {
+	font-feature-settings: var(--font-feature-settings);
 }
 
 /* Focus utility class */
 .focus-ring {
 	@apply focus:border-interactive focus:outline-none;
-	box-shadow: var(--focus-shadow);
+	box-shadow: var(--box-shadow-interactive);
+}
+
+/* Semantic typography utility classes */
+.font-body {
+	@apply font-sans;
+	font-weight: var(--font-weight-body);
+	font-size: var(--font-size-body);
+	line-height: var(--line-height-comfortable);
+}
+
+.font-interface {
+	@apply font-sans;
+	font-weight: var(--font-weight-interface);
+	font-size: var(--font-size-label);
+	line-height: var(--line-height-compact);
+}
+
+.font-heading {
+	@apply font-sans;
+	font-weight: var(--font-weight-heading);
+	line-height: var(--line-height-compact);
+}
+
+.font-heading-hero {
+	@apply font-sans;
+	font-weight: var(--font-weight-heading);
+	font-size: var(--font-size-heading-hero);
+	line-height: var(--line-height-compact);
+}
+
+.font-heading-large {
+	@apply font-sans;
+	font-weight: var(--font-weight-heading);
+	font-size: var(--font-size-heading-large);
+	line-height: var(--line-height-compact);
+}
+
+.font-heading-medium {
+	@apply font-sans;
+	font-weight: var(--font-weight-heading);
+	font-size: var(--font-size-heading-medium);
+	line-height: var(--line-height-compact);
+}
+
+.font-heading-small {
+	@apply font-sans;
+	font-weight: var(--font-weight-heading);
+	font-size: var(--font-size-heading-small);
+	line-height: var(--line-height-compact);
+}
+
+.font-caption {
+	@apply font-sans;
+	font-weight: var(--font-weight-body);
+	font-size: var(--font-size-caption);
+	line-height: var(--line-height-comfortable);
+}
+
+.font-code {
+	@apply font-mono;
 }

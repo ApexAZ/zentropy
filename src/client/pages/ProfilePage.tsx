@@ -3,9 +3,10 @@ import type { User, ProfileUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
-import { AccountSecuritySection } from "../components/AccountSecuritySection";
-import PasswordChangeForm from "../components/PasswordChangeForm";
+import { SecurityOverview } from "../components/SecurityOverview";
+import { SignInMethods } from "../components/SignInMethods";
 import { useToast } from "../contexts/ToastContext";
+import { useAccountSecurity } from "../hooks/useAccountSecurity";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -13,7 +14,6 @@ const ProfilePage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string>("");
 	const [isEditingProfile, setIsEditingProfile] = useState(false);
-	const [isChangingPassword, setIsChangingPassword] = useState(false);
 
 	// Toast notifications
 	const { showSuccess, showError } = useToast();
@@ -22,7 +22,8 @@ const ProfilePage: React.FC = () => {
 	const [profileData, setProfileData] = useState<ProfileUpdateData>({
 		first_name: "",
 		last_name: "",
-		email: ""
+		email: "",
+		phone_number: ""
 	});
 
 	const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
@@ -47,7 +48,8 @@ const ProfilePage: React.FC = () => {
 					setProfileData({
 						first_name: userData.first_name,
 						last_name: userData.last_name,
-						email: userData.email
+						email: userData.email,
+						phone_number: userData.phone_number || ""
 					});
 				}
 			} catch (err) {
@@ -80,7 +82,8 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: userData.first_name,
 				last_name: userData.last_name,
-				email: userData.email
+				email: userData.email,
+				phone_number: userData.phone_number || ""
 			});
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to load profile");
@@ -88,6 +91,12 @@ const ProfilePage: React.FC = () => {
 			setIsLoading(false);
 		}
 	}, []);
+
+	// Security data hook (after retryLoadProfile is defined)
+	const { securityStatus, loading: securityLoading } = useAccountSecurity({
+		onSecurityUpdate: retryLoadProfile,
+		onError: showError
+	});
 
 	const handleEditProfile = (): void => {
 		setIsEditingProfile(true);
@@ -100,7 +109,8 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: user.first_name,
 				last_name: user.last_name,
-				email: user.email
+				email: user.email,
+				phone_number: user.phone_number || ""
 			});
 		}
 		setProfileErrors({});
@@ -131,26 +141,15 @@ const ProfilePage: React.FC = () => {
 		}
 	};
 
-	// Security section handlers
-	const handleSecurityUpdate = useCallback((): void => {
-		// Refresh user data when security status changes
-		void retryLoadProfile();
-	}, [retryLoadProfile]);
-
-	const handleSecurityError = useCallback(
-		(error: string): void => {
-			showError(error);
-		},
-		[showError]
-	);
-
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
-						<p className="text-text-primary mt-2">Manage your account information and security settings</p>
+						<h2 className="text-text-contrast font-heading-large m-0">My Profile</h2>
+						<p className="text-text-primary font-body mt-2">
+							Manage your account information and security settings
+						</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
@@ -166,13 +165,15 @@ const ProfilePage: React.FC = () => {
 			<main className="w-full py-8">
 				<div className="mb-8 flex items-center justify-between">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
-						<p className="text-text-primary mt-2">Manage your account information and security settings</p>
+						<h2 className="text-text-contrast font-heading-large m-0">My Profile</h2>
+						<p className="text-text-primary font-body mt-2">
+							Manage your account information and security settings
+						</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Profile</h3>
+						<h3 className="text-error font-heading-medium mb-3">Unable to Load Profile</h3>
 						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void retryLoadProfile()}
@@ -211,7 +212,7 @@ const ProfilePage: React.FC = () => {
 					{/* Profile Information Section */}
 					<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 						<div className="mb-6 flex items-center justify-between">
-							<h3 className="text-text-contrast text-xl font-semibold">Profile Information</h3>
+							<h3 className="text-text-contrast font-heading-medium">Profile Information</h3>
 							{!isEditingProfile && (
 								<button
 									onClick={handleEditProfile}
@@ -240,10 +241,10 @@ const ProfilePage: React.FC = () => {
 											onChange={e =>
 												setProfileData({ ...profileData, first_name: e.target.value })
 											}
-											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 										/>
 										{profileErrors.first_name && (
-											<span className="mt-1 block text-sm text-red-600">
+											<span className="text-error mt-1 block text-sm">
 												{profileErrors.first_name}
 											</span>
 										)}
@@ -263,10 +264,10 @@ const ProfilePage: React.FC = () => {
 											onChange={e =>
 												setProfileData({ ...profileData, last_name: e.target.value })
 											}
-											className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+											className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 										/>
 										{profileErrors.last_name && (
-											<span className="mt-1 block text-sm text-red-600">
+											<span className="text-error mt-1 block text-sm">
 												{profileErrors.last_name}
 											</span>
 										)}
@@ -282,10 +283,29 @@ const ProfilePage: React.FC = () => {
 										type="email"
 										value={profileData.email}
 										onChange={e => setProfileData({ ...profileData, email: e.target.value })}
-										className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+										className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 									/>
 									{profileErrors.email && (
-										<span className="mt-1 block text-sm text-red-600">{profileErrors.email}</span>
+										<span className="text-error mt-1 block text-sm">{profileErrors.email}</span>
+									)}
+								</div>
+
+								<div>
+									<label htmlFor="profile-phone" className="text-text-primary mb-2 block font-medium">
+										Phone Number <span className="text-neutral">(optional)</span>
+									</label>
+									<input
+										id="profile-phone"
+										type="tel"
+										value={profileData.phone_number || ""}
+										onChange={e => setProfileData({ ...profileData, phone_number: e.target.value })}
+										placeholder="e.g., +1 (555) 123-4567"
+										className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+									/>
+									{profileErrors.phone_number && (
+										<span className="text-error mt-1 block text-sm">
+											{profileErrors.phone_number}
+										</span>
 									)}
 								</div>
 
@@ -308,21 +328,33 @@ const ProfilePage: React.FC = () => {
 						) : (
 							<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Full Name</div>
-									<div className="text-gray-900">
+									<div className="text-text-primary font-interface mb-1 block">Full Name</div>
+									<div className="text-text-contrast">
 										{user.first_name} {user.last_name}
 									</div>
 								</div>
 
 								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Email Address</div>
-									<div className="text-gray-900">{user.email}</div>
+									<div className="text-text-primary font-interface mb-1 block">Email Address</div>
+									<div className="text-text-contrast">{user.email}</div>
 								</div>
 
 								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Role</div>
+									<div className="text-text-primary font-interface mb-1 block">Phone Number</div>
+									<div className="text-text-contrast">{user.phone_number || "Not provided"}</div>
+								</div>
+
+								<div>
+									<div className="text-text-primary font-interface mb-1 block">Organization</div>
+									<div className="text-text-contrast">
+										{user.organization_id ? "Organization Member" : "Individual Account"}
+									</div>
+								</div>
+
+								<div>
+									<div className="text-text-primary font-interface mb-1 block">Role</div>
 									<div className="flex items-center gap-2">
-										<span className="text-gray-900">{getRoleLabel(user.role)}</span>
+										<span className="text-text-contrast">{getRoleLabel(user.role)}</span>
 										<span
 											className={`rounded-full px-2 py-1 text-xs font-medium ${getRoleBadgeColor(user.role)}`}
 										>
@@ -332,47 +364,13 @@ const ProfilePage: React.FC = () => {
 								</div>
 
 								<div>
-									<div className="mb-1 block text-sm font-medium text-gray-500">Member Since</div>
-									<div className="text-gray-900">
+									<div className="text-text-primary font-interface mb-1 block">Member Since</div>
+									<div className="text-text-contrast">
 										{user.created_at ? formatDate(user.created_at, "long") : "N/A"}
 									</div>
 								</div>
 							</div>
 						)}
-					</div>
-
-					{/* Account Information Section */}
-					<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-						<h3 className="text-text-contrast mb-6 text-xl font-semibold">Account Information</h3>
-
-						<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-							<div>
-								<div className="mb-1 block text-sm font-medium text-gray-500">Account Status</div>
-								<div className="flex items-center gap-2">
-									<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-sm font-medium text-green-800">
-										<span>✅</span>
-										Active
-									</span>
-								</div>
-							</div>
-
-							<div>
-								<div className="mb-1 block text-sm font-medium text-gray-500">User ID</div>
-								<div className="font-mono text-sm text-gray-900">{user.id}</div>
-							</div>
-
-							<div>
-								<div className="mb-1 block text-sm font-medium text-gray-500">Username</div>
-								<div className="text-gray-900">{user.username}</div>
-							</div>
-
-							<div>
-								<div className="mb-1 block text-sm font-medium text-gray-500">Last Updated</div>
-								<div className="text-gray-900">
-									{user.updated_at ? formatDate(user.updated_at, "long") : "N/A"}
-								</div>
-							</div>
-						</div>
 					</div>
 				</div>
 			</TabPanel>
@@ -380,65 +378,39 @@ const ProfilePage: React.FC = () => {
 			{/* Security Tab */}
 			<TabPanel tabId="security" activeTab={activeTab}>
 				<div className="space-y-8">
-					{/* Account Security Section - OAuth Linking */}
-					<AccountSecuritySection onSecurityUpdate={handleSecurityUpdate} onError={handleSecurityError} />
-
-					{/* Password Security Section */}
-					<div className="mb-8">
-						<div className="mb-6">
-							<h3 className="text-text-contrast text-xl font-semibold">Password & Security</h3>
-							<p className="text-text-primary mt-1 text-sm">
-								Manage your password with enhanced security verification
-							</p>
+					{securityLoading ? (
+						<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+							<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
+							<p className="text-text-primary mb-4">Loading security information...</p>
 						</div>
+					) : securityStatus ? (
+						<>
+							{/* Security Overview Section */}
+							<SecurityOverview securityStatus={securityStatus} />
 
-						{!isChangingPassword ? (
-							<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-								<div className="space-y-4">
-									<div>
-										<div className="mb-1 block text-sm font-medium text-gray-500">Password</div>
-										<div className="flex items-center gap-4">
-											<span className="text-gray-400">••••••••••••</span>
-											<span className="text-text-primary text-sm">Last changed: Recent</span>
-										</div>
-									</div>
-
-									<div>
-										<div className="mb-1 block text-sm font-medium text-gray-500">
-											Security Status
-										</div>
-										<div className="flex items-center gap-2">
-											<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-sm font-medium text-green-800">
-												<span>🛡️</span>
-												Secure
-											</span>
-											<span className="text-text-primary text-sm">
-												Your account meets all security requirements
-											</span>
-										</div>
-									</div>
-
-									<div className="border-layout-background border-t pt-4">
-										<button
-											onClick={() => setIsChangingPassword(true)}
-											className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
-										>
-											<span>🔒</span>
-											Change Password
-										</button>
-									</div>
-								</div>
-							</div>
-						) : (
-							<PasswordChangeForm
-								onSuccess={() => {
-									setIsChangingPassword(false);
-									showSuccess("Password changed successfully! Your account is now more secure.");
-								}}
-								onCancel={() => setIsChangingPassword(false)}
+							{/* Sign-In Methods Section */}
+							<SignInMethods
+								securityStatus={securityStatus}
+								onSecurityUpdate={retryLoadProfile}
+								onError={showError}
 							/>
-						)}
-					</div>
+						</>
+					) : (
+						<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+							<div>
+								<h3 className="text-error mb-3 text-xl font-semibold">
+									Unable to Load Security Information
+								</h3>
+								<p className="text-text-primary mb-6">Failed to load account security details</p>
+								<button
+									onClick={() => void retryLoadProfile()}
+									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
+								>
+									Retry
+								</button>
+							</div>
+						</div>
+					)}
 				</div>
 			</TabPanel>
 		</main>

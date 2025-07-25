@@ -114,29 +114,6 @@ class TestSendSecurityCodeEndpoint:
         data = response.json()
         assert "If an account with that email exists" in data["message"]
 
-    def test_send_security_code_username_recovery_existing_user(self, client: TestClient, db: Session, current_user: User, test_rate_limits, auto_clean_mailpit):
-        """Test sending security code for username recovery."""
-        request_data = {
-            "email": current_user.email,
-            "operation_type": "username_recovery"
-        }
-        
-        response = client.post("/api/v1/auth/send-security-code", json=request_data)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert "Verification code sent to" in data["message"]
-        
-        # Verify code was created in database
-        verification_code = db.query(
-            VerificationCode
-        ).filter(
-            VerificationCode.user_id == current_user.id,
-            VerificationCode.verification_type == VerificationType.USERNAME_RECOVERY
-        ).first()
-        
-        assert verification_code is not None
-        assert verification_code.is_used is False
 
     def test_send_security_code_invalid_operation_type(self, client: TestClient, db: Session, current_user: User, test_rate_limits, auto_clean_mailpit):
         """Test sending security code with invalid operation type."""

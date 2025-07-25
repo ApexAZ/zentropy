@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
 from .database import Base, get_enum_values
-from sqlalchemy import String, Boolean, DateTime, Integer, ForeignKey, Enum
+from sqlalchemy import String, Boolean, DateTime, Integer, ForeignKey, Enum, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -32,7 +32,6 @@ class VerificationType(PyEnum):
     TWO_FACTOR_AUTH = "two_factor_auth"
     PASSWORD_RESET = "password_reset"
     PASSWORD_CHANGE = "password_change"
-    USERNAME_RECOVERY = "username_recovery"
     EMAIL_CHANGE = "email_change"
     ACCOUNT_RECOVERY = "account_recovery"
     SENSITIVE_ACTION = "sensitive_action"
@@ -71,6 +70,49 @@ class VerificationCode(Base):
     is_used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    # Performance indexes for query optimization
+    __table_args__ = (
+        # Rate limiting and hourly limit checks
+        # Query: user_id + verification_type + created_at > cutoff
+        Index(
+            "idx_verification_codes_rate_limit",
+            "user_id",
+            "verification_type",
+            "created_at",
+        ),
+        # Main verification query optimization
+        # Query: user_id + verification_type + code + is_used=false + expires_at > now
+        Index(
+            "idx_verification_codes_verification",
+            "user_id",
+            "verification_type",
+            "code",
+            "is_used",
+            "expires_at",
+        ),
+        # Active code operations optimization
+        # Query: user_id + verification_type + is_used=false + expires_at > now
+        Index(
+            "idx_verification_codes_active",
+            "user_id",
+            "verification_type",
+            "is_used",
+            "expires_at",
+        ),
+        # Code uniqueness check optimization
+        # Query: code + verification_type + is_used=false + expires_at > now
+        Index(
+            "idx_verification_codes_uniqueness",
+            "code",
+            "verification_type",
+            "is_used",
+            "expires_at",
+        ),
+        # Cleanup operations optimization
+        # Query: expires_at <= now OR is_used=true
+        Index("idx_verification_codes_cleanup", "expires_at", "is_used"),
     )
 
 
@@ -119,11 +161,6 @@ class VerificationCodeService:
             "expiration_minutes": 15,
             "max_attempts": 3,
             "rate_limit_minutes": 1,
-        },
-        VerificationType.USERNAME_RECOVERY: {
-            "expiration_minutes": 20,
-            "max_attempts": 3,
-            "rate_limit_minutes": 2,
         },
         VerificationType.EMAIL_CHANGE: {
             "expiration_minutes": 15,

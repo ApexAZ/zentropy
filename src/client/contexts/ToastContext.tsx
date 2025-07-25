@@ -171,26 +171,32 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 	return (
 		<ToastContext.Provider value={contextValue}>
 			{children}
-			{/* Render toasts */}
-			{toasts.map((toast, index) => (
-				<div
-					key={toast.id}
-					className="transition-transform duration-300 ease-in-out"
-					style={{
-						transform: `translateY(${index * 80}px)`,
-						zIndex: 1100 - index
-					}}
-				>
-					<Toast
-						message={toast.message}
-						type={toast.type}
-						isVisible={true}
-						onDismiss={() => dismissToast(toast.id)}
-						autoDissmissTimeout={toast.persistent ? 0 : toast.autoDissmissTimeout || 5000}
-						{...(toast.actionLink && { actionLink: toast.actionLink })}
-					/>
+			{/* Render toasts - positioned at top of main content */}
+			{toasts.length > 0 && (
+				<div className="pointer-events-none fixed top-16 right-0 left-0 z-[1300]">
+					<div className="flex flex-col items-center gap-2 px-4">
+						{toasts.map((toast, index) => (
+							<div
+								key={toast.id}
+								className="pointer-events-auto transition-transform duration-300 ease-in-out"
+								style={{
+									transform: `translateY(${index * 10}px)`,
+									zIndex: 1300 - index
+								}}
+							>
+								<Toast
+									message={toast.message}
+									type={toast.type}
+									isVisible={true}
+									onDismiss={() => dismissToast(toast.id)}
+									autoDissmissTimeout={toast.persistent ? 0 : toast.autoDissmissTimeout || 5000}
+									{...(toast.actionLink && { actionLink: toast.actionLink })}
+								/>
+							</div>
+						))}
+					</div>
 				</div>
-			))}
+			)}
 		</ToastContext.Provider>
 	);
 }

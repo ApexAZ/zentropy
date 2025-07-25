@@ -67,7 +67,7 @@ const DashboardPage: React.FC = () => {
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Dashboard</h3>
+						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Dashboard</h3>
 						<p className="text-text-primary mb-6">{error}</p>
 						<Button variant="secondary" onClick={() => void loadDashboardData()}>
 							Retry
@@ -119,13 +119,8 @@ const DashboardPage: React.FC = () => {
 							<p className="text-text-primary text-sm font-medium">Team Members</p>
 							<p className="text-text-contrast text-2xl font-bold">{stats.total_members}</p>
 						</div>
-						<div className="rounded-full bg-green-100 p-3">
-							<svg
-								className="h-6 w-6 text-green-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
+						<div className="bg-success-background rounded-full p-3">
+							<svg className="text-success h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -143,13 +138,8 @@ const DashboardPage: React.FC = () => {
 							<p className="text-text-primary text-sm font-medium">Active Sprints</p>
 							<p className="text-text-contrast text-2xl font-bold">{stats.active_sprints}</p>
 						</div>
-						<div className="rounded-full bg-purple-100 p-3">
-							<svg
-								className="h-6 w-6 text-purple-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
+						<div className="bg-warning-background rounded-full p-3">
+							<svg className="text-warning h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -167,13 +157,8 @@ const DashboardPage: React.FC = () => {
 							<p className="text-text-primary text-sm font-medium">Upcoming PTO</p>
 							<p className="text-text-contrast text-2xl font-bold">{stats.upcoming_pto}</p>
 						</div>
-						<div className="rounded-full bg-orange-100 p-3">
-							<svg
-								className="h-6 w-6 text-orange-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
+						<div className="bg-warning-background rounded-full p-3">
+							<svg className="text-warning h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path
 									strokeLinecap="round"
 									strokeLinejoin="round"
@@ -200,7 +185,7 @@ const DashboardPage: React.FC = () => {
 				) : (
 					<div className="overflow-x-auto">
 						<table className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gray-50">
+							<thead className="bg-neutral-background">
 								<tr>
 									<th className="text-text-primary px-6 py-3 text-left text-xs font-medium tracking-wider uppercase">
 										Team Name
@@ -226,7 +211,7 @@ const DashboardPage: React.FC = () => {
 								{teams.map(team => {
 									const velocityStatus = getVelocityStatus(team.velocity_baseline);
 									return (
-										<tr key={team.id} className="hover:bg-gray-50">
+										<tr key={team.id} className="hover:bg-neutral-background">
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div>
 													<div className="text-text-contrast text-sm font-medium">
@@ -261,7 +246,7 @@ const DashboardPage: React.FC = () => {
 												{formatDate(team.created_at)}
 											</td>
 											<td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-												<button className="text-interactive mr-4 hover:text-blue-900">
+												<button className="text-interactive hover:text-text-contrast mr-4">
 													View Details
 												</button>
 												<button className="text-text-primary hover:text-text-contrast">
@@ -282,13 +267,13 @@ const DashboardPage: React.FC = () => {
 				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<h4 className="text-text-contrast mb-4 text-lg font-semibold">Quick Actions</h4>
 					<div className="space-y-3">
-						<button className="w-full rounded-md px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50">
+						<button className="text-text-primary hover:bg-neutral-background w-full rounded-md px-4 py-2 text-left text-sm transition-colors">
 							+ Create New Team
 						</button>
-						<button className="w-full rounded-md px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50">
+						<button className="text-text-primary hover:bg-neutral-background w-full rounded-md px-4 py-2 text-left text-sm transition-colors">
 							📅 Add Calendar Entry
 						</button>
-						<button className="w-full rounded-md px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50">
+						<button className="text-text-primary hover:bg-neutral-background w-full rounded-md px-4 py-2 text-left text-sm transition-colors">
 							⚡ Start Sprint Planning
 						</button>
 					</div>
@@ -306,15 +291,15 @@ const DashboardPage: React.FC = () => {
 					<div className="space-y-3">
 						<div className="flex items-center justify-between">
 							<span className="text-text-primary text-sm">Database</span>
-							<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-								<span className="h-2 w-2 rounded-full bg-green-500"></span>
+							<span className="bg-success-background text-success inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium">
+								<span className="bg-success h-2 w-2 rounded-full"></span>
 								Connected
 							</span>
 						</div>
 						<div className="flex items-center justify-between">
 							<span className="text-text-primary text-sm">API</span>
-							<span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-								<span className="h-2 w-2 rounded-full bg-green-500"></span>
+							<span className="bg-success-background text-success inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium">
+								<span className="bg-success h-2 w-2 rounded-full"></span>
 								Operational
 							</span>
 						</div>

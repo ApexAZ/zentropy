@@ -22,7 +22,6 @@ from ..schemas import (
     VerifySecurityCodeRequest,
     OperationTokenResponse,
     ResetPasswordRequest,
-    RecoverUsernameRequest,
 )
 from ..auth import (
     authenticate_user,
@@ -50,7 +49,6 @@ from ..email_verification import (
     send_verification_email,
     resend_verification_email,
 )
-from ..email_service import send_username_recovery_email
 
 router = APIRouter()
 
@@ -66,6 +64,7 @@ def login(
     client_ip = get_client_ip(request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
 
+    # OAuth2 spec uses 'username' field, but we authenticate with email
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user or isinstance(user, bool):
         raise HTTPException(
@@ -545,7 +544,7 @@ def send_security_code_endpoint(
     Supports multiple operation types:
     - password_change: For authenticated users changing their password
     - password_reset: For unauthenticated users who forgot their password
-    - username_recovery: For users who forgot their username
+    - email_recovery: For users who forgot their email address
     - email_change: For users changing their email address (future)
     """
     from ..verification_service import VerificationCodeService, VerificationType
@@ -605,13 +604,12 @@ def send_security_code_endpoint(
         user = current_user
 
     else:
-        # Other operations work with email lookup (password_reset, username_recovery)
+        # Other operations work with email lookup (password_reset, email_recovery)
         user = db.query(database.User).filter(database.User.email == email).first()
 
-        # For security, don't reveal if email exists for password reset/recovery
+        # For security, don't reveal if email exists for password reset
         if not user and verification_type in [
             VerificationType.PASSWORD_RESET,
-            VerificationType.USERNAME_RECOVERY,
         ]:
             # Return success anyway to prevent email enumeration
             message = (
@@ -636,7 +634,7 @@ def send_security_code_endpoint(
         # operation_labels = {
         #     VerificationType.PASSWORD_CHANGE: "password change",
         #     VerificationType.PASSWORD_RESET: "password reset",
-        #     VerificationType.USERNAME_RECOVERY: "username recovery",
+        #     VerificationType.EMAIL_RECOVERY: "email recovery",
         #     VerificationType.EMAIL_CHANGE: "email change",
         # }
 
@@ -795,79 +793,3 @@ def reset_password(
     db.commit()
 
     return MessageResponse(message="Password reset successfully")
-
-
-@router.post("/recover-username", response_model=MessageResponse)
-def recover_username(
-    request: RecoverUsernameRequest,
-    fastapi_request: Request,
-    db: Session = Depends(get_db),
-) -> MessageResponse:
-    """
-    Send username to user's email after verification.
-    Requires a valid operation token obtained by verifying a security code.
-    """
-    # Apply rate limiting
-    client_ip = get_client_ip(fastapi_request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
-
-    # Find user by email first for enhanced security checks
-    email_candidate = None
-    try:
-        # First do basic token validation to get email
-        from api.security import get_operation_token_manager
-
-        token_info = get_operation_token_manager().get_token_info(
-            request.operation_token
-        )
-        email_candidate = token_info.get("email")
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token",
-        )
-
-    if not email_candidate:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token",
-        )
-
-    # Find user by email (case-insensitive)
-    user = db.query(User).filter(User.email.ilike(email_candidate)).first()
-
-    # Verify operation token with enhanced security (single-use + cross-user prevention)
-    try:
-        email = verify_operation_token(
-            request.operation_token,
-            "username_recovery",
-            db,
-            str(user.id) if user else None,
-        )
-    except Exception as e:
-        # Log the specific error for debugging while returning generic message
-        import logging
-
-        logging.warning(f"Username recovery token verification failed: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token",
-        )
-
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired token",
-        )
-
-    if user:
-        # Send username via email
-        user_name = f"{user.first_name} {user.last_name}".strip()
-        if not user_name:
-            user_name = "User"
-
-        # Username is the email address in this system
-        send_username_recovery_email(user.email, user_name, user.email)
-
-    # Always return success for security (don't reveal if email exists)
-    return MessageResponse(message="If the email exists, the username has been sent")

@@ -46,14 +46,14 @@ def validate_project_organization_constraints(
     - Team projects: organization_id required, user must be member
     - Organization projects: organization_id required, user must be member
     """
-    visibility = project_data.get("visibility", ProjectVisibility.PERSONAL)
+    visibility = project_data.get("visibility", ProjectVisibility.INDIVIDUAL)
     organization_id = project_data.get("organization_id")
 
-    if visibility == ProjectVisibility.PERSONAL:
+    if visibility == ProjectVisibility.INDIVIDUAL:
         if organization_id is not None:
             raise HTTPException(
                 status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail="Personal projects cannot be assigned to an organization",
+                detail="Individual projects cannot be assigned to an organization",
             )
 
     elif visibility in [ProjectVisibility.TEAM, ProjectVisibility.ORGANIZATION]:
@@ -132,7 +132,7 @@ def validate_project_name_uniqueness(
 
     existing = query.first()
     if existing:
-        scope = "organization" if organization_id else "your personal projects"
+        scope = "organization" if organization_id else "your individual projects"
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Project name '{name}' already exists in {scope}",
@@ -152,7 +152,7 @@ def check_project_access(project: Project, current_user: User) -> bool:
     if current_user.role == UserRole.ADMIN:
         return True
 
-    if project.visibility == ProjectVisibility.PERSONAL:
+    if project.visibility == ProjectVisibility.INDIVIDUAL:
         return project.created_by == current_user.id
 
     elif project.visibility in [ProjectVisibility.TEAM, ProjectVisibility.ORGANIZATION]:
@@ -196,8 +196,8 @@ async def create_project(
     )
 
     # Create project using appropriate factory method
-    if project.visibility == ProjectVisibility.PERSONAL:
-        db_project = Project.create_personal_project(
+    if project.visibility == ProjectVisibility.INDIVIDUAL:
+        db_project = Project.create_individual_project(
             name=project.name,
             description=project.description,
             creator_id=current_user.id,

@@ -139,6 +139,6 @@ describe("SecurityActions", () => {
 		renderWithFullEnvironment(<SecurityActions securityStatus={mockHybridResponse} {...defaultProps} />);
 
 		const unlinkButton = screen.getByRole("button", { name: "Unlink Google Account" });
-		expect(unlinkButton).toHaveClass("bg-red-600"); // Danger variant
+		expect(unlinkButton).toHaveClass("bg-error"); // Danger variant
 	});
 });

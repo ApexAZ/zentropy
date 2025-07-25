@@ -137,8 +137,8 @@ describe("ToastProvider", () => {
 
 			// First toast should be at the top (no transform)
 			expect(alerts[0].parentElement).toHaveStyle({ transform: "translateY(0px)" });
-			// Second toast should be below the first (80px offset)
-			expect(alerts[1].parentElement).toHaveStyle({ transform: "translateY(80px)" });
+			// Second toast should be below the first (10px offset)
+			expect(alerts[1].parentElement).toHaveStyle({ transform: "translateY(10px)" });
 		});
 
 		it("should respect maximum toast limit", async () => {

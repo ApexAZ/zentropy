@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.exc import OperationalError
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 import os
 import time
 
@@ -18,6 +19,7 @@ from .routers import (
     organizations,
     projects,
 )
+from .services.cleanup_service import cleanup_service
 
 # Wait for database with retry logic
 max_retries = 30
@@ -47,7 +49,34 @@ for attempt in range(max_retries):
         wait_time = min(1 * (1.5**attempt), 5)
         time.sleep(wait_time)
 
-# Initialize FastAPI app
+
+# Application lifecycle management
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle with proper startup and shutdown"""
+    # Startup
+    try:
+        # Only start cleanup service if database is connected
+        if test_database_connection():
+            await cleanup_service.start_scheduler()
+            print("✅ Background cleanup service started")
+        else:
+            print("⚠️  Skipping cleanup service - database not connected")
+    except Exception as e:
+        print(f"⚠️  Warning: Could not start cleanup service: {e}")
+        # Don't fail startup if cleanup service fails
+
+    yield  # Application runs here
+
+    # Shutdown
+    try:
+        await cleanup_service.stop_scheduler()
+        print("✅ Background services stopped cleanly")
+    except Exception as e:
+        print(f"⚠️  Warning during service shutdown: {e}")
+
+
+# Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Zentropy API",
     description=(
@@ -55,6 +84,7 @@ app = FastAPI(
         "team collaboration, and capacity planning"
     ),
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware for React frontend

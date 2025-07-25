@@ -19,16 +19,16 @@ from api.schemas import ProjectCreate, ProjectResponse
 class TestProjectCreationAPI:
     """Test project creation API with organization decision workflow."""
     
-    def test_create_personal_project_without_organization(self, client, auth_headers, db, current_user):
-        """Test creating personal project without organization assignment."""
+    def test_create_individual_project_without_organization(self, client, auth_headers, db, current_user):
+        """Test creating individual project without organization assignment."""
         # Ensure user has no organization
         current_user.organization_id = None
         db.commit()
         
         project_data = {
-            "name": "Personal Project",
-            "description": "A personal project for testing",
-            "visibility": "personal"
+            "name": "Individual Project",
+            "description": "A individual project for testing",
+            "visibility": "individual"
         }
         
         response = client.post(
@@ -39,9 +39,9 @@ class TestProjectCreationAPI:
         assert response.status_code == 201
         
         data = response.json()
-        assert data["name"] == "Personal Project"
-        assert data["description"] == "A personal project for testing"
-        assert data["visibility"] == "personal"
+        assert data["name"] == "Individual Project"
+        assert data["description"] == "A individual project for testing"
+        assert data["visibility"] == "individual"
         assert data["organization_id"] is None
         assert data["created_by"] == str(current_user.id)
         assert data["status"] == "active"
@@ -157,22 +157,22 @@ class TestProjectCreationAPI:
 class TestProjectJustInTimeOrganizationWorkflow:
     """Test project creation workflows that trigger organization decisions."""
     
-    def test_personal_to_team_project_upgrade_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
-        """Test upgrading personal project to team project with organization creation."""
+    def test_individual_to_team_project_upgrade_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
+        """Test upgrading individual project to team project with organization creation."""
         # Start with user without organization
         current_user.organization_id = None
         db.commit()
         
-        # Step 1: Create personal project
-        personal_project_data = {
-            "name": "Personal Project to Upgrade",
+        # Step 1: Create individual project
+        individual_project_data = {
+            "name": "Individual Project to Upgrade",
             "description": "Will be upgraded to team project",
-            "visibility": "personal"
+            "visibility": "individual"
         }
         
         response = client.post(
             "/api/v1/projects/",
-            json=personal_project_data,
+            json=individual_project_data,
             headers=auth_headers
         )
         assert response.status_code == 201
@@ -312,7 +312,7 @@ class TestProjectCRUDAPI:
             name="Get Test Project",
             description="Project for get testing",
             created_by=current_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         db.add(project)
@@ -344,7 +344,7 @@ class TestProjectCRUDAPI:
                 name=f"List Test Project {i}",
                 description=f"Project {i} for list testing",
                 created_by=current_user.id,
-                visibility=ProjectVisibility.PERSONAL,
+                visibility=ProjectVisibility.INDIVIDUAL,
                 status=ProjectStatus.ACTIVE
             )
             projects.append(project)
@@ -371,13 +371,13 @@ class TestProjectCRUDAPI:
         active_project = Project(
             name="Active Project",
             created_by=current_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         archived_project = Project(
             name="Archived Project",
             created_by=current_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ARCHIVED
         )
         
@@ -395,12 +395,12 @@ class TestProjectCRUDAPI:
         assert active_projects[0]["name"] == "Active Project"
         
         # Filter by visibility
-        response = client.get("/api/v1/projects/?visibility=personal", headers=auth_headers)
+        response = client.get("/api/v1/projects/?visibility=individual", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
-        personal_projects = [p for p in data["projects"] if p["visibility"] == "personal"]
-        assert len(personal_projects) >= 2
+        individual_projects = [p for p in data["projects"] if p["visibility"] == "individual"]
+        assert len(individual_projects) >= 2
     
     def test_update_project(self, client, auth_headers, db, current_user):
         """Test updating project information."""
@@ -409,7 +409,7 @@ class TestProjectCRUDAPI:
             name="Update Test Project",
             description="Original description",
             created_by=current_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         db.add(project)
@@ -434,7 +434,7 @@ class TestProjectCRUDAPI:
         assert data["name"] == "Updated Project Name"
         assert data["description"] == "Updated description"
         assert data["status"] == "completed"
-        assert data["visibility"] == "personal"  # Should remain unchanged
+        assert data["visibility"] == "individual"  # Should remain unchanged
     
     def test_delete_project(self, client, auth_headers, db, current_user):
         """Test deleting project."""
@@ -442,7 +442,7 @@ class TestProjectCRUDAPI:
         project = Project(
             name="Delete Test Project",
             created_by=current_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         db.add(project)
@@ -464,8 +464,8 @@ class TestProjectCRUDAPI:
 class TestProjectAccessControlAPI:
     """Test project access control and permissions."""
     
-    def test_project_access_personal_visibility(self, client, auth_headers, db, current_user):
-        """Test access control for personal projects."""
+    def test_project_access_individual_visibility(self, client, auth_headers, db, current_user):
+        """Test access control for individual projects."""
         # Create another user
         other_user = User(
             email="other@example.com",
@@ -477,18 +477,18 @@ class TestProjectAccessControlAPI:
         db.commit()
         db.refresh(other_user)
         
-        # Create personal project by other user
+        # Create individual project by other user
         other_project = Project(
-            name="Other User's Personal Project",
+            name="Other User's Individual Project",
             created_by=other_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         db.add(other_project)
         db.commit()
         db.refresh(other_project)
         
-        # Current user should not see other user's personal project
+        # Current user should not see other user's individual project
         response = client.get(f"/api/v1/projects/{other_project.id}", headers=auth_headers)
         assert response.status_code == 403
         assert "not authorized" in response.json()["detail"].lower()
@@ -559,7 +559,7 @@ class TestProjectAccessControlAPI:
         other_project = Project(
             name="Other User's Project",
             created_by=other_user.id,
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE
         )
         db.add(other_project)
@@ -613,7 +613,7 @@ class TestProjectAPIAuthentication:
         with patch('api.auth.get_current_user', return_value=inactive_user):
             project_data = {
                 "name": "Inactive User Project",
-                "visibility": "personal"
+                "visibility": "individual"
             }
             
             response = client.post("/api/v1/projects/", json=project_data)
@@ -660,7 +660,7 @@ class TestProjectAPIErrorHandling:
         # Create first project
         project_data = {
             "name": "Unique Project Name",
-            "visibility": "personal"
+            "visibility": "individual"
         }
         
         response = client.post(
@@ -685,11 +685,11 @@ class TestProjectAPIIntegration:
     
     def test_complete_project_lifecycle_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
         """Test complete project lifecycle from creation to completion."""
-        # Step 1: Create personal project
+        # Step 1: Create individual project
         project_data = {
             "name": "Lifecycle Project",
             "description": "Project for lifecycle testing",
-            "visibility": "personal",
+            "visibility": "individual",
             "status": "active"
         }
         
@@ -735,12 +735,12 @@ class TestProjectAPIIntegration:
         assert data["status"] == "archived"
     
     def test_project_organization_migration_workflow(self, client, auth_headers, db, current_user, test_rate_limits):
-        """Test migrating project from personal to organization scope."""
-        # Step 1: Create personal project
+        """Test migrating project from individual to organization scope."""
+        # Step 1: Create individual project
         project_data = {
             "name": "Migration Project",
             "description": "Project to be migrated to organization",
-            "visibility": "personal"
+            "visibility": "individual"
         }
         
         response = client.post(
@@ -792,8 +792,8 @@ class TestProjectAPIIntegration:
 class TestProjectValidationEdgeCases:
     """Test edge cases for project validation not covered by existing tests."""
     
-    def test_personal_project_with_organization_id_fails(self, client, auth_headers, db, current_user):
-        """Test that personal projects cannot have organization_id set."""
+    def test_individual_project_with_organization_id_fails(self, client, auth_headers, db, current_user):
+        """Test that individual projects cannot have organization_id set."""
         # Create organization first
         org = Organization(
             name="Test Organization",
@@ -804,11 +804,11 @@ class TestProjectValidationEdgeCases:
         db.add(org)
         db.commit()
         
-        # Try to create personal project with organization_id
+        # Try to create individual project with organization_id
         project_data = {
-            "name": "Personal Project with Org",
+            "name": "Individual Project with Org",
             "description": "This should fail",
-            "visibility": "personal",
+            "visibility": "individual",
             "organization_id": str(org.id)
         }
         
@@ -818,7 +818,7 @@ class TestProjectValidationEdgeCases:
             headers=auth_headers
         )
         assert response.status_code == 400
-        assert "Personal projects cannot be assigned to an organization" in response.json()["detail"]
+        assert "Individual projects cannot be assigned to an organization" in response.json()["detail"]
     
     def test_team_project_without_organization_fails(self, client, auth_headers):
         """Test that team projects require organization_id."""
@@ -975,7 +975,7 @@ class TestProjectValidationEdgeCases:
         project_data = {
             "name": "Project No Access",
             "description": "This should fail",
-            "visibility": "personal"
+            "visibility": "individual"
         }
         
         response = client.post(
@@ -996,7 +996,7 @@ class TestProjectAccessEndpoint:
         project = Project(
             name="Test Project",
             description="Test description",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )
@@ -1014,7 +1014,7 @@ class TestProjectAccessEndpoint:
         assert data["has_access"] is True
         assert data["can_modify"] is True
         assert data["project_id"] == str(project.id)
-        assert data["visibility"] == "personal"
+        assert data["visibility"] == "individual"
         assert data["is_creator"] is True
     
     def test_check_project_access_not_found(self, client, auth_headers):
@@ -1048,7 +1048,7 @@ class TestProjectAccessEndpoint:
         project = Project(
             name="Other User Project",
             description="Private project",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=other_user.id
         )
@@ -1101,14 +1101,14 @@ class TestProjectListingWithAdmin:
         project1 = Project(
             name="User1 Project",
             description="User 1's project",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=user1.id
         )
         project2 = Project(
             name="User2 Project",
             description="User 2's project",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=user2.id
         )
@@ -1139,7 +1139,7 @@ class TestProjectArchiveRestore:
         project = Project(
             name="Project to Archive",
             description="Test project for archiving",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )
@@ -1190,7 +1190,7 @@ class TestProjectArchiveRestore:
         project = Project(
             name="Other User Project",
             description="Not owned by current user",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=other_user.id
         )
@@ -1211,7 +1211,7 @@ class TestProjectArchiveRestore:
         project = Project(
             name="Archived Project",
             description="Test project for restoration",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ARCHIVED,
             created_by=current_user.id
         )
@@ -1262,7 +1262,7 @@ class TestProjectArchiveRestore:
         project = Project(
             name="Other User Archived Project",
             description="Not owned by current user",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ARCHIVED,
             created_by=other_user.id
         )
@@ -1580,7 +1580,7 @@ class TestAdminProjectAccess:
         project = Project(
             name="Regular User Project",
             description="Owned by regular user",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=regular_user.id
         )
@@ -1624,7 +1624,7 @@ class TestAdminProjectAccess:
         project = Project(
             name="Project to Delete",
             description="Will be deleted by admin",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=regular_user.id
         )
@@ -1661,7 +1661,7 @@ class TestAdminProjectAccess:
         project = Project(
             name="Project to Archive",
             description="Will be archived by admin",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=regular_user.id
         )
@@ -1689,14 +1689,14 @@ class TestProjectUpdateEdgeCases:
         project1 = Project(
             name="Original Project 1",
             description="First project",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )
         project2 = Project(
             name="Original Project 2",
             description="Second project",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )
@@ -1732,11 +1732,11 @@ class TestProjectUpdateEdgeCases:
         current_user.organization_id = org.id
         db.commit()
         
-        # Create personal project
+        # Create individual project
         project = Project(
-            name="Personal to Team Project",
+            name="Individual to Team Project",
             description="Will be migrated to team",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )
@@ -1766,7 +1766,7 @@ class TestProjectUpdateEdgeCases:
         project = Project(
             name="Manual Project",
             description="Created manually",
-            visibility=ProjectVisibility.PERSONAL,
+            visibility=ProjectVisibility.INDIVIDUAL,
             status=ProjectStatus.ACTIVE,
             created_by=current_user.id
         )

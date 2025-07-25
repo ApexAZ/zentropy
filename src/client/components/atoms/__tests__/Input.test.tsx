@@ -28,7 +28,7 @@ describe("Input Component", () => {
 	it("shows error message when error prop provided", () => {
 		renderWithFullEnvironment(<Input label="Email" error="Email is required" />);
 		expect(screen.getByText("Email is required")).toBeInTheDocument();
-		expect(screen.getByText("Email is required")).toHaveClass("text-red-500");
+		expect(screen.getByText("Email is required")).toHaveClass("text-error");
 	});
 
 	it("renders different input types", () => {

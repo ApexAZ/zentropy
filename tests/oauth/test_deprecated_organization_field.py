@@ -40,10 +40,10 @@ class TestDeprecatedOrganizationField:
         # (deprecated field no longer exists - replaced by organization_rel relationship)
         assert user.organization_rel.name == 'Testcompany'
 
-    def test_personal_gmail_user_has_no_organization(self, db: Session):
-        """Test that personal Gmail users have no organization assignment."""
-        # Mock personal Gmail user (no hosted domain)
-        google_info_personal = {
+    def test_individual_gmail_user_has_no_organization(self, db: Session):
+        """Test that individual Gmail users have no organization assignment."""
+        # Mock individual Gmail user (no hosted domain)
+        google_info_individual = {
             'sub': '123456789',
             'email': 'user@gmail.com',
             'given_name': 'John',
@@ -53,14 +53,14 @@ class TestDeprecatedOrganizationField:
         }
 
         # Create user via Google OAuth
-        user = get_or_create_google_user(db, google_info_personal)
+        user = get_or_create_google_user(db, google_info_individual)
 
         # Verify no organization relationship
         assert user.organization_id is None
         assert user.organization_rel is None
 
         # Verify no organization relationship exists (deprecated field removed)
-        # Personal users have no organization_id or organization_rel
+        # Individual users have no organization_id or organization_rel
 
     def test_api_response_uses_organization_relationship(self, db: Session):
         """Test that API response uses organization_rel.name instead of deprecated field."""

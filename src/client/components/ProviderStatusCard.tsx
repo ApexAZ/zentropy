@@ -71,7 +71,7 @@ const ProviderStatusCard: React.FC<ProviderStatusCardProps> = ({
 		if (isLinked) {
 			return (
 				<div className="flex items-center gap-2">
-					<span className="font-medium text-green-600">✓ Linked</span>
+					<span className="text-success font-medium">✓ Linked</span>
 					{providerEmail && <span className="text-text-primary text-sm">({providerEmail})</span>}
 				</div>
 			);

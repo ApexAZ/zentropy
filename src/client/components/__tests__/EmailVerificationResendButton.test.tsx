@@ -231,7 +231,6 @@ describe("EmailVerificationResendButton", () => {
 				SecurityOperationType.EMAIL_VERIFICATION,
 				SecurityOperationType.PASSWORD_RESET,
 				SecurityOperationType.PASSWORD_CHANGE,
-				SecurityOperationType.USERNAME_RECOVERY,
 				SecurityOperationType.EMAIL_CHANGE,
 				SecurityOperationType.TWO_FACTOR_SETUP
 			];

@@ -285,7 +285,7 @@ class TestPasswordResetIntegration:
             })
             assert login_response.status_code == status.HTTP_200_OK
     
-    def test_password_reset_flow_for_unverified_user(self, client, db, auto_clean_mailpit):
+    def test_password_reset_flow_for_unverified_user(self, client, db, auto_clean_mailpit, test_rate_limits):
         """Test password reset works even for users with unverified emails."""
         with patch.dict(os.environ, {'SECRET_KEY': 'test-secret-key'}):
             # Create user with unverified email

@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/v1/organizations", tags=["organizations"])
 
 
 class OrganizationSuggestion(BaseModel):
-    action: str  # "join", "create", or "personal"
+    action: str  # "join", "create", or "individual"
     can_join: bool = False
     can_create: bool = False
     suggested_name: Optional[str] = None
@@ -97,7 +97,7 @@ def extract_domain_from_email(email: str) -> str:
 
 
 def is_personal_email_domain(domain: str) -> bool:
-    """Check if domain is a personal email provider."""
+    """Check if domain is an individual email provider."""
     return domain.lower() in PERSONAL_EMAIL_DOMAINS
 
 
@@ -137,11 +137,11 @@ async def check_organization_domain(
             domain=domain,
             organization=None,
             suggestions=OrganizationSuggestion(
-                action="personal",
+                action="individual",
                 can_join=False,
                 can_create=False,
                 message=(
-                    "Personal email domain detected. Consider creating personal "
+                    "Individual email domain detected. Consider creating individual "
                     "projects or use a business email domain."
                 ),
             ),
@@ -202,11 +202,11 @@ async def create_organization(
     - Domain and name must be unique if provided
     """
     # Validate scope-specific rules
-    if organization.scope == OrganizationScope.PERSONAL:
+    if organization.scope == OrganizationScope.INDIVIDUAL:
         if organization.max_users is not None and organization.max_users > 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Personal organizations cannot have more than 1 user",
+                detail="Individual organizations cannot have more than 1 user",
             )
         organization.max_users = 1
 

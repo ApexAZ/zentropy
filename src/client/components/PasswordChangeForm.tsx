@@ -116,7 +116,7 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 								value={currentPassword}
 								onChange={e => setCurrentPassword(e.target.value)}
 								autoComplete="current-password"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 							/>
 						</div>
 
@@ -131,7 +131,7 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 								value={newPassword}
 								onChange={e => setNewPassword(e.target.value)}
 								autoComplete="new-password"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 							/>
 						</div>
 
@@ -146,7 +146,7 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 								value={confirmPassword}
 								onChange={e => setConfirmPassword(e.target.value)}
 								autoComplete="new-password"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 							/>
 						</div>
 					</div>
@@ -195,7 +195,7 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 							value={newPassword}
 							onChange={e => setNewPassword(e.target.value)}
 							autoComplete="new-password"
-							className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+							className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 						/>
 					</div>
 
@@ -210,7 +210,7 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 							value={confirmPassword}
 							onChange={e => setConfirmPassword(e.target.value)}
 							autoComplete="new-password"
-							className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+							className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
 						/>
 					</div>
 

@@ -35,7 +35,7 @@ describe("Button Component", () => {
 	it("renders danger variant", () => {
 		renderWithFullEnvironment(<Button variant="danger">Delete</Button>);
 		const button = screen.getByRole("button");
-		expect(button).toHaveClass("bg-red-600", "text-white");
+		expect(button).toHaveClass("bg-error", "text-white");
 	});
 
 	it("renders icon variant for small icon buttons", () => {

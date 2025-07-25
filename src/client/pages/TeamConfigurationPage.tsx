@@ -253,11 +253,11 @@ const TeamConfigurationPage: React.FC = () => {
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="mb-3 text-xl font-semibold text-red-600">Unable to Load Configuration</h3>
+						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Configuration</h3>
 						<p className="text-text-primary mb-6">{error}</p>
 						<button
 							onClick={() => void loadTeamConfiguration()}
-							className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:border-gray-400 hover:bg-gray-50"
+							className="border-layout-background bg-content-background text-text-primary hover:border-neutral-border hover:bg-neutral-background inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 						>
 							Retry
 						</button>
@@ -295,7 +295,7 @@ const TeamConfigurationPage: React.FC = () => {
 								onChange={e => setTeamBasicData({ ...teamBasicData, name: e.target.value })}
 								required
 								placeholder="e.g., Frontend Development Team"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 							/>
 						</div>
 
@@ -309,7 +309,7 @@ const TeamConfigurationPage: React.FC = () => {
 								onChange={e => setTeamBasicData({ ...teamBasicData, description: e.target.value })}
 								rows={2}
 								placeholder="Brief description of team responsibilities"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 							/>
 						</div>
 
@@ -325,7 +325,7 @@ const TeamConfigurationPage: React.FC = () => {
 											type="checkbox"
 											checked={teamBasicData.working_days.includes(day)}
 											onChange={() => toggleWorkingDay(day)}
-											className="border-layout-background h-4 w-4 rounded text-blue-500 focus:ring-2 focus:ring-blue-500"
+											className="border-layout-background text-interactive focus:ring-interactive h-4 w-4 rounded focus:ring-2"
 										/>
 										<span className="text-text-primary">{getDayName(day)}</span>
 									</label>
@@ -364,7 +364,7 @@ const TeamConfigurationPage: React.FC = () => {
 								step="1"
 								required
 								placeholder="50"
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 							/>
 							<div className="text-text-primary mt-2 text-sm">
 								Average story points your team completes in a full sprint (all team members, no time
@@ -383,7 +383,7 @@ const TeamConfigurationPage: React.FC = () => {
 									setVelocityData({ ...velocityData, sprint_length: parseInt(e.target.value) })
 								}
 								required
-								className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 							>
 								<option value="1">1 week</option>
 								<option value="2">2 weeks</option>
@@ -429,13 +429,13 @@ const TeamConfigurationPage: React.FC = () => {
 											{member.first_name} {member.last_name}
 										</div>
 										<div className="text-text-primary text-sm">{member.email}</div>
-										<div className="text-sm text-blue-600">
+										<div className="text-interactive text-sm">
 											{member.team_role === "lead" ? "Team Lead" : "Team Member"}
 										</div>
 									</div>
 									<button
 										onClick={() => void handleRemoveMember(member.id)}
-										className="text-sm text-red-600 hover:text-red-800"
+										className="text-error hover:text-error text-sm"
 									>
 										Remove
 									</button>
@@ -458,7 +458,7 @@ const TeamConfigurationPage: React.FC = () => {
 							</button>
 							<button
 								onClick={() => alert("Generate Multiple Sprints feature coming soon!")}
-								className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200 hover:bg-gray-50"
+								className="border-layout-background bg-content-background text-text-primary hover:bg-neutral-background inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
 							>
 								Generate Multiple Sprints
 							</button>
@@ -484,9 +484,9 @@ const TeamConfigurationPage: React.FC = () => {
 										<div
 											className={`text-sm ${
 												sprint.status === "active"
-													? "text-green-600"
+													? "text-success"
 													: sprint.status === "completed"
-														? "text-blue-600"
+														? "text-interactive"
 														: "text-text-primary"
 											}`}
 										>
@@ -517,10 +517,10 @@ const TeamConfigurationPage: React.FC = () => {
 									onChange={e => setAddMemberData({ ...addMemberData, email: e.target.value })}
 									required
 									placeholder="user@company.com"
-									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 								/>
 								{memberErrors.email && (
-									<div className="mt-1 text-sm text-red-600">{memberErrors.email}</div>
+									<div className="text-error mt-1 text-sm">{memberErrors.email}</div>
 								)}
 								<div className="text-text-primary mt-1 text-sm">
 									Must be a registered user in the system
@@ -541,7 +541,7 @@ const TeamConfigurationPage: React.FC = () => {
 										})
 									}
 									required
-									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 								>
 									<option value="member">Team Member</option>
 									<option value="lead">Team Lead</option>
@@ -556,7 +556,7 @@ const TeamConfigurationPage: React.FC = () => {
 										setAddMemberData({ email: "", role: "member" });
 										setMemberErrors({});
 									}}
-									className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:bg-gray-50"
+									className="border-layout-background bg-content-background text-text-primary hover:bg-neutral-background inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 								>
 									Cancel
 								</button>
@@ -589,10 +589,10 @@ const TeamConfigurationPage: React.FC = () => {
 									onChange={e => setCreateSprintData({ ...createSprintData, name: e.target.value })}
 									required
 									placeholder="Sprint 3"
-									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 								/>
 								{sprintErrors.name && (
-									<div className="mt-1 text-sm text-red-600">{sprintErrors.name}</div>
+									<div className="text-error mt-1 text-sm">{sprintErrors.name}</div>
 								)}
 							</div>
 
@@ -608,10 +608,10 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ ...createSprintData, start_date: e.target.value })
 									}
 									required
-									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 								/>
 								{sprintErrors.start_date && (
-									<div className="mt-1 text-sm text-red-600">{sprintErrors.start_date}</div>
+									<div className="text-error mt-1 text-sm">{sprintErrors.start_date}</div>
 								)}
 							</div>
 
@@ -627,10 +627,10 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ ...createSprintData, end_date: e.target.value })
 									}
 									required
-									className="border-layout-background focus:border-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+									className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base transition-all duration-200 focus:outline-none"
 								/>
 								{sprintErrors.end_date && (
-									<div className="mt-1 text-sm text-red-600">{sprintErrors.end_date}</div>
+									<div className="text-error mt-1 text-sm">{sprintErrors.end_date}</div>
 								)}
 							</div>
 
@@ -642,7 +642,7 @@ const TeamConfigurationPage: React.FC = () => {
 										setCreateSprintData({ name: "", start_date: "", end_date: "" });
 										setSprintErrors({});
 									}}
-									className="border-layout-background bg-content-background text-text-primary inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200 hover:bg-gray-50"
+									className="border-layout-background bg-content-background text-text-primary hover:bg-neutral-background inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
 								>
 									Cancel
 								</button>

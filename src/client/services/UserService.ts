@@ -147,6 +147,24 @@ export class UserService {
 			errors.email = "Please enter a valid email address";
 		}
 
+		// Phone number validation (optional field)
+		if (profileData.phone_number && profileData.phone_number.trim()) {
+			const phoneNumber = profileData.phone_number.trim();
+
+			// Check length first
+			if (phoneNumber.length > 20) {
+				errors.phone_number = "Phone number must be less than 20 characters";
+			} else {
+				// Basic phone number validation - allows common formats
+				// US format with/without country code, basic international format
+				const phoneRegex = /^(\+?1[-.\s]?)?(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})$|^\+\d{1,3}[-\s]?\d{1,14}$/;
+
+				if (!phoneRegex.test(phoneNumber)) {
+					errors.phone_number = "Please enter a valid phone number (e.g., +1 (555) 123-4567, 555-123-4567)";
+				}
+			}
+		}
+
 		return {
 			isValid: Object.keys(errors).length === 0,
 			errors
