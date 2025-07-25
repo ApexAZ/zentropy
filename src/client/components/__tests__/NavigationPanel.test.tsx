@@ -91,8 +91,8 @@ describe("NavigationPanel - User Workflows", () => {
 		expect(screen.getByText("Jane Smith")).toBeInTheDocument();
 		expect(screen.getByText("jane.smith@example.com")).toBeInTheDocument();
 
-		// User navigates to profile page
-		const profileLink = screen.getByText("My Profile");
+		// User navigates to profile page by clicking their name
+		const profileLink = screen.getByText("Jane Smith");
 		fastUserActions.click(profileLink);
 		await fastStateSync();
 		expect(mockOnPageChange).toHaveBeenCalledWith("profile");
