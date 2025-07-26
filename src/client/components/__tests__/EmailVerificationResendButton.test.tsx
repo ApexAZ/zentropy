@@ -202,7 +202,7 @@ describe("EmailVerificationResendButton", () => {
 		mockSendEmailVerification.mockResolvedValue({ message: "Email sent successfully" });
 
 		// First render and trigger rate limit
-		const { unmount } = renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
+		const { result } = renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		const button = screen.getByRole("button", { name: "Resend" });
 		fastUserActions.click(button);
@@ -220,7 +220,7 @@ describe("EmailVerificationResendButton", () => {
 		expect(screen.getByRole("button", { name: "50s" })).toBeInTheDocument();
 
 		// Unmount and remount component
-		unmount();
+		result.unmount();
 		renderWithFullEnvironment(<EmailVerificationResendButton userEmail={mockEmail} />);
 
 		// Should restore countdown from localStorage

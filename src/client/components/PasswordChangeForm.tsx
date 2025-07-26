@@ -112,8 +112,8 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 						/>
 					</div>
 
-					<PasswordRequirements 
-						password={newPassword} 
+					<PasswordRequirements
+						password={newPassword}
 						confirmPassword={confirmPassword}
 						showMatchRequirement={true}
 					/>

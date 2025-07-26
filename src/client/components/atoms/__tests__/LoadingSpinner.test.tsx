@@ -132,7 +132,7 @@ describe("LoadingSpinner", () => {
 			renderWithFullEnvironment(<LoadingSpinner text="Loading..." />);
 
 			const textElement = screen.getByText("Loading...", { selector: "span:not(.sr-only)" });
-			expect(textElement).toHaveClass("text-primary");
+			expect(textElement).toHaveClass("text-text-primary", "text-base");
 		});
 	});
 });

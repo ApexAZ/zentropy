@@ -131,7 +131,7 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 				setTimeout(() => {
 					// Pass the user_id as string for password reset
 					onSuccess?.(operationType === "email_verification" ? undefined : String(result.user_id));
-					
+
 					// Only close modal for email verification - password reset flow handles its own navigation
 					if (operationType === "email_verification") {
 						onClose();

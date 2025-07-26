@@ -58,12 +58,12 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 			}
 
 			await AuthService.resetPasswordWithUserId(newPassword, operationToken!);
-			
+
 			// Auto-redirect to sign-in modal after successful password reset
 			setTimeout(() => {
 				onComplete?.(); // This should open the sign-in modal
 			}, 2000);
-			
+
 			setStep("complete");
 		} catch (err: any) {
 			setError(err.message || "Failed to reset password");
@@ -116,8 +116,8 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 							disabled={isLoading}
 						/>
 
-						<PasswordRequirements 
-							password={newPassword} 
+						<PasswordRequirements
+							password={newPassword}
 							confirmPassword={confirmPassword}
 							showMatchRequirement={true}
 						/>

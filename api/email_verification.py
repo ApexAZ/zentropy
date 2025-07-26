@@ -59,7 +59,9 @@ def send_verification_email(email: str, code: str, user_name: str) -> bool:
     return send_verification_code_email(email, code, user_name)
 
 
-def resend_verification_email(db: Session, email: str, purpose: str = "registration") -> Dict[str, Any]:
+def resend_verification_email(
+    db: Session, email: str, purpose: str = "registration"
+) -> Dict[str, Any]:
     """Resend verification email to a user."""
     # Find user by email
     user = db.query(User).filter(User.email == email.lower()).first()

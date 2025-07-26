@@ -49,9 +49,7 @@ describe("ForgotPasswordFlow", () => {
 
 	describe("Step 1: Email Input", () => {
 		it("renders email input form initially", () => {
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
 			expect(screen.getByText(/Enter your email address and we'll send you a code/)).toBeInTheDocument();
@@ -63,9 +61,7 @@ describe("ForgotPasswordFlow", () => {
 		it("validates email format before submission", async () => {
 			(AuthService.validateEmail as any).mockReturnValue(false);
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
@@ -83,9 +79,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
@@ -102,9 +96,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
@@ -125,9 +117,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockRejectedValue(new Error("Email not found"));
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
@@ -142,9 +132,7 @@ describe("ForgotPasswordFlow", () => {
 		});
 
 		it("calls onCancel when cancel button is clicked", async () => {
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			const cancelButton = screen.getByText("Cancel");
 			fastUserActions.click(cancelButton);
@@ -159,9 +147,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -184,9 +170,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -213,9 +197,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go through email and verification steps
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -330,9 +312,7 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
 
-			renderWithFullEnvironment(
-				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
-			);
+			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go through all steps
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -356,7 +336,7 @@ describe("ForgotPasswordFlow", () => {
 
 		it("calls onComplete automatically after password reset", async () => {
 			vi.useFakeTimers();
-			
+
 			await goToCompletionStep();
 
 			// Fast-forward through the 2-second timeout
@@ -364,7 +344,7 @@ describe("ForgotPasswordFlow", () => {
 			await fastStateSync();
 
 			expect(mockOnComplete).toHaveBeenCalled();
-			
+
 			vi.useRealTimers();
 		});
 

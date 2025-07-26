@@ -467,8 +467,7 @@ def send_verification_email_endpoint(
 
     return EmailVerificationResponse(
         message=(
-            "If an account with that email exists, "
-            "a verification code has been sent"
+            "If an account with that email exists, " "a verification code has been sent"
         ),
         email=request.email,
         rate_limit_seconds_remaining=60,  # 1-minute rate limit period
