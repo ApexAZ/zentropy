@@ -315,30 +315,6 @@ class UnlinkGoogleAccountRequest(BaseModel):
     password: str
 
 
-class LinkMicrosoftAccountRequest(BaseModel):
-    microsoft_credential: str = Field(
-        ..., min_length=1, description="Microsoft OAuth credential token"
-    )
-
-
-class UnlinkMicrosoftAccountRequest(BaseModel):
-    password: str = Field(
-        ..., min_length=1, description="User password for security verification"
-    )
-
-
-class LinkGitHubAccountRequest(BaseModel):
-    github_credential: str = Field(
-        ..., min_length=1, description="GitHub OAuth credential token"
-    )
-
-
-class UnlinkGitHubAccountRequest(BaseModel):
-    password: str = Field(
-        ..., min_length=1, description="User password for security verification"
-    )
-
-
 class OAuthProviderStatus(BaseModel):
     provider: str
     linked: bool
