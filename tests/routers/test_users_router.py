@@ -529,7 +529,7 @@ class TestPasswordManagement:
         
         # Assert: Password reuse error
         assert response.status_code == 400
-        assert "Password has been used recently" in response.json()["detail"]
+        assert "Cannot reuse a recent password" in response.json()["detail"]
     
     def test_change_password_creates_history_and_prevents_reuse(self, client, user_with_known_password, db, test_rate_limits):
         """Test that password changes create history entries and prevent immediate reuse"""
@@ -569,7 +569,7 @@ class TestPasswordManagement:
         
         # Assert: Should prevent reuse of current password
         assert response.status_code == 400
-        assert "password cannot be the same as the current password" in response.json()["detail"].lower()
+        assert "cannot reuse current password" in response.json()["detail"].lower()
         
         # TODO: Add a test to verify that the password history cleanup logic
         # correctly removes old entries, keeping only the 5 most recent.

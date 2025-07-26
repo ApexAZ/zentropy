@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { AuthService } from "../services/AuthService";
 import EmailVerificationModal from "./EmailVerificationModal";
 import PasswordRequirements from "./PasswordRequirements";
+import { setPendingPasswordReset, clearPendingPasswordReset } from "../utils/pendingVerification";
 
 interface ForgotPasswordFlowProps {
 	onComplete?: () => void;
@@ -32,9 +33,15 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 			// Send reset code using the SAME email verification system
 			await AuthService.sendEmailVerification(email);
+
+			// Set pending password reset state for header integration
+			setPendingPasswordReset(email);
+
 			setStep("verification");
 		} catch {
 			// Don't reveal if email exists for security - always proceed to verification
+			// Set pending password reset state for header integration
+			setPendingPasswordReset(email);
 			setStep("verification");
 		} finally {
 			setIsLoading(false);
@@ -58,6 +65,9 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 			}
 
 			await AuthService.resetPasswordWithUserId(newPassword, operationToken!);
+
+			// Clear pending password reset state - password reset is complete
+			clearPendingPasswordReset();
 
 			// Auto-redirect to sign-in modal after successful password reset
 			setTimeout(() => {

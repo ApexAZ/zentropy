@@ -91,7 +91,7 @@ class TestPasswordResetEndpoint:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "invalid" in response.json()["detail"].lower()
     
-    def test_reset_password_successful(self, client, db, current_user):
+    def test_reset_password_successful(self, client, db, current_user, test_rate_limits):
         """Test successful password reset flow."""
         # Get original password hash
         original_password_hash = current_user.password_hash
@@ -127,7 +127,7 @@ class TestPasswordResetEndpoint:
         })
         assert login_response.status_code == status.HTTP_200_OK
     
-    def test_reset_password_updates_timestamp(self, client, db, current_user):
+    def test_reset_password_updates_timestamp(self, client, db, current_user, test_rate_limits):
         """Test that password reset updates the user's updated_at timestamp."""
         # Record timestamp before reset
         original_updated_at = current_user.updated_at
@@ -153,6 +153,53 @@ class TestPasswordResetEndpoint:
             user_timestamp = user_timestamp.replace(tzinfo=timezone.utc)
         one_minute_ago = datetime.now(timezone.utc) - timedelta(minutes=1)
         assert user_timestamp > one_minute_ago
+
+
+    def test_reset_password_rejects_current_password(self, client, db, user_with_known_password, test_rate_limits):
+        """Test that password reset rejects reusing current password."""
+        current_user = user_with_known_password
+        current_password = current_user.known_password  # This is "OldPassword123!"
+        
+        # Create valid simple token
+        operation_token = f"verified_user_{current_user.id}"
+        
+        # Try to reset to the same password (current password should be rejected)
+        response = client.post("/api/v1/auth/reset-password", json={
+            "new_password": current_password,  # This is the current password - should be rejected
+            "operation_token": operation_token
+        })
+        
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Cannot reuse current password" in response.json()["detail"]
+
+    def test_reset_password_rejects_recent_password(self, client, db, user_with_known_password, test_rate_limits):
+        """Test that password reset rejects reusing recent passwords from history."""
+        from api.database import PasswordHistory
+        from api.auth import get_password_hash
+        
+        current_user = user_with_known_password
+        
+        # Add a password to history (simulating a previous password change)
+        old_password_in_history = "PreviousPassword123!"
+        old_password_hash = get_password_hash(old_password_in_history)
+        history_entry = PasswordHistory(
+            user_id=current_user.id,
+            password_hash=old_password_hash
+        )
+        db.add(history_entry)
+        db.commit()
+        
+        # Create valid simple token
+        operation_token = f"verified_user_{current_user.id}"
+        
+        # Try to reset to the old password from history
+        response = client.post("/api/v1/auth/reset-password", json={
+            "new_password": old_password_in_history,  # This is in password history
+            "operation_token": operation_token
+        })
+        
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Cannot reuse a recent password" in response.json()["detail"]
     
     def test_reset_password_respects_rate_limiting(self, client, test_rate_limits):
         """Test that password reset respects rate limiting."""

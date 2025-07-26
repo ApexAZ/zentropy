@@ -26,6 +26,7 @@ from ..auth import (
     create_access_token,
     get_password_hash,
     validate_password_strength,
+    validate_password_history,
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
@@ -576,6 +577,42 @@ def reset_password(
         validate_password_strength(request.new_password)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Validate password history to prevent reuse of recent passwords
+    validate_password_history(request.new_password, user.id, user.password_hash, db)
+
+    # Add the OLD password to history before updating
+    if user.password_hash:  # Only add to history if user had a password before
+        # Store the old password hash before updating
+        old_password_hash = user.password_hash
+
+        # Create and add password history entry
+        password_history_entry = database.PasswordHistory(
+            user_id=user.id, password_hash=old_password_hash
+        )
+        db.add(password_history_entry)
+
+        # Flush to ensure the history entry is persisted for cleanup query
+        try:
+            db.flush()
+        except Exception:
+            # If flush fails, rollback and re-raise
+            db.rollback()
+            raise
+
+    # Clean up old password history, keeping the 4 most recent entries.
+    # The 5th password is the current one in the users table.
+    all_ids_query = (
+        db.query(database.PasswordHistory.id)
+        .filter(database.PasswordHistory.user_id == user.id)
+        .order_by(database.PasswordHistory.created_at.desc())
+    )
+    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
+
+    if ids_to_delete:
+        db.query(database.PasswordHistory).filter(
+            database.PasswordHistory.id.in_(ids_to_delete)
+        ).delete(synchronize_session=False)
 
     # Update password
     user.password_hash = get_password_hash(request.new_password)

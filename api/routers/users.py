@@ -24,6 +24,7 @@ from ..auth import (
     get_password_hash,
     verify_password,
     validate_password_strength,
+    validate_password_history,
 )
 from ..google_oauth import (
     verify_google_token,
@@ -185,30 +186,10 @@ def change_password(
     }
     validate_password_strength(password_update.new_password, user_info)
 
-    # Check for reuse against the current password
-    if verify_password(password_update.new_password, str(current_user.password_hash)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password cannot be the same as the current password.",
-        )
-
-    # Check for reuse against the 4 most recent passwords in history.
-    # Combined with the current password, this prevents reuse of the last 5 passwords.
-    password_history = (
-        db.query(database.PasswordHistory)
-        .filter(database.PasswordHistory.user_id == current_user.id)
-        .order_by(database.PasswordHistory.created_at.desc())
-        .limit(4)
-        .all()
+    # Validate password history to prevent reuse of recent passwords
+    validate_password_history(
+        password_update.new_password, current_user.id, current_user.password_hash, db
     )
-    for history_entry in password_history:
-        if verify_password(
-            password_update.new_password, str(history_entry.password_hash)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password has been used recently and cannot be reused.",
-            )
 
     # If all checks pass, proceed with the update.
     old_password_hash = current_user.password_hash

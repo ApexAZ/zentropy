@@ -721,7 +721,7 @@ class User(Base):
         "CalendarEntry", back_populates="user"
     )
     password_history: Mapped[List["PasswordHistory"]] = relationship(
-        "PasswordHistory", back_populates="user"
+        "PasswordHistory", back_populates="user", cascade="all, delete-orphan"
     )
 
     def is_organization_assigned(self) -> bool:
@@ -919,7 +919,7 @@ class PasswordHistory(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

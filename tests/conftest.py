@@ -269,7 +269,7 @@ def create_test_user(db, **kwargs):
         "email": "test@example.com",
         "first_name": "Test",
         "last_name": "User",
-        "password_hash": "$2b$12$hashed_password",
+        "password_hash": "$2b$12$27ehzIuSkSIzHVwXqAWAyO8YUiX4qJGGNbZB7jJicHkWQ/jd.tKWS",  # hash of "TestPassword123!"
         "auth_provider": AuthProvider.LOCAL,
         "is_active": True,
         "email_verified": True,

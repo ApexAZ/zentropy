@@ -1,5 +1,5 @@
-import { vi, describe, it, expect, beforeEach } from "vitest";
-import { screen, act } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { renderWithFullEnvironment, fastStateSync, fastUserActions } from "../../__tests__/utils/testRenderUtils";
 import { ForgotPasswordFlow } from "../ForgotPasswordFlow";
@@ -307,6 +307,10 @@ describe("ForgotPasswordFlow", () => {
 	});
 
 	describe("Step 4: Completion", () => {
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
 		async function goToCompletionStep() {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
@@ -344,8 +348,6 @@ describe("ForgotPasswordFlow", () => {
 			await fastStateSync();
 
 			expect(mockOnComplete).toHaveBeenCalled();
-
-			vi.useRealTimers();
 		});
 
 		it("shows success message and checkmark", async () => {

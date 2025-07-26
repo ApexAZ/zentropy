@@ -197,3 +197,50 @@ def validate_password_strength(
         )
 
     return True
+
+
+def validate_password_history(
+    new_password: str,
+    user_id: UUID,
+    current_password_hash: Optional[str],
+    db: Session,
+) -> None:
+    """
+    Validate that the new password doesn't match current or recent passwords.
+
+    Args:
+        new_password: The proposed new password in plain text
+        user_id: The user's UUID
+        current_password_hash: The user's current password hash (if any)
+        db: Database session
+
+    Raises:
+        HTTPException: If password reuses current or recent password
+    """
+    from . import database
+
+    # Check against current password (if user has one)
+    if current_password_hash and verify_password(
+        new_password, str(current_password_hash)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reuse current password",
+        )
+
+    # Check for reuse against the 4 most recent passwords in history.
+    # Combined with the current password, this prevents reuse of the last 5 passwords.
+    password_history = (
+        db.query(database.PasswordHistory)
+        .filter(database.PasswordHistory.user_id == user_id)
+        .order_by(database.PasswordHistory.created_at.desc())
+        .limit(4)
+        .all()
+    )
+
+    for history_entry in password_history:
+        if verify_password(new_password, str(history_entry.password_hash)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot reuse a recent password. Please choose a different one.",
+            )
