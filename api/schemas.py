@@ -92,10 +92,6 @@ class PasswordUpdate(BaseModel):
 
 
 # Google OAuth schemas
-class GoogleLoginRequest(BaseModel):
-    google_token: str
-
-
 class GoogleOAuthRequest(BaseModel):
     credential: str
 

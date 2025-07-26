@@ -18,7 +18,7 @@ from api.schemas import (
     # Organization schemas
     OrganizationResponse,
     # Google OAuth schemas
-    GoogleLoginRequest, GoogleOAuthRequest,
+    GoogleOAuthRequest,
     # Team schemas
     TeamBase, TeamCreate, TeamUpdate, TeamResponse, TeamWithMembers,
     # Calendar entry schemas
@@ -487,15 +487,6 @@ class TestAuthenticationSchemas:
 
 class TestGoogleOAuthSchemas:
     """Test Google OAuth schema validation and edge cases."""
-    
-    def test_google_login_request_valid_data(self):
-        """Test GoogleLoginRequest with valid data."""
-        request_data = {
-            "google_token": "google_oauth_token_123"
-        }
-        
-        request = GoogleLoginRequest(**request_data)
-        assert request.google_token == "google_oauth_token_123"
     
     def test_google_oauth_request_valid_data(self):
         """Test GoogleOAuthRequest with valid data."""

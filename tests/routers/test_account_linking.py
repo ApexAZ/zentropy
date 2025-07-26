@@ -615,7 +615,7 @@ class TestGoogleOAuthSecurityFix:
 
         assert response.status_code == 409
         error_detail = response.json()["detail"]
-        assert "already registered with a different authentication method" in error_detail["error"]
+        assert "already registered with email/password" in error_detail["error"]
         assert error_detail["error_type"] == "email_different_provider"
 
     @patch("api.google_oauth.verify_google_token")

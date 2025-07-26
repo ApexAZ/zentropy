@@ -13,7 +13,6 @@ from ..schemas import (
     UserCreate,
     UserLoginResponse,
     MessageResponse,
-    GoogleLoginRequest,
     GoogleOAuthRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
@@ -32,7 +31,6 @@ from ..auth import (
 )
 from ..google_oauth import (
     process_google_oauth,
-    verify_google_token,
     GoogleOAuthError,
     GoogleTokenInvalidError,
     GoogleEmailUnverifiedError,
@@ -40,7 +38,7 @@ from ..google_oauth import (
     GoogleRateLimitError,
 )
 from .. import database
-from ..database import AuthProvider, Organization, User
+from ..database import User
 from ..email_verification import (
     create_verification_code,
     send_verification_email,
@@ -236,143 +234,6 @@ def logout(
     # Note: JWT token handling is done client-side
     # Server-side logout could implement token blacklisting if needed
     return MessageResponse(message="Successfully logged out")
-
-
-@router.post("/google-login", response_model=LoginResponse)
-def google_login(
-    request: GoogleLoginRequest, http_request: Request, db: Session = Depends(get_db)
-) -> LoginResponse:
-    """Login or register user using Google OAuth"""
-    # Apply rate limiting to prevent brute force attacks
-    client_ip = get_client_ip(http_request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
-
-    # Verify Google token
-    try:
-        google_user_info = verify_google_token(request.google_token)
-    except (
-        GoogleTokenInvalidError,
-        GoogleEmailUnverifiedError,
-        GoogleConfigurationError,
-    ) as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google token verification failed: {str(e)}",
-        )
-
-    # Extract Google user information
-    google_id = google_user_info["sub"]
-    email = google_user_info["email"].lower()
-    first_name = google_user_info.get("given_name", "")
-    last_name = google_user_info.get("family_name", "")
-    hosted_domain = google_user_info.get("hd")  # Google Workspace domain
-
-    # Check if user exists by Google ID first
-    existing_user = (
-        db.query(database.User).filter(database.User.google_id == google_id).first()
-    )
-
-    if existing_user:
-        # Existing Google user - update last login and authenticate
-        existing_user.last_login_at = datetime.now(timezone.utc)
-        db.commit()
-        user = existing_user
-    else:
-        # Check if email already exists with different auth provider
-        email_user = (
-            db.query(database.User).filter(database.User.email == email).first()
-        )
-
-        if email_user:
-            # Email already exists - security: don't allow account hijacking
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered with different authentication method",
-            )
-
-        # Create or find organization
-        organization_record: Organization
-
-        if hosted_domain:
-            # Google Workspace user - look for existing organization by domain
-            existing_org = (
-                db.query(Organization)
-                .filter(Organization.domain == hosted_domain.lower())
-                .first()
-            )
-
-            if existing_org:
-                organization_record = existing_org
-            else:
-                # Create new organization from Google Workspace domain
-                organization_record = Organization.create_from_google_domain(
-                    domain=hosted_domain.lower(), name=hosted_domain.title()
-                )
-                db.add(organization_record)
-                db.commit()
-                db.refresh(organization_record)
-
-        else:
-            # Gmail user - create organization from email domain
-            email_domain = email.split("@")[1]
-            existing_org = (
-                db.query(Organization)
-                .filter(Organization.domain == email_domain.lower())
-                .first()
-            )
-
-            if existing_org:
-                organization_record = existing_org
-            else:
-                organization_record = Organization.create_from_google_domain(
-                    domain=email_domain.lower(), name=email_domain.title()
-                )
-                db.add(organization_record)
-                db.commit()
-                db.refresh(organization_record)
-
-        now = datetime.now(timezone.utc)
-
-        user = database.User(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            organization_id=organization_record.id,  # Foreign key
-            auth_provider=AuthProvider.GOOGLE,
-            google_id=google_id,
-            password_hash=None,  # OAuth users don't need passwords
-            email_verified=True,  # Google OAuth users are pre-verified
-            last_login_at=now,
-            terms_accepted_at=now,
-            terms_version="1.0",
-            privacy_accepted_at=now,
-            privacy_version="1.0",
-            registration_type=database.RegistrationType.GOOGLE_OAUTH,
-        )
-
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-    # Create JWT token with extended expiry for OAuth (30 days like "remember me")
-    # OAuth is inherently secure since Google handles authentication
-    access_token = create_access_token(data={"sub": str(user.id)}, remember_me=True)
-
-    return LoginResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=UserLoginResponse(
-            id=user.id,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            organization_id=user.organization_id,
-            has_projects_access=user.has_projects_access,
-            email_verified=user.email_verified,
-            registration_type=user.registration_type.value,
-            role=user.role.value if user.role else None,
-        ),
-    )
 
 
 @router.post("/google-oauth", response_model=LoginResponse)
