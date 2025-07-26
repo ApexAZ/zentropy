@@ -145,10 +145,10 @@ export function EnhancedConfirmationModal({
 			>
 				{/* Header */}
 				<div className="mb-4">
-					<h3 id={titleId} className="text-primary mb-2 text-lg font-semibold">
+					<h3 id={titleId} className="text-text-contrast font-heading-small mb-2">
 						{title}
 					</h3>
-					<p id={descriptionId} className="text-primary">
+					<p id={descriptionId} className="text-text-primary font-body">
 						{message}
 					</p>
 				</div>

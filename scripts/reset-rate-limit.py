@@ -41,8 +41,23 @@ def main():
                        default='auth', help='Rate limit type to reset (default: auth)')
     parser.add_argument('--status', action='store_true', 
                        help='Show current status without resetting')
+    parser.add_argument('--flush', action='store_true', 
+                       help='Flush all rate limit data from Redis (nuclear option)')
     
     args = parser.parse_args()
+    
+    # Handle flush option first
+    if args.flush:
+        try:
+            import redis
+            r = redis.Redis(host='localhost', port=6379, db=0)
+            r.flushdb()
+            print('🗑️ Flushed all Redis data')
+            print('✅ All rate limits completely cleared!')
+            return 0
+        except Exception as e:
+            print(f'❌ Error flushing Redis: {e}')
+            return 1
     
     # Determine IP address
     ip = args.ip or get_local_ip()

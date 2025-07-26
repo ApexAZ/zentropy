@@ -130,8 +130,8 @@ describe("FlyoutNavigation", () => {
 		const aboutButton = screen.getByText("About");
 		const contactButton = screen.getByText("Contact");
 
-		expect(aboutButton).toHaveClass("bg-content-background-hover");
-		expect(contactButton).not.toHaveClass("bg-content-background-hover");
+		expect(aboutButton).toHaveClass("bg-interactive-hover");
+		expect(contactButton).not.toHaveClass("bg-interactive-hover");
 	});
 
 	it("closes the menu when clicking outside", async () => {

@@ -453,7 +453,7 @@ class TestPasswordManagement:
             print(f"Response status: {response.status_code}")
             print(f"Response body: {response.json()}")
         assert response.status_code == 200
-        assert "Password updated successfully" in response.json()["message"]
+        assert "Password changed successfully" in response.json()["message"]
         
         # Verify password hash changed in database
         db.refresh(user_with_known_password)

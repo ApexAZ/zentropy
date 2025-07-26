@@ -88,7 +88,7 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 			{/* Security Overview Section */}
 			<div className="border-layout-background bg-layout-background rounded-lg border p-4">
 				<div className="mb-4 flex items-center justify-between">
-					<h3 className="text-primary font-semibold">Authentication Status</h3>
+					<h3 className="text-text-contrast font-heading-small">Authentication Status</h3>
 					<div className="flex items-center space-x-3">
 						{/* Authentication Provider Badge */}
 						<div
@@ -133,7 +133,7 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 						title={`Email authentication is ${securityStatus.email_auth_linked ? "enabled" : "disabled"}`}
 					/>
 					<div>
-						<h4 className="text-primary font-medium">Email Authentication</h4>
+						<h4 className="text-text-contrast font-heading-small">Email Authentication</h4>
 						<p className="text-secondary text-sm">
 							{securityStatus.email_auth_linked
 								? "Sign in with email and password"
@@ -180,7 +180,7 @@ export function AuthenticationStatusDisplay({ securityStatus }: AuthenticationSt
 					/>
 					<div>
 						<div className="flex items-center space-x-2">
-							<h4 className="text-primary font-medium">Google Authentication</h4>
+							<h4 className="text-text-contrast font-heading-small">Google Authentication</h4>
 							<ContextualHelp concept="oauth" />
 						</div>
 						<p className="text-secondary text-sm">

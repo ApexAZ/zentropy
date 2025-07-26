@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { AuthService } from "../services/AuthService";
-import { SecurityOperationType } from "../types";
-import SecurityCodeFlow from "./SecurityCodeFlow";
+import EmailVerificationModal from "./EmailVerificationModal";
 import PasswordRequirements from "./PasswordRequirements";
 
 interface ForgotPasswordFlowProps {
@@ -31,8 +30,8 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 				return;
 			}
 
-			// Send reset code
-			await AuthService.sendSecurityCode(email, SecurityOperationType.PASSWORD_RESET);
+			// Send reset code using the SAME email verification system
+			await AuthService.sendEmailVerification(email);
 			setStep("verification");
 		} catch {
 			// Don't reveal if email exists for security - always proceed to verification
@@ -42,9 +41,9 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 		}
 	};
 
-	const handleCodeVerified = (token: string) => {
+	const handleCodeVerified = (token?: string) => {
 		setOperationToken(token);
-		setStep("password");
+		setStep("password"); // This will close the modal and show password form
 	};
 
 	const handlePasswordReset = async () => {
@@ -58,7 +57,13 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 				return;
 			}
 
-			await AuthService.resetPassword(newPassword, operationToken!);
+			await AuthService.resetPasswordWithUserId(newPassword, operationToken!);
+			
+			// Auto-redirect to sign-in modal after successful password reset
+			setTimeout(() => {
+				onComplete?.(); // This should open the sign-in modal
+			}, 2000);
+			
 			setStep("complete");
 		} catch (err: any) {
 			setError(err.message || "Failed to reset password");
@@ -70,11 +75,12 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 	// Step 2: Code Verification
 	if (step === "verification") {
 		return (
-			<SecurityCodeFlow
-				userEmail={email}
-				operationType={SecurityOperationType.PASSWORD_RESET}
-				onCodeVerified={handleCodeVerified}
-				onCancel={() => setStep("email")}
+			<EmailVerificationModal
+				isOpen={true}
+				onClose={() => setStep("email")} // Go back to email if user manually closes
+				onSuccess={handleCodeVerified}
+				initialEmail={email}
+				operationType="password_reset"
 				title="Check Your Email"
 				description="Enter the reset code sent to your email address"
 			/>
@@ -110,7 +116,11 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 							disabled={isLoading}
 						/>
 
-						<PasswordRequirements password={newPassword} />
+						<PasswordRequirements 
+							password={newPassword} 
+							confirmPassword={confirmPassword}
+							showMatchRequirement={true}
+						/>
 					</div>
 
 					{error && <p className="text-error text-sm">{error}</p>}
@@ -146,15 +156,8 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 					<div className="text-success text-4xl">✓</div>
 					<h3 className="text-text-primary text-lg font-semibold">Password Reset Complete</h3>
 					<p className="text-text-secondary">
-						Your password has been reset successfully. You can now sign in with your new password.
+						Your password has been reset successfully. Redirecting to sign in...
 					</p>
-					<button
-						type="button"
-						onClick={onComplete}
-						className="bg-interactive hover:bg-interactive-hover rounded-lg px-4 py-2 text-white transition-colors"
-					>
-						Continue to Sign In
-					</button>
 				</div>
 			</div>
 		);

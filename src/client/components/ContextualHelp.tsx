@@ -92,7 +92,7 @@ export function ContextualHelp({ concept, showDocumentationLink = false }: Conte
 						role="tooltip"
 						className="bg-layout-background border-layout-background absolute bottom-full left-1/2 z-10 mb-2 w-64 -translate-x-1/2 transform rounded-md border p-3 text-sm shadow-lg"
 					>
-						<div className="text-primary">{content.tooltip}</div>
+						<div className="text-text-primary font-body">{content.tooltip}</div>
 						{/* Tooltip arrow */}
 						<div className="bg-layout-background border-layout-background absolute top-full left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 transform border-r border-b"></div>
 					</div>

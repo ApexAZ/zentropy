@@ -57,14 +57,14 @@ export function AccountSecurityHelp({
 		<div className="space-y-6">
 			{/* OAuth Help */}
 			<div className="flex items-center space-x-2">
-				<span className="text-primary text-sm">OAuth-based authentication</span>
+				<span className="text-text-primary font-caption">OAuth-based authentication</span>
 				<ContextualHelp concept="oauth" />
 			</div>
 
 			{/* Security Explanations */}
 			{showExplanations && (
 				<div className="bg-content-background rounded-lg p-4">
-					<h4 className="text-primary mb-3 font-medium">Security Concepts Explained</h4>
+					<h4 className="text-text-contrast font-heading-small mb-3">Security Concepts Explained</h4>
 					<div className="space-y-3 text-sm">
 						<p className="text-secondary">
 							<strong>Multi-factor authentication (MFA)</strong> protects your account by requiring both
@@ -98,7 +98,7 @@ export function AccountSecurityHelp({
 			{/* Documentation Links */}
 			{showDocumentationLinks && (
 				<div className="border-layout-background bg-content-background rounded-lg border p-4">
-					<h4 className="text-primary mb-3 font-medium">Security Documentation</h4>
+					<h4 className="text-text-contrast font-heading-small mb-3">Security Documentation</h4>
 					<div className="space-y-2">
 						<a
 							href="/docs/security/best-practices"
@@ -123,7 +123,7 @@ export function AccountSecurityHelp({
 			{/* Contextual Links */}
 			{showContextualLinks && securityStatus && (
 				<div className="border-layout-background bg-content-background rounded-lg border p-4">
-					<h4 className="text-primary mb-3 font-medium">Recommended Actions</h4>
+					<h4 className="text-text-contrast font-heading-small mb-3">Recommended Actions</h4>
 					<div className="space-y-2">
 						{hasEmailOnly && (
 							<a
@@ -172,7 +172,7 @@ export function AccountSecurityHelp({
 			{/* FAQ Section */}
 			{showFAQ && (
 				<div>
-					<h3 className="text-primary mb-4 text-lg font-semibold">Security Help & FAQs</h3>
+					<h3 className="text-text-contrast font-heading-small mb-4">Security Help & FAQs</h3>
 					<SecurityHelpFAQ searchable />
 				</div>
 			)}
@@ -221,7 +221,7 @@ export function AccountSecurityHelp({
 
 				{isHelpExpanded && (
 					<div role="region" aria-label="Security help and guidance">
-						<h3 className="text-primary mb-4 text-lg font-semibold">Security Help & Guidance</h3>
+						<h3 className="text-text-contrast font-heading-small mb-4">Security Help & Guidance</h3>
 						{helpContent}
 					</div>
 				)}

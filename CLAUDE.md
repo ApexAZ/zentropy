@@ -155,6 +155,101 @@ className="bg-interactive hover:bg-interactive-hover"
 className="bg-blue-600 hover:bg-blue-700"  // FORBIDDEN
 ```
 
+### **Standard Card/Section Pattern (MANDATORY)**
+```typescript
+// ✅ ALL card-style sections MUST use this exact pattern
+className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm"
+
+// Examples of where to apply:
+// - Profile Information sections
+// - Sign-in Methods sections  
+// - Form containers
+// - Content cards
+// - Modal bodies
+// - Settings panels
+
+// ❌ FORBIDDEN: Inconsistent styling
+className="border-layout-background bg-content-background rounded-lg border p-6"     // Missing shadow-sm
+className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"              // Hardcoded colors
+className="border-layout-background bg-content-background rounded border p-4"      // Wrong radius/padding
+```
+
+### **Typography System (MANDATORY)**
+```typescript
+// ✅ ALWAYS use semantic typography classes from styles.css
+// Page headers
+className="font-heading-large"      // h2, main page titles (30px)
+className="font-heading-medium"     // h3, section headers (24px) 
+className="font-heading-small"      // h4-h6, subsection titles (20px)
+
+// Content text
+className="font-body"               // Main paragraphs, descriptions (16px)
+className="font-interface"          // UI labels, form labels (14px)
+className="font-caption"            // Timestamps, metadata (12px)
+
+// Colors - ALWAYS use semantic text colors
+className="text-text-contrast"      // Headlines, high emphasis
+className="text-text-primary"       // Body text, standard content
+className="text-error"              // Error messages
+className="text-success"            // Success messages
+className="text-neutral"            // Secondary info, placeholders
+
+// ❌ FORBIDDEN: Raw Tailwind typography
+className="text-3xl font-semibold"  // Use font-heading-large instead
+className="text-base font-medium"   // Use font-interface instead
+className="text-black"              // Use text-text-contrast instead
+```
+
+### **Form Input Pattern (MANDATORY)**
+```typescript
+// ✅ Standard form input styling
+className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+
+// ✅ Form labels
+className="text-text-primary mb-2 block font-medium"
+
+// ✅ Error messages
+className="text-error mt-1 block text-sm"
+
+// ✅ Optional field indicators
+<span className="text-neutral">(optional)</span>
+```
+
+### **Button Variants (MANDATORY)**
+```typescript
+// ✅ Primary button
+className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
+
+// ✅ Secondary button
+className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
+
+// ✅ Small button (use atoms/Button with size="small")
+// Always prefer atomic Button component over manual styling
+```
+
+### **Container Spacing Pattern (MANDATORY)**
+```typescript
+// ✅ Page-level horizontal padding
+className="px-8"                    // Headers, navigation, main content
+
+// ✅ Vertical spacing between sections
+className="space-y-8"               // Large section gaps
+className="space-y-6"               // Medium content gaps  
+className="space-y-4"               // Small element gaps
+
+// ✅ Internal padding for cards/containers
+className="p-6"                     // Standard card padding
+className="p-4"                     // Compact container padding
+```
+
+### **Central Theme Configuration**
+All design tokens are centralized in `src/client/styles.css` using Tailwind v4 `@theme` directive:
+- **Colors**: Semantic color system with CSS custom properties
+- **Typography**: Font sizes, weights, line heights
+- **Spacing**: Consistent scale from --space-1 to --space-16
+- **Radius**: Semantic border radius scale
+- **Shadows**: Interactive focus shadows
+
 ### **Centralized Utilities Pattern**
 ```typescript
 // formatters.ts - Data presentation
@@ -282,6 +377,50 @@ def get_all_projects():
 # ✅ CORRECT: Organization-scoped operations
 def get_projects_for_organization(organization_id: UUID):
     return db.query(Project).filter(Project.organization_id == organization_id).all()
+```
+
+### **❌ Inconsistent Card/Section Styling**
+```typescript
+// ❌ FORBIDDEN: Missing shadow on card sections
+className="border-layout-background bg-content-background rounded-lg border p-6"
+
+// ❌ FORBIDDEN: Hardcoded colors instead of semantic tokens
+className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm"
+
+// ❌ FORBIDDEN: Wrong padding or radius
+className="border-layout-background bg-content-background rounded border p-4 shadow-sm"
+
+// ✅ CORRECT: Use standard card pattern
+className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm"
+```
+
+### **❌ Raw Tailwind Typography**
+```typescript
+// ❌ FORBIDDEN: Manual typography instead of semantic classes
+className="text-3xl font-semibold"
+className="text-base font-medium" 
+className="text-sm text-gray-600"
+className="text-black"
+
+// ✅ CORRECT: Use semantic typography system
+className="font-heading-large"
+className="font-interface"
+className="font-caption text-text-primary"
+className="text-text-contrast"
+```
+
+### **❌ Inconsistent Form Styling**
+```typescript
+// ❌ FORBIDDEN: Inconsistent form input patterns
+className="border rounded p-2 w-full"
+className="bg-white border-gray-300 rounded-md px-3 py-2"
+
+// ❌ FORBIDDEN: Manual button styling instead of atomic components
+className="bg-blue-500 text-white px-4 py-2 rounded"
+
+// ✅ CORRECT: Use standard patterns and atomic components
+className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+<Button variant="primary" size="medium">Save</Button>
 ```
 
 ### **❌ Implementation Testing**

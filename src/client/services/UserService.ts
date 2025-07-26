@@ -65,42 +65,15 @@ export class UserService {
 	}
 
 	/**
-	 * Update user password
+	 * Change user password (simplified flow)
 	 */
-	static async updatePassword(passwordData: PasswordUpdateData): Promise<{ message: string }> {
+	static async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
 		const response = await fetch("/api/v1/users/me/change-password", {
 			method: "POST",
 			headers: createAuthHeaders(),
 			body: JSON.stringify({
-				current_password: passwordData.current_password,
-				new_password: passwordData.new_password
-			})
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
-			throw new Error(errorData.message || "Failed to update password");
-		}
-
-		const data = await response.json();
-		return { message: data.message || "Password updated successfully!" };
-	}
-
-	/**
-	 * Secure password change with email verification and operation token
-	 */
-	static async changePassword(
-		currentPassword: string,
-		newPassword: string,
-		operationToken: string
-	): Promise<{ message: string }> {
-		const response = await fetch("/api/v1/users/me/secure-change-password", {
-			method: "POST",
-			headers: createAuthHeaders(),
-			body: JSON.stringify({
 				current_password: currentPassword,
-				new_password: newPassword,
-				operation_token: operationToken
+				new_password: newPassword
 			})
 		});
 

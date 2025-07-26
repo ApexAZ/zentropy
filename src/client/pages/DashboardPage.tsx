@@ -42,15 +42,15 @@ const DashboardPage: React.FC = () => {
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
-						<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
+						<h2 className="text-text-contrast font-heading-large m-0">Dashboard</h2>
+						<p className="text-text-primary font-body mt-2">Overview of your teams and capacity planning</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
-					<p className="text-text-primary mb-4">Loading dashboard...</p>
+					<p className="text-text-primary font-body mb-4">Loading dashboard...</p>
 				</div>
 			</main>
 		);
@@ -59,16 +59,16 @@ const DashboardPage: React.FC = () => {
 	if (error) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
-						<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
+						<h2 className="text-text-contrast font-heading-large m-0">Dashboard</h2>
+						<p className="text-text-primary font-body mt-2">Overview of your teams and capacity planning</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Dashboard</h3>
-						<p className="text-text-primary mb-6">{error}</p>
+						<h3 className="text-error font-heading-medium mb-3">Unable to Load Dashboard</h3>
+						<p className="text-text-primary font-body mb-6">{error}</p>
 						<Button variant="secondary" onClick={() => void loadDashboardData()}>
 							Retry
 						</Button>
@@ -80,10 +80,10 @@ const DashboardPage: React.FC = () => {
 
 	return (
 		<main className="w-full py-8">
-			<div className="mb-8 flex items-center justify-between">
+			<div className="mb-8 flex items-center justify-between px-8">
 				<div>
-					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Dashboard</h2>
-					<p className="text-text-primary mt-2">Overview of your teams and capacity planning</p>
+					<h2 className="text-text-contrast font-heading-large m-0">Dashboard</h2>
+					<p className="text-text-primary font-body mt-2">Overview of your teams and capacity planning</p>
 				</div>
 			</div>
 
@@ -173,7 +173,7 @@ const DashboardPage: React.FC = () => {
 
 			{/* Teams Overview */}
 			<div className="border-layout-background bg-content-background mb-8 rounded-lg border p-6 shadow-sm">
-				<h3 className="text-text-contrast mb-6 text-xl font-semibold">Teams Overview</h3>
+				<h3 className="text-text-contrast font-heading-medium mb-6">Teams Overview</h3>
 
 				{teams.length === 0 ? (
 					<div className="text-text-primary p-8 text-center">

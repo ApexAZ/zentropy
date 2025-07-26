@@ -56,10 +56,12 @@ export function PasswordConfirmationModal({
 				aria-labelledby="password-confirmation-title"
 				className="bg-content-background mx-4 w-full max-w-md rounded-lg p-6"
 			>
-				<h3 id="password-confirmation-title" className="text-primary mb-4 text-lg font-semibold">
+				<h3 id="password-confirmation-title" className="text-text-contrast font-heading-small mb-4">
 					Confirm Password
 				</h3>
-				<p className="text-primary mb-4">Please enter your password to unlink your Google account.</p>
+				<p className="text-text-primary font-body mb-4">
+					Please enter your password to unlink your Google account.
+				</p>
 
 				<form onSubmit={handleSubmit} className="space-y-4">
 					<Input

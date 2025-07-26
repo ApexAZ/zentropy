@@ -58,7 +58,7 @@ export class ErrorBoundary extends Component<Props, State> {
 			return (
 				<div className="bg-content-background text-text-primary border-error-border flex min-h-[200px] flex-col items-center justify-center rounded-lg border p-8">
 					<div className="text-center">
-						<h2 className="text-text-primary mb-4 text-xl font-semibold">Something went wrong</h2>
+						<h2 className="text-text-primary font-heading-medium mb-4">Something went wrong</h2>
 						<p className="text-text-secondary mb-6 text-sm">
 							An unexpected error occurred. Please try refreshing the page or contact support if the
 							problem persists.

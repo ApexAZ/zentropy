@@ -29,7 +29,7 @@ describe("Button Component", () => {
 	it("renders secondary variant", () => {
 		renderWithFullEnvironment(<Button variant="secondary">Secondary</Button>);
 		const button = screen.getByRole("button");
-		expect(button).toHaveClass("bg-content-background", "border-layout-background", "text-text-primary");
+		expect(button).toHaveClass("bg-neutral-background", "border-neutral-border", "text-text-primary");
 	});
 
 	it("renders danger variant", () => {

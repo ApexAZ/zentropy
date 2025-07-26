@@ -523,8 +523,8 @@ describe("ProfilePage", () => {
 			await Promise.resolve();
 		});
 
-		// Verify the new security structure with SecurityOverview and SignInMethods
-		expect(screen.getByText("Security Overview")).toBeInTheDocument();
+		// Verify the security structure with SignInMethods
+		expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 		expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 		expect(screen.getByText("Change Password")).toBeInTheDocument();
 	});
@@ -559,11 +559,9 @@ describe("ProfilePage", () => {
 			await Promise.resolve();
 		});
 
-		// Verify SecurityOverview component displays key security information
-		expect(screen.getByText("Security Overview")).toBeInTheDocument();
+		// Verify SignInMethods component displays security information
 		expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
-		expect(screen.getByText("Security Score")).toBeInTheDocument();
-		expect(screen.getByText("Active Sign-In Methods")).toBeInTheDocument();
+		expect(screen.getByText("Active Sign-in Methods (1)")).toBeInTheDocument();
 	});
 
 	it("formats member since date correctly", async () => {
@@ -770,7 +768,7 @@ describe("ProfilePage", () => {
 			});
 
 			// Verify security content is displayed with new structure
-			expect(screen.getByText("Security Overview")).toBeInTheDocument();
+			expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 			expect(screen.getByText("Sign-In Methods")).toBeInTheDocument();
 			expect(screen.getByText("Change Password")).toBeInTheDocument();
 		});

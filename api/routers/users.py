@@ -6,19 +6,10 @@ from datetime import datetime, timezone
 
 from ..database import get_db, UserRole, AuthProvider
 from ..rate_limiter import rate_limiter, RateLimitType, get_client_ip
-from ..security import (
-    verify_operation_token,
-    InvalidTokenError,
-    ExpiredTokenError,
-    InvalidOperationError,
-    TokenAlreadyUsedError,
-    TokenUserMismatchError,
-)
 from ..schemas import (
     UserResponse,
     UserUpdate,
     PasswordUpdate,
-    SecurePasswordChangeRequest,
     MessageResponse,
     LinkGoogleAccountRequest,
     UnlinkGoogleAccountRequest,
@@ -169,11 +160,15 @@ def update_user(
 
 @router.post("/me/change-password", response_model=MessageResponse)
 def change_password(
+    request: Request,
     password_update: PasswordUpdate,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
 ) -> MessageResponse:
-    """Change current user's password"""
+    """Change current user's password (simplified flow)"""
+    # Apply rate limiting for security-sensitive operations
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
     if not verify_password(
         password_update.current_password, str(current_user.password_hash)
     ):
@@ -233,131 +228,6 @@ def change_password(
 
     # Clean up old password history, keeping the 4 most recent entries.
     # The 5th password is the current one in the users table.
-    all_ids_query = (
-        db.query(database.PasswordHistory.id)
-        .filter(database.PasswordHistory.user_id == current_user.id)
-        .order_by(database.PasswordHistory.created_at.desc())
-    )
-    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
-
-    if ids_to_delete:
-        db.query(database.PasswordHistory).filter(
-            database.PasswordHistory.id.in_(ids_to_delete)
-        ).delete(synchronize_session=False)
-
-    db.commit()
-
-    return MessageResponse(message="Password updated successfully")
-
-
-@router.post("/me/secure-change-password", response_model=MessageResponse)
-def secure_change_password(
-    request: Request,
-    password_change: SecurePasswordChangeRequest,
-    db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
-) -> MessageResponse:
-    """
-    Secure password change with email verification and operation token.
-
-    This endpoint requires:
-    1. Valid authentication (current user)
-    2. Current password verification
-    3. Operation token from email verification flow
-    4. Rate limiting to prevent abuse
-
-    The operation token must be obtained through the unified security code flow:
-    1. POST /auth/send-security-code (operation_type: password_change)
-    2. POST /auth/verify-security-code -> returns operation_token
-    3. Use operation_token in this endpoint
-    """
-    # Apply rate limiting for security-sensitive operations
-    client_ip = get_client_ip(request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
-
-    # Verify operation token with enhanced security (single-use + cross-user prevention)
-    try:
-        verified_email = verify_operation_token(
-            password_change.operation_token, "password_change", db, str(current_user.id)
-        )
-    except ExpiredTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Operation token has expired",
-        )
-    except (
-        InvalidTokenError,
-        InvalidOperationError,
-        TokenAlreadyUsedError,
-        TokenUserMismatchError,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid operation token"
-        )
-
-    # Verify token email matches current user email (security check)
-    if verified_email.lower() != current_user.email.lower():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid operation token"
-        )
-
-    # Verify current password
-    if not verify_password(
-        password_change.current_password, str(current_user.password_hash)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect",
-        )
-
-    # Validate new password strength
-    user_info = {
-        "email": current_user.email,
-        "first_name": current_user.first_name,
-        "last_name": current_user.last_name,
-    }
-    validate_password_strength(password_change.new_password, user_info)
-
-    # Check for reuse against the current password
-    if verify_password(password_change.new_password, str(current_user.password_hash)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password cannot be the same as the current password.",
-        )
-
-    # Check for reuse against the 4 most recent passwords in history
-    password_history = (
-        db.query(database.PasswordHistory)
-        .filter(database.PasswordHistory.user_id == current_user.id)
-        .order_by(database.PasswordHistory.created_at.desc())
-        .limit(4)
-        .all()
-    )
-    for history_entry in password_history:
-        if verify_password(
-            password_change.new_password, str(history_entry.password_hash)
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password has been used recently and cannot be reused.",
-            )
-
-    # If all checks pass, proceed with the update
-    old_password_hash = current_user.password_hash
-    new_password_hash = get_password_hash(password_change.new_password)
-
-    current_user.password_hash = new_password_hash
-    current_user.updated_at = datetime.now(timezone.utc)
-
-    # Add the OLD password to history
-    if old_password_hash:
-        password_history_entry = database.PasswordHistory(
-            user_id=current_user.id, password_hash=old_password_hash
-        )
-        db.add(password_history_entry)
-        db.flush()
-
-    # Clean up old password history, keeping the 4 most recent entries
     all_ids_query = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == current_user.id)

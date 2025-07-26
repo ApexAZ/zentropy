@@ -3,7 +3,6 @@ import type { User, ProfileUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
-import { SecurityOverview } from "../components/SecurityOverview";
 import { SignInMethods } from "../components/SignInMethods";
 import { useToast } from "../contexts/ToastContext";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
@@ -144,7 +143,7 @@ const ProfilePage: React.FC = () => {
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
 						<h2 className="text-text-contrast font-heading-large m-0">My Profile</h2>
 						<p className="text-text-primary font-body mt-2">
@@ -152,7 +151,7 @@ const ProfilePage: React.FC = () => {
 						</p>
 					</div>
 				</div>
-				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+				<div className="flex min-h-[300px] flex-col items-center justify-center px-8 text-center">
 					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
 					<p className="text-text-primary mb-4">Loading profile...</p>
 				</div>
@@ -163,7 +162,7 @@ const ProfilePage: React.FC = () => {
 	if (error) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
 						<h2 className="text-text-contrast font-heading-large m-0">My Profile</h2>
 						<p className="text-text-primary font-body mt-2">
@@ -171,7 +170,7 @@ const ProfilePage: React.FC = () => {
 						</p>
 					</div>
 				</div>
-				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+				<div className="flex min-h-[300px] flex-col items-center justify-center px-8 text-center">
 					<div>
 						<h3 className="text-error font-heading-medium mb-3">Unable to Load Profile</h3>
 						<p className="text-text-primary mb-6">{error}</p>
@@ -193,30 +192,34 @@ const ProfilePage: React.FC = () => {
 
 	return (
 		<main className="w-full py-8">
-			<div className="mb-8 flex items-center justify-between">
+			<div className="mb-8 flex items-center justify-between px-8">
 				<div>
-					<h2 className="text-text-contrast m-0 text-3xl font-semibold">My Profile</h2>
-					<p className="text-text-primary mt-2">Manage your account information and security settings</p>
+					<h2 className="text-text-contrast font-heading-large m-0">My Profile</h2>
+					<p className="text-text-primary font-body mt-2">
+						Manage your account information and security settings
+					</p>
 				</div>
 			</div>
 
 			{/* Tab Navigation */}
-			<TabList activeTab={activeTab} onTabChange={setActiveTab} className="mb-8">
-				<Tab id="profile" label="Profile" isActive={activeTab === "profile"} onClick={setActiveTab} />
-				<Tab id="security" label="Security" isActive={activeTab === "security"} onClick={setActiveTab} />
-			</TabList>
+			<div className="px-8">
+				<TabList activeTab={activeTab} onTabChange={setActiveTab} className="mb-8">
+					<Tab id="profile" label="Profile" isActive={activeTab === "profile"} onClick={setActiveTab} />
+					<Tab id="security" label="Security" isActive={activeTab === "security"} onClick={setActiveTab} />
+				</TabList>
+			</div>
 
 			{/* Profile Tab */}
 			<TabPanel tabId="profile" activeTab={activeTab}>
-				<div className="space-y-8">
+				<div className="space-y-8 px-8">
 					{/* Profile Information Section */}
 					<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-						<div className="mb-6 flex items-center justify-between">
+						<div className="mb-6 flex max-w-2xl flex-col items-start gap-4 sm:flex-row sm:items-center">
 							<h3 className="text-text-contrast font-heading-medium">Profile Information</h3>
 							{!isEditingProfile && (
 								<button
 									onClick={handleEditProfile}
-									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200"
+									className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-sm font-medium no-underline transition-all duration-200 sm:ml-[116px]"
 								>
 									<span>✏️</span>
 									Edit Profile
@@ -326,7 +329,7 @@ const ProfilePage: React.FC = () => {
 								</div>
 							</form>
 						) : (
-							<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+							<div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
 								<div>
 									<div className="text-text-primary font-interface mb-1 block">Full Name</div>
 									<div className="text-text-contrast">
@@ -377,24 +380,18 @@ const ProfilePage: React.FC = () => {
 
 			{/* Security Tab */}
 			<TabPanel tabId="security" activeTab={activeTab}>
-				<div className="space-y-8">
+				<div className="space-y-8 px-8">
 					{securityLoading ? (
 						<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 							<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
 							<p className="text-text-primary mb-4">Loading security information...</p>
 						</div>
 					) : securityStatus ? (
-						<>
-							{/* Security Overview Section */}
-							<SecurityOverview securityStatus={securityStatus} />
-
-							{/* Sign-In Methods Section */}
-							<SignInMethods
-								securityStatus={securityStatus}
-								onSecurityUpdate={retryLoadProfile}
-								onError={showError}
-							/>
-						</>
+						<SignInMethods
+							securityStatus={securityStatus}
+							onSecurityUpdate={retryLoadProfile}
+							onError={showError}
+						/>
 					) : (
 						<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 							<div>

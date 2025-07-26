@@ -119,7 +119,7 @@ export function SecurityRecommendations({ securityStatus, onDismiss, onLearnMore
 						{recommendation.icon}
 					</span>
 					<div className="flex-1">
-						<h4 className="text-primary font-semibold">{recommendation.title}</h4>
+						<h4 className="text-text-contrast font-heading-small">{recommendation.title}</h4>
 						<p className="text-secondary mt-1 text-sm">{recommendation.description}</p>
 					</div>
 				</div>
@@ -127,7 +127,9 @@ export function SecurityRecommendations({ securityStatus, onDismiss, onLearnMore
 				{/* Educational Content (Expandable) */}
 				{showEducationalContent && (
 					<div data-testid="educational-content" className="bg-content-background space-y-3 rounded-md p-4">
-						<h5 className="text-primary font-medium">{recommendation.educationalContent.title}</h5>
+						<h5 className="text-text-contrast font-heading-small">
+							{recommendation.educationalContent.title}
+						</h5>
 						<ul className="text-secondary space-y-2 text-sm">
 							{recommendation.educationalContent.benefits.map((benefit, index) => (
 								<li key={index} className="flex items-start space-x-2">
@@ -155,7 +157,7 @@ export function SecurityRecommendations({ securityStatus, onDismiss, onLearnMore
 					<button
 						type="button"
 						onClick={handlePostpone}
-						className="text-secondary hover:text-primary focus:ring-interactive rounded px-2 py-1 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+						className="text-secondary hover:text-text-contrast focus:ring-interactive rounded px-2 py-1 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
 					>
 						Remind me later
 					</button>
@@ -163,7 +165,7 @@ export function SecurityRecommendations({ securityStatus, onDismiss, onLearnMore
 					<button
 						type="button"
 						onClick={handleDismiss}
-						className="text-secondary hover:text-primary focus:ring-interactive rounded px-2 py-1 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
+						className="text-secondary hover:text-text-contrast focus:ring-interactive rounded px-2 py-1 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-none"
 					>
 						Dismiss
 					</button>

@@ -24,7 +24,7 @@ describe("AboutPage", () => {
 		// Check for page title
 		const pageTitle = screen.getByRole("heading", { name: /about zentropy/i });
 		expect(pageTitle).toBeInTheDocument();
-		expect(pageTitle).toHaveClass("text-primary", "m-0", "text-3xl", "font-semibold");
+		expect(pageTitle).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 
 		// Check title is in header div with proper styling
 		const headerDiv = pageTitle.parentElement;
@@ -37,7 +37,14 @@ describe("AboutPage", () => {
 		// Check for main content section
 		const contentSection = document.querySelector("section");
 		expect(contentSection).toBeInTheDocument();
-		expect(contentSection).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+		expect(contentSection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 	});
 
 	it("should display the introduction paragraphs", () => {
@@ -46,11 +53,11 @@ describe("AboutPage", () => {
 		// Check for introduction paragraphs
 		const introText1 = screen.getByText(/comprehensive product management platform designed to streamline/i);
 		expect(introText1).toBeInTheDocument();
-		expect(introText1).toHaveClass("text-primary", "mb-4");
+		expect(introText1).toHaveClass("text-text-primary", "font-body", "mb-4");
 
 		const introText2 = screen.getByText(/our mission is to bring clarity and efficiency/i);
 		expect(introText2).toBeInTheDocument();
-		expect(introText2).toHaveClass("text-primary", "mb-4");
+		expect(introText2).toHaveClass("text-text-primary", "font-body", "mb-4");
 	});
 
 	it("should display the 'Our Vision' section with proper content", () => {
@@ -59,12 +66,12 @@ describe("AboutPage", () => {
 		// Check for 'Our Vision' heading
 		const visionHeading = screen.getByRole("heading", { name: /our vision/i });
 		expect(visionHeading).toBeInTheDocument();
-		expect(visionHeading).toHaveClass("text-primary", "mb-3", "text-xl", "font-semibold");
+		expect(visionHeading).toHaveClass("text-text-contrast", "font-heading-medium", "mb-3");
 
 		// Check for vision paragraph
 		const visionText = screen.getByText(/we envision a world where product teams can seamlessly collaborate/i);
 		expect(visionText).toBeInTheDocument();
-		expect(visionText).toHaveClass("text-primary", "mb-4");
+		expect(visionText).toHaveClass("text-text-primary", "font-body", "mb-4");
 	});
 
 	it("should display the 'Key Features' section with proper content", () => {
@@ -73,12 +80,12 @@ describe("AboutPage", () => {
 		// Check for 'Key Features' heading
 		const featuresHeading = screen.getByRole("heading", { name: /key features/i });
 		expect(featuresHeading).toBeInTheDocument();
-		expect(featuresHeading).toHaveClass("text-primary", "mb-3", "text-xl", "font-semibold");
+		expect(featuresHeading).toHaveClass("text-text-contrast", "font-heading-medium", "mb-3");
 
 		// Check for features list
 		const featuresList = screen.getByRole("list", { hidden: true }); // list-none makes it not accessible by default
 		expect(featuresList).toBeInTheDocument();
-		expect(featuresList).toHaveClass("text-primary", "mb-4", "list-none");
+		expect(featuresList).toHaveClass("text-text-primary", "font-body", "mb-4", "list-none");
 	});
 
 	it("should display all four key features", () => {
@@ -108,7 +115,7 @@ describe("AboutPage", () => {
 		// Check for closing paragraph
 		const closingText = screen.getByText(/built with modern web technologies and a focus on user experience/i);
 		expect(closingText).toBeInTheDocument();
-		expect(closingText).toHaveClass("text-primary", "mb-4");
+		expect(closingText).toHaveClass("text-text-primary", "font-body", "mb-4");
 	});
 
 	it("should use semantic styling classes consistently", () => {
@@ -116,22 +123,29 @@ describe("AboutPage", () => {
 
 		// Check main content section uses semantic background
 		const contentSection = document.querySelector("section");
-		expect(contentSection).toHaveClass("bg-content-background");
+		expect(contentSection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 
 		// Check all headings use semantic text styling
 		const h2Heading = screen.getByRole("heading", { name: /about zentropy/i });
-		expect(h2Heading).toHaveClass("text-primary");
+		expect(h2Heading).toHaveClass("text-text-contrast", "font-heading-large");
 
 		const h3Headings = screen.getAllByRole("heading", { level: 3 });
 		expect(h3Headings).toHaveLength(2);
 		h3Headings.forEach(heading => {
-			expect(heading).toHaveClass("text-primary");
+			expect(heading).toHaveClass("text-text-contrast", "font-heading-medium");
 		});
 
 		// Check all paragraphs use semantic text styling
 		const paragraphs = document.querySelectorAll("p");
 		paragraphs.forEach(paragraph => {
-			expect(paragraph).toHaveClass("text-primary");
+			expect(paragraph).toHaveClass("text-text-primary", "font-body");
 		});
 	});
 

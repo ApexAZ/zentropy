@@ -73,14 +73,14 @@ export function SecurityHelpFAQ({ searchable = false }: SecurityHelpFAQProps) {
 		<div className="space-y-6">
 			{/* FAQ Header */}
 			<div>
-				<h3 className="text-primary mb-2 text-xl font-semibold">Frequently Asked Questions</h3>
+				<h3 className="text-text-contrast font-heading-medium mb-2">Frequently Asked Questions</h3>
 				<p className="text-secondary text-sm">Find answers to common questions about account security.</p>
 			</div>
 
 			{/* Search Input */}
 			{searchable && (
 				<div className="mb-4">
-					<label htmlFor="faq-search" className="text-primary mb-2 block text-sm font-medium">
+					<label htmlFor="faq-search" className="text-text-primary font-interface mb-2 block">
 						Search FAQs
 					</label>
 					<input
@@ -109,7 +109,7 @@ export function SecurityHelpFAQ({ searchable = false }: SecurityHelpFAQProps) {
 								<button
 									type="button"
 									onClick={() => toggleExpanded(item.id)}
-									className="text-primary hover:bg-layout-background focus:ring-interactive w-full p-4 text-left focus:ring-2 focus:outline-none focus:ring-inset"
+									className="text-text-primary hover:bg-layout-background focus:ring-interactive w-full p-4 text-left focus:ring-2 focus:outline-none focus:ring-inset"
 									aria-expanded={isExpanded}
 									aria-controls={answerId}
 								>

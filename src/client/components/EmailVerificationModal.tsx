@@ -5,15 +5,21 @@ import { AuthService } from "../services/AuthService";
 interface EmailVerificationModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSuccess?: () => void;
+	onSuccess?: (operationToken?: string) => void;
 	initialEmail?: string;
+	operationType?: string;
+	title?: string;
+	description?: string;
 }
 
 const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 	isOpen,
 	onClose,
 	onSuccess,
-	initialEmail = ""
+	initialEmail = "",
+	operationType = "email_verification",
+	title = "Verify Your Email",
+	description = "We've sent a 6-digit verification code to your email address."
 }) => {
 	const [email, setEmail] = useState(initialEmail);
 	const [code, setCode] = useState("");
@@ -111,15 +117,25 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 		setError(null);
 
 		try {
+			// Use the SAME verification system for ALL operations - just verify the email code
 			const result = await AuthService.verifyCode(email, code, "email_verification");
 
 			if (result.success) {
 				setSuccess(true);
-				// Clear pending verification state since email is now verified
-				clearPendingVerification();
+
+				// Only clear pending verification for actual registration
+				if (operationType === "email_verification") {
+					clearPendingVerification();
+				}
+
 				setTimeout(() => {
-					onSuccess?.();
-					onClose();
+					// Pass the user_id as string for password reset
+					onSuccess?.(operationType === "email_verification" ? undefined : String(result.user_id));
+					
+					// Only close modal for email verification - password reset flow handles its own navigation
+					if (operationType === "email_verification") {
+						onClose();
+					}
 				}, 2000);
 			} else {
 				setError(result.message || "Verification failed");
@@ -141,7 +157,9 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 		setError(null);
 
 		try {
+			// Use the SAME email verification system for ALL operations
 			await AuthService.sendEmailVerification(email);
+
 			setError(null);
 			// Clear the code for new attempt
 			setCode("");
@@ -173,9 +191,13 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 								/>
 							</svg>
 						</div>
-						<h2 className="mb-2 text-2xl font-bold text-green-600">Email Verified!</h2>
+						<h2 className="mb-2 text-2xl font-bold text-green-600">
+							{operationType === "email_verification" ? "Email Verified!" : "Code Verified!"}
+						</h2>
 						<p className="text-text-primary">
-							Your email has been successfully verified. You can now sign in.
+							{operationType === "email_verification"
+								? "Your email has been successfully verified. You can now sign in."
+								: "Your verification code has been confirmed. Completing your request..."}
 						</p>
 					</div>
 				</div>
@@ -196,10 +218,8 @@ const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 					</div>
 
 					<div className="text-center">
-						<h2 className="text-text-primary mb-2 text-2xl font-bold">Verify Your Email</h2>
-						<p className="text-text-primary mb-6">
-							We've sent a 6-digit verification code to your email address.
-						</p>
+						<h2 className="text-text-primary mb-2 text-2xl font-bold">{title}</h2>
+						<p className="text-text-primary mb-6">{description}</p>
 					</div>
 
 					<form

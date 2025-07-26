@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta, datetime, timezone
+import uuid
 
 from ..database import get_db
 from ..rate_limiter import rate_limiter, RateLimitType, get_client_ip
@@ -18,9 +19,6 @@ from ..schemas import (
     EmailVerificationResponse,
     VerificationCodeRequest,
     VerificationCodeResponse,
-    SecurityCodeRequest,
-    VerifySecurityCodeRequest,
-    OperationTokenResponse,
     ResetPasswordRequest,
 )
 from ..auth import (
@@ -29,7 +27,6 @@ from ..auth import (
     get_password_hash,
     validate_password_strength,
     get_current_user,
-    verify_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
 from ..google_oauth import (
@@ -43,7 +40,6 @@ from ..google_oauth import (
 )
 from .. import database
 from ..database import AuthProvider, Organization, User
-from ..security import verify_operation_token
 from ..email_verification import (
     create_verification_code,
     send_verification_email,
@@ -449,7 +445,7 @@ def send_verification_email_endpoint(
     client_ip = get_client_ip(fastapi_request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
 
-    result = resend_verification_email(db, request.email)
+    result = resend_verification_email(db, request.email, purpose="password_reset")
 
     if not result["success"]:
         # Check for rate limiting error
@@ -471,7 +467,7 @@ def send_verification_email_endpoint(
 
     return EmailVerificationResponse(
         message=(
-            "If an account with that email exists and is unverified, "
+            "If an account with that email exists, "
             "a verification code has been sent"
         ),
         email=request.email,
@@ -501,211 +497,39 @@ def verify_code_endpoint(
             detail="Invalid email address",
         )
 
-    # Verify the code using central service
-    from ..verification_service import VerificationCodeService, VerificationType
+    # Verify the code using direct table query (simplified approach)
+    from ..verification_service import VerificationCode
 
-    try:
-        verification_type = VerificationType(request.verification_type)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid verification type: {request.verification_type}",
+    # Find valid verification code
+    verification_code = (
+        db.query(VerificationCode)
+        .filter(
+            VerificationCode.user_id == user.id,
+            VerificationCode.code == request.code,
+            ~VerificationCode.is_used,
+            VerificationCode.expires_at > datetime.now(timezone.utc),
         )
-
-    result = VerificationCodeService.verify_code(
-        db=db, user_id=user.id, code=request.code, verification_type=verification_type
+        .first()
     )
 
-    # If email verification is successful, mark user's email as verified
-    if result["valid"] and verification_type == VerificationType.EMAIL_VERIFICATION:
+    if not verification_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code",
+        )
+
+    # Mark code as used
+    verification_code.is_used = True
+    verification_code.used_at = datetime.now(timezone.utc)
+
+    # Mark user's email as verified for email verification
+    if request.verification_type == "email_verification":
         user.email_verified = True
-        db.commit()
 
-    if result["valid"]:
-        return VerificationCodeResponse(
-            message="Email verified successfully", success=True, user_id=user.id
-        )
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"],
-        )
+    db.commit()
 
-
-@router.post("/send-security-code", response_model=MessageResponse)
-def send_security_code_endpoint(
-    fastapi_request: Request,
-    request: SecurityCodeRequest,
-    db: Session = Depends(get_db),
-) -> MessageResponse:
-    """
-    Send verification code for various security operations.
-
-    Supports multiple operation types:
-    - password_change: For authenticated users changing their password
-    - password_reset: For unauthenticated users who forgot their password
-    - email_recovery: For users who forgot their email address
-    - email_change: For users changing their email address (future)
-    """
-    from ..verification_service import VerificationCodeService, VerificationType
-
-    # Apply rate limiting
-    client_ip = get_client_ip(fastapi_request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.EMAIL)
-
-    # Validate operation type
-    try:
-        verification_type = VerificationType(request.operation_type)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid operation type: {request.operation_type}",
-        )
-
-    # Validate operation context (some operations require authentication)
-    email = request.email.lower()
-    current_user = None
-
-    if verification_type == VerificationType.PASSWORD_CHANGE:
-        # Password change requires authentication - extract from Authorization header
-        auth_header = fastapi_request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required for password changes",
-            )
-
-        try:
-            token = auth_header.split(" ")[1]
-            token_data = verify_token(
-                HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-            )
-            current_user = (
-                db.query(database.User)
-                .filter(database.User.id == token_data.user_id)
-                .first()
-            )
-            if not current_user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found",
-                )
-        except (IndexError, HTTPException):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token",
-            )
-
-        if current_user.email.lower() != email:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot change password for different email address",
-            )
-        user = current_user
-
-    else:
-        # Other operations work with email lookup (password_reset, email_recovery)
-        user = db.query(database.User).filter(database.User.email == email).first()
-
-        # For security, don't reveal if email exists for password reset
-        if not user and verification_type in [
-            VerificationType.PASSWORD_RESET,
-        ]:
-            # Return success anyway to prevent email enumeration
-            message = (
-                "If an account with that email exists, a verification code has "
-                "been sent"
-            )
-            return MessageResponse(message=message)
-        elif not user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid email address",
-            )
-
-    # Generate and send verification code
-    try:
-        _code, _expires_at = VerificationCodeService.create_verification_code(
-            db=db, user_id=user.id, verification_type=verification_type
-        )
-
-        # Send verification email (implement email templates for different types)
-        # TODO: Implement email templates for different operation types
-        # operation_labels = {
-        #     VerificationType.PASSWORD_CHANGE: "password change",
-        #     VerificationType.PASSWORD_RESET: "password reset",
-        #     VerificationType.EMAIL_RECOVERY: "email recovery",
-        #     VerificationType.EMAIL_CHANGE: "email change",
-        # }
-
-        # TODO: Implement proper email sending with templates
-        # For now, we skip the actual email sending in the MVP
-        # In production, this would send an email with the verification code
-
-        return MessageResponse(message=f"Verification code sent to {email}")
-
-    except ValueError as e:
-        # Handle rate limiting
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=str(e),
-        )
-
-
-@router.post("/verify-security-code", response_model=OperationTokenResponse)
-def verify_security_code_endpoint(
-    fastapi_request: Request,
-    request: VerifySecurityCodeRequest,
-    db: Session = Depends(get_db),
-) -> OperationTokenResponse:
-    """
-    Verify security code and return operation token for multi-step flows.
-
-    Returns a short-lived JWT token that can be used to authorize the completion
-    of the security operation (e.g., actually changing the password).
-    """
-    from ..verification_service import VerificationCodeService, VerificationType
-    from ..security import generate_operation_token
-
-    # Apply rate limiting
-    client_ip = get_client_ip(fastapi_request)
-    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
-
-    # Validate operation type
-    try:
-        verification_type = VerificationType(request.operation_type)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid operation type: {request.operation_type}",
-        )
-
-    # Find user by email
-    email = request.email.lower()
-    user = db.query(database.User).filter(database.User.email == email).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid email address or verification code",
-        )
-
-    # Verify the code
-    result = VerificationCodeService.verify_code(
-        db=db, user_id=user.id, code=request.code, verification_type=verification_type
-    )
-
-    if not result["valid"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"],
-        )
-
-    # Generate operation token for the verified operation
-    operation_token = generate_operation_token(email, request.operation_type)
-
-    return OperationTokenResponse(
-        operation_token=operation_token, expires_in=600  # 10 minutes
+    return VerificationCodeResponse(
+        message="Email verified successfully", success=True, user_id=user.id
     )
 
 
@@ -725,58 +549,28 @@ def reset_password(
     client_ip = get_client_ip(fastapi_request)
     rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
 
-    # Find user by email first for enhanced security checks
-    email_candidate = None
+    # Only handle simple token format from unified email verification
+    if not request.operation_token.startswith("verified_user_"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reset token",
+        )
+
+    # Extract user_id from simple token
+    user_id_str = request.operation_token.replace("verified_user_", "")
     try:
-        # First do basic token validation to get email
-        from api.security import get_operation_token_manager
-
-        token_info = get_operation_token_manager().get_token_info(
-            request.operation_token
-        )
-        email_candidate = token_info.get("email")
-    except Exception:
+        user_id = uuid.UUID(user_id_str)
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid reset token",
+            )
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token",
+            detail="Invalid reset token format",
         )
-
-    if not email_candidate:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token",
-        )
-
-    # Find user by email (case-insensitive)
-    user = db.query(User).filter(User.email.ilike(email_candidate)).first()
-
-    # Verify operation token with enhanced security (single-use + cross-user prevention)
-    try:
-        email = verify_operation_token(
-            request.operation_token,
-            "password_reset",
-            db,
-            str(user.id) if user else None,
-        )
-    except Exception as e:
-        # Log the specific error for debugging while returning generic message
-        import logging
-
-        logging.warning(f"Password reset token verification failed: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token",
-        )
-
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired reset token",
-        )
-
-    if not user:
-        # Don't reveal if email exists, return success anyway for security
-        return MessageResponse(message="Password reset successfully")
 
     # Validate new password strength
     try:

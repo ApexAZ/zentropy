@@ -169,12 +169,19 @@ const Header: React.FC<HeaderProps> = ({
 			</div>
 
 			{/* Center - Zentropy logo */}
-			<h1 className="m-0 flex-shrink-0 text-3xl">
+			<h1 className="m-0 flex-shrink-0">
 				<button
 					onClick={() => onPageChange("home")}
-					className="text-interactive cursor-pointer border-none bg-transparent p-0 text-3xl font-bold no-underline"
+					className="cursor-pointer border-none bg-transparent p-0 no-underline focus:outline-none"
+					aria-label="Zentropy - Go to homepage"
 				>
-					Zentropy
+					<img
+						src="/images/ZentropyLogo.svg"
+						alt="Zentropy"
+						className="h-20 w-auto"
+						width="360"
+						height="80"
+					/>
 				</button>
 			</h1>
 
@@ -183,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({
 				{/* Email verification notice */}
 				{shouldShowVerificationNotice && verificationEmail && (
 					<div className="flex items-center gap-1.5">
-						<span className={`text-sm font-medium ${resendSuccess ? "text-success" : "text-warning"}`}>
+						<span className={`font-interface ${resendSuccess ? "text-success" : "text-warning"}`}>
 							{resendSuccess
 								? `Verification email sent to ${verificationEmail}!`
 								: "Email verification required"}

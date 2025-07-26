@@ -4,15 +4,6 @@ import { vi, beforeEach, afterEach, describe, it, expect } from "vitest";
 import "@testing-library/jest-dom";
 import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils";
 import PasswordChangeForm from "../PasswordChangeForm";
-import { SecurityOperationType } from "../../types";
-
-// Mock AuthService for security code operations
-vi.mock("../../services/AuthService", () => ({
-	AuthService: {
-		sendSecurityCode: vi.fn(),
-		verifySecurityCode: vi.fn()
-	}
-}));
 
 // Mock UserService for password change operations
 vi.mock("../../services/UserService", () => ({
@@ -21,524 +12,252 @@ vi.mock("../../services/UserService", () => ({
 	}
 }));
 
-// Mock SecurityCodeFlow component since it's already tested
-vi.mock("../SecurityCodeFlow", () => ({
-	default: ({ userEmail, operationType, onCodeVerified, onCancel, title, description }: any) => (
-		<div data-testid="security-code-flow">
-			<h3>{title}</h3>
-			<p>{description}</p>
-			<p>Email: {userEmail}</p>
-			<p>Operation: {operationType}</p>
-			<button data-testid="verify-code-button" onClick={() => onCodeVerified("mock-operation-token")}>
-				Verify Code
-			</button>
-			<button data-testid="cancel-verification-button" onClick={onCancel}>
-				Cancel
-			</button>
-		</div>
+// Mock PasswordRequirements component
+vi.mock("../PasswordRequirements", () => ({
+	default: ({ password }: { password: string }) => (
+		<div data-testid="password-requirements">Password requirements for: {password}</div>
 	)
 }));
 
-// Mock PasswordRequirements component
-vi.mock("../PasswordRequirements", () => ({
-	default: ({ password }: any) => <div data-testid="password-requirements">Password requirements for: {password}</div>
-}));
-
-// Mock useAuth hook
+// Mock useAuth hook to provide user
 vi.mock("../../hooks/useAuth", () => ({
-	useAuth: () => ({
-		user: {
-			email: "test@example.com",
-			id: "user-123",
-			first_name: "Test",
-			last_name: "User"
-		}
-	})
+	useAuth: vi.fn(() => ({
+		user: { id: "1", email: "test@example.com", first_name: "Test", last_name: "User" }
+	}))
 }));
 
-// Mock logger to avoid console outputs in tests
-vi.mock("../../utils/logger", () => ({
-	logger: {
-		info: vi.fn(),
-		error: vi.fn()
-	}
-}));
-
-import { AuthService } from "../../services/AuthService";
+// Import mocked modules for type checking
 import { UserService } from "../../services/UserService";
 
 describe("PasswordChangeForm", () => {
-	const mockProps = {
-		onSuccess: vi.fn(),
-		onCancel: vi.fn()
-	};
+	const mockOnSuccess = vi.fn();
+	const mockOnCancel = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Set up default successful mock responses
-		(AuthService.sendSecurityCode as any).mockResolvedValue({ message: "Code sent successfully" });
-		(AuthService.verifySecurityCode as any).mockResolvedValue({
-			operation_token: "mock-operation-token",
-			expires_in: 600
-		});
-		(UserService.changePassword as any).mockResolvedValue({ message: "Password changed successfully" });
+		(UserService.changePassword as any).mockResolvedValue({ message: "Password changed successfully!" });
 	});
 
 	afterEach(() => {
 		vi.clearAllMocks();
 	});
 
-	describe("Step 1: Password Input Form", () => {
-		it("should render initial password input form", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+	describe("Form Rendering", () => {
+		it("should render the password change form", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
-			expect(screen.getByText("Change Password")).toBeInTheDocument();
+			expect(screen.getByRole("heading", { name: "Change Password" })).toBeInTheDocument();
 			expect(
-				screen.getByText(
-					"Enter your new password. You'll need to verify your email address to complete the change."
-				)
+				screen.getByText(/Enter your current password and choose a new secure password/i)
 			).toBeInTheDocument();
+			expect(screen.getByLabelText("Current Password")).toBeInTheDocument();
 			expect(screen.getByLabelText("New Password")).toBeInTheDocument();
 			expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
-			expect(screen.getByText("Send Verification Code")).toBeInTheDocument();
-			expect(screen.getByText("Cancel")).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Change Password" })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
 		});
 
-		it("should validate password confirmation match", async () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+		it("should show password requirements component", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
+			expect(screen.getByTestId("password-requirements")).toBeInTheDocument();
+		});
+
+		it("should have proper form structure", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
+			});
+
+			const form = screen.getByRole("heading", { name: "Change Password" }).closest("form");
+			expect(form).toBeInTheDocument();
+			expect(form).toHaveClass("space-y-4");
+		});
+	});
+
+	describe("Form Validation", () => {
+		it("should validate password confirmation match", async () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
+			});
+
+			const currentPasswordInput = screen.getByLabelText("Current Password");
 			const newPasswordInput = screen.getByLabelText("New Password");
 			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
 
-			// Enter mismatched passwords
+			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
 			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
 			fireEvent.change(confirmPasswordInput, { target: { value: "DifferentPassword123!" } });
 
-			fireEvent.click(submitButton);
-
 			await act(async () => {
-				await Promise.resolve();
+				fireEvent.click(submitButton);
 			});
 
 			expect(screen.getByText("New passwords don't match")).toBeInTheDocument();
-			expect(AuthService.sendSecurityCode).not.toHaveBeenCalled();
+			expect(UserService.changePassword).not.toHaveBeenCalled();
 		});
 
-		it("should proceed to verification when passwords match", async () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+		it("should disable submit button when fields are empty", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
-			const newPasswordInput = screen.getByLabelText("New Password");
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
-
-			// Enter matching passwords
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Should call security code service
-			expect(AuthService.sendSecurityCode).toHaveBeenCalledWith(
-				"test@example.com",
-				SecurityOperationType.PASSWORD_CHANGE
-			);
-
-			// Should show verification step
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
-			expect(screen.getByText("Verify Password Change")).toBeInTheDocument();
-		});
-
-		it("should handle send code error gracefully", async () => {
-			(AuthService.sendSecurityCode as any).mockRejectedValue(new Error("Rate limit exceeded"));
-
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			const newPasswordInput = screen.getByLabelText("New Password");
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
-
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			expect(screen.getByText("Rate limit exceeded")).toBeInTheDocument();
-			expect(screen.queryByTestId("security-code-flow")).not.toBeInTheDocument();
-		});
-
-		it("should disable submit button when passwords are empty", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			const submitButton = screen.getByText("Send Verification Code");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
 			expect(submitButton).toBeDisabled();
 		});
 
-		it("should show loading state during code sending", async () => {
-			// Make the promise not resolve immediately
-			let resolvePromise: (value: any) => void;
-			const pendingPromise = new Promise(resolve => {
-				resolvePromise = resolve;
-			});
-			(AuthService.sendSecurityCode as any).mockReturnValue(pendingPromise);
-
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+		it("should enable submit button when all fields are filled", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
+			const currentPasswordInput = screen.getByLabelText("Current Password");
 			const newPasswordInput = screen.getByLabelText("New Password");
 			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
 
+			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
+			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
+			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
+
+			expect(submitButton).not.toBeDisabled();
+		});
+	});
+
+	describe("Form Submission", () => {
+		it("should successfully change password with valid inputs", async () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
+			});
+
+			const currentPasswordInput = screen.getByLabelText("Current Password");
+			const newPasswordInput = screen.getByLabelText("New Password");
+			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
+
+			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
 			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
 			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
 
 			await act(async () => {
 				fireEvent.click(submitButton);
-				await Promise.resolve();
 			});
 
-			// Should show loading state
-			expect(submitButton).toBeDisabled();
-
-			// Resolve the promise and wait for state updates
-			await act(async () => {
-				resolvePromise!({ message: "Code sent" });
-				await Promise.resolve();
-			});
-		});
-	});
-
-	describe("Step 2: Email Verification", () => {
-		const setupVerificationStep = async () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			const newPasswordInput = screen.getByLabelText("New Password");
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
-
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			return screen.getByTestId("security-code-flow");
-		};
-
-		it("should render SecurityCodeFlow with correct props", async () => {
-			const securityCodeFlow = await setupVerificationStep();
-
-			expect(securityCodeFlow).toBeInTheDocument();
-			expect(screen.getByText("Verify Password Change")).toBeInTheDocument();
-			expect(screen.getByText("To change your password, please verify your email address")).toBeInTheDocument();
-			expect(screen.getByText("Email: test@example.com")).toBeInTheDocument();
-			expect(screen.getByText("Operation: password_change")).toBeInTheDocument();
-		});
-
-		it("should proceed to final step when code is verified", async () => {
-			await setupVerificationStep();
-
-			const verifyButton = screen.getByTestId("verify-code-button");
-			fireEvent.click(verifyButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Should show final password entry step
-			expect(screen.getByText("Complete Password Change")).toBeInTheDocument();
-			expect(screen.getByLabelText("Current Password")).toBeInTheDocument();
-		});
-
-		it("should return to password step when verification is cancelled", async () => {
-			await setupVerificationStep();
-
-			const cancelButton = screen.getByTestId("cancel-verification-button");
-			fireEvent.click(cancelButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Should return to initial step
-			expect(screen.getByText("Change Password")).toBeInTheDocument();
-			expect(screen.getByLabelText("New Password")).toBeInTheDocument();
-			expect(screen.queryByTestId("security-code-flow")).not.toBeInTheDocument();
-		});
-	});
-
-	describe("Step 3: Final Password Change", () => {
-		const setupFinalStep = async () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			// Complete first step
-			const newPasswordInput = screen.getByLabelText("New Password");
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
-
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Complete verification step
-			const verifyButton = screen.getByTestId("verify-code-button");
-			fireEvent.click(verifyButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			return {
-				currentPasswordInput: screen.getByLabelText("Current Password"),
-				newPasswordInput: screen.getByLabelText("New Password"),
-				confirmPasswordInput: screen.getByLabelText("Confirm New Password"),
-				changeButton: screen.getByText("Change Password")
-			};
-		};
-
-		it("should render final password change form", async () => {
-			await setupFinalStep();
-
-			expect(screen.getByText("Complete Password Change")).toBeInTheDocument();
-			expect(screen.getByLabelText("Current Password")).toBeInTheDocument();
-			expect(screen.getByLabelText("New Password")).toBeInTheDocument();
-			expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
-			expect(screen.getByText("Change Password")).toBeInTheDocument();
-			expect(screen.getByText("Cancel")).toBeInTheDocument();
-		});
-
-		it("should successfully change password with valid inputs", async () => {
-			const { currentPasswordInput, newPasswordInput, confirmPasswordInput, changeButton } =
-				await setupFinalStep();
-
-			// Fill in all password fields
-			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(changeButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Should call UserService with correct parameters
-			expect(UserService.changePassword).toHaveBeenCalledWith(
-				"CurrentPassword123!",
-				"NewPassword123!",
-				"mock-operation-token"
-			);
-
-			// Should call success callback
-			expect(mockProps.onSuccess).toHaveBeenCalled();
+			expect(UserService.changePassword).toHaveBeenCalledWith("CurrentPassword123!", "NewPassword123!");
+			expect(mockOnSuccess).toHaveBeenCalled();
 		});
 
 		it("should handle password change error", async () => {
-			(UserService.changePassword as any).mockRejectedValue(new Error("Current password is incorrect"));
+			const errorMessage = "Current password is incorrect";
+			(UserService.changePassword as any).mockRejectedValue(new Error(errorMessage));
 
-			const { currentPasswordInput, newPasswordInput, confirmPasswordInput, changeButton } =
-				await setupFinalStep();
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
+			});
+
+			const currentPasswordInput = screen.getByLabelText("Current Password");
+			const newPasswordInput = screen.getByLabelText("New Password");
+			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
 
 			fireEvent.change(currentPasswordInput, { target: { value: "WrongPassword!" } });
 			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
 			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
 
-			fireEvent.click(changeButton);
-
 			await act(async () => {
-				await Promise.resolve();
+				fireEvent.click(submitButton);
 			});
 
-			expect(screen.getByText("Current password is incorrect")).toBeInTheDocument();
-			expect(mockProps.onSuccess).not.toHaveBeenCalled();
-		});
-
-		it("should return to verification step if token expired", async () => {
-			(UserService.changePassword as any).mockRejectedValue(new Error("Operation token has expired"));
-
-			const { currentPasswordInput, newPasswordInput, confirmPasswordInput, changeButton } =
-				await setupFinalStep();
-
-			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(changeButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Should return to verification step
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
-			expect(screen.queryByText("Complete Password Change")).not.toBeInTheDocument();
-		});
-
-		it("should disable submit button when fields are incomplete", async () => {
-			const { changeButton } = await setupFinalStep();
-
-			// Button should be disabled initially (no values entered)
-			expect(changeButton).toBeDisabled();
+			expect(screen.getByText(errorMessage)).toBeInTheDocument();
+			expect(mockOnSuccess).not.toHaveBeenCalled();
 		});
 
 		it("should show loading state during password change", async () => {
-			// Make the promise not resolve immediately
+			// Mock a delayed promise to test loading state
 			let resolvePromise: (value: any) => void;
-			const pendingPromise = new Promise(resolve => {
+			const delayedPromise = new Promise(resolve => {
 				resolvePromise = resolve;
 			});
-			(UserService.changePassword as any).mockReturnValue(pendingPromise);
+			(UserService.changePassword as any).mockReturnValue(delayedPromise);
 
-			const { currentPasswordInput, newPasswordInput, confirmPasswordInput, changeButton } =
-				await setupFinalStep();
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
+			});
+
+			const currentPasswordInput = screen.getByLabelText("Current Password");
+			const newPasswordInput = screen.getByLabelText("New Password");
+			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
+			const submitButton = screen.getByRole("button", { name: "Change Password" });
 
 			fireEvent.change(currentPasswordInput, { target: { value: "CurrentPassword123!" } });
 			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
 			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
 
 			await act(async () => {
-				fireEvent.click(changeButton);
-				await Promise.resolve();
+				fireEvent.click(submitButton);
 			});
 
-			// Should show loading state
-			expect(changeButton).toBeDisabled();
+			expect(screen.getByText("Changing Password...")).toBeInTheDocument();
+			expect(submitButton).toBeDisabled();
 
-			// Resolve the promise and wait for state updates
+			// Resolve the promise to clean up
 			await act(async () => {
-				resolvePromise!({ message: "Password changed" });
-				await Promise.resolve();
+				resolvePromise({ message: "Success" });
+				await delayedPromise; // Wait for the promise to resolve
 			});
 		});
 	});
 
 	describe("Cancel Functionality", () => {
-		it("should call onCancel when cancel is clicked in initial step", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+		it("should call onCancel when cancel button is clicked", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
-			const cancelButton = screen.getByText("Cancel");
+			const cancelButton = screen.getByRole("button", { name: "Cancel" });
 			fireEvent.click(cancelButton);
 
-			expect(mockProps.onCancel).toHaveBeenCalled();
-		});
-
-		it("should call onCancel when cancel is clicked in final step", async () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			// Navigate to final step
-			const newPasswordInput = screen.getByLabelText("New Password");
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
-
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
-
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			const verifyButton = screen.getByTestId("verify-code-button");
-			fireEvent.click(verifyButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			// Click cancel in final step
-			const cancelButton = screen.getByText("Cancel");
-			fireEvent.click(cancelButton);
-
-			expect(mockProps.onCancel).toHaveBeenCalled();
+			expect(mockOnCancel).toHaveBeenCalled();
 		});
 	});
 
-	describe("Password Requirements Integration", () => {
-		it("should show password requirements component", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+	describe("Accessibility", () => {
+		it("should have proper form labels and structure", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
-			const newPasswordInput = screen.getByLabelText("New Password");
-			fireEvent.change(newPasswordInput, { target: { value: "TestPassword" } });
-
-			expect(screen.getByTestId("password-requirements")).toBeInTheDocument();
-			expect(screen.getByText("Password requirements for: TestPassword")).toBeInTheDocument();
+			expect(screen.getByLabelText("Current Password")).toBeInTheDocument();
+			expect(screen.getByLabelText("New Password")).toBeInTheDocument();
+			expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
 		});
-	});
 
-	describe("Error Handling", () => {
-		it("should clear errors when moving between steps", async () => {
-			(AuthService.sendSecurityCode as any).mockRejectedValue(new Error("Network error"));
-
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
+		it("should have proper autocomplete attributes", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
 				providers: { toast: true }
 			});
 
-			// Trigger error in first step
+			const currentPasswordInput = screen.getByLabelText("Current Password");
 			const newPasswordInput = screen.getByLabelText("New Password");
 			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			const submitButton = screen.getByText("Send Verification Code");
 
-			fireEvent.change(newPasswordInput, { target: { value: "NewPassword123!" } });
-			fireEvent.change(confirmPasswordInput, { target: { value: "NewPassword123!" } });
+			expect(currentPasswordInput).toHaveAttribute("autocomplete", "current-password");
+			expect(newPasswordInput).toHaveAttribute("autocomplete", "new-password");
+			expect(confirmPasswordInput).toHaveAttribute("autocomplete", "new-password");
+		});
 
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
+		it("should have required attributes on inputs", () => {
+			renderWithFullEnvironment(<PasswordChangeForm onSuccess={mockOnSuccess} onCancel={mockOnCancel} />, {
+				providers: { toast: true }
 			});
 
-			expect(screen.getByText("Network error")).toBeInTheDocument();
-
-			// Reset mock to success
-			(AuthService.sendSecurityCode as any).mockResolvedValue({ message: "Code sent successfully" });
-
-			// Try again - error should clear
-			fireEvent.click(submitButton);
-
-			await act(async () => {
-				await Promise.resolve();
-			});
-
-			expect(screen.queryByText("Network error")).not.toBeInTheDocument();
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
+			expect(screen.getByLabelText("Current Password")).toHaveAttribute("required");
+			expect(screen.getByLabelText("New Password")).toHaveAttribute("required");
+			expect(screen.getByLabelText("Confirm New Password")).toHaveAttribute("required");
 		});
 	});
 
@@ -548,39 +267,7 @@ describe("PasswordChangeForm", () => {
 				providers: { toast: true }
 			});
 
-			expect(screen.getByText("Change Password")).toBeInTheDocument();
-
-			// Should not crash when callbacks are called
-			const cancelButton = screen.getByText("Cancel");
-			fireEvent.click(cancelButton);
-			// No assertion needed - just ensuring no crash
-		});
-	});
-
-	describe("Accessibility", () => {
-		it("should have proper form labels and structure", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			// Check for proper labels
-			expect(screen.getByLabelText("New Password")).toBeInTheDocument();
-			expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
-
-			// Check for proper heading structure
-			expect(screen.getByRole("heading", { name: /change password/i })).toBeInTheDocument();
-		});
-
-		it("should have proper autocomplete attributes", () => {
-			renderWithFullEnvironment(<PasswordChangeForm {...mockProps} />, {
-				providers: { toast: true }
-			});
-
-			const newPasswordInput = screen.getByLabelText("New Password");
-			expect(newPasswordInput).toHaveAttribute("autoComplete", "new-password");
-
-			const confirmPasswordInput = screen.getByLabelText("Confirm New Password");
-			expect(confirmPasswordInput).toHaveAttribute("autoComplete", "new-password");
+			expect(screen.getByRole("heading", { name: "Change Password" })).toBeInTheDocument();
 		});
 	});
 });

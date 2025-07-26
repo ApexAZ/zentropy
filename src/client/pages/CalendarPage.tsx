@@ -301,17 +301,17 @@ const CalendarPage: React.FC = () => {
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Calendar</h2>
-						<p className="text-text-primary mt-2">
+						<h2 className="text-text-contrast font-heading-large m-0">Team Calendar</h2>
+						<p className="text-text-primary font-body mt-2">
 							Manage team calendar entries and PTO for accurate sprint capacity planning
 						</p>
 					</div>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
-					<p className="text-text-primary mb-4">Loading calendar entries...</p>
+					<p className="text-text-primary font-body mb-4">Loading calendar entries...</p>
 				</div>
 			</main>
 		);
@@ -320,10 +320,10 @@ const CalendarPage: React.FC = () => {
 	if (error) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
+				<div className="mb-8 flex items-center justify-between px-8">
 					<div>
-						<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Calendar</h2>
-						<p className="text-text-primary mt-2">
+						<h2 className="text-text-contrast font-heading-large m-0">Team Calendar</h2>
+						<p className="text-text-primary font-body mt-2">
 							Manage team calendar entries and PTO for accurate sprint capacity planning
 						</p>
 					</div>
@@ -333,8 +333,8 @@ const CalendarPage: React.FC = () => {
 						<svg className="text-error mx-auto mb-4 h-12 w-12" viewBox="0 0 24 24" fill="currentColor">
 							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
 						</svg>
-						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Calendar</h3>
-						<p className="text-text-primary mb-6">{error}</p>
+						<h3 className="text-error font-heading-medium mb-3">Unable to Load Calendar</h3>
+						<p className="text-text-primary font-body mb-6">{error}</p>
 						<button
 							onClick={() => void retryInitialization()}
 							className="border-layout-background bg-content-background text-text-primary hover:bg-interactive-hover hover:border-neutral-border inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
@@ -349,10 +349,10 @@ const CalendarPage: React.FC = () => {
 
 	return (
 		<main className="w-full py-8">
-			<div className="mb-8 flex items-center justify-between">
+			<div className="mb-8 flex items-center justify-between px-8">
 				<div>
-					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Calendar</h2>
-					<p className="text-text-primary mt-2">
+					<h2 className="text-text-contrast font-heading-large m-0">Team Calendar</h2>
+					<p className="text-text-primary font-body mt-2">
 						Manage team calendar entries and PTO for accurate sprint capacity planning
 					</p>
 				</div>
@@ -405,7 +405,7 @@ const CalendarPage: React.FC = () => {
 
 			{/* Entries List */}
 			<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-				<h3 className="text-text-contrast mb-4 text-xl font-semibold">Upcoming Entries</h3>
+				<h3 className="text-text-contrast font-heading-medium mb-4">Upcoming Entries</h3>
 
 				{entries.length === 0 ? (
 					<div className="text-text-primary p-8 text-center italic">
@@ -459,7 +459,7 @@ const CalendarPage: React.FC = () => {
 								</div>
 
 								{entry.description && (
-									<p className="text-text-primary mt-2 text-sm">{entry.description}</p>
+									<p className="text-text-primary font-body mt-2 text-sm">{entry.description}</p>
 								)}
 							</div>
 						))}
@@ -472,7 +472,7 @@ const CalendarPage: React.FC = () => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
-							<h3 className="text-text-contrast m-0 text-xl font-semibold">
+							<h3 className="text-text-contrast font-heading-medium m-0">
 								{isEditing ? "Edit Calendar Entry" : "Add Calendar Entry"}
 							</h3>
 							<button
@@ -646,7 +646,7 @@ const CalendarPage: React.FC = () => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
-							<h3 className="text-text-contrast m-0 text-xl font-semibold">Delete Calendar Entry</h3>
+							<h3 className="text-text-contrast font-heading-medium m-0">Delete Calendar Entry</h3>
 							<button
 								onClick={closeModals}
 								className="hover:text-text-primary text-neutral cursor-pointer rounded-md border-none bg-none p-2 text-2xl transition-colors duration-200"
@@ -656,7 +656,7 @@ const CalendarPage: React.FC = () => {
 						</div>
 
 						<div className="p-6">
-							<p className="text-text-primary mb-4">
+							<p className="text-text-primary font-body mb-4">
 								Are you sure you want to delete this calendar entry?
 							</p>
 							<p className="text-text-primary font-medium">

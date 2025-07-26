@@ -2,27 +2,27 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { screen, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { renderWithFullEnvironment, fastStateSync, fastUserActions } from "../../__tests__/utils/testRenderUtils";
-import { SecurityOperationType } from "../../types";
 import { ForgotPasswordFlow } from "../ForgotPasswordFlow";
 
 // Mock AuthService
 vi.mock("../../services/AuthService", () => ({
 	AuthService: {
 		validateEmail: vi.fn(),
-		sendSecurityCode: vi.fn(),
-		verifySecurityCode: vi.fn(),
-		resetPassword: vi.fn()
+		sendEmailVerification: vi.fn(),
+		verifyCode: vi.fn(),
+		resetPasswordWithUserId: vi.fn()
 	}
 }));
 
-// Mock SecurityCodeFlow
-vi.mock("../SecurityCodeFlow", () => ({
-	default: ({ onCodeVerified, onCancel, title, description }: any) => (
-		<div data-testid="security-code-flow">
+// Mock EmailVerificationModal
+vi.mock("../EmailVerificationModal", () => ({
+	default: ({ onSuccess, onClose, title, description, operationType }: any) => (
+		<div data-testid="email-verification-modal">
 			<h3>{title}</h3>
 			<p>{description}</p>
-			<button onClick={() => onCodeVerified("mock-operation-token-123")}>Verify Mock Code</button>
-			<button onClick={onCancel}>Cancel</button>
+			<p data-testid="operation-type">Operation: {operationType}</p>
+			<button onClick={() => onSuccess("mock-user-id-123")}>Verify Mock Code</button>
+			<button onClick={onClose}>Cancel</button>
 		</div>
 	)
 }));
@@ -48,387 +48,332 @@ describe("ForgotPasswordFlow", () => {
 	});
 
 	describe("Step 1: Email Input", () => {
-		it("should render email input step initially", () => {
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+		it("renders email input form initially", () => {
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
 			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
-			expect(
-				screen.getByText("Enter your email address and we'll send you a code to reset your password.")
-			).toBeInTheDocument();
+			expect(screen.getByText(/Enter your email address and we'll send you a code/)).toBeInTheDocument();
 			expect(screen.getByPlaceholderText("Email Address")).toBeInTheDocument();
 			expect(screen.getByText("Send Reset Code")).toBeInTheDocument();
 			expect(screen.getByText("Cancel")).toBeInTheDocument();
 		});
 
-		it("should validate email format", async () => {
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+		it("validates email format before submission", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(false);
+
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
 
-			// Test invalid email
+			// Enter invalid email
 			fastUserActions.type(emailInput, "invalid-email");
 			fastUserActions.click(submitButton);
-
 			await fastStateSync();
 
 			expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
-			expect(AuthService.sendSecurityCode).not.toHaveBeenCalled();
+			expect(AuthService.sendEmailVerification).not.toHaveBeenCalled();
 		});
 
-		it("should send security code with valid email", async () => {
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Reset code sent successfully"
-			});
+		it("calls AuthService.sendEmailVerification with email", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
-
-			const emailInput = screen.getByPlaceholderText("Email Address");
-			const submitButton = screen.getByText("Send Reset Code");
-
-			fastUserActions.type(emailInput, "user@example.com");
-			fastUserActions.click(submitButton);
-
-			await fastStateSync();
-
-			expect(AuthService.sendSecurityCode).toHaveBeenCalledWith(
-				"user@example.com",
-				SecurityOperationType.PASSWORD_RESET
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
 			);
 
-			// Should move to verification step
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
-			expect(screen.getByText("Check Your Email")).toBeInTheDocument();
-		});
-
-		it("should handle security code sending error gracefully", async () => {
-			(AuthService.sendSecurityCode as any).mockRejectedValueOnce(new Error("Rate limited"));
-
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
-
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
 
-			fastUserActions.type(emailInput, "user@example.com");
+			// Enter valid email
+			fastUserActions.type(emailInput, "test@example.com");
 			fastUserActions.click(submitButton);
-
 			await fastStateSync();
 
-			// Should still move to verification step for security (don't reveal if email exists)
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
+			expect(AuthService.sendEmailVerification).toHaveBeenCalledWith("test@example.com");
 		});
 
-		it("should handle cancel button", () => {
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+		it("proceeds to verification step after successful email send", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			fastUserActions.click(screen.getByText("Cancel"));
-
-			expect(mockOnCancel).toHaveBeenCalled();
-		});
-
-		it("should disable submit button when email is empty", () => {
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
-
-			const submitButton = screen.getByText("Send Reset Code");
-			expect(submitButton).toBeDisabled();
-		});
-
-		it("should show loading state during submission", async () => {
-			(AuthService.sendSecurityCode as any).mockImplementation(() => new Promise(resolve => resolve({})));
-
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
 			const emailInput = screen.getByPlaceholderText("Email Address");
 			const submitButton = screen.getByText("Send Reset Code");
 
-			fastUserActions.type(emailInput, "user@example.com");
+			// Enter valid email and submit
+			fastUserActions.type(emailInput, "test@example.com");
+			fastUserActions.click(submitButton);
+			await fastStateSync();
 
-			await act(async () => {
-				fastUserActions.click(submitButton);
-				await fastStateSync();
-			});
+			// Should show EmailVerificationModal
+			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
+			expect(screen.getByText("Check Your Email")).toBeInTheDocument();
+			expect(screen.getByText("Enter the reset code sent to your email address")).toBeInTheDocument();
+			expect(screen.getByTestId("operation-type")).toHaveTextContent("Operation: password_reset");
+		});
 
-			expect(submitButton).toBeDisabled();
+		it("proceeds to verification even on email send error (security)", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockRejectedValue(new Error("Email not found"));
+
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
+
+			const emailInput = screen.getByPlaceholderText("Email Address");
+			const submitButton = screen.getByText("Send Reset Code");
+
+			// Enter valid email and submit
+			fastUserActions.type(emailInput, "test@example.com");
+			fastUserActions.click(submitButton);
+			await fastStateSync();
+
+			// Should still proceed to verification step to prevent email enumeration
+			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
+		});
+
+		it("calls onCancel when cancel button is clicked", async () => {
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
+
+			const cancelButton = screen.getByText("Cancel");
+			fastUserActions.click(cancelButton);
+			await fastStateSync();
+
+			expect(mockOnCancel).toHaveBeenCalled();
 		});
 	});
 
 	describe("Step 2: Code Verification", () => {
-		it("should render SecurityCodeFlow with correct props", async () => {
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
+		it("returns to email step when verification modal is closed", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
-			// Navigate to verification step
+			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
+			const submitButton = screen.getByText("Send Reset Code");
 			fastUserActions.type(emailInput, "test@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
+			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
-			expect(screen.getByText("Check Your Email")).toBeInTheDocument();
-			expect(screen.getByText("Enter the reset code sent to your email address")).toBeInTheDocument();
-		});
-
-		it("should handle going back to email step from verification", async () => {
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
-
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
-
-			// Navigate to verification step
-			const emailInput = screen.getByPlaceholderText("Email Address");
-			fastUserActions.type(emailInput, "test@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
+			// Close verification modal
+			const cancelButton = screen.getByText("Cancel");
+			fastUserActions.click(cancelButton);
 			await fastStateSync();
 
-			// Click cancel in verification step
-			fastUserActions.click(screen.getByText("Cancel"));
-
-			await fastStateSync();
-
-			// Should be back to email step
+			// Should return to email input step
 			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
 			expect(screen.getByPlaceholderText("Email Address")).toBeInTheDocument();
 		});
 
-		it("should proceed to password step when code is verified", async () => {
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
+		it("proceeds to password step when verification succeeds", async () => {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
-			// Navigate to verification step
+			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
+			const submitButton = screen.getByText("Send Reset Code");
 			fastUserActions.type(emailInput, "test@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
+			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			// Simulate code verification
-			fastUserActions.click(screen.getByText("Verify Mock Code"));
-
+			// Verify code
+			const verifyButton = screen.getByText("Verify Mock Code");
+			fastUserActions.click(verifyButton);
 			await fastStateSync();
 
-			// Should be on password step
+			// Should show password input step
 			expect(screen.getByText("Set New Password")).toBeInTheDocument();
 			expect(screen.getByText("Enter your new password for test@example.com")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("New Password")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("Confirm New Password")).toBeInTheDocument();
 		});
 	});
 
 	describe("Step 3: Password Input", () => {
-		beforeEach(async () => {
-			vi.clearAllMocks();
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
+		async function goToPasswordStep() {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
-			// Navigate to password step
+			// Go through email and verification steps
 			const emailInput = screen.getByPlaceholderText("Email Address");
+			const submitButton = screen.getByText("Send Reset Code");
 			fastUserActions.type(emailInput, "test@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
+			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			fastUserActions.click(screen.getByText("Verify Mock Code"));
-
+			const verifyButton = screen.getByText("Verify Mock Code");
+			fastUserActions.click(verifyButton);
 			await fastStateSync();
-		});
+		}
 
-		it("should render password input fields", () => {
-			expect(screen.getByText("Set New Password")).toBeInTheDocument();
-			expect(screen.getByPlaceholderText("New Password")).toBeInTheDocument();
-			expect(screen.getByPlaceholderText("Confirm New Password")).toBeInTheDocument();
-			expect(screen.getByTestId("password-requirements")).toBeInTheDocument();
-			expect(screen.getByText("Reset Password")).toBeInTheDocument();
-			expect(screen.getByText("Back")).toBeInTheDocument();
-		});
+		it("validates password confirmation", async () => {
+			await goToPasswordStep();
 
-		it("should validate password matching", async () => {
 			const newPasswordInput = screen.getByPlaceholderText("New Password");
 			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
-			const submitButton = screen.getByText("Reset Password");
+			const resetButton = screen.getByText("Reset Password");
 
+			// Enter mismatched passwords
 			fastUserActions.type(newPasswordInput, "NewPassword123!");
 			fastUserActions.type(confirmPasswordInput, "DifferentPassword123!");
-			fastUserActions.click(submitButton);
-
+			fastUserActions.click(resetButton);
 			await fastStateSync();
 
 			expect(screen.getByText("Passwords don't match")).toBeInTheDocument();
-			expect(AuthService.resetPassword).not.toHaveBeenCalled();
+			expect(AuthService.resetPasswordWithUserId).not.toHaveBeenCalled();
 		});
 
-		it("should reset password with matching passwords", async () => {
-			(AuthService.resetPassword as any).mockResolvedValueOnce({
-				message: "Password reset successfully"
-			});
+		it("calls AuthService.resetPasswordWithUserId with correct parameters", async () => {
+			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
+
+			await goToPasswordStep();
 
 			const newPasswordInput = screen.getByPlaceholderText("New Password");
 			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
-			const submitButton = screen.getByText("Reset Password");
+			const resetButton = screen.getByText("Reset Password");
 
+			// Enter matching passwords
 			fastUserActions.type(newPasswordInput, "NewPassword123!");
 			fastUserActions.type(confirmPasswordInput, "NewPassword123!");
-			fastUserActions.click(submitButton);
-
+			fastUserActions.click(resetButton);
 			await fastStateSync();
 
-			expect(AuthService.resetPassword).toHaveBeenCalledWith("NewPassword123!", "mock-operation-token-123");
+			expect(AuthService.resetPasswordWithUserId).toHaveBeenCalledWith("NewPassword123!", "mock-user-id-123");
+		});
 
-			// Should move to completion step
+		it("shows error message on password reset failure", async () => {
+			(AuthService.resetPasswordWithUserId as any).mockRejectedValue(new Error("Reset failed"));
+
+			await goToPasswordStep();
+
+			const newPasswordInput = screen.getByPlaceholderText("New Password");
+			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
+			const resetButton = screen.getByText("Reset Password");
+
+			// Enter matching passwords
+			fastUserActions.type(newPasswordInput, "NewPassword123!");
+			fastUserActions.type(confirmPasswordInput, "NewPassword123!");
+			fastUserActions.click(resetButton);
+			await fastStateSync();
+
+			expect(screen.getByText("Reset failed")).toBeInTheDocument();
+		});
+
+		it("proceeds to completion step on successful password reset", async () => {
+			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
+
+			await goToPasswordStep();
+
+			const newPasswordInput = screen.getByPlaceholderText("New Password");
+			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
+			const resetButton = screen.getByText("Reset Password");
+
+			// Enter matching passwords and submit
+			fastUserActions.type(newPasswordInput, "NewPassword123!");
+			fastUserActions.type(confirmPasswordInput, "NewPassword123!");
+			fastUserActions.click(resetButton);
+			await fastStateSync();
+
+			// Should show completion step with auto-redirect message
 			expect(screen.getByText("Password Reset Complete")).toBeInTheDocument();
+			expect(screen.getByText(/Redirecting to sign in/)).toBeInTheDocument();
 		});
 
-		it("should handle password reset error", async () => {
-			(AuthService.resetPassword as any).mockRejectedValueOnce(new Error("Invalid token"));
+		it("returns to verification step when back button is clicked", async () => {
+			await goToPasswordStep();
+
+			const backButton = screen.getByText("Back");
+			fastUserActions.click(backButton);
+			await fastStateSync();
+
+			// Should return to verification step
+			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
+		});
+
+		it("shows password requirements component", async () => {
+			await goToPasswordStep();
 
 			const newPasswordInput = screen.getByPlaceholderText("New Password");
-			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
-			const submitButton = screen.getByText("Reset Password");
+			fastUserActions.type(newPasswordInput, "TestPassword");
 
-			fastUserActions.type(newPasswordInput, "NewPassword123!");
-			fastUserActions.type(confirmPasswordInput, "NewPassword123!");
-			fastUserActions.click(submitButton);
-
-			await fastStateSync();
-
-			expect(screen.getByText("Invalid token")).toBeInTheDocument();
-		});
-
-		it("should go back to verification step", async () => {
-			fastUserActions.click(screen.getByText("Back"));
-
-			await fastStateSync();
-
-			expect(screen.getByTestId("security-code-flow")).toBeInTheDocument();
-		});
-
-		it("should disable submit button when passwords are empty", () => {
-			const submitButton = screen.getByText("Reset Password");
-			expect(submitButton).toBeDisabled();
+			expect(screen.getByTestId("password-requirements")).toBeInTheDocument();
+			expect(screen.getByText("Requirements for: TestPassword")).toBeInTheDocument();
 		});
 	});
 
 	describe("Step 4: Completion", () => {
-		beforeEach(async () => {
-			vi.clearAllMocks();
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
-			(AuthService.resetPassword as any).mockResolvedValueOnce({
-				message: "Password reset successfully"
-			});
+		async function goToCompletionStep() {
+			(AuthService.validateEmail as any).mockReturnValue(true);
+			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
+			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />
+			);
 
-			// Navigate to completion step
+			// Go through all steps
 			const emailInput = screen.getByPlaceholderText("Email Address");
+			const submitButton = screen.getByText("Send Reset Code");
 			fastUserActions.type(emailInput, "test@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
+			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			fastUserActions.click(screen.getByText("Verify Mock Code"));
-
+			const verifyButton = screen.getByText("Verify Mock Code");
+			fastUserActions.click(verifyButton);
 			await fastStateSync();
 
 			const newPasswordInput = screen.getByPlaceholderText("New Password");
 			const confirmPasswordInput = screen.getByPlaceholderText("Confirm New Password");
+			const resetButton = screen.getByText("Reset Password");
 			fastUserActions.type(newPasswordInput, "NewPassword123!");
 			fastUserActions.type(confirmPasswordInput, "NewPassword123!");
-			fastUserActions.click(screen.getByText("Reset Password"));
-
+			fastUserActions.click(resetButton);
 			await fastStateSync();
-		});
+		}
 
-		it("should render completion message", () => {
-			expect(screen.getByText("✓")).toBeInTheDocument();
-			expect(screen.getByText("Password Reset Complete")).toBeInTheDocument();
-			expect(
-				screen.getByText(
-					"Your password has been reset successfully. You can now sign in with your new password."
-				)
-			).toBeInTheDocument();
-			expect(screen.getByText("Continue to Sign In")).toBeInTheDocument();
-		});
+		it("calls onComplete automatically after password reset", async () => {
+			vi.useFakeTimers();
+			
+			await goToCompletionStep();
 
-		it("should call onComplete when continue button is clicked", () => {
-			fastUserActions.click(screen.getByText("Continue to Sign In"));
+			// Fast-forward through the 2-second timeout
+			vi.advanceTimersByTime(2000);
+			await fastStateSync();
 
 			expect(mockOnComplete).toHaveBeenCalled();
-		});
-	});
-
-	describe("Component behavior", () => {
-		it("should handle missing onComplete prop", () => {
-			expect(() => {
-				renderWithFullEnvironment(<ForgotPasswordFlow onCancel={mockOnCancel} />, {
-					providers: { toast: true }
-				});
-			}).not.toThrow();
+			
+			vi.useRealTimers();
 		});
 
-		it("should handle missing onCancel prop", () => {
-			expect(() => {
-				renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} />, {
-					providers: { toast: true }
-				});
-			}).not.toThrow();
-		});
+		it("shows success message and checkmark", async () => {
+			await goToCompletionStep();
 
-		it("should preserve email address across steps", async () => {
-			(AuthService.sendSecurityCode as any).mockResolvedValueOnce({
-				message: "Code sent"
-			});
-
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />, {
-				providers: { toast: true }
-			});
-
-			const emailInput = screen.getByPlaceholderText("Email Address");
-			fastUserActions.type(emailInput, "preserve@example.com");
-			fastUserActions.click(screen.getByText("Send Reset Code"));
-
-			await fastStateSync();
-
-			fastUserActions.click(screen.getByText("Verify Mock Code"));
-
-			await fastStateSync();
-
-			// Email should be preserved in the password step message
-			expect(screen.getByText("Enter your new password for preserve@example.com")).toBeInTheDocument();
+			expect(screen.getByText("✓")).toBeInTheDocument();
+			expect(screen.getByText("Password Reset Complete")).toBeInTheDocument();
+			expect(screen.getByText(/Your password has been reset successfully/)).toBeInTheDocument();
 		});
 	});
 });

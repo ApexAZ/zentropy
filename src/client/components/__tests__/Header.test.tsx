@@ -51,8 +51,9 @@ describe("Header", () => {
 			/>
 		);
 
-		const logo = screen.getByRole("heading", { level: 1 });
-		expect(logo).toHaveTextContent("Zentropy");
+		const logoImage = screen.getByAltText("Zentropy");
+		expect(logoImage).toBeInTheDocument();
+		expect(logoImage).toHaveAttribute("src", "/images/ZentropyLogo.svg");
 	});
 
 	it("renders flyout navigation menu button", () => {

@@ -132,12 +132,12 @@ const TeamsPage: React.FC = () => {
 	if (isLoading) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
-					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
+				<div className="mb-8 flex items-center justify-between px-8">
+					<h2 className="text-text-contrast font-heading-large m-0">Team Management</h2>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div className="border-layout-background border-t-interactive mb-4 h-10 w-10 animate-spin rounded-full border-4"></div>
-					<p className="text-text-primary mb-4">Loading teams...</p>
+					<p className="text-text-primary font-body mb-4">Loading teams...</p>
 				</div>
 			</main>
 		);
@@ -147,13 +147,13 @@ const TeamsPage: React.FC = () => {
 	if (error) {
 		return (
 			<main className="w-full py-8">
-				<div className="mb-8 flex items-center justify-between">
-					<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
+				<div className="mb-8 flex items-center justify-between px-8">
+					<h2 className="text-text-contrast font-heading-large m-0">Team Management</h2>
 				</div>
 				<div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 					<div>
-						<h3 className="text-error mb-3 text-xl font-semibold">Unable to Load Teams</h3>
-						<p className="text-text-primary mb-6">{error}</p>
+						<h3 className="text-error font-heading-medium mb-3">Unable to Load Teams</h3>
+						<p className="text-text-primary font-body mb-6">{error}</p>
 						<Button onClick={() => void refreshTeams()} variant="secondary">
 							Retry
 						</Button>
@@ -166,33 +166,35 @@ const TeamsPage: React.FC = () => {
 	// Main content
 	return (
 		<main className="w-full py-8">
-			<div className="mb-8 flex items-center justify-between">
-				<h2 className="text-text-contrast m-0 text-3xl font-semibold">Team Management</h2>
+			<div className="mb-8 flex items-center justify-between px-8">
+				<h2 className="text-text-contrast font-heading-large m-0">Team Management</h2>
 				<Button onClick={openCreateModal}>Create New Team</Button>
 			</div>
 
-			{teams.length === 0 ? (
-				<div className="border-layout-background text-text-primary bg-neutral-background rounded-md border border-dashed p-8 text-center italic">
-					<div className="mx-auto max-w-sm">
-						<h3 className="text-text-primary mb-3 text-xl font-semibold">No Teams Yet</h3>
-						<p className="text-text-primary mb-6">
-							Create your first team to start planning sprint capacity.
-						</p>
-						<Button onClick={openCreateModal}>Create Team</Button>
+			<div className="px-8">
+				{teams.length === 0 ? (
+					<div className="border-layout-background text-text-primary bg-neutral-background rounded-md border border-dashed p-8 text-center italic">
+						<div className="mx-auto max-w-sm">
+							<h3 className="text-text-primary font-heading-medium mb-3">No Teams Yet</h3>
+							<p className="text-text-primary font-body mb-6">
+								Create your first team to start planning sprint capacity.
+							</p>
+							<Button onClick={openCreateModal}>Create Team</Button>
+						</div>
 					</div>
-				</div>
-			) : (
-				<div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-					{Array.isArray(teams) ? teams.map(renderTeamCard) : []}
-				</div>
-			)}
+				) : (
+					<div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+						{Array.isArray(teams) ? teams.map(renderTeamCard) : []}
+					</div>
+				)}
+			</div>
 
 			{/* Team Modal */}
 			{showTeamModal && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
-							<h3 className="text-text-contrast m-0 text-xl font-semibold">
+							<h3 className="text-text-contrast font-heading-medium m-0">
 								{isEditing ? "Edit Team" : "Create New Team"}
 							</h3>
 							<Button onClick={closeModals} variant="icon">
@@ -202,7 +204,7 @@ const TeamsPage: React.FC = () => {
 
 						<form onSubmit={e => void handleSubmit(e)} className="p-6">
 							<div className="border-layout-background mb-8 border-b pb-6">
-								<h4 className="text-text-contrast mb-6 text-base font-semibold">Basic Information</h4>
+								<h4 className="text-text-contrast font-heading-small mb-6">Basic Information</h4>
 
 								<Input
 									label="Team Name"
@@ -224,9 +226,7 @@ const TeamsPage: React.FC = () => {
 							</div>
 
 							<div className="border-layout-background mb-8 border-b pb-6">
-								<h4 className="text-text-contrast mb-6 text-base font-semibold">
-									Sprint Configuration
-								</h4>
+								<h4 className="text-text-contrast font-heading-small mb-6">Sprint Configuration</h4>
 
 								<div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 									<Input
@@ -300,17 +300,17 @@ const TeamsPage: React.FC = () => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg shadow-lg">
 						<div className="border-layout-background flex items-center justify-between border-b p-6">
-							<h3 className="text-text-contrast m-0 text-xl font-semibold">Delete Team</h3>
+							<h3 className="text-text-contrast font-heading-medium m-0">Delete Team</h3>
 							<Button onClick={closeModals} variant="icon">
 								&times;
 							</Button>
 						</div>
 
 						<div className="p-6">
-							<p className="text-text-primary mb-4">
+							<p className="text-text-primary font-body mb-4">
 								Are you sure you want to delete <strong>{currentTeam.name}</strong>?
 							</p>
-							<p className="text-error text-sm">
+							<p className="text-error font-caption">
 								This action cannot be undone. All team data and calendar entries will be permanently
 								removed.
 							</p>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Button from "./atoms/Button";
 import { AuthService } from "../services/AuthService";
 import { logger } from "../utils/logger";
-import { SecurityOperationType } from "../types";
 
 // Rate limit timer persistence utilities
 const RATE_LIMIT_STORAGE_KEY = "emailResendRateLimit";
@@ -45,13 +44,11 @@ const clearRateLimitTimer = (): void => {
 
 interface EmailVerificationResendButtonProps {
 	userEmail: string;
-	operationType?: SecurityOperationType; // NEW: Support different operation types
 	onResendSuccess?: () => void;
 }
 
 const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps> = ({
 	userEmail,
-	operationType = SecurityOperationType.EMAIL_VERIFICATION, // Default to existing behavior
 	onResendSuccess
 }) => {
 	const [isResending, setIsResending] = useState(false);
@@ -83,24 +80,23 @@ const EmailVerificationResendButton: React.FC<EmailVerificationResendButtonProps
 		try {
 			setIsResending(true);
 
-			// Use unified sendSecurityCode method with operation type
-			const response = await AuthService.sendSecurityCode(userEmail, operationType);
+			// Use simple email verification system
+			await AuthService.sendEmailVerification(userEmail);
 
 			// Log success for debugging
-			logger.info("Security code sent successfully", {
-				email: userEmail,
-				operationType
+			logger.info("Email verification sent successfully", {
+				email: userEmail
 			});
 
-			// Start rate limit timer using info from backend response
-			const rateLimitDuration = (response as any).rate_limit_seconds_remaining || 60;
+			// Start rate limit timer (standard 60 seconds)
+			const rateLimitDuration = 60;
 			setRateLimitSeconds(rateLimitDuration);
 			saveRateLimitTimer(userEmail, rateLimitDuration);
 
 			// Notify parent component of success
 			onResendSuccess?.();
 		} catch (error: any) {
-			logger.error("Resend verification error", { error, operationType });
+			logger.error("Resend verification error", { error });
 
 			// Check for rate limiting error from HTTP 429 response
 			if (error.response?.status === 429 && error.response?.data?.detail?.rate_limit_seconds_remaining) {

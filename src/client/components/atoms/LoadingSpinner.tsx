@@ -46,7 +46,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = "medium", text, 
 	return (
 		<div className={containerClasses} role="status" aria-label={text || "Loading"}>
 			<div className={spinnerClasses} />
-			{text && <span className={`text-primary ${textSizeClasses[size]}`}>{text}</span>}
+			{text && <span className={`text-text-primary ${textSizeClasses[size]}`}>{text}</span>}
 			<span className="sr-only">{text || "Loading"}</span>
 		</div>
 	);

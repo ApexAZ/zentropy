@@ -111,7 +111,7 @@ export function Tab({ id, label, isActive, onClick, className = "" }: TabProps) 
 			data-tab-id={id}
 			onClick={handleClick}
 			onKeyDown={handleKeyDown}
-			className={`text-primary hover:text-contrast focus:text-contrast hover:border-interactive focus:border-interactive focus:ring-interactive/20 border-b-2 px-4 py-3 font-medium transition-all duration-200 focus:ring-2 focus:outline-none ${
+			className={`text-text-primary hover:text-text-contrast focus:text-text-contrast hover:border-interactive focus:border-interactive focus:ring-interactive/20 border-b-2 px-4 py-3 font-medium transition-all duration-200 focus:ring-2 focus:outline-none ${
 				isActive ? "text-contrast border-interactive" : "border-transparent"
 			} ${className} `}
 		>

@@ -24,17 +24,24 @@ describe("HomePage", () => {
 		// Check for Welcome section by ID
 		const welcomeSection = document.getElementById("home");
 		expect(welcomeSection).toBeInTheDocument();
-		expect(welcomeSection).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+		expect(welcomeSection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 
 		// Check heading
 		const welcomeHeading = screen.getByRole("heading", { name: /welcome to zentropy/i });
 		expect(welcomeHeading).toBeInTheDocument();
-		expect(welcomeHeading).toHaveClass("text-primary", "text-3xl", "font-semibold");
+		expect(welcomeHeading).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 
 		// Check description
 		const welcomeDescription = screen.getByText(/your comprehensive product management platform/i);
 		expect(welcomeDescription).toBeInTheDocument();
-		expect(welcomeDescription).toHaveClass("text-primary");
+		expect(welcomeDescription).toHaveClass("text-text-primary", "font-body");
 	});
 
 	it("should display the Projects section with proper content", () => {
@@ -43,17 +50,24 @@ describe("HomePage", () => {
 		// Check for Projects section by ID
 		const projectsSection = document.getElementById("projects");
 		expect(projectsSection).toBeInTheDocument();
-		expect(projectsSection).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+		expect(projectsSection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 
 		// Check heading
 		const projectsHeading = screen.getByRole("heading", { name: /^projects$/i });
 		expect(projectsHeading).toBeInTheDocument();
-		expect(projectsHeading).toHaveClass("text-primary", "text-3xl", "font-semibold");
+		expect(projectsHeading).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 
 		// Check description
 		const projectsDescription = screen.getByText(/manage your projects with advanced workflows/i);
 		expect(projectsDescription).toBeInTheDocument();
-		expect(projectsDescription).toHaveClass("text-primary");
+		expect(projectsDescription).toHaveClass("text-text-primary", "font-body");
 	});
 
 	it("should display the Teams section with proper content", () => {
@@ -62,17 +76,24 @@ describe("HomePage", () => {
 		// Check for Teams section by ID
 		const teamsSection = document.getElementById("teams");
 		expect(teamsSection).toBeInTheDocument();
-		expect(teamsSection).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+		expect(teamsSection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 
 		// Check heading
 		const teamsHeading = screen.getByRole("heading", { name: /^teams$/i });
 		expect(teamsHeading).toBeInTheDocument();
-		expect(teamsHeading).toHaveClass("text-primary", "text-3xl", "font-semibold");
+		expect(teamsHeading).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 
 		// Check description
 		const teamsDescription = screen.getByText(/collaborate effectively with your team members/i);
 		expect(teamsDescription).toBeInTheDocument();
-		expect(teamsDescription).toHaveClass("text-primary");
+		expect(teamsDescription).toHaveClass("text-text-primary", "font-body");
 	});
 
 	it("should display the Capacity Planning section with proper content", () => {
@@ -81,17 +102,24 @@ describe("HomePage", () => {
 		// Check for Capacity Planning section by ID
 		const capacitySection = document.getElementById("capacity");
 		expect(capacitySection).toBeInTheDocument();
-		expect(capacitySection).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+		expect(capacitySection).toHaveClass(
+			"border-layout-background",
+			"bg-content-background",
+			"rounded-lg",
+			"border",
+			"p-6",
+			"shadow-sm"
+		);
 
 		// Check heading
 		const capacityHeading = screen.getByRole("heading", { name: /capacity planning/i });
 		expect(capacityHeading).toBeInTheDocument();
-		expect(capacityHeading).toHaveClass("text-primary", "text-3xl", "font-semibold");
+		expect(capacityHeading).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 
 		// Check description
 		const capacityDescription = screen.getByText(/plan and optimize your team's capacity and resources/i);
 		expect(capacityDescription).toBeInTheDocument();
-		expect(capacityDescription).toHaveClass("text-primary");
+		expect(capacityDescription).toHaveClass("text-text-primary", "font-body");
 	});
 
 	it("should use semantic styling classes consistently", () => {
@@ -102,7 +130,14 @@ describe("HomePage", () => {
 		expect(sections).toHaveLength(4);
 
 		sections.forEach(section => {
-			expect(section).toHaveClass("bg-content-background", "rounded-lg", "p-8", "shadow-sm");
+			expect(section).toHaveClass(
+				"border-layout-background",
+				"bg-content-background",
+				"rounded-lg",
+				"border",
+				"p-6",
+				"shadow-sm"
+			);
 		});
 
 		// Check all headings use semantic text styling
@@ -110,7 +145,7 @@ describe("HomePage", () => {
 		expect(headings).toHaveLength(4);
 
 		headings.forEach(heading => {
-			expect(heading).toHaveClass("text-primary", "text-3xl", "font-semibold");
+			expect(heading).toHaveClass("text-text-contrast", "font-heading-large", "m-0");
 		});
 
 		// Check all paragraphs use semantic text styling
@@ -120,7 +155,7 @@ describe("HomePage", () => {
 		expect(paragraphs).toHaveLength(4);
 
 		paragraphs.forEach(paragraph => {
-			expect(paragraph).toHaveClass("text-primary");
+			expect(paragraph).toHaveClass("text-text-primary", "font-body");
 		});
 	});
 
@@ -165,7 +200,14 @@ describe("HomePage", () => {
 		// Check all sections have proper spacing
 		const sections = document.querySelectorAll("section");
 		sections.forEach(section => {
-			expect(section).toHaveClass("mb-8", "p-8");
+			expect(section).toHaveClass(
+				"border-layout-background",
+				"bg-content-background",
+				"rounded-lg",
+				"border",
+				"p-6",
+				"shadow-sm"
+			);
 		});
 
 		// Check section header divs have proper classes
@@ -173,7 +215,7 @@ describe("HomePage", () => {
 
 		headings.forEach(heading => {
 			const headerDiv = heading.parentElement;
-			expect(headerDiv).toHaveClass("mb-8", "flex", "items-center", "justify-between");
+			expect(headerDiv).toHaveClass("mb-6", "flex", "items-center", "justify-between");
 		});
 	});
 });
