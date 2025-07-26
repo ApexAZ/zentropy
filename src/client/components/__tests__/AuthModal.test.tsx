@@ -154,7 +154,7 @@ describe("AuthModal", () => {
 			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
 		});
 
-		it("should return to sign in mode when forgot password is cancelled", async () => {
+		it("should close modal entirely when forgot password is cancelled", async () => {
 			renderWithFullEnvironment(<AuthModal {...mockProps} initialMode="signin" />);
 
 			// Navigate to forgot password
@@ -165,10 +165,8 @@ describe("AuthModal", () => {
 			fireEvent.click(screen.getByText("Cancel Reset"));
 			await act(async () => {});
 
-			// Should be back on sign in form
-			expect(screen.getByRole("heading", { name: "Sign In" })).toBeInTheDocument();
-			expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-			expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+			// Should call onClose to close entire modal (no modal remnant)
+			expect(mockProps.onClose).toHaveBeenCalled();
 		});
 
 		it("should return to sign in mode and show success message when password reset is completed", async () => {

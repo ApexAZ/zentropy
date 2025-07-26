@@ -196,8 +196,11 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
                 raise HTTPException(
                     status_code=409,
                     detail={
-                        "error": "This email is already registered with a "
-                        "different authentication method.",
+                        "error": (
+                            "This email is already registered with email/password. "
+                            "Please sign in normally and use the account linking "
+                            "feature in your profile to connect Google OAuth."
+                        ),
                         "error_type": "email_different_provider",
                     },
                 )

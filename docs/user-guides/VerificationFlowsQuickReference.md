@@ -4,13 +4,40 @@
 
 | Flow | Authentication Required | Steps | Primary Use Case |
 |------|------------------------|-------|------------------|
-| **Password Change** | ✅ Yes | 3 steps | Logged-in users changing password |
+| **Registration** | ❌ No | 2 steps | New user account verification |
 | **Password Reset** | ❌ No | 3 steps | Users who forgot their password |
+| **Password Change** | ✅ Yes | 3 steps | Logged-in users changing password |
 | **Username Recovery** | ❌ No | 2 steps | Users who forgot their username |
 
 ---
 
 ## 🔄 Flow Diagrams
+
+### Registration Flow
+```
+[Step 1: Account Creation] → [Step 2: Email Verification] → [Success: Sign-In Modal]
+      ↓                           ↓                            ↓
+Fill registration form      Verify 6-digit code         Sign in with new account
+                                                         → Account activated ✅
+```
+
+**Modal Behavior:**
+- ✅ **Successful verification** → Sign-in modal opens automatically
+- ❌ **Close verification modal** → Clean close, use header buttons to continue
+- 🔄 **Header buttons**: "Enter Code" and "Resend" available for continuation
+
+### Password Reset Flow  
+```
+[Step 1: Email Entry] → [Step 2: Email Verification] → [Step 3: New Password]
+      ↓                       ↓                            ↓
+Enter email address     Verify 6-digit code         Set new password
+                                                     → Password reset ✅
+```
+
+**Modal Behavior:**
+- ✅ **Successful verification** → Password reset form opens
+- ❌ **Close verification modal** → Clean close, use header buttons to continue
+- 🔄 **Header buttons**: "Enter Code" and "Resend" available for continuation
 
 ### Password Change Flow
 ```
@@ -18,14 +45,6 @@
       ↓                           ↓                            ↓
 Enter new password        Verify 6-digit code         Enter current password
                                                       → Password changed ✅
-```
-
-### Password Reset Flow
-```
-[Step 1: Email Entry] → [Step 2: Email Verification] → [Step 3: New Password]
-      ↓                       ↓                            ↓
-Enter email address     Verify 6-digit code         Set new password
-                                                     → Password reset ✅
 ```
 
 ### Username Recovery Flow
@@ -92,6 +111,33 @@ The Zentropy Team
 
 ---
 
+## 🖼️ Modal Behavior Patterns
+
+### Universal Modal Rules
+**For ALL verification flows** (Registration, Password Reset):
+
+1. **Close Modal Button** → Clean close only
+   - No other modals appear
+   - Returns to clean home page
+   - Pending verification state preserved
+
+2. **Header Button Continuation**
+   - "Enter Code" button remains visible
+   - "Resend" button remains available
+   - User can continue flow anytime
+
+3. **Successful Verification** → Next step opens
+   - **Registration**: Sign-in modal opens
+   - **Password Reset**: Password form opens
+
+### Key UX Principles
+- ❌ **Never** auto-open modals on close (confusing)
+- ✅ **Always** provide header button continuation
+- ✅ **Only** show next step on successful verification
+- 🧹 **Clean** UI state when user closes modal
+
+---
+
 ## 🚨 Common User Issues & Solutions
 
 ### "I didn't receive the email"
@@ -131,14 +177,16 @@ The Zentropy Team
 - `POST /api/v1/users/me/secure-change-password`
 
 ### Frontend Components
-- `SecurityCodeFlow.tsx` - Email verification step
-- `PasswordChangeForm.tsx` - 3-step password change
-- `ForgotPasswordFlow.tsx` - 3-step password reset
+- `EmailVerificationModal.tsx` - Universal verification modal (all flows)
+- `AuthModal.tsx` - Registration and sign-in (includes registration flow)
+- `ForgotPasswordFlow.tsx` - Password reset flow (3 steps)
+- `PasswordChangeForm.tsx` - Authenticated password change (3 steps)
+- `Header.tsx` - Persistent verification buttons ("Enter Code", "Resend")
 
 ### Operation Types
-- `email_verification` - Account registration
+- `email_verification` - Account registration (triggers sign-in modal on success)
+- `password_reset` - Unauthenticated password reset (triggers password form on success)
 - `password_change` - Authenticated password change
-- `password_reset` - Unauthenticated password reset
 - `username_recovery` - Username recovery
 
 ---
@@ -210,4 +258,4 @@ The Zentropy Team
 *For detailed API documentation, see: `/docs/api/security-operations.md`*  
 *For full user guide, see: `/docs/user-guides/VerificationFlowsGuide.md`*  
 
-*Last updated: January 22, 2025*
+*Last updated: January 26, 2025*

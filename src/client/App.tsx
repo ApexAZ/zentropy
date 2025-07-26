@@ -63,7 +63,14 @@ function App(): React.JSX.Element {
 	const handleCloseVerification = (): void => {
 		setShowVerificationPage(false);
 		setVerificationEmail("");
-		// Show sign in modal after successful verification
+		// Just close - user can continue via header buttons if needed
+		// Sign-in modal should only appear on successful verification, not on close
+	};
+
+	const handleVerificationSuccess = (): void => {
+		setShowVerificationPage(false);
+		setVerificationEmail("");
+		// Show sign in modal after successful verification (registration flow)
 		setAuthModalMode("signin");
 		setShowAuthModal(true);
 	};
@@ -175,7 +182,7 @@ function App(): React.JSX.Element {
 					<EmailVerificationModal
 						isOpen={showVerificationPage}
 						onClose={handleCloseVerification}
-						onSuccess={handleAuthSuccess}
+						onSuccess={handleVerificationSuccess}
 						initialEmail={verificationEmail}
 					/>
 				</ErrorBoundary>

@@ -97,7 +97,8 @@ export class AuthService {
 
 		if (!response.ok) {
 			const errorData = await response.json();
-			throw new Error(errorData.detail || "OAuth authentication failed");
+			const errorMessage = errorData.detail?.error || errorData.detail || "OAuth authentication failed";
+			throw new Error(errorMessage);
 		}
 
 		const data: AuthResponse = await response.json();

@@ -143,7 +143,7 @@ describe("ForgotPasswordFlow", () => {
 	});
 
 	describe("Step 2: Code Verification", () => {
-		it("returns to email step when verification modal is closed", async () => {
+		it("closes verification modal without calling onCancel (preserves pending state for header buttons)", async () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
@@ -156,14 +156,18 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
+			// Verify verification modal is shown
+			expect(screen.getByText("Check Your Email")).toBeInTheDocument();
+
 			// Close verification modal
 			const cancelButton = screen.getByText("Cancel");
 			fastUserActions.click(cancelButton);
 			await fastStateSync();
 
-			// Should return to email input step
-			expect(screen.getByText("Reset Your Password")).toBeInTheDocument();
-			expect(screen.getByPlaceholderText("Email Address")).toBeInTheDocument();
+			// Should NOT call onCancel (preserves pending state for header button continuation)
+			expect(mockOnCancel).not.toHaveBeenCalled();
+			// Modal should close (no more modal content visible)
+			expect(screen.queryByText("Check Your Email")).not.toBeInTheDocument();
 		});
 
 		it("proceeds to password step when verification succeeds", async () => {

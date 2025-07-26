@@ -215,7 +215,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 									setMode("signin");
 									showSuccess("Password reset complete! You can now sign in with your new password.");
 								}}
-								onCancel={() => setMode("signin")}
+								onCancel={() => onClose()} // Close entire modal, don't just change mode
 							/>
 						) : (
 							<>

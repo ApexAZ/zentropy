@@ -19,6 +19,7 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 	const [operationToken, setOperationToken] = useState<string>();
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [showVerificationModal, setShowVerificationModal] = useState(false);
 
 	const handleEmailSubmit = async () => {
 		try {
@@ -38,11 +39,13 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 			setPendingPasswordReset(email);
 
 			setStep("verification");
+			setShowVerificationModal(true);
 		} catch {
 			// Don't reveal if email exists for security - always proceed to verification
 			// Set pending password reset state for header integration
 			setPendingPasswordReset(email);
 			setStep("verification");
+			setShowVerificationModal(true);
 		} finally {
 			setIsLoading(false);
 		}
@@ -50,6 +53,7 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 	const handleCodeVerified = (token?: string) => {
 		setOperationToken(token);
+		setShowVerificationModal(false);
 		setStep("password"); // This will close the modal and show password form
 	};
 
@@ -84,10 +88,20 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 	// Step 2: Code Verification
 	if (step === "verification") {
+		// If modal was closed, don't render anything (user can continue via header buttons)
+		if (!showVerificationModal) {
+			return null;
+		}
+
 		return (
 			<EmailVerificationModal
-				isOpen={true}
-				onClose={() => setStep("email")} // Go back to email if user manually closes
+				isOpen={showVerificationModal}
+				onClose={() => {
+					// For password reset: just close modal, don't call onCancel
+					// User can continue via header buttons (Enter Code/Resend)
+					// Pending password reset state remains active for header integration
+					setShowVerificationModal(false);
+				}}
 				onSuccess={handleCodeVerified}
 				initialEmail={email}
 				operationType="password_reset"
@@ -138,7 +152,10 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 					<div className="flex justify-end space-x-2">
 						<button
 							type="button"
-							onClick={() => setStep("verification")}
+							onClick={() => {
+								setStep("verification");
+								setShowVerificationModal(true);
+							}}
 							className="bg-secondary hover:bg-secondary-hover text-text-primary rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
 							disabled={isLoading}
 						>
