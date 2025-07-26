@@ -256,7 +256,7 @@ class TestEmailIntegrationAndCleanup:
 class TestSystemReliabilityAndEdgeCases:
     """Test system reliability and edge case handling."""
     
-    def test_concurrent_verification_attempts(self, client: TestClient, db: Session, auto_clean_mailpit):
+    def test_concurrent_verification_attempts(self, client: TestClient, db: Session, auto_clean_mailpit, test_rate_limits):
         """Test handling of concurrent verification attempts on same code."""
         email = f"concurrent-test{random.randint(1000, 9999)}@example.com"
         
@@ -296,7 +296,7 @@ class TestSystemReliabilityAndEdgeCases:
         assert response2.status_code == 400
         assert "expired" in response2.json()["detail"].lower()
     
-    def test_malformed_requests_handling(self, client: TestClient):
+    def test_malformed_requests_handling(self, client: TestClient, test_rate_limits):
         """Test handling of malformed requests."""
         # Test invalid JSON structure
         response = client.post("/api/v1/auth/verify-code", 
