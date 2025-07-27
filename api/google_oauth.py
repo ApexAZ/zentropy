@@ -1,7 +1,7 @@
 """Google OAuth authentication module for Zentropy."""
 
 import os
-from typing import Dict, List, Any, Mapping
+from typing import Dict, Any, Mapping
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
@@ -11,8 +11,8 @@ from .database import User, UserRole, AuthProvider, RegistrationType, Organizati
 from .auth import create_access_token
 from .rate_limiter import rate_limiter, RateLimitType
 
-# Legacy in-memory rate limiter for backward compatibility
-_rate_limit_store: Dict[str, List[datetime]] = {}
+# Legacy in-memory rate limiter for backward compatibility (removed - unused)
+# _rate_limit_store: Dict[str, List[datetime]] = {}
 
 
 class GoogleOAuthError(Exception):
@@ -47,9 +47,7 @@ class GoogleRateLimitError(GoogleOAuthError):
 
 def clear_rate_limit_store() -> None:
     """Clear the rate limit store (for testing purposes)."""
-    global _rate_limit_store
-    _rate_limit_store.clear()
-    # Also clear Redis rate limit if available
+    # Legacy in-memory store no longer exists - only clear Redis rate limiting
     rate_limiter.reset_rate_limit("test", RateLimitType.OAUTH)
 
 

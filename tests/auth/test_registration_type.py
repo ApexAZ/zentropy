@@ -23,12 +23,13 @@ class TestRegistrationTypeEnum:
         # This should FAIL initially since RegistrationType doesn't exist yet
         assert RegistrationType.EMAIL.value == "email"
         assert RegistrationType.GOOGLE_OAUTH.value == "google_oauth"
+        assert RegistrationType.MICROSOFT_OAUTH.value == "microsoft_oauth"
 
     def test_registration_type_enum_count(self, client):
-        """Test that RegistrationType enum has exactly 2 values."""
-        expected_values = ["email", "google_oauth"]
+        """Test that RegistrationType enum has exactly 3 values."""
+        expected_values = ["email", "google_oauth", "microsoft_oauth"]
         actual_values = [rt.value for rt in RegistrationType]
-        assert len(actual_values) == 2
+        assert len(actual_values) == 3
         assert set(actual_values) == set(expected_values)
 
 

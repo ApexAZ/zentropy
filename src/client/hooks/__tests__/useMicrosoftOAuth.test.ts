@@ -41,6 +41,51 @@ describe("useMicrosoftOAuth", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
+		// Mock window.open to simulate popup behavior
+		const mockPopup = {
+			closed: false,
+			close: vi.fn(() => {
+				mockPopup.closed = true;
+			})
+		};
+
+		Object.defineProperty(window, "open", {
+			value: vi.fn(() => mockPopup),
+			writable: true,
+			configurable: true
+		});
+
+		// Mock window.addEventListener and removeEventListener for message handling
+		const mockEventListeners: { [key: string]: Function[] } = {};
+
+		Object.defineProperty(window, "addEventListener", {
+			value: vi.fn((event: string, listener: Function) => {
+				if (!mockEventListeners[event]) {
+					mockEventListeners[event] = [];
+				}
+				mockEventListeners[event].push(listener);
+			}),
+			writable: true,
+			configurable: true
+		});
+
+		Object.defineProperty(window, "removeEventListener", {
+			value: vi.fn((event: string, listener: Function) => {
+				if (mockEventListeners[event]) {
+					const index = mockEventListeners[event].indexOf(listener);
+					if (index > -1) {
+						mockEventListeners[event].splice(index, 1);
+					}
+				}
+			}),
+			writable: true,
+			configurable: true
+		});
+
+		// Store references for triggering events in tests
+		(window as any)._mockEventListeners = mockEventListeners;
+		(window as any)._mockPopup = mockPopup;
+
 		// Set up Microsoft MSAL SDK mock that mimics real behavior
 		const mockMSALSDK = {
 			PublicClientApplication: vi.fn(() => ({
@@ -77,6 +122,9 @@ describe("useMicrosoftOAuth", () => {
 		vi.restoreAllMocks();
 		// Clean up window.msal
 		delete (window as any).msal;
+		// Clean up mock event system
+		delete (window as any)._mockEventListeners;
+		delete (window as any)._mockPopup;
 		// Restore default environment variable
 		vi.stubEnv("VITE_MICROSOFT_CLIENT_ID", "mock-microsoft-client-id");
 	});
@@ -104,12 +152,30 @@ describe("useMicrosoftOAuth", () => {
 				result.current.triggerOAuth();
 			});
 
-			// Should complete immediately (no loading state for mock)
-			expect(result.current.isLoading).toBe(false);
+			// Verify window.open was called
+			expect(window.open).toHaveBeenCalledWith(
+				expect.stringContaining("login.microsoftonline.com"),
+				"microsoft-oauth",
+				"width=500,height=600,scrollbars=yes,resizable=yes"
+			);
 
-			// Should call onSuccess with mock credential
+			// Simulate successful OAuth response
+			act(() => {
+				const messageListeners = (window as any)._mockEventListeners.message || [];
+				messageListeners.forEach((listener: Function) => {
+					listener({
+						origin: window.location.origin,
+						data: {
+							type: "MICROSOFT_OAUTH_SUCCESS",
+							authorizationCode: "mock-auth-code-12345"
+						}
+					});
+				});
+			});
+
+			// Should call onSuccess with authorization code
 			expect(mockOnSuccess).toHaveBeenCalledTimes(1);
-			expect(mockOnSuccess).toHaveBeenCalledWith(expect.stringMatching(/^mock-microsoft-credential-\d+$/));
+			expect(mockOnSuccess).toHaveBeenCalledWith("mock-auth-code-12345");
 			expect(result.current.error).toBeNull();
 		});
 
@@ -227,14 +293,33 @@ describe("useMicrosoftOAuth", () => {
 
 			await waitForReady(result);
 
-			// Trigger OAuth multiple times
-			act(() => {
-				result.current.triggerOAuth();
-				result.current.triggerOAuth();
-				result.current.triggerOAuth();
-			});
+			// Trigger OAuth multiple times and simulate responses individually
+			for (let i = 0; i < 3; i++) {
+				act(() => {
+					result.current.triggerOAuth();
+				});
 
-			// Should only call onSuccess once per trigger
+				// Simulate successful OAuth response for this specific trigger
+				act(() => {
+					const messageListeners = (window as any)._mockEventListeners.message || [];
+					if (messageListeners.length > 0) {
+						// Trigger the most recent listener (the one for this OAuth call)
+						const listener = messageListeners[messageListeners.length - 1];
+						listener({
+							origin: window.location.origin,
+							data: {
+								type: "MICROSOFT_OAUTH_SUCCESS",
+								authorizationCode: `mock-auth-code-${i + 1}`
+							}
+						});
+					}
+				});
+			}
+
+			// Verify window.open was called multiple times
+			expect(window.open).toHaveBeenCalledTimes(3);
+
+			// Should call onSuccess once per trigger
 			expect(mockOnSuccess).toHaveBeenCalledTimes(3);
 			expect(result.current.error).toBeNull();
 		});

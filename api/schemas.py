@@ -91,9 +91,13 @@ class PasswordUpdate(BaseModel):
     )
 
 
-# Google OAuth schemas
+# OAuth schemas
 class GoogleOAuthRequest(BaseModel):
     credential: str
+
+
+class MicrosoftOAuthRequest(BaseModel):
+    authorization_code: str
 
 
 # Team schemas
@@ -312,6 +316,14 @@ class LinkGoogleAccountRequest(BaseModel):
 
 
 class UnlinkGoogleAccountRequest(BaseModel):
+    password: str
+
+
+class LinkMicrosoftAccountRequest(BaseModel):
+    microsoft_authorization_code: str
+
+
+class UnlinkMicrosoftAccountRequest(BaseModel):
     password: str
 
 

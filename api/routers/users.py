@@ -13,6 +13,8 @@ from ..schemas import (
     MessageResponse,
     LinkGoogleAccountRequest,
     UnlinkGoogleAccountRequest,
+    LinkMicrosoftAccountRequest,
+    UnlinkMicrosoftAccountRequest,
     AccountSecurityResponse,
 )
 from ..auth import (
@@ -28,6 +30,7 @@ from ..google_oauth import (
     GoogleTokenInvalidError,
     GoogleEmailUnverifiedError,
 )
+from ..microsoft_oauth import verify_microsoft_token, exchange_code_for_token
 from .. import database
 
 router = APIRouter()
@@ -415,4 +418,96 @@ def unlink_google_account(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlink Google account",
+        )
+
+
+@router.post("/me/link-microsoft", response_model=MessageResponse)
+def link_microsoft_account(
+    request: LinkMicrosoftAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Link Microsoft account to existing user account."""
+    try:
+        # Get Microsoft authorization code from request
+        microsoft_authorization_code = request.microsoft_authorization_code
+        if not microsoft_authorization_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Microsoft authorization code is required",
+            )
+
+        # Exchange code for access token and verify
+        access_token = exchange_code_for_token(microsoft_authorization_code)
+        microsoft_info = verify_microsoft_token(access_token)
+
+        # Check if Microsoft account is already linked to another user
+        existing_user = (
+            db.query(database.User)
+            .filter(database.User.microsoft_id == microsoft_info.get("id"))
+            .first()
+        )
+
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This Microsoft account is already linked to another user",
+            )
+
+        # Link Microsoft account to current user
+        current_user.microsoft_id = microsoft_info.get("id")
+        current_user.auth_provider = AuthProvider.HYBRID
+        current_user.updated_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        return MessageResponse(message="Microsoft account linked successfully")
+
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to link Microsoft account",
+        )
+
+
+@router.post("/me/unlink-microsoft", response_model=MessageResponse)
+def unlink_microsoft_account(
+    request: UnlinkMicrosoftAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Unlink Microsoft account from user account."""
+    try:
+        # Verify password for security
+        if not current_user.password_hash or not verify_password(
+            request.password, current_user.password_hash
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
+            )
+
+        # Check if Microsoft account is linked
+        if not current_user.microsoft_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No Microsoft account is linked to this user",
+            )
+
+        # Unlink Microsoft account
+        current_user.microsoft_id = None
+        current_user.auth_provider = AuthProvider.LOCAL
+        current_user.updated_at = datetime.now(timezone.utc)
+
+        db.commit()
+
+        return MessageResponse(message="Microsoft account unlinked successfully")
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to unlink Microsoft account",
         )

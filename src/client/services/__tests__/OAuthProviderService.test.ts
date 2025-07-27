@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from "vitest";
-import { OAuthProviderService, GoogleOAuthIntegration, OAuthProviders } from "../OAuthProviderService";
+import { OAuthProviderService, OAuthProviders } from "../OAuthProviderService";
 import type { LinkOAuthProviderRequest, UnlinkOAuthProviderRequest } from "../../types";
 
 // Mock createAuthHeaders
@@ -550,104 +550,6 @@ describe("OAuthProviderService", () => {
 					"No GitHub account is linked to this account"
 				);
 			});
-		});
-	});
-});
-
-describe("GoogleOAuthIntegration", () => {
-	let integration: GoogleOAuthIntegration;
-	let mockOnSuccess: any;
-	let mockOnError: any;
-
-	beforeEach(() => {
-		mockOnSuccess = vi.fn();
-		mockOnError = vi.fn();
-		integration = new GoogleOAuthIntegration({
-			onSuccess: mockOnSuccess,
-			onError: mockOnError
-		});
-	});
-
-	it("should initialize with callbacks", () => {
-		expect(integration).toBeDefined();
-	});
-
-	it("should return error state when hook not integrated", () => {
-		const state = integration.getState();
-
-		expect(state).toEqual({
-			isReady: false,
-			isLoading: false,
-			error: "Google OAuth hook not integrated"
-		});
-	});
-
-	it("should integrate with Google OAuth hook", () => {
-		const mockHook = {
-			isReady: true,
-			isLoading: false,
-			error: null,
-			triggerOAuth: vi.fn(),
-			clearError: vi.fn()
-		};
-
-		integration.integrateWithHook(mockHook);
-		const state = integration.getState();
-
-		expect(state).toEqual({
-			isReady: true,
-			isLoading: false,
-			error: null
-		});
-	});
-
-	it("should delegate authentication to hook", () => {
-		const mockHook = {
-			isReady: true,
-			isLoading: false,
-			error: null,
-			triggerOAuth: vi.fn(),
-			clearError: vi.fn()
-		};
-
-		integration.integrateWithHook(mockHook);
-		integration.authenticate();
-
-		// Test behavior: User should experience authentication flow without errors
-		expect(mockOnError).not.toHaveBeenCalled();
-		expect(mockHook.triggerOAuth).toHaveBeenCalled();
-	});
-
-	it("should handle authentication when hook not integrated", () => {
-		integration.authenticate();
-
-		expect(mockOnError).toHaveBeenCalledWith("Google OAuth hook not integrated");
-	});
-
-	it("should delegate error clearing to hook", () => {
-		const mockHook = {
-			isReady: true,
-			isLoading: false,
-			error: "Some error",
-			triggerOAuth: vi.fn(),
-			clearError: vi.fn()
-		};
-
-		integration.integrateWithHook(mockHook);
-		integration.clearError();
-
-		// Test behavior: User should be able to clear errors through integration
-		expect(mockHook.clearError).toHaveBeenCalled();
-	});
-
-	it("should get provider info", () => {
-		const providerInfo = integration.getProviderInfo();
-
-		expect(providerInfo).toEqual({
-			name: "google",
-			displayName: "Google",
-			iconClass: "fab fa-google",
-			brandColor: "#4285f4"
 		});
 	});
 });

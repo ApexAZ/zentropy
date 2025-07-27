@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microsoft OAuth Redirect</title>
+</head>
+<body>
+    <script>
+        // Extract authorization code from URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        if (code) {
+            // Send success message to parent window with authorization code
+            window.opener.postMessage({
+                type: 'MICROSOFT_OAUTH_SUCCESS',
+                authorizationCode: code
+            }, window.location.origin);
+        } else if (error) {
+            // Send error message to parent window
+            window.opener.postMessage({
+                type: 'MICROSOFT_OAUTH_ERROR',
+                error: errorDescription || error
+            }, window.location.origin);
+        } else {
+            // No code and no error - something went wrong
+            window.opener.postMessage({
+                type: 'MICROSOFT_OAUTH_ERROR',
+                error: 'No authorization code received from Microsoft'
+            }, window.location.origin);
+        }
+        
+        // Close the popup window
+        window.close();
+    </script>
+</body>
+</html>

@@ -163,7 +163,11 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 		// OAuth providers
 		providers.forEach(provider => {
 			const isLinked = isProviderLinked(provider.name);
-			const providerEmail = provider.name === "google" ? securityStatus.google_email : undefined;
+
+			// Get provider email from centralized oauth_providers array
+			const oauthProvider = securityStatus.oauth_providers?.find(p => p.provider === provider.name);
+			const providerEmail =
+				oauthProvider?.identifier || (provider.name === "google" ? securityStatus.google_email : undefined); // Fallback for backwards compatibility
 
 			const method: SignInMethod = {
 				id: provider.name,

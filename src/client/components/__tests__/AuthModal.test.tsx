@@ -6,6 +6,7 @@ import "@testing-library/jest-dom";
 import AuthModal from "../AuthModal";
 import { AuthService } from "../../services/AuthService";
 import { useGoogleOAuth } from "../../hooks/useGoogleOAuth";
+import { useMicrosoftOAuth } from "../../hooks/useMicrosoftOAuth";
 
 // Mock AuthService
 vi.mock("../../services/AuthService", () => ({
@@ -18,9 +19,13 @@ vi.mock("../../services/AuthService", () => ({
 	}
 }));
 
-// Mock useGoogleOAuth hook
+// Mock OAuth hooks
 vi.mock("../../hooks/useGoogleOAuth", () => ({
 	useGoogleOAuth: vi.fn()
+}));
+
+vi.mock("../../hooks/useMicrosoftOAuth", () => ({
+	useMicrosoftOAuth: vi.fn()
 }));
 
 // Mock ForgotPasswordFlow component
@@ -58,10 +63,21 @@ describe("AuthModal", () => {
 		clearError: vi.fn()
 	};
 
+	const mockMicrosoftOAuth = {
+		isReady: true,
+		triggerOAuth: vi.fn(),
+		isLoading: false,
+		error: null,
+		clearError: vi.fn()
+	};
+
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.clearAllMocks();
+		// Set OAuth mock mode to use test environment for OAuth hooks
+		vi.stubEnv("VITE_OAUTH_MOCK_MODE", "true");
 		(useGoogleOAuth as any).mockReturnValue(mockGoogleOAuth);
+		(useMicrosoftOAuth as any).mockReturnValue(mockMicrosoftOAuth);
 		(AuthService.validateEmail as any).mockReturnValue(true);
 		(AuthService.validatePassword as any).mockReturnValue({ isValid: true, requirements: {} });
 	});

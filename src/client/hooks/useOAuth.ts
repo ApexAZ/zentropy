@@ -125,8 +125,21 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					setIsReady(true);
 					initializedRef.current = true;
 					logger.debug("Google OAuth initialized successfully");
+				} else if (config.provider === "microsoft") {
+					// Microsoft OAuth initialization - no library needed, just validate config
+					logger.info("Initializing Microsoft OAuth");
+
+					if (!clientId) {
+						throw new Error("Microsoft Client ID not configured");
+					}
+
+					// Microsoft OAuth is ready immediately (no library to load)
+					setIsReady(true);
+					setError(null);
+					initializedRef.current = true;
+					logger.info("Microsoft OAuth initialized successfully");
 				} else {
-					// Microsoft/GitHub OAuth initialization (mock for now)
+					// GitHub OAuth initialization (mock for now)
 					logger.info(`Initializing ${config.displayName} OAuth (mock)`, {
 						clientId,
 						origin: window.location.origin
@@ -183,9 +196,14 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 		}
 	}, [clientId, onError, isReady, handleCredentialResponse, config.provider, config.displayName]);
 
+	// Refs for cleanup
+	const cleanupRef = useRef<(() => void) | null>(null);
+
 	const triggerOAuth = useCallback(() => {
-		// Clear any previous errors before starting
+		// Clear any previous errors and cleanup before starting
 		setError(null);
+		cleanupRef.current?.();
+		cleanupRef.current = null;
 
 		if (!isReady) {
 			const errorMessage = `${config.displayName} Sign-In not available`;
@@ -201,7 +219,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 			if (config.provider === "google") {
 				// Google OAuth trigger
 				if (!window.google?.accounts?.id) {
-					throw new Error("Google Sign-In not available");
+					throw new Error("Google Sign-In is temporarily unavailable. Please try again in a moment.");
 				}
 
 				logger.debug("Triggering Google OAuth popup");
@@ -219,12 +237,89 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 						onError?.(errorMessage);
 					}
 				});
+			} else if (config.provider === "microsoft") {
+				// Microsoft OAuth trigger using popup flow
+				logger.info("Starting Microsoft OAuth flow");
+
+				try {
+					// Microsoft OAuth popup-based flow
+					const redirectUri = `${window.location.origin}/oauth-redirect.html`;
+					const microsoftAuthUrl =
+						`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+						`client_id=${encodeURIComponent(clientId)}&` +
+						`response_type=code&` +
+						`redirect_uri=${encodeURIComponent(redirectUri)}&` +
+						`scope=${encodeURIComponent("openid profile email User.Read")}&` +
+						`response_mode=query&` +
+						`state=${Date.now()}`;
+
+					// Open popup for Microsoft OAuth
+					const popup = window.open(
+						microsoftAuthUrl,
+						"microsoft-oauth",
+						"width=500,height=600,scrollbars=yes,resizable=yes"
+					);
+
+					if (!popup) {
+						throw new Error("Failed to open Microsoft OAuth popup - popup blocked");
+					}
+
+					// Listen for popup completion
+					const checkClosed = setInterval(() => {
+						if (popup.closed) {
+							clearInterval(checkClosed);
+							setIsLoading(false);
+							setError("Microsoft OAuth was cancelled");
+							onError?.("Microsoft OAuth was cancelled");
+							cleanupRef.current = null;
+						}
+					}, 1000);
+
+					// Listen for message from popup
+					const messageHandler = (event: MessageEvent) => {
+						if (event.origin !== window.location.origin) return;
+
+						if (event.data.type === "MICROSOFT_OAUTH_SUCCESS") {
+							clearInterval(checkClosed);
+							popup.close();
+							window.removeEventListener("message", messageHandler);
+							// Pass the authorization code to the backend for token exchange
+							onSuccess(event.data.authorizationCode);
+							setIsLoading(false);
+							cleanupRef.current = null;
+						} else if (event.data.type === "MICROSOFT_OAUTH_ERROR") {
+							clearInterval(checkClosed);
+							popup.close();
+							window.removeEventListener("message", messageHandler);
+							setError(event.data.error);
+							onError?.(event.data.error);
+							setIsLoading(false);
+							cleanupRef.current = null;
+						}
+					};
+
+					window.addEventListener("message", messageHandler);
+
+					// Store cleanup function
+					cleanupRef.current = () => {
+						clearInterval(checkClosed);
+						window.removeEventListener("message", messageHandler);
+						if (!popup.closed) {
+							popup.close();
+						}
+						setIsLoading(false);
+					};
+				} catch (err) {
+					const errorMessage = `Failed to start Microsoft OAuth`;
+					logger.error(errorMessage, { err });
+					setError(errorMessage);
+					onError?.(errorMessage);
+					setIsLoading(false);
+				}
 			} else {
-				// Microsoft/GitHub OAuth trigger (mock for now)
+				// GitHub OAuth trigger (mock for now)
 				logger.info(`Starting ${config.displayName} OAuth flow (mock)`);
 
-				// TODO: Replace with real Microsoft/GitHub OAuth implementation
-				// For now, simulate OAuth flow with mock credential (immediate for tests)
 				try {
 					const mockCredential = `mock-${config.provider}-credential-` + Date.now();
 					logger.info(`${config.displayName} OAuth completed successfully (mock)`, {
@@ -247,7 +342,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 			setError(errorMessage);
 			onError?.(errorMessage);
 		}
-	}, [isReady, onSuccess, onError, config.provider, config.displayName]);
+	}, [isReady, onSuccess, onError, config.provider, config.displayName, clientId]);
 
 	// 🚀 ENVIRONMENT-AWARE RESPONSE
 	// ✅ Return deterministic mocks in test environment
@@ -256,7 +351,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 	}
 
 	return {
-		isReady: config.provider === "google" ? isReady : isReady && !error,
+		isReady: isReady && !error && (config.provider !== "google" || Boolean(window.google?.accounts?.id)), // Additional Google library check
 		isLoading,
 		error,
 		triggerOAuth,

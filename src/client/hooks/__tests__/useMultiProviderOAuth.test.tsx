@@ -39,7 +39,17 @@ vi.mock("../../services/OAuthProviderService", () => ({
 				iconClass: "fab fa-github",
 				brandColor: "#333"
 			}
-		])
+		]),
+		unlinkProvider: vi.fn(request => {
+			if (request.provider === "microsoft") {
+				throw new Error("Unlinking microsoft is not yet supported");
+			}
+			return Promise.resolve({
+				message: "Provider unlinked successfully",
+				success: true,
+				provider: request.provider
+			});
+		})
 	}
 }));
 

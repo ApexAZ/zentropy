@@ -58,6 +58,7 @@ class TestRateLimiter:
         """Test in-memory rate limiting when Redis is unavailable."""
         rate_limiter = RateLimiter()
         rate_limiter.redis_client = None  # Force in-memory mode
+        rate_limiter.enabled = True  # Override disabled setting from .env
         
         # Configure strict limits for testing
         rate_limiter.auth_requests = 2
@@ -93,6 +94,7 @@ class TestRateLimiter:
         """Test rate limit reset functionality."""
         rate_limiter = RateLimiter()
         rate_limiter.redis_client = None  # Force in-memory mode
+        rate_limiter.enabled = True  # Override disabled setting from .env
         
         # Configure strict limits
         rate_limiter.auth_requests = 1
@@ -117,6 +119,7 @@ class TestRateLimiter:
         """Test that different rate limit types are independent."""
         rate_limiter = RateLimiter()
         rate_limiter.redis_client = None  # Force in-memory mode
+        rate_limiter.enabled = True  # Override disabled setting from .env
         
         # Configure strict limits
         rate_limiter.auth_requests = 1
@@ -140,6 +143,7 @@ class TestRateLimiter:
         """Test getting rate limit status for debugging."""
         rate_limiter = RateLimiter()
         rate_limiter.redis_client = None  # Force in-memory mode
+        rate_limiter.enabled = True  # Override disabled setting from .env
         
         identifier = "test_ip_status"
         
@@ -271,6 +275,7 @@ class TestRedisIntegration:
         mock_redis_class.return_value = mock_redis_instance
         
         rate_limiter = RateLimiter()
+        rate_limiter.enabled = True  # Override disabled setting from .env
         rate_limiter.auth_requests = 1  # Strict limit for testing
         
         identifier = "test_ip_fallback"

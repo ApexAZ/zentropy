@@ -68,15 +68,16 @@ export const useMultiProviderOAuth = ({
 		(providerName: string): boolean => {
 			if (!securityStatus) return false;
 
+			// Use centralized oauth_providers array first
+			const provider = securityStatus.oauth_providers?.find(p => p.provider === providerName);
+			if (provider) {
+				return provider.linked;
+			}
+
+			// Fallback for backwards compatibility
 			switch (providerName) {
 				case "google":
 					return securityStatus.google_auth_linked ?? false;
-				case "microsoft":
-					// Microsoft support will be added in future backend updates
-					return false;
-				case "github":
-					// GitHub support will be added in future backend updates
-					return false;
 				default:
 					return false;
 			}
@@ -144,12 +145,16 @@ export const useMultiProviderOAuth = ({
 			try {
 				logger.info(`Unlinking provider: ${providerName}`);
 
-				// Currently only Google unlinking is supported
+				// Use centralized OAuthProviderService for all providers
 				if (providerName === "google") {
+					// Keep existing Google implementation for backward compatibility
 					await handleUnlinkGoogle(password);
 				} else {
-					// For Microsoft and GitHub, return error until backend support is added
-					throw new Error(`Unlinking ${providerName} is not yet supported`);
+					// Use centralized service for Microsoft, GitHub, and future providers
+					await OAuthProviderService.unlinkProvider({
+						provider: providerName,
+						password: password
+					});
 				}
 			} catch (error) {
 				const errorMessage = `Failed to unlink ${providerName}`;

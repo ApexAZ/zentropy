@@ -14,6 +14,7 @@ from ..schemas import (
     UserLoginResponse,
     MessageResponse,
     GoogleOAuthRequest,
+    MicrosoftOAuthRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
     VerificationCodeRequest,
@@ -36,6 +37,14 @@ from ..google_oauth import (
     GoogleEmailUnverifiedError,
     GoogleConfigurationError,
     GoogleRateLimitError,
+)
+from ..microsoft_oauth import (
+    process_microsoft_oauth,
+    MicrosoftOAuthError,
+    MicrosoftTokenInvalidError,
+    MicrosoftEmailUnverifiedError,
+    MicrosoftConfigurationError,
+    MicrosoftRateLimitError,
 )
 from .. import database
 from ..database import User
@@ -293,6 +302,67 @@ def google_oauth_register(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Google OAuth registration failed: {str(e)}",
+        )
+
+
+@router.post("/microsoft-oauth", response_model=LoginResponse)
+def microsoft_oauth_register(
+    request: MicrosoftOAuthRequest, http_request: Request, db: Session = Depends(get_db)
+) -> LoginResponse:
+    """
+    Register or login user using Microsoft OAuth access token.
+
+    This endpoint:
+    1. Verifies the Microsoft access token with Microsoft Graph API
+    2. Creates a new user if they don't exist, or logs in existing user
+    3. Returns an access token and user information
+    """
+    try:
+        # Get client IP for rate limiting
+        client_ip = http_request.client.host if http_request.client else "unknown"
+
+        # Process Microsoft OAuth authentication
+        auth_response = process_microsoft_oauth(
+            db, request.authorization_code, client_ip
+        )
+
+        return LoginResponse(
+            access_token=auth_response["access_token"],
+            token_type=auth_response["token_type"],
+            user=UserLoginResponse(**auth_response["user"]),
+        )
+    except MicrosoftTokenInvalidError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Microsoft OAuth failed: {str(e)}",
+        )
+    except MicrosoftEmailUnverifiedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Microsoft OAuth failed: {str(e)}",
+        )
+    except MicrosoftConfigurationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Microsoft OAuth failed: {str(e)}",
+        )
+    except MicrosoftRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Microsoft OAuth failed: {str(e)}",
+        )
+    except MicrosoftOAuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Microsoft OAuth failed: {str(e)}",
+        )
+    except HTTPException:
+        # Re-raise HTTPExceptions (like our 409 security error) as-is
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Microsoft OAuth registration failed: {str(e)}",
         )
 
 

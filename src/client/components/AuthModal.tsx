@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AuthService } from "../services/AuthService";
 import type { AuthUser, CustomError } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
+import { useMicrosoftOAuth } from "../hooks/useMicrosoftOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
 import PasswordRequirements from "./PasswordRequirements";
@@ -117,6 +118,35 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				if (errorMessage.includes("already registered with email/password")) {
 					showError(
 						"This email is already registered. Please sign in with your password first, then link Google in your Profile > Security settings."
+					);
+				} else if (errorMessage.includes("temporarily unavailable")) {
+					showError(errorMessage); // Use the improved error message from the hook
+				} else {
+					showError(errorMessage);
+				}
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		onError: error => showError(error)
+	});
+
+	const { isReady: isMicrosoftReady, triggerOAuth: triggerMicrosoftOAuth } = useMicrosoftOAuth({
+		onSuccess: async (credential: string) => {
+			setIsLoading(true);
+			try {
+				const { token, user } = await AuthService.oauthSignIn("microsoft", credential);
+				auth.login(token, user, true); // Microsoft OAuth defaults to persistent login
+				showSuccess("Successfully signed in with Microsoft!");
+				onSuccess();
+				setTimeout(() => onClose(), import.meta.env.NODE_ENV === "test" ? 0 : 1000);
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : "Microsoft sign in failed";
+
+				// Handle specific error cases for better UX
+				if (errorMessage.includes("already registered with email/password")) {
+					showError(
+						"This email is already registered. Please sign in with your password first, then link Microsoft in your Profile > Security settings."
 					);
 				} else {
 					showError(errorMessage);
@@ -269,6 +299,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 										<Button
 											type="submit"
 											variant="primary"
+											size="large"
 											fullWidth
 											disabled={isLoading}
 											isLoading={isLoading}
@@ -324,6 +355,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 										<Button
 											type="submit"
 											variant="primary"
+											size="large"
 											fullWidth
 											disabled={isLoading}
 											isLoading={isLoading}
@@ -365,6 +397,19 @@ const AuthModal: React.FC<AuthModalProps> = ({
 										/>
 									</svg>
 									Continue with Google
+								</button>
+								<button
+									onClick={triggerMicrosoftOAuth}
+									disabled={!isMicrosoftReady || isLoading}
+									className="border-layout-background bg-content-background hover:bg-layout-background flex w-full items-center justify-center gap-3 rounded-lg border px-4 py-3 transition-colors disabled:opacity-50"
+								>
+									<svg className="h-5 w-5" viewBox="0 0 24 24">
+										<path fill="#F25022" d="M1 1h10v10H1z" />
+										<path fill="#00A4EF" d="M13 1h10v10H13z" />
+										<path fill="#7FBA00" d="M1 13h10v10H1z" />
+										<path fill="#FFB900" d="M13 13h10v10H13z" />
+									</svg>
+									Continue with Microsoft
 								</button>
 							</>
 						)}

@@ -31,7 +31,7 @@ const Button: React.FC<ButtonProps> = ({
 	...props
 }) => {
 	const baseClasses =
-		"inline-flex cursor-pointer items-center gap-2 rounded-md text-center font-medium no-underline transition-all duration-200";
+		"inline-flex cursor-pointer items-center justify-center gap-2 rounded-md text-center font-medium no-underline transition-all duration-200";
 
 	const sizeClasses = {
 		small: "px-3 py-1 text-xs gap-1",

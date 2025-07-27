@@ -1,6 +1,5 @@
 import type {
 	OAuthProvider,
-	OAuthProviderState,
 	LinkOAuthProviderRequest,
 	UnlinkOAuthProviderRequest,
 	OAuthOperationResponse
@@ -180,7 +179,7 @@ export class OAuthProviderService {
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
-				microsoft_credential: request.credential
+				microsoft_authorization_code: request.credential
 			})
 		});
 
@@ -332,84 +331,6 @@ export class OAuthProviderService {
 		}
 
 		return response.json();
-	}
-}
-
-/**
- * Enhanced Google OAuth Integration
- *
- * This class provides a wrapper around the existing useGoogleOAuth hook
- * to enable future provider abstraction while maintaining full compatibility.
- *
- * USAGE: Can be used alongside or instead of direct useGoogleOAuth calls
- * MIGRATION: When ready for multi-provider, components can easily switch to this
- */
-export class GoogleOAuthIntegration {
-	private googleOAuthHook: any = null;
-	private onErrorCallback: ((error: string) => void) | null = null;
-
-	constructor(options: { onSuccess: (credential: string) => void; onError?: (error: string) => void }) {
-		// onSuccess is handled directly by the integrated hook
-		this.onErrorCallback = options.onError || null;
-	}
-
-	/**
-	 * Integrate with existing useGoogleOAuth hook
-	 * This maintains 100% compatibility with current implementation
-	 */
-	integrateWithHook(googleOAuthHook: any): void {
-		this.googleOAuthHook = googleOAuthHook;
-	}
-
-	/**
-	 * Get current OAuth state
-	 * Maps to the OAuthProviderState interface for consistency
-	 */
-	getState(): OAuthProviderState {
-		if (!this.googleOAuthHook) {
-			return {
-				isReady: false,
-				isLoading: false,
-				error: "Google OAuth hook not integrated"
-			};
-		}
-
-		return {
-			isReady: this.googleOAuthHook.isReady,
-			isLoading: this.googleOAuthHook.isLoading,
-			error: this.googleOAuthHook.error
-		};
-	}
-
-	/**
-	 * Trigger OAuth authentication
-	 * Delegates to existing useGoogleOAuth implementation
-	 */
-	authenticate(): void {
-		if (!this.googleOAuthHook) {
-			const error = "Google OAuth hook not integrated";
-			this.onErrorCallback?.(error);
-			return;
-		}
-
-		this.googleOAuthHook.triggerOAuth();
-	}
-
-	/**
-	 * Clear any authentication errors
-	 * Delegates to existing useGoogleOAuth implementation
-	 */
-	clearError(): void {
-		if (this.googleOAuthHook) {
-			this.googleOAuthHook.clearError();
-		}
-	}
-
-	/**
-	 * Get provider metadata
-	 */
-	getProviderInfo(): OAuthProvider {
-		return OAuthProviderService.getProvider("google")!;
 	}
 }
 
