@@ -3,6 +3,7 @@ import type { Team, TeamMember, Sprint, TeamBasicData, VelocityData, AddMemberDa
 import { formatDate, getDayName } from "../utils/formatters";
 import { TeamService } from "../services";
 import { useToast } from "../contexts/ToastContext";
+import Form from "../components/atoms/Form";
 
 // interface GenerateSprintsData {
 //   starting_sprint_number: number
@@ -54,6 +55,12 @@ const TeamConfigurationPage: React.FC = () => {
 	const [memberErrors, setMemberErrors] = useState<Record<string, string>>({});
 	const [sprintErrors, setSprintErrors] = useState<Record<string, string>>({});
 
+	// Loading states for each form
+	const [isTeamInfoSubmitting, setIsTeamInfoSubmitting] = useState(false);
+	const [isVelocitySubmitting, setIsVelocitySubmitting] = useState(false);
+	const [isAddMemberSubmitting, setIsAddMemberSubmitting] = useState(false);
+	const [isCreateSprintSubmitting, setIsCreateSprintSubmitting] = useState(false);
+
 	useEffect(() => {
 		void loadTeamConfiguration();
 	}, []);
@@ -93,41 +100,41 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 	};
 
-	const handleSaveTeamInfo = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleSaveTeamInfo = async (): Promise<void> => {
 		if (!team) {
 			return;
 		}
 
 		try {
+			setIsTeamInfoSubmitting(true);
 			const updatedTeam = await TeamService.updateTeamBasicInfo(team.id, teamBasicData);
 			setTeam(updatedTeam);
 			showSuccess("Team information updated successfully!");
 		} catch (err) {
 			showError(err instanceof Error ? err.message : "Failed to update team information");
+		} finally {
+			setIsTeamInfoSubmitting(false);
 		}
 	};
 
-	const handleSaveVelocity = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleSaveVelocity = async (): Promise<void> => {
 		if (!team) {
 			return;
 		}
 
 		try {
+			setIsVelocitySubmitting(true);
 			const updatedTeam = await TeamService.updateTeamVelocity(team.id, velocityData);
 			setTeam(updatedTeam);
 			showSuccess("Velocity settings updated successfully!");
 		} catch (err) {
 			showError(err instanceof Error ? err.message : "Failed to update velocity settings");
+		} finally {
+			setIsVelocitySubmitting(false);
 		}
 	};
 
-	const handleAddMember = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleAddMember = async (): Promise<void> => {
 		if (!team) {
 			return;
 		}
@@ -145,6 +152,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
+			setIsAddMemberSubmitting(true);
 			const newMember = await TeamService.addTeamMember(team.id, addMemberData);
 			setTeamMembers([...teamMembers, newMember]);
 			setShowAddMemberModal(false);
@@ -153,6 +161,8 @@ const TeamConfigurationPage: React.FC = () => {
 			showSuccess("Team member added successfully!");
 		} catch (err) {
 			showError(err instanceof Error ? err.message : "Failed to add team member");
+		} finally {
+			setIsAddMemberSubmitting(false);
 		}
 	};
 
@@ -170,9 +180,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 	};
 
-	const handleCreateSprint = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleCreateSprint = async (): Promise<void> => {
 		if (!team) {
 			return;
 		}
@@ -201,6 +209,7 @@ const TeamConfigurationPage: React.FC = () => {
 		}
 
 		try {
+			setIsCreateSprintSubmitting(true);
 			const newSprint = await TeamService.createSprint(team.id, createSprintData);
 			setSprints([...sprints, newSprint]);
 			setShowCreateSprintModal(false);
@@ -209,6 +218,8 @@ const TeamConfigurationPage: React.FC = () => {
 			showSuccess("Sprint created successfully!");
 		} catch (err) {
 			showError(err instanceof Error ? err.message : "Failed to create sprint");
+		} finally {
+			setIsCreateSprintSubmitting(false);
 		}
 	};
 
@@ -283,9 +294,9 @@ const TeamConfigurationPage: React.FC = () => {
 				{/* Team Basic Settings */}
 				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<h3 className="text-text-contrast font-heading-medium mb-6">Team Information</h3>
-					<form onSubmit={e => void handleSaveTeamInfo(e)} className="space-y-6">
+					<Form onSubmit={handleSaveTeamInfo} isSubmitting={isTeamInfoSubmitting} className="space-y-6">
 						<div>
-							<label htmlFor="teamName" className="text-text-primary font-body mb-2 block font-medium">
+							<label htmlFor="teamName" className="text-text-primary font-interface mb-2 block">
 								Team Name:
 							</label>
 							<input
@@ -300,10 +311,7 @@ const TeamConfigurationPage: React.FC = () => {
 						</div>
 
 						<div>
-							<label
-								htmlFor="teamDescription"
-								className="text-text-primary font-body mb-2 block font-medium"
-							>
+							<label htmlFor="teamDescription" className="text-text-primary font-interface mb-2 block">
 								Description (Optional):
 							</label>
 							<textarea
@@ -317,7 +325,7 @@ const TeamConfigurationPage: React.FC = () => {
 						</div>
 
 						<div>
-							<div className="text-text-primary font-body mb-2 block font-medium">
+							<div className="text-text-primary font-interface mb-2 block">
 								Working Days Configuration:
 							</div>
 							<div className="text-text-primary font-body mb-4 text-sm">
@@ -344,18 +352,15 @@ const TeamConfigurationPage: React.FC = () => {
 						>
 							Save Team Information
 						</button>
-					</form>
+					</Form>
 				</div>
 
 				{/* Baseline Velocity Setting */}
 				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<h3 className="text-text-contrast font-heading-medium mb-6">Baseline Velocity</h3>
-					<form onSubmit={e => void handleSaveVelocity(e)} className="space-y-6">
+					<Form onSubmit={handleSaveVelocity} isSubmitting={isVelocitySubmitting} className="space-y-6">
 						<div>
-							<label
-								htmlFor="baselineVelocity"
-								className="text-text-primary font-body mb-2 block font-medium"
-							>
+							<label htmlFor="baselineVelocity" className="text-text-primary font-interface mb-2 block">
 								Story Points per Sprint:
 							</label>
 							<input
@@ -381,10 +386,7 @@ const TeamConfigurationPage: React.FC = () => {
 						</div>
 
 						<div>
-							<label
-								htmlFor="sprintLength"
-								className="text-text-primary font-body mb-2 block font-medium"
-							>
+							<label htmlFor="sprintLength" className="text-text-primary font-interface mb-2 block">
 								Sprint Length (weeks):
 							</label>
 							<select
@@ -409,7 +411,7 @@ const TeamConfigurationPage: React.FC = () => {
 						>
 							Save Velocity Settings
 						</button>
-					</form>
+					</Form>
 				</div>
 
 				{/* Team Member Management */}
@@ -516,12 +518,9 @@ const TeamConfigurationPage: React.FC = () => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
 						<h3 className="text-text-contrast font-heading-small mb-4">Add Team Member</h3>
-						<form onSubmit={e => void handleAddMember(e)} className="space-y-4">
+						<Form onSubmit={handleAddMember} isSubmitting={isAddMemberSubmitting} className="space-y-4">
 							<div>
-								<label
-									htmlFor="memberEmail"
-									className="text-text-primary font-body mb-2 block font-medium"
-								>
+								<label htmlFor="memberEmail" className="text-text-primary font-interface mb-2 block">
 									Email Address:
 								</label>
 								<input
@@ -542,10 +541,7 @@ const TeamConfigurationPage: React.FC = () => {
 							</div>
 
 							<div>
-								<label
-									htmlFor="memberRole"
-									className="text-text-primary font-body mb-2 block font-medium"
-								>
+								<label htmlFor="memberRole" className="text-text-primary font-interface mb-2 block">
 									Role:
 								</label>
 								<select
@@ -584,7 +580,7 @@ const TeamConfigurationPage: React.FC = () => {
 									Add Member
 								</button>
 							</div>
-						</form>
+						</Form>
 					</div>
 				</div>
 			)}
@@ -594,12 +590,13 @@ const TeamConfigurationPage: React.FC = () => {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
 					<div className="bg-content-background w-full max-w-md rounded-lg p-6 shadow-lg">
 						<h3 className="text-text-contrast font-heading-small mb-4">Create New Sprint</h3>
-						<form onSubmit={e => void handleCreateSprint(e)} className="space-y-4">
+						<Form
+							onSubmit={handleCreateSprint}
+							isSubmitting={isCreateSprintSubmitting}
+							className="space-y-4"
+						>
 							<div>
-								<label
-									htmlFor="sprintName"
-									className="text-text-primary font-body mb-2 block font-medium"
-								>
+								<label htmlFor="sprintName" className="text-text-primary font-interface mb-2 block">
 									Sprint Name:
 								</label>
 								<input
@@ -619,7 +616,7 @@ const TeamConfigurationPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="sprintStartDate"
-									className="text-text-primary font-body mb-2 block font-medium"
+									className="text-text-primary font-interface mb-2 block"
 								>
 									Start Date:
 								</label>
@@ -639,10 +636,7 @@ const TeamConfigurationPage: React.FC = () => {
 							</div>
 
 							<div>
-								<label
-									htmlFor="sprintEndDate"
-									className="text-text-primary font-body mb-2 block font-medium"
-								>
+								<label htmlFor="sprintEndDate" className="text-text-primary font-interface mb-2 block">
 									End Date:
 								</label>
 								<input
@@ -679,7 +673,7 @@ const TeamConfigurationPage: React.FC = () => {
 									Create Sprint
 								</button>
 							</div>
-						</form>
+						</Form>
 					</div>
 				</div>
 			)}

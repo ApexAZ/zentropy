@@ -3,6 +3,8 @@ import type { CalendarEntry, Team, User, CreateCalendarEntryData } from "../type
 import { formatDate, getEntryTypeLabel, getEntryTypeColor, generateMonthOptions } from "../utils/formatters";
 import { CalendarService, TeamService } from "../services";
 import { useToast } from "../contexts/ToastContext";
+import Form from "../components/atoms/Form";
+import Button from "../components/atoms/Button";
 
 const CalendarPage: React.FC = () => {
 	// State management
@@ -38,6 +40,7 @@ const CalendarPage: React.FC = () => {
 	});
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [teamUsers, setTeamUsers] = useState<User[]>([]);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Load initial data on component mount
 	useEffect(() => {
@@ -248,14 +251,13 @@ const CalendarPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleSubmit = async (): Promise<void> => {
 		if (!validateForm()) {
 			return;
 		}
 
 		try {
+			setIsSubmitting(true);
 			if (isEditing && currentEntry) {
 				await CalendarService.updateCalendarEntry(currentEntry.id, formData);
 			} else {
@@ -268,6 +270,8 @@ const CalendarPage: React.FC = () => {
 			await refreshEntries();
 		} catch (err) {
 			showError(err instanceof Error ? err.message : "Failed to save calendar entry");
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -483,7 +487,7 @@ const CalendarPage: React.FC = () => {
 							</button>
 						</div>
 
-						<form onSubmit={e => void handleSubmit(e)} className="p-6">
+						<Form onSubmit={handleSubmit} isSubmitting={isSubmitting} className="p-6">
 							<div className="space-y-6">
 								<div className="flex flex-col gap-2">
 									<label htmlFor="team-select" className="text-text-primary block font-medium">
@@ -622,21 +626,19 @@ const CalendarPage: React.FC = () => {
 							</div>
 
 							<div className="border-layout-background mt-6 flex justify-end gap-4 border-t p-6">
-								<button
-									type="button"
-									onClick={closeModals}
-									className="border-layout-background bg-content-background text-text-primary hover:bg-interactive-hover hover:border-neutral-border inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
-								>
+								<Button type="button" variant="secondary" onClick={closeModals}>
 									Cancel
-								</button>
-								<button
+								</Button>
+								<Button
 									type="submit"
-									className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
+									variant="primary"
+									isLoading={isSubmitting}
+									loadingText={isEditing ? "Updating..." : "Adding..."}
 								>
 									{isEditing ? "Update Entry" : "Add Entry"}
-								</button>
+								</Button>
 							</div>
-						</form>
+						</Form>
 					</div>
 				</div>
 			)}

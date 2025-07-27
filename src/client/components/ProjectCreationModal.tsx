@@ -4,6 +4,8 @@ import { useOrganization } from "../hooks/useOrganization";
 import { useFormValidation } from "../hooks/useFormValidation";
 import OrganizationSelector from "./OrganizationSelector";
 import RequiredAsterisk from "./RequiredAsterisk";
+import Form from "./atoms/Form";
+import Button from "./atoms/Button";
 import type { Organization, CreateProjectData } from "../types";
 
 interface ProjectCreationModalProps {
@@ -138,11 +140,9 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 	);
 
 	// Handle form submission
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-
+	const handleSubmit = async () => {
 		try {
-			await projectForm.handleSubmit(e);
+			await projectForm.handleSubmit(new Event("submit") as any);
 		} catch {
 			// Error is handled by the form validation
 		}
@@ -253,7 +253,11 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 					</div>
 
 					{/* Project Form */}
-					<form onSubmit={handleSubmit} className="space-y-6">
+					<Form
+						onSubmit={handleSubmit}
+						isSubmitting={projectLoading || isSubmitting || projectForm.isSubmitting}
+						className="space-y-6"
+					>
 						{/* Project Name */}
 						<div>
 							<label className="text-text-primary mb-1 block text-sm font-medium">
@@ -392,25 +396,21 @@ const ProjectCreationModal: React.FC<ProjectCreationModalProps> = ({
 
 						{/* Form Actions */}
 						<div className="flex gap-3 pt-4">
-							<button
+							<Button
 								type="submit"
+								variant="primary"
 								disabled={projectLoading || isSubmitting || projectForm.isSubmitting}
-								className="bg-interactive hover:bg-interactive-hover flex-1 rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
+								isLoading={projectLoading || isSubmitting || projectForm.isSubmitting}
+								loadingText="Creating..."
+								className="flex-1"
 							>
-								{projectLoading || isSubmitting || projectForm.isSubmitting
-									? "Creating..."
-									: "Create Project"}
-							</button>
-							<button
-								type="button"
-								onClick={onClose}
-								className="border-layout-background hover:bg-layout-background flex-1 rounded-lg border px-4 py-2 transition-colors"
-								aria-label="Cancel"
-							>
+								Create Project
+							</Button>
+							<Button type="button" variant="secondary" onClick={onClose} className="flex-1">
 								Cancel
-							</button>
+							</Button>
 						</div>
-					</form>
+					</Form>
 				</div>
 			</div>
 		</div>

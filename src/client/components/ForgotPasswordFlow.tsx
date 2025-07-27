@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { AuthService } from "../services/AuthService";
 import EmailVerificationModal from "./EmailVerificationModal";
 import PasswordRequirements from "./PasswordRequirements";
+import Form from "./atoms/Form";
+import Button from "./atoms/Button";
 import { setPendingPasswordReset, clearPendingPasswordReset } from "../utils/pendingVerification";
 
 interface ForgotPasswordFlowProps {
@@ -97,10 +99,11 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 			<EmailVerificationModal
 				isOpen={showVerificationModal}
 				onClose={() => {
-					// For password reset: just close modal, don't call onCancel
-					// User can continue via header buttons (Enter Code/Resend)
+					// For password reset: close entire modal stack per universal modal rules
+					// User can continue via header buttons (Enter Code/Resend) on clean home page
 					// Pending password reset state remains active for header integration
 					setShowVerificationModal(false);
+					onCancel?.(); // Close entire AuthModal to return to clean home page
 				}}
 				onSuccess={handleCodeVerified}
 				initialEmail={email}
@@ -113,13 +116,18 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 	// Step 3: Password Input
 	if (step === "password") {
+		const handlePasswordSubmit = () => {
+			if (!newPassword || !confirmPassword || isLoading) return;
+			handlePasswordReset();
+		};
+
 		return (
 			<div className="bg-content-background rounded-lg p-6 shadow-lg">
 				<div className="space-y-4">
 					<h3 className="text-text-primary text-lg font-semibold">Set New Password</h3>
 					<p className="text-text-secondary text-sm">Enter your new password for {email}</p>
 
-					<div className="space-y-3">
+					<Form onSubmit={handlePasswordSubmit} isSubmitting={isLoading} error={error} className="space-y-3">
 						<input
 							type="password"
 							placeholder="New Password"
@@ -145,31 +153,30 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 							confirmPassword={confirmPassword}
 							showMatchRequirement={true}
 						/>
-					</div>
 
-					{error && <p className="text-error text-sm">{error}</p>}
-
-					<div className="flex justify-end space-x-2">
-						<button
-							type="button"
-							onClick={() => {
-								setStep("verification");
-								setShowVerificationModal(true);
-							}}
-							className="bg-secondary hover:bg-secondary-hover text-text-primary rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
-							disabled={isLoading}
-						>
-							Back
-						</button>
-						<button
-							type="button"
-							onClick={handlePasswordReset}
-							disabled={!newPassword || !confirmPassword || isLoading}
-							className="bg-interactive hover:bg-interactive-hover rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
-						>
-							{isLoading ? "Resetting..." : "Reset Password"}
-						</button>
-					</div>
+						<div className="flex justify-end space-x-2">
+							<Button
+								type="button"
+								variant="secondary"
+								onClick={() => {
+									setStep("verification");
+									setShowVerificationModal(true);
+								}}
+								disabled={isLoading}
+							>
+								Back
+							</Button>
+							<Button
+								type="submit"
+								variant="primary"
+								disabled={!newPassword || !confirmPassword || isLoading}
+								isLoading={isLoading}
+								loadingText="Resetting..."
+							>
+								Reset Password
+							</Button>
+						</div>
+					</Form>
 				</div>
 			</div>
 		);
@@ -199,36 +206,32 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 					Enter your email address and we'll send you a code to reset your password.
 				</p>
 
-				<input
-					type="email"
-					placeholder="Email Address"
-					value={email}
-					onChange={e => setEmail(e.target.value)}
-					className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
-					autoComplete="email"
-					disabled={isLoading}
-				/>
-
-				{error && <p className="text-error text-sm">{error}</p>}
-
-				<div className="flex justify-end space-x-2">
-					<button
-						type="button"
-						onClick={onCancel}
-						className="bg-secondary hover:bg-secondary-hover text-text-primary rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
+				<Form onSubmit={handleEmailSubmit} isSubmitting={isLoading} error={error}>
+					<input
+						type="email"
+						placeholder="Email Address"
+						value={email}
+						onChange={e => setEmail(e.target.value)}
+						className="border-layout-background bg-content-background focus:border-interactive focus:ring-interactive w-full rounded-lg border px-3 py-2 focus:ring-1"
+						autoComplete="email"
 						disabled={isLoading}
-					>
-						Cancel
-					</button>
-					<button
-						type="button"
-						onClick={handleEmailSubmit}
-						disabled={!email || isLoading}
-						className="bg-interactive hover:bg-interactive-hover rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
-					>
-						{isLoading ? "Sending..." : "Send Reset Code"}
-					</button>
-				</div>
+					/>
+
+					<div className="flex justify-end space-x-2">
+						<Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							variant="primary"
+							disabled={!email || isLoading}
+							isLoading={isLoading}
+							loadingText="Sending..."
+						>
+							Send Reset Code
+						</Button>
+					</div>
+				</Form>
 			</div>
 		</div>
 	);

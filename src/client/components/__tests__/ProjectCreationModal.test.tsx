@@ -332,22 +332,6 @@ describe("ProjectCreationModal", () => {
 			// Should NOT close modal when creation fails
 			expect(mockProps.onClose).not.toHaveBeenCalled();
 		});
-
-		it("should handle network errors gracefully", async () => {
-			mockUseProject.createProject.mockRejectedValue(new Error("Network error"));
-
-			createModal({ preselectedOrganization: mockOrganizations[0] });
-
-			act(() => {
-				fillProjectForm({ name: "Test Project" });
-				submitProject();
-			});
-
-			await fastStateSync();
-
-			// Should NOT close modal when network error occurs
-			expect(mockProps.onClose).not.toHaveBeenCalled();
-		});
 	});
 
 	describe("User can manage organizations", () => {
@@ -394,18 +378,18 @@ describe("ProjectCreationModal", () => {
 			expect(screen.getByText("Select Organization")).toBeInTheDocument();
 		});
 
-		it("should require organization for team projects", async () => {
+		it("should require organization for team projects", () => {
 			createModal();
 
-			await fillProjectForm({ name: "Test Project", visibility: "team" });
+			fillProjectForm({ name: "Test Project", visibility: "team" });
 
 			expect(screen.getByText("An organization is required for team projects")).toBeInTheDocument();
 		});
 
-		it("should show organization selection button for team projects", async () => {
+		it("should show organization selection button for team projects", () => {
 			createModal();
 
-			await fillProjectForm({ visibility: "team" });
+			fillProjectForm({ visibility: "team" });
 
 			expect(screen.getByRole("button", { name: /choose organization/i })).toBeInTheDocument();
 		});
@@ -441,15 +425,13 @@ describe("ProjectCreationModal", () => {
 			expect(visibilitySelect).toHaveValue("personal");
 		});
 
-		it("should show visibility descriptions", () => {
+		it("should show and update visibility descriptions", () => {
 			createModal();
 
+			// Should show default description
 			expect(screen.getByText("Selected team members can see this project")).toBeInTheDocument();
-		});
 
-		it("should update visibility description when selection changes", () => {
-			createModal();
-
+			// Should update description when selection changes
 			const visibilitySelect = screen.getByRole("combobox", { name: /visibility/i });
 			fireEvent.change(visibilitySelect, { target: { value: "organization" } });
 
@@ -476,8 +458,8 @@ describe("ProjectCreationModal", () => {
 			// Re-render with loading state
 			createModal({ preselectedOrganization: mockOrganizations[0] });
 
-			// Now it should show loading state
-			expect(screen.getByText("Creating...")).toBeInTheDocument();
+			// Now it should show loading state in the submit button
+			expect(screen.getByRole("button", { name: "Creating..." })).toBeInTheDocument();
 		});
 
 		it("should disable form during loading", async () => {
@@ -504,19 +486,6 @@ describe("ProjectCreationModal", () => {
 				name: "Test Project",
 				description: "Test description"
 			});
-
-			// Close modal
-			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);
-
-			// Reopen modal
-			rerender(<ProjectCreationModal {...mockProps} isOpen={true} />);
-
-			expect(screen.getByRole("textbox", { name: /project name/i })).toHaveValue("");
-			expect(screen.getByRole("textbox", { name: /description/i })).toHaveValue("");
-		});
-
-		it("should reset form when modal is reopened", () => {
-			const { rerender } = render(<ProjectCreationModal {...mockProps} />, { wrapper: TestWrapper });
 
 			// Close modal
 			rerender(<ProjectCreationModal {...mockProps} isOpen={false} />);

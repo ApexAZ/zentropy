@@ -72,9 +72,14 @@ describe("PasswordChangeForm", () => {
 				providers: { toast: true }
 			});
 
-			const form = screen.getByRole("heading", { name: "Change Password" }).closest("form");
+			// Check that heading exists
+			expect(screen.getByRole("heading", { name: "Change Password" })).toBeInTheDocument();
+
+			// Check that form exists with proper structure
+			const currentPasswordInput = screen.getByLabelText("Current Password");
+			const form = currentPasswordInput.closest("form");
 			expect(form).toBeInTheDocument();
-			expect(form).toHaveClass("space-y-4");
+			expect(form).toHaveClass("space-y-3");
 		});
 	});
 
@@ -201,7 +206,8 @@ describe("PasswordChangeForm", () => {
 				fireEvent.click(submitButton);
 			});
 
-			expect(screen.getByText("Changing Password...")).toBeInTheDocument();
+			// Loading text should appear in the submit button
+			expect(screen.getByRole("button", { name: "Changing Password..." })).toBeInTheDocument();
 			expect(submitButton).toBeDisabled();
 
 			// Resolve the promise to clean up

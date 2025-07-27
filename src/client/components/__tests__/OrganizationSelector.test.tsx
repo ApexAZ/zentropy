@@ -364,7 +364,6 @@ describe("OrganizationSelector", () => {
 		});
 
 		it("should validate organization creation form", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
@@ -375,15 +374,22 @@ describe("OrganizationSelector", () => {
 			await fastStateSync();
 			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
-			await user.click(screen.getByRole("button", { name: /create new organization/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /create new organization/i }));
+			});
 
-			await user.click(screen.getByRole("button", { name: /create organization/i }));
+			// Simulate form submission directly instead of clicking submit button to avoid JSDOM requestSubmit issues
+			const form = screen.getByRole("button", { name: /create organization/i }).closest("form");
+			act(() => {
+				if (form) {
+					fireEvent.submit(form);
+				}
+			});
 
 			expect(screen.getByText("Organization name is required")).toBeInTheDocument();
 		});
 
 		it("should create organization with valid data", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
@@ -395,14 +401,27 @@ describe("OrganizationSelector", () => {
 			await fastStateSync();
 			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
-			await user.click(screen.getByRole("button", { name: /create new organization/i }));
-
-			await fillOrganizationForm({
-				name: "New Org",
-				description: "New organization description"
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /create new organization/i }));
 			});
 
-			await user.click(screen.getByRole("button", { name: /create organization/i }));
+			await act(async () => {
+				await fillOrganizationForm({
+					name: "New Org",
+					description: "New organization description"
+				});
+			});
+
+			// Simulate form submission directly instead of clicking submit button to avoid JSDOM requestSubmit issues
+			const form = screen.getByRole("button", { name: /create organization/i }).closest("form");
+			act(() => {
+				if (form) {
+					fireEvent.submit(form);
+				}
+			});
+
+			// Allow React to process any pending state updates
+			await fastStateSync();
 
 			expect(mockUseOrganization.createOrganization).toHaveBeenCalledWith({
 				name: "New Org",
@@ -414,7 +433,6 @@ describe("OrganizationSelector", () => {
 		});
 
 		it("should handle organization creation errors gracefully", async () => {
-			const user = userEvent.setup();
 			mockUseOrganization.checkDomain.mockResolvedValue({
 				...mockDomainCheckResult,
 				domain_found: false
@@ -426,11 +444,24 @@ describe("OrganizationSelector", () => {
 			await fastStateSync();
 			expect(screen.getByRole("button", { name: /create new organization/i })).toBeInTheDocument();
 
-			await user.click(screen.getByRole("button", { name: /create new organization/i }));
+			act(() => {
+				fireEvent.click(screen.getByRole("button", { name: /create new organization/i }));
+			});
 
-			await fillOrganizationForm({ name: "New Org" });
+			await act(async () => {
+				await fillOrganizationForm({ name: "New Org" });
+			});
 
-			await user.click(screen.getByRole("button", { name: /create organization/i }));
+			// Simulate form submission directly instead of clicking submit button to avoid JSDOM requestSubmit issues
+			const form = screen.getByRole("button", { name: /create organization/i }).closest("form");
+			act(() => {
+				if (form) {
+					fireEvent.submit(form);
+				}
+			});
+
+			// Allow React to process any pending state updates
+			await fastStateSync();
 
 			await act(async () => {
 				await Promise.resolve();

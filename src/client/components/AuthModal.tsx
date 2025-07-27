@@ -5,6 +5,8 @@ import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useFormValidation } from "../hooks/useFormValidation";
 import RequiredAsterisk from "./RequiredAsterisk";
 import PasswordRequirements from "./PasswordRequirements";
+import Form from "./atoms/Form";
+import Button from "./atoms/Button";
 import { setPendingVerification } from "../utils/pendingVerification";
 import { useToast } from "../contexts/ToastContext";
 import { ForgotPasswordFlow } from "./ForgotPasswordFlow";
@@ -138,18 +140,41 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		else resetForms();
 	}, [isOpen, initialMode, resetForms]);
 
-	const handleSubmit = async (e: React.FormEvent, form: typeof signInForm | typeof signUpForm) => {
-		e.preventDefault();
+	const handleSignInSubmit = async () => {
 		setIsLoading(true);
 		try {
-			await form.handleSubmit(e);
+			await signInForm.handleSubmit(new Event("submit") as any);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "An unexpected error occurred.";
 			if ((error as CustomError).type === "email_not_verified" && onShowVerification) {
 				setPendingVerification(signInForm.values.email);
 				showInfo("Please verify your email to sign in");
 				setTimeout(() => onShowVerification(signInForm.values.email), 1500);
-			} else if ((error as CustomError).type === "email_already_exists") {
+			} else {
+				// For sign-in authentication errors, add field-level error indication
+				if (
+					message.toLowerCase().includes("invalid") ||
+					message.toLowerCase().includes("incorrect") ||
+					message.toLowerCase().includes("credential")
+				) {
+					// Set field-level errors for better UX
+					signInForm.setFieldError("password", "Incorrect email or password");
+					signInForm.setFieldTouched("password", true);
+				}
+				showError(message);
+			}
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleSignUpSubmit = async () => {
+		setIsLoading(true);
+		try {
+			await signUpForm.handleSubmit(new Event("submit") as any);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+			if ((error as CustomError).type === "email_already_exists") {
 				showCriticalError(message, {
 					text: "Sign in",
 					onClick: () => {
@@ -158,17 +183,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					}
 				});
 			} else {
-				// For sign-in authentication errors, add field-level error indication
-				if (
-					mode === "signin" &&
-					(message.toLowerCase().includes("invalid") ||
-						message.toLowerCase().includes("incorrect") ||
-						message.toLowerCase().includes("credential"))
-				) {
-					// Set field-level errors for better UX
-					signInForm.setFieldError("password", "Incorrect email or password");
-					signInForm.setFieldTouched("password", true);
-				}
 				showError(message);
 			}
 		} finally {
@@ -237,7 +251,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 									</p>
 								</div>
 								{mode === "signin" ? (
-									<form onSubmit={e => handleSubmit(e, signInForm)} className="space-y-4">
+									<Form onSubmit={handleSignInSubmit} isSubmitting={isLoading} className="space-y-4">
 										{renderInput(signInForm, "email", "email", "Email")}
 										{renderInput(signInForm, "password", "password", "Password")}
 										<div className="flex items-center">
@@ -252,13 +266,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
 												Remember me
 											</label>
 										</div>
-										<button
+										<Button
 											type="submit"
+											variant="primary"
+											fullWidth
 											disabled={isLoading}
-											className="bg-interactive hover:bg-interactive-hover hover:text-text-primary w-full rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
+											isLoading={isLoading}
+											loadingText="Signing In..."
 										>
-											{isLoading ? "Signing In..." : "Sign In"}
-										</button>
+											Sign In
+										</Button>
 										<div className="space-y-2 text-center">
 											<button
 												type="button"
@@ -268,9 +285,9 @@ const AuthModal: React.FC<AuthModalProps> = ({
 												Forgot your password?
 											</button>
 										</div>
-									</form>
+									</Form>
 								) : (
-									<form onSubmit={e => handleSubmit(e, signUpForm)} className="space-y-4">
+									<Form onSubmit={handleSignUpSubmit} isSubmitting={isLoading} className="space-y-4">
 										<div className="grid grid-cols-2 gap-4">
 											{renderInput(signUpForm, "first_name", "text", "First Name")}
 											{renderInput(signUpForm, "last_name", "text", "Last Name")}
@@ -304,14 +321,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
 										{signUpForm.touched.terms_agreement && signUpForm.errors.terms_agreement && (
 											<p className="text-error text-sm">{signUpForm.errors.terms_agreement}</p>
 										)}
-										<button
+										<Button
 											type="submit"
+											variant="primary"
+											fullWidth
 											disabled={isLoading}
-											className="bg-interactive hover:bg-interactive-hover hover:text-text-primary w-full rounded-lg px-4 py-2 text-white transition-colors disabled:opacity-50"
+											isLoading={isLoading}
+											loadingText="Creating Account..."
 										>
-											{isLoading ? "Creating Account..." : "Create Account"}
-										</button>
-									</form>
+											Create Account
+										</Button>
+									</Form>
 								)}
 								<div className="relative">
 									<div className="absolute inset-0 flex items-center">

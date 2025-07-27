@@ -171,7 +171,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				isActive: isLinked,
 				status: isLinked ? (providerEmail ? `Linked (${providerEmail})` : "Linked") : "Not linked",
 				icon: getProviderIcon(provider.name),
-				actionLabel: isLinked ? "Manage" : "Connect",
+				actionLabel: isLinked ? "Unlink" : "Connect",
 				actionType: isLinked ? "secondary" : "primary",
 				...(providerEmail && { email: providerEmail })
 			};

@@ -2,6 +2,8 @@ import React, { useState, useCallback } from "react";
 import { UserService } from "../services/UserService";
 import { useAuth } from "../hooks/useAuth";
 import PasswordRequirements from "./PasswordRequirements";
+import Form from "./atoms/Form";
+import Button from "./atoms/Button";
 import { logger } from "../utils/logger";
 
 interface PasswordChangeFormProps {
@@ -18,34 +20,29 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 
 	const { user } = useAuth();
 
-	const handleSubmit = useCallback(
-		async (e: React.FormEvent) => {
-			e.preventDefault();
+	const handleSubmit = useCallback(async () => {
+		try {
+			setIsLoading(true);
+			setError(null);
 
-			try {
-				setIsLoading(true);
-				setError(null);
-
-				// Validate passwords match
-				if (newPassword !== confirmPassword) {
-					setError("New passwords don't match");
-					return;
-				}
-
-				// Change password directly - no email verification needed for authenticated users
-				logger.info("Changing password for authenticated user");
-				await UserService.changePassword(currentPassword, newPassword);
-				logger.info("Password changed successfully");
-				onSuccess?.();
-			} catch (err: any) {
-				logger.error("Failed to change password", { error: err.message });
-				setError(err.message || "Failed to change password");
-			} finally {
-				setIsLoading(false);
+			// Validate passwords match
+			if (newPassword !== confirmPassword) {
+				setError("New passwords don't match");
+				return;
 			}
-		},
-		[currentPassword, newPassword, confirmPassword, onSuccess]
-	);
+
+			// Change password directly - no email verification needed for authenticated users
+			logger.info("Changing password for authenticated user");
+			await UserService.changePassword(currentPassword, newPassword);
+			logger.info("Password changed successfully");
+			onSuccess?.();
+		} catch (err: any) {
+			logger.error("Failed to change password", { error: err.message });
+			setError(err.message || "Failed to change password");
+		} finally {
+			setIsLoading(false);
+		}
+	}, [currentPassword, newPassword, confirmPassword, onSuccess]);
 
 	const handleCancel = useCallback(() => {
 		onCancel?.();
@@ -57,13 +54,13 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 
 	return (
 		<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
-			<form onSubmit={handleSubmit} className="space-y-4">
+			<div className="space-y-4">
 				<h3 className="text-text-contrast font-heading-medium">Change Password</h3>
 				<p className="text-text-primary text-sm">
 					Enter your current password and choose a new secure password.
 				</p>
 
-				<div className="space-y-3">
+				<Form onSubmit={handleSubmit} isSubmitting={isLoading} error={error} className="space-y-3">
 					<div>
 						<label htmlFor="current-password" className="text-text-primary mb-2 block font-medium">
 							Current Password
@@ -117,27 +114,23 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 						confirmPassword={confirmPassword}
 						showMatchRequirement={true}
 					/>
-				</div>
 
-				{error && <p className="text-error mt-1 block text-sm">{error}</p>}
-
-				<div className="border-layout-background flex justify-end space-x-2 border-t pt-4">
-					<button
-						type="button"
-						onClick={handleCancel}
-						className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
-					>
-						Cancel
-					</button>
-					<button
-						type="submit"
-						disabled={!currentPassword || !newPassword || !confirmPassword || isLoading}
-						className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						{isLoading ? "Changing Password..." : "Change Password"}
-					</button>
-				</div>
-			</form>
+					<div className="border-layout-background flex justify-end space-x-2 border-t pt-4">
+						<Button type="button" variant="secondary" onClick={handleCancel} disabled={isLoading}>
+							Cancel
+						</Button>
+						<Button
+							type="submit"
+							variant="primary"
+							disabled={!currentPassword || !newPassword || !confirmPassword || isLoading}
+							isLoading={isLoading}
+							loadingText="Changing Password..."
+						>
+							Change Password
+						</Button>
+					</div>
+				</Form>
+			</div>
 		</div>
 	);
 };

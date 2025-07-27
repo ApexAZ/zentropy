@@ -190,11 +190,9 @@ const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
 	);
 
 	// Handle organization creation
-	const handleCreateOrganization = async (e: React.FormEvent) => {
-		e.preventDefault();
-
+	const handleCreateOrganization = async () => {
 		try {
-			await createOrgForm.handleSubmit(e);
+			await createOrgForm.handleSubmit(new Event("submit") as any);
 		} catch {
 			// Error is handled by the hook's toast system
 		}

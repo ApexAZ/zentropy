@@ -866,34 +866,35 @@ describe("UserService", () => {
 			);
 		});
 
-		it("should handle unauthorized error with user-friendly message", async () => {
-			mockErrorResponse(401, "Unauthorized");
+		// Test common error scenarios with parameterized tests
+		const commonLinkErrorCases = [
+			{
+				name: "unauthorized error",
+				mockFn: () => mockErrorResponse(401, "Unauthorized"),
+				expectedMessage: "Your session has expired. Please sign in again."
+			},
+			{
+				name: "API errors",
+				mockFn: () => mockErrorResponse(500, "Internal server error"),
+				expectedMessage: "A server error occurred. Please try again."
+			},
+			{
+				name: "network errors",
+				mockFn: () => mockNetworkError(),
+				expectedMessage: "Connection problem. Please check your internet connection and try again."
+			},
+			{
+				name: "unknown errors",
+				mockFn: () => mockErrorResponse(400, "Some unknown error"),
+				expectedMessage: "Unable to link Google account."
+			}
+		];
 
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
-				"Your session has expired. Please sign in again."
-			);
-		});
-
-		it("should handle API errors with user-friendly message", async () => {
-			mockErrorResponse(500, "Internal server error");
-
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
-				"A server error occurred. Please try again."
-			);
-		});
-
-		it("should handle network errors with user-friendly message", async () => {
-			mockNetworkError();
-
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(
-				"Connection problem. Please check your internet connection and try again."
-			);
-		});
-
-		it("should handle unknown errors with fallback message", async () => {
-			mockErrorResponse(400, "Some unknown error");
-
-			await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow("Unable to link Google account.");
+		commonLinkErrorCases.forEach(({ name, mockFn, expectedMessage }) => {
+			it(`should handle ${name} with user-friendly message`, async () => {
+				mockFn();
+				await expect(UserService.linkGoogleAccount(linkRequest)).rejects.toThrow(expectedMessage);
+			});
 		});
 	});
 
@@ -952,36 +953,35 @@ describe("UserService", () => {
 			);
 		});
 
-		it("should handle unauthorized error with user-friendly message", async () => {
-			mockErrorResponse(401, "Unauthorized");
+		// Test common error scenarios with parameterized tests
+		const commonUnlinkErrorCases = [
+			{
+				name: "unauthorized error",
+				mockFn: () => mockErrorResponse(401, "Unauthorized"),
+				expectedMessage: "Your session has expired. Please sign in again."
+			},
+			{
+				name: "API errors",
+				mockFn: () => mockErrorResponse(500, "Internal server error"),
+				expectedMessage: "A server error occurred. Please try again."
+			},
+			{
+				name: "network errors",
+				mockFn: () => mockNetworkError(),
+				expectedMessage: "Connection problem. Please check your internet connection and try again."
+			},
+			{
+				name: "unknown errors",
+				mockFn: () => mockErrorResponse(400, "Some unknown error"),
+				expectedMessage: "Unable to unlink Google account."
+			}
+		];
 
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"Your session has expired. Please sign in again."
-			);
-		});
-
-		it("should handle API errors with user-friendly message", async () => {
-			mockErrorResponse(500, "Internal server error");
-
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"A server error occurred. Please try again."
-			);
-		});
-
-		it("should handle network errors with user-friendly message", async () => {
-			mockNetworkError();
-
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"Connection problem. Please check your internet connection and try again."
-			);
-		});
-
-		it("should handle unknown errors with fallback message", async () => {
-			mockErrorResponse(400, "Some unknown error");
-
-			await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(
-				"Unable to unlink Google account."
-			);
+		commonUnlinkErrorCases.forEach(({ name, mockFn, expectedMessage }) => {
+			it(`should handle ${name} with user-friendly message`, async () => {
+				mockFn();
+				await expect(UserService.unlinkGoogleAccount(unlinkRequest)).rejects.toThrow(expectedMessage);
+			});
 		});
 	});
 });

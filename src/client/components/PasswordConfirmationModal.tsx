@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import Button from "./atoms/Button";
 import Input from "./atoms/Input";
+import Form from "./atoms/Form";
 
 interface PasswordConfirmationModalProps {
 	isOpen: boolean;
@@ -63,13 +64,12 @@ export function PasswordConfirmationModal({
 					Please enter your password to unlink your Google account.
 				</p>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<Form onSubmit={handleSubmit} isSubmitting={loading} error={validationError || error || null}>
 					<Input
 						label="Password"
 						type="password"
 						value={password}
 						onChange={e => setPassword(e.target.value)}
-						error={validationError || error || undefined}
 						required
 						autoFocus
 					/>
@@ -88,7 +88,7 @@ export function PasswordConfirmationModal({
 							Unlink Account
 						</Button>
 					</div>
-				</form>
+				</Form>
 			</div>
 		</div>
 	);

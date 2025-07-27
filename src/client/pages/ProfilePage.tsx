@@ -4,6 +4,8 @@ import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { SignInMethods } from "../components/SignInMethods";
+import Form from "../components/atoms/Form";
+import Button from "../components/atoms/Button";
 import { useToast } from "../contexts/ToastContext";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
 
@@ -125,9 +127,7 @@ const ProfilePage: React.FC = () => {
 		return validation.isValid;
 	};
 
-	const handleProfileSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleProfileSubmit = async (): Promise<void> => {
 		if (!validateProfileForm()) {
 			// Allow React to flush state updates before returning
 			await new Promise(resolve => setTimeout(resolve, 0));
@@ -232,7 +232,7 @@ const ProfilePage: React.FC = () => {
 						</div>
 
 						{isEditingProfile ? (
-							<form onSubmit={e => void handleProfileSubmit(e)} className="space-y-6">
+							<Form onSubmit={handleProfileSubmit} className="space-y-6">
 								<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 									<div>
 										<label
@@ -317,21 +317,14 @@ const ProfilePage: React.FC = () => {
 								</div>
 
 								<div className="border-layout-background flex justify-end gap-4 border-t pt-4">
-									<button
-										type="button"
-										onClick={handleCancelProfileEdit}
-										className="border-layout-background bg-content-background text-text-primary hover:border-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2 text-center text-base font-medium no-underline transition-all duration-200"
-									>
+									<Button type="button" variant="secondary" onClick={handleCancelProfileEdit}>
 										Cancel
-									</button>
-									<button
-										type="submit"
-										className="bg-interactive hover:bg-interactive-hover inline-flex cursor-pointer items-center gap-2 rounded-md border-none px-6 py-3 text-center text-base font-medium text-white no-underline transition-all duration-200"
-									>
+									</Button>
+									<Button type="submit" variant="primary">
 										Save Changes
-									</button>
+									</Button>
 								</div>
-							</form>
+							</Form>
 						) : (
 							<div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
 								<div>

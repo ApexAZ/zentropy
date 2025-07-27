@@ -45,36 +45,41 @@ describe("OAuthProviderService", () => {
 			);
 		});
 
-		it("should get specific provider by name", () => {
-			const googleProvider = OAuthProviderService.getProvider("google");
-
-			expect(googleProvider).toEqual({
+		// Test provider retrieval with parameterized data
+		const providerTestCases = [
+			{
 				name: "google",
-				displayName: "Google",
-				iconClass: "fab fa-google",
-				brandColor: "#4285f4"
-			});
-		});
-
-		it("should get Microsoft provider by name", () => {
-			const microsoftProvider = OAuthProviderService.getProvider("microsoft");
-
-			expect(microsoftProvider).toEqual({
+				expected: {
+					name: "google",
+					displayName: "Google",
+					iconClass: "fab fa-google",
+					brandColor: "#4285f4"
+				}
+			},
+			{
 				name: "microsoft",
-				displayName: "Microsoft",
-				iconClass: "fab fa-microsoft",
-				brandColor: "#0078d4"
-			});
-		});
-
-		it("should get GitHub provider by name", () => {
-			const githubProvider = OAuthProviderService.getProvider("github");
-
-			expect(githubProvider).toEqual({
+				expected: {
+					name: "microsoft",
+					displayName: "Microsoft",
+					iconClass: "fab fa-microsoft",
+					brandColor: "#0078d4"
+				}
+			},
+			{
 				name: "github",
-				displayName: "GitHub",
-				iconClass: "fab fa-github",
-				brandColor: "#333"
+				expected: {
+					name: "github",
+					displayName: "GitHub",
+					iconClass: "fab fa-github",
+					brandColor: "#333"
+				}
+			}
+		];
+
+		providerTestCases.forEach(({ name, expected }) => {
+			it(`should get ${expected.displayName} provider by name`, () => {
+				const provider = OAuthProviderService.getProvider(name);
+				expect(provider).toEqual(expected);
 			});
 		});
 
@@ -84,39 +89,27 @@ describe("OAuthProviderService", () => {
 		});
 
 		it("should check if provider is supported", () => {
-			expect(OAuthProviderService.isProviderSupported("google")).toBe(true);
-			expect(OAuthProviderService.isProviderSupported("microsoft")).toBe(true);
-			expect(OAuthProviderService.isProviderSupported("github")).toBe(true);
-			expect(OAuthProviderService.isProviderSupported("")).toBe(false);
-		});
+			const supportedProviders = ["google", "microsoft", "github"];
+			const unsupportedProviders = ["", "unknown", "invalid"];
 
-		it("should get provider display information", () => {
-			const displayInfo = OAuthProviderService.getProviderDisplayInfo("google");
+			supportedProviders.forEach(provider => {
+				expect(OAuthProviderService.isProviderSupported(provider)).toBe(true);
+			});
 
-			expect(displayInfo).toEqual({
-				displayName: "Google",
-				iconClass: "fab fa-google",
-				brandColor: "#4285f4"
+			unsupportedProviders.forEach(provider => {
+				expect(OAuthProviderService.isProviderSupported(provider)).toBe(false);
 			});
 		});
 
-		it("should get Microsoft provider display information", () => {
-			const displayInfo = OAuthProviderService.getProviderDisplayInfo("microsoft");
-
-			expect(displayInfo).toEqual({
-				displayName: "Microsoft",
-				iconClass: "fab fa-microsoft",
-				brandColor: "#0078d4"
-			});
-		});
-
-		it("should get GitHub provider display information", () => {
-			const displayInfo = OAuthProviderService.getProviderDisplayInfo("github");
-
-			expect(displayInfo).toEqual({
-				displayName: "GitHub",
-				iconClass: "fab fa-github",
-				brandColor: "#333"
+		// Test provider display information with the same parameterized data
+		providerTestCases.forEach(({ name, expected }) => {
+			it(`should get ${expected.displayName} provider display information`, () => {
+				const displayInfo = OAuthProviderService.getProviderDisplayInfo(name);
+				expect(displayInfo).toEqual({
+					displayName: expected.displayName,
+					iconClass: expected.iconClass,
+					brandColor: expected.brandColor
+				});
 			});
 		});
 

@@ -166,11 +166,12 @@ export const mockUser: AuthUser = {
 
 export const mockProfileUser: User = {
 	id: "user-123",
-	username: "testuser",
 	email: "test@example.com",
 	first_name: "Test",
 	last_name: "User",
 	role: "team_member",
+	has_projects_access: true,
+	email_verified: true,
 	created_at: "2025-01-01T00:00:00Z",
 	updated_at: "2025-01-01T00:00:00Z"
 };
@@ -241,7 +242,8 @@ export const mockDomainCheckResult: DomainCheckResult = {
 export const mockAccountSecurityResponse: AccountSecurityResponse = {
 	email_auth_linked: true,
 	google_auth_linked: false,
-	google_email: undefined
+	google_email: undefined,
+	oauth_providers: []
 };
 
 // =============================================================================

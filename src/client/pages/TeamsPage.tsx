@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Button from "../components/atoms/Button";
 import Input from "../components/atoms/Input";
 import Card from "../components/atoms/Card";
+import Form from "../components/atoms/Form";
 import { useTeams } from "../hooks/useTeams";
 import { TeamService } from "../services/TeamService";
 import type { Team, CreateTeamData } from "../types";
@@ -26,6 +27,7 @@ const TeamsPage: React.FC = () => {
 		working_days_per_week: 5
 	});
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Modal handlers
 	const openCreateModal = (): void => {
@@ -69,9 +71,7 @@ const TeamsPage: React.FC = () => {
 	};
 
 	// Form submission
-	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-		e.preventDefault();
-
+	const handleSubmit = async (): Promise<void> => {
 		// Use TeamService for validation
 		const validation = TeamService.validateTeam(formData);
 		if (!validation.isValid) {
@@ -80,6 +80,7 @@ const TeamsPage: React.FC = () => {
 		}
 
 		try {
+			setIsSubmitting(true);
 			if (isEditing && currentTeam) {
 				await updateTeam(currentTeam.id, formData);
 			} else {
@@ -88,6 +89,8 @@ const TeamsPage: React.FC = () => {
 			closeModals();
 		} catch {
 			// Error handling is done in the hook
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -202,7 +205,7 @@ const TeamsPage: React.FC = () => {
 							</Button>
 						</div>
 
-						<form onSubmit={e => void handleSubmit(e)} className="p-6">
+						<Form onSubmit={handleSubmit} isSubmitting={isSubmitting} className="p-6">
 							<div className="border-layout-background mb-8 border-b pb-6">
 								<h4 className="text-text-contrast font-heading-small mb-6">Basic Information</h4>
 
@@ -288,9 +291,16 @@ const TeamsPage: React.FC = () => {
 								<Button type="button" onClick={closeModals} variant="secondary">
 									Cancel
 								</Button>
-								<Button type="submit">{isEditing ? "Update Team" : "Create Team"}</Button>
+								<Button
+									type="submit"
+									variant="primary"
+									isLoading={isSubmitting}
+									loadingText={isEditing ? "Updating..." : "Creating..."}
+								>
+									{isEditing ? "Update Team" : "Create Team"}
+								</Button>
 							</div>
-						</form>
+						</Form>
 					</div>
 				</div>
 			)}
