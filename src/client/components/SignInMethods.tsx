@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import type { AccountSecurityResponse } from "../types";
 import PasswordChangeForm from "./PasswordChangeForm";
+import { PasswordConfirmationModal } from "./PasswordConfirmationModal";
 import Button from "./atoms/Button";
 import { useToast } from "../contexts/ToastContext";
 import { useMultiProviderOAuth } from "../hooks/useMultiProviderOAuth";
@@ -37,6 +38,10 @@ interface SignInMethod {
  */
 export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: SignInMethodsProps) {
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
+	const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+	const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
+	const [unlinkLoading, setUnlinkLoading] = useState(false);
+	const [unlinkError, setUnlinkError] = useState<string | null>(null);
 	const { showSuccess } = useToast();
 
 	// Use account security hook for OAuth operations
@@ -64,7 +69,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 	);
 
 	// Multi-provider OAuth hook
-	const { providers, linkProvider, isProviderLinked } = useMultiProviderOAuth({
+	const { providers, linkProvider, unlinkProvider, isProviderLinked } = useMultiProviderOAuth({
 		onSuccess: handleOAuthSuccess,
 		onError,
 		securityStatus,
@@ -79,6 +84,58 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 
 	const handlePasswordChangeCancel = useCallback(() => {
 		setIsChangingPassword(false);
+	}, []);
+
+	// OAuth unlinking functions
+	const handleStartUnlink = useCallback(
+		(providerName: string) => {
+			// Check if this would be the last authentication method
+			const hasEmailAuth = securityStatus.email_auth_linked;
+			const linkedProviders = providers.filter(provider => isProviderLinked(provider.name));
+			const totalLinkedMethods = (hasEmailAuth ? 1 : 0) + linkedProviders.length;
+
+			if (totalLinkedMethods <= 1) {
+				onError(
+					"You can't unlink your only authentication method. Set up email authentication first to safely remove OAuth providers."
+				);
+				return;
+			}
+
+			setUnlinkingProvider(providerName);
+			setShowUnlinkModal(true);
+			setUnlinkError(null);
+		},
+		[securityStatus, providers, isProviderLinked, onError]
+	);
+
+	const handleConfirmUnlink = useCallback(
+		async (password: string) => {
+			if (!unlinkingProvider) return;
+
+			setUnlinkLoading(true);
+			setUnlinkError(null);
+
+			try {
+				await unlinkProvider(unlinkingProvider, password);
+				setShowUnlinkModal(false);
+				setUnlinkingProvider(null);
+				showSuccess(
+					`${providers.find(p => p.name === unlinkingProvider)?.displayName || unlinkingProvider} account unlinked successfully!`
+				);
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : `Failed to unlink ${unlinkingProvider}`;
+				setUnlinkError(errorMessage);
+			} finally {
+				setUnlinkLoading(false);
+			}
+		},
+		[unlinkingProvider, unlinkProvider, providers, showSuccess]
+	);
+
+	const handleCancelUnlink = useCallback(() => {
+		setShowUnlinkModal(false);
+		setUnlinkingProvider(null);
+		setUnlinkError(null);
 	}, []);
 
 	// Transform security status into organized method lists
@@ -141,15 +198,13 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 			} else {
 				// OAuth provider
 				if (method.isActive) {
-					// For unlinking, we need to show confirmation modal with password
-					// This is a simplified version - in practice, should show proper confirmation
-					onError("OAuth unlinking requires password confirmation - please use the main security section");
+					handleStartUnlink(method.id);
 				} else {
 					linkProvider(method.id);
 				}
 			}
 		},
-		[linkProvider, onError]
+		[linkProvider, handleStartUnlink, onError]
 	);
 
 	return (
@@ -206,6 +261,17 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 						))}
 					</div>
 				</div>
+			)}
+
+			{/* Password Confirmation Modal for OAuth Unlinking */}
+			{unlinkingProvider && (
+				<PasswordConfirmationModal
+					isOpen={showUnlinkModal}
+					onClose={handleCancelUnlink}
+					onConfirm={handleConfirmUnlink}
+					loading={unlinkLoading}
+					error={unlinkError}
+				/>
 			)}
 		</div>
 	);
