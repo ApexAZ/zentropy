@@ -3,6 +3,7 @@ import Card from "./atoms/Card";
 import Button from "./atoms/Button";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
 import { useMultiProviderOAuth } from "../hooks/useMultiProviderOAuth";
+import { OAuthProviderService } from "../services/OAuthProviderService";
 import { AuthenticationStatusDisplay } from "./AuthenticationStatusDisplay";
 import { EnhancedConfirmationModal } from "./EnhancedConfirmationModal";
 import { SecurityStatusSkeleton } from "./SecurityStatusSkeleton";
@@ -46,10 +47,25 @@ export function AccountSecuritySection({ onSecurityUpdate, onError }: AccountSec
 	} = useAccountSecurity({ onSecurityUpdate, onError });
 
 	// Memoized callbacks to prevent unnecessary re-renders
-	const handleOAuthSuccess = useCallback(() => {
-		// Handle successful OAuth linking
-		onSecurityUpdate();
-	}, [onSecurityUpdate]);
+	const handleOAuthSuccess = useCallback(
+		async (credential: string, provider: string) => {
+			try {
+				// Call the API to link the account using the OAuth credential
+				await OAuthProviderService.linkProvider({
+					credential,
+					provider
+				});
+
+				// On successful linking, refresh the security status
+				onSecurityUpdate();
+			} catch (error) {
+				// Handle linking errors
+				const errorMessage = error instanceof Error ? error.message : `Failed to link ${provider} account`;
+				onError(errorMessage);
+			}
+		},
+		[onSecurityUpdate, onError]
+	);
 
 	const handleOAuthError = useCallback(
 		(error: string) => {

@@ -60,7 +60,11 @@ export function mapAccountSecurityError(
 
 	// Google Account Linking Specific Errors
 	if (context === "linking") {
-		if (lowerMessage.includes("email does not match") || lowerMessage.includes("email mismatch")) {
+		if (
+			lowerMessage.includes("email does not match") ||
+			lowerMessage.includes("email mismatch") ||
+			lowerMessage.includes("email must match")
+		) {
 			return {
 				message: "The Google account email doesn't match your account email.",
 				resolution:

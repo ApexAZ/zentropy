@@ -92,7 +92,11 @@ const ProfilePage: React.FC = () => {
 	}, []);
 
 	// Security data hook (after retryLoadProfile is defined)
-	const { securityStatus, loading: securityLoading } = useAccountSecurity({
+	const {
+		securityStatus,
+		loading: securityLoading,
+		loadSecurityStatus
+	} = useAccountSecurity({
 		onSecurityUpdate: retryLoadProfile,
 		onError: showError
 	});
@@ -389,7 +393,7 @@ const ProfilePage: React.FC = () => {
 					) : securityStatus ? (
 						<SignInMethods
 							securityStatus={securityStatus}
-							onSecurityUpdate={retryLoadProfile}
+							onSecurityUpdate={loadSecurityStatus}
 							onError={showError}
 						/>
 					) : (

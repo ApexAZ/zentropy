@@ -5,6 +5,7 @@ import Button from "./atoms/Button";
 import { useToast } from "../contexts/ToastContext";
 import { useMultiProviderOAuth } from "../hooks/useMultiProviderOAuth";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
+import { OAuthProviderService } from "../services/OAuthProviderService";
 
 interface SignInMethodsProps {
 	/** Current security status data from API */
@@ -41,9 +42,30 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 	// Use account security hook for OAuth operations
 	const { handleUnlinkGoogle } = useAccountSecurity({ onSecurityUpdate, onError });
 
+	// OAuth success handler that calls the API to link the account
+	const handleOAuthSuccess = useCallback(
+		async (credential: string, provider: string) => {
+			try {
+				// Call the API to link the account using the OAuth credential
+				await OAuthProviderService.linkProvider({
+					credential,
+					provider
+				});
+
+				// On successful linking, refresh the security status
+				onSecurityUpdate();
+			} catch (error) {
+				// Handle linking errors
+				const errorMessage = error instanceof Error ? error.message : `Failed to link ${provider} account`;
+				onError(errorMessage);
+			}
+		},
+		[onSecurityUpdate, onError]
+	);
+
 	// Multi-provider OAuth hook
 	const { providers, linkProvider, isProviderLinked } = useMultiProviderOAuth({
-		onSuccess: onSecurityUpdate,
+		onSuccess: handleOAuthSuccess,
 		onError,
 		securityStatus,
 		handleUnlinkGoogle

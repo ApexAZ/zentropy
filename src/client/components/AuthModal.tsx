@@ -109,7 +109,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				onSuccess();
 				setTimeout(() => onClose(), import.meta.env.NODE_ENV === "test" ? 0 : 1000);
 			} catch (error) {
-				showError(error instanceof Error ? error.message : "Google sign in failed");
+				const errorMessage = error instanceof Error ? error.message : "Google sign in failed";
+
+				// Handle specific error cases for better UX
+				if (errorMessage.includes("already registered with email/password")) {
+					showError(
+						"This email is already registered. Please sign in with your password first, then link Google in your Profile > Security settings."
+					);
+				} else {
+					showError(errorMessage);
+				}
 			} finally {
 				setIsLoading(false);
 			}
