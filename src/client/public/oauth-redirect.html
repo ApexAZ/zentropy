@@ -19,16 +19,30 @@
         
         console.log('OAuth Parameters:', { code: code ? 'PRESENT' : 'MISSING', error, errorDescription, state });
         
-        // Determine OAuth provider based on referrer URL
+        // Determine OAuth provider based on referrer URL and current URL
         const referrer = document.referrer || '';
+        const currentUrl = window.location.href;
         let provider = 'UNKNOWN';
         
+        // Check referrer first
         if (referrer.includes('github.com')) {
             provider = 'GITHUB';
-        } else if (referrer.includes('microsoft') || referrer.includes('login.microsoftonline.com')) {
+        } else if (referrer.includes('microsoftonline.com') || referrer.includes('login.live.com') || referrer.includes('microsoft')) {
             provider = 'MICROSOFT';
         } else if (referrer.includes('google') || referrer.includes('accounts.google.com')) {
             provider = 'GOOGLE';
+        }
+        
+        // Fallback: Check URL parameters for provider-specific patterns
+        if (provider === 'UNKNOWN') {
+            const sessionState = urlParams.get('session_state'); // Microsoft-specific parameter
+            
+            if (sessionState || currentUrl.includes('login.microsoftonline.com')) {
+                provider = 'MICROSOFT';
+            } else if (urlParams.get('scope') && urlParams.get('scope').includes('openid')) {
+                // Generic OAuth with openid scope - likely Microsoft
+                provider = 'MICROSOFT';
+            }
         }
         
         console.log('Detected Provider:', provider);
