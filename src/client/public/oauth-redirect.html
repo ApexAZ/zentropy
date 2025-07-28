@@ -5,12 +5,19 @@
 </head>
 <body>
     <script>
+        // Debug logging
+        console.log('OAuth Redirect Debug Info:');
+        console.log('URL:', window.location.href);
+        console.log('Referrer:', document.referrer);
+        
         // Extract parameters from URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
         const state = urlParams.get('state');
+        
+        console.log('OAuth Parameters:', { code: code ? 'PRESENT' : 'MISSING', error, errorDescription, state });
         
         // Determine OAuth provider based on referrer URL
         const referrer = document.referrer || '';
@@ -24,28 +31,43 @@
             provider = 'GOOGLE';
         }
         
+        console.log('Detected Provider:', provider);
+        
+        let messageData;
         if (code) {
             // Send success message to parent window with authorization code
-            window.opener.postMessage({
+            messageData = {
                 type: `${provider}_OAUTH_SUCCESS`,
                 authorizationCode: code
-            }, window.location.origin);
+            };
         } else if (error) {
             // Send error message to parent window
-            window.opener.postMessage({
+            messageData = {
                 type: `${provider}_OAUTH_ERROR`,
                 error: errorDescription || error
-            }, window.location.origin);
+            };
         } else {
             // No code and no error - something went wrong
-            window.opener.postMessage({
+            messageData = {
                 type: `${provider}_OAUTH_ERROR`,
                 error: `No authorization code received from ${provider.toLowerCase()} OAuth`
-            }, window.location.origin);
+            };
+        }
+        
+        console.log('Sending message to parent:', messageData);
+        
+        if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(messageData, window.location.origin);
+            console.log('Message sent successfully');
+        } else {
+            console.error('No valid window.opener found');
         }
         
         // Close the popup window
-        window.close();
+        setTimeout(() => {
+            console.log('Closing popup window');
+            window.close();
+        }, 100); // Small delay to ensure message is sent
     </script>
 </body>
 </html>
