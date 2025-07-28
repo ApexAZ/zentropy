@@ -136,7 +136,7 @@ describe("useAuth", () => {
 			// Verify auth state is set correctly
 			expect(result.current.user).toEqual({
 				email: "integration.test@example.com",
-				name: "Integration Test", // first_name + last_name
+				name: "", // Uses display_name field directly (empty when not provided)
 				has_projects_access: undefined, // Not provided in mock data
 				email_verified: false // Default fallback in useAuth
 			});
@@ -322,35 +322,36 @@ describe("useAuth", () => {
 	describe("User data formats correctly", () => {
 		// Data formatting tests require manual fetch response mocking to test:
 		// - API response parsing and user data transformation
-		it("should properly format first_name and last_name as display name", async () => {
+		it("should use display_name field directly", async () => {
 			const mockUserData = {
 				email: "jane.smith@example.com",
 				first_name: "Jane",
 				last_name: "Smith",
+				display_name: "Jane Smith",
 				organization: "Tech Corp",
 				role: "developer"
 			};
 
 			const { result } = await setupAuthenticatedUser("valid-jwt-token", mockUserData);
 
-			// Verify name is properly formatted as "First Last"
+			// Verify name uses display_name field directly
 			expect(result.current.user?.name).toBe("Jane Smith");
 			expect(result.current.user?.email).toBe("jane.smith@example.com");
 		});
 
-		it("should handle edge cases in name formatting", async () => {
+		it("should handle edge cases with display_name field", async () => {
 			const testCases = [
 				{
-					input: { first_name: "", last_name: "Smith" },
-					expected: "test@example.com" // Falls back to email when names are incomplete
+					input: { display_name: "" },
+					expected: "" // Empty display_name shows as empty string
 				},
 				{
-					input: { first_name: "Jane", last_name: "" },
-					expected: "test@example.com" // Falls back to email when names are incomplete
+					input: { display_name: "Custom Display Name" },
+					expected: "Custom Display Name" // Uses provided display_name directly
 				},
 				{
-					input: { first_name: "Jean-Luc", last_name: "Picard" },
-					expected: "Jean-Luc Picard" // Both names exist, so combine them
+					input: {}, // No display_name field
+					expected: "" // Falls back to empty string when display_name is undefined
 				}
 			];
 
@@ -372,17 +373,18 @@ describe("useAuth", () => {
 		/* eslint-disable no-restricted-syntax */
 		// Data validation tests require manual fetch response mocking to test:
 		// - API response validation and edge cases
-		it("should prevent 'John Doe' hardcoded fallback by using real API data", async () => {
+		it("should use display_name field directly from API data", async () => {
 			const realUserData = {
 				email: "real.user@example.com",
 				first_name: "Real",
 				last_name: "User",
+				display_name: "Real User",
 				organization: "Real Corp"
 			};
 
 			const { result } = await setupAuthenticatedUser("existing-token", realUserData);
 
-			// Verify that we get real user data, NOT "John Doe"
+			// Verify that we use display_name field directly
 			expect(result.current.user?.name).toBe("Real User");
 			expect(result.current.user?.name).not.toBe("John Doe");
 			expect(result.current.user?.email).toBe("real.user@example.com");
@@ -397,7 +399,8 @@ describe("useAuth", () => {
 				json: async () => ({
 					email: "startup@example.com",
 					first_name: "Startup",
-					last_name: "User"
+					last_name: "User",
+					display_name: "Startup User"
 				})
 			});
 

@@ -79,7 +79,9 @@ def resend_verification_email(
         code, expires_at = create_verification_code(db, str(user.id))
 
         # Send email
-        user_name = f"{user.first_name} {user.last_name}"
+        from api.utils.display_name import generate_display_name_from_user
+
+        user_name = generate_display_name_from_user(user)
         email_sent = send_verification_email(str(user.email), code, user_name)
 
         if email_sent:

@@ -130,8 +130,6 @@ describe("AuthModal", () => {
 		const propsWithVerification = { ...mockProps, onShowVerification: vi.fn() };
 		renderWithFullEnvironment(<AuthModal {...propsWithVerification} initialMode="signup" />);
 
-		fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: "John" } });
-		fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: "Doe" } });
 		fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "john@example.com" } });
 		fireEvent.change(screen.getByLabelText(/^password/i), { target: { value: "Password123!" } });
 		fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: "Password123!" } });

@@ -190,6 +190,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 				email: "stored@example.com",
 				first_name: "Stored",
 				last_name: "User",
+				display_name: "Stored User",
 				has_projects_access: true,
 				email_verified: true
 			})
@@ -221,6 +222,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 				email: "session@example.com",
 				first_name: "Session",
 				last_name: "User",
+				display_name: "Session User",
 				has_projects_access: true,
 				email_verified: true
 			})

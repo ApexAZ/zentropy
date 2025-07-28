@@ -210,7 +210,9 @@ def register(
 
     # Generate verification code and send email
     code, _ = create_verification_code(db, str(db_user.id))
-    user_name = f"{db_user.first_name} {db_user.last_name}"
+    from api.utils.display_name import generate_display_name_from_user
+
+    user_name = generate_display_name_from_user(db_user)
     send_verification_email(str(db_user.email), code, user_name)
 
     return MessageResponse(

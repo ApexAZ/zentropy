@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
 import { AuthService } from "../services/AuthService";
 import { UserService } from "../services/UserService";
-import { generateDisplayName } from "../utils/formatters";
 import type { AuthUser, AuthState } from "../types";
 
 export const useAuth = () => {
@@ -35,7 +34,7 @@ export const useAuth = () => {
 							isAuthenticated: true,
 							user: {
 								email: userData.email,
-								name: generateDisplayName(userData),
+								name: userData.display_name || "",
 								has_projects_access: userData.has_projects_access,
 								email_verified: userData.email_verified || false
 							},

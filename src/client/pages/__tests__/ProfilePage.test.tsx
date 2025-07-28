@@ -178,10 +178,14 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
-		expect(screen.getByText("Test User")).toBeInTheDocument();
+		// Check that user name appears as both Display Name and Legal Name
+		expect(screen.getAllByText("Test User")).toHaveLength(2);
 		expect(screen.getByText("test@example.com")).toBeInTheDocument();
 		expect(screen.getByText("Organization Member")).toBeInTheDocument();
 		expect(screen.getAllByText("Team Member")).toHaveLength(2); // Role label and badge
+		// Verify new field labels
+		expect(screen.getByText("Display Name")).toBeInTheDocument();
+		expect(screen.getByText("Legal Name")).toBeInTheDocument();
 	});
 
 	it("displays Individual Account when no organization", async () => {
@@ -248,8 +252,8 @@ describe("ProfilePage", () => {
 		const editButton = screen.getByText("Edit Profile");
 		fastUserActions.click(editButton);
 
-		expect(screen.getByLabelText("First Name")).toBeInTheDocument();
-		expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
+		expect(screen.getByLabelText("First Name (optional)")).toBeInTheDocument();
+		expect(screen.getByLabelText("Last Name (optional)")).toBeInTheDocument();
 		expect(screen.getByLabelText("Email Address")).toBeInTheDocument();
 		expect(screen.getByText("Save Changes")).toBeInTheDocument();
 		expect(screen.getByText("Cancel")).toBeInTheDocument();
@@ -276,11 +280,11 @@ describe("ProfilePage", () => {
 		fastUserActions.click(screen.getByText("Edit Profile"));
 		await fastStateSync();
 
-		expect(screen.getByLabelText("First Name")).toBeInTheDocument();
-		expect((screen.getByLabelText("First Name") as HTMLInputElement).value).toBe("Test");
+		expect(screen.getByLabelText("First Name (optional)")).toBeInTheDocument();
+		expect((screen.getByLabelText("First Name (optional)") as HTMLInputElement).value).toBe("Test");
 
 		// Clear the first name field to make it invalid
-		const firstNameInput = screen.getByLabelText("First Name") as HTMLInputElement;
+		const firstNameInput = screen.getByLabelText("First Name (optional)") as HTMLInputElement;
 		fastUserActions.replaceText(firstNameInput, "");
 		expect(firstNameInput.value).toBe("");
 
@@ -324,7 +328,7 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		// Test first name too long
-		const firstNameInput = screen.getByLabelText("First Name");
+		const firstNameInput = screen.getByLabelText("First Name (optional)");
 		fastUserActions.replaceText(firstNameInput, "a".repeat(101));
 
 		const submitButton = screen.getByText("Save Changes");
@@ -356,10 +360,10 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		// Update name
-		const firstNameInput = screen.getByLabelText("First Name");
+		const firstNameInput = screen.getByLabelText("First Name (optional)");
 		fastUserActions.replaceText(firstNameInput, "Updated");
 
-		const lastNameInput = screen.getByLabelText("Last Name");
+		const lastNameInput = screen.getByLabelText("Last Name (optional)");
 		fastUserActions.replaceText(lastNameInput, "Name");
 
 		const submitButton = screen.getByText("Save Changes");
@@ -372,8 +376,9 @@ describe("ProfilePage", () => {
 		// Should exit edit mode and show updated data
 		await fastStateSync();
 
-		expect(screen.getByText("Updated Name")).toBeInTheDocument();
-		expect(screen.queryByLabelText("First Name")).not.toBeInTheDocument();
+		// Check that updated name appears in both Display Name and Legal Name
+		expect(screen.getAllByText("Updated Name")).toHaveLength(2);
+		expect(screen.queryByLabelText("First Name (optional)")).not.toBeInTheDocument();
 	});
 
 	it("handles profile update API errors", async () => {
@@ -416,7 +421,7 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		// Make changes
-		const firstNameInput = screen.getByLabelText("First Name");
+		const firstNameInput = screen.getByLabelText("First Name (optional)");
 		fastUserActions.replaceText(firstNameInput, "Changed");
 
 		// Cancel
@@ -426,8 +431,8 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		// Should restore original data and exit edit mode
-		expect(screen.getByText("Test User")).toBeInTheDocument();
-		expect(screen.queryByLabelText("First Name")).not.toBeInTheDocument();
+		expect(screen.getAllByText("Test User")).toHaveLength(2);
+		expect(screen.queryByLabelText("First Name (optional)")).not.toBeInTheDocument();
 	});
 
 	it("opens password change form when Change Password button is clicked", async () => {
@@ -672,7 +677,7 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		expect(screen.getByText("Profile Information")).toBeInTheDocument();
-		expect(screen.getByText("Test User")).toBeInTheDocument();
+		expect(screen.getAllByText("Test User")).toHaveLength(2);
 		expect(callCount).toBe(2); // Verify retry actually triggered another API call
 	});
 

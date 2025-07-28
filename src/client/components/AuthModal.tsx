@@ -63,8 +63,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 	const signUpForm = useFormValidation<any>({
 		initialValues: {
-			first_name: "",
-			last_name: "",
 			email: "",
 			password: "",
 			confirm_password: "",
@@ -73,8 +71,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 		},
 		validate: (data: any) => {
 			const errors: Record<string, string> = {};
-			if (!data.first_name.trim()) errors.first_name = "First name is required";
-			if (!data.last_name.trim()) errors.last_name = "Last name is required";
 			if (!data.email.trim()) errors.email = "Email is required";
 			else if (!AuthService.validateEmail(data.email)) errors.email = "Please enter a valid email address";
 			if (!data.password.trim()) errors.password = "Password is required";
@@ -349,10 +345,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
 									</Form>
 								) : (
 									<Form onSubmit={handleSignUpSubmit} isSubmitting={isLoading} className="space-y-4">
-										<div className="grid grid-cols-2 gap-4">
-											{renderInput(signUpForm, "first_name", "text", "First Name")}
-											{renderInput(signUpForm, "last_name", "text", "Last Name")}
-										</div>
 										{renderInput(signUpForm, "email", "email", "Email")}
 										{renderInput(signUpForm, "password", "password", "Password")}
 										<PasswordRequirements

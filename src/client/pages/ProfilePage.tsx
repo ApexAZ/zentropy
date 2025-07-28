@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { User, ProfileUpdateData } from "../types";
 import { formatDate, getRoleLabel, getRoleBadgeColor, generateDisplayName } from "../utils/formatters";
 import { UserService } from "../services/UserService";
@@ -32,6 +32,11 @@ const ProfilePage: React.FC = () => {
 
 	// Tab state management
 	const [activeTab, setActiveTab] = useState("profile");
+
+	// Memoized display name to prevent unnecessary recalculations
+	const displayName = useMemo(() => {
+		return user ? generateDisplayName(user) : "";
+	}, [user]);
 
 	// Load user data on component mount
 	useEffect(() => {
@@ -117,7 +122,7 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: user.first_name || "",
 				last_name: user.last_name || "",
-				display_name: generateDisplayName(user),
+				display_name: user.display_name || generateDisplayName(user),
 				email: user.email,
 				phone_number: user.phone_number || ""
 			});
@@ -133,8 +138,6 @@ const ProfilePage: React.FC = () => {
 
 	const handleProfileSubmit = async (): Promise<void> => {
 		if (!validateProfileForm()) {
-			// Allow React to flush state updates before returning
-			await new Promise(resolve => setTimeout(resolve, 0));
 			return;
 		}
 
@@ -237,70 +240,6 @@ const ProfilePage: React.FC = () => {
 
 						{isEditingProfile ? (
 							<Form onSubmit={handleProfileSubmit} className="space-y-6">
-								<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-									<div>
-										<label
-											htmlFor="profile-first-name"
-											className="text-text-primary mb-2 block font-medium"
-										>
-											First Name
-										</label>
-										<input
-											id="profile-first-name"
-											type="text"
-											value={profileData.first_name}
-											onChange={e =>
-												setProfileData({ ...profileData, first_name: e.target.value })
-											}
-											className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
-										/>
-										{profileErrors.first_name && (
-											<span className="text-error mt-1 block text-sm">
-												{profileErrors.first_name}
-											</span>
-										)}
-									</div>
-
-									<div>
-										<label
-											htmlFor="profile-last-name"
-											className="text-text-primary mb-2 block font-medium"
-										>
-											Last Name
-										</label>
-										<input
-											id="profile-last-name"
-											type="text"
-											value={profileData.last_name}
-											onChange={e =>
-												setProfileData({ ...profileData, last_name: e.target.value })
-											}
-											className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
-										/>
-										{profileErrors.last_name && (
-											<span className="text-error mt-1 block text-sm">
-												{profileErrors.last_name}
-											</span>
-										)}
-									</div>
-								</div>
-
-								<div>
-									<label htmlFor="profile-email" className="text-text-primary mb-2 block font-medium">
-										Email Address
-									</label>
-									<input
-										id="profile-email"
-										type="email"
-										value={profileData.email}
-										onChange={e => setProfileData({ ...profileData, email: e.target.value })}
-										className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
-									/>
-									{profileErrors.email && (
-										<span className="text-error mt-1 block text-sm">{profileErrors.email}</span>
-									)}
-								</div>
-
 								<div>
 									<label
 										htmlFor="profile-display-name"
@@ -324,6 +263,82 @@ const ProfilePage: React.FC = () => {
 										This is how your name will appear to other users. Auto-generated based on your
 										registration method.
 									</p>
+								</div>
+
+								<div>
+									<h4 className="text-text-primary font-interface mb-4 text-lg">
+										Legal Name{" "}
+										<span className="text-neutral">(for billing and legal documents)</span>
+									</h4>
+									<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+										<div>
+											<label
+												htmlFor="profile-first-name"
+												className="text-text-primary mb-2 block font-medium"
+											>
+												First Name <span className="text-neutral">(optional)</span>
+											</label>
+											<input
+												id="profile-first-name"
+												type="text"
+												value={profileData.first_name}
+												onChange={e =>
+													setProfileData({ ...profileData, first_name: e.target.value })
+												}
+												aria-describedby={
+													profileErrors.first_name ? "first-name-error" : undefined
+												}
+												className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+											/>
+											{profileErrors.first_name && (
+												<span id="first-name-error" className="text-error mt-1 block text-sm">
+													{profileErrors.first_name}
+												</span>
+											)}
+										</div>
+
+										<div>
+											<label
+												htmlFor="profile-last-name"
+												className="text-text-primary mb-2 block font-medium"
+											>
+												Last Name <span className="text-neutral">(optional)</span>
+											</label>
+											<input
+												id="profile-last-name"
+												type="text"
+												value={profileData.last_name}
+												onChange={e =>
+													setProfileData({ ...profileData, last_name: e.target.value })
+												}
+												aria-describedby={
+													profileErrors.last_name ? "last-name-error" : undefined
+												}
+												className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+											/>
+											{profileErrors.last_name && (
+												<span id="last-name-error" className="text-error mt-1 block text-sm">
+													{profileErrors.last_name}
+												</span>
+											)}
+										</div>
+									</div>
+								</div>
+
+								<div>
+									<label htmlFor="profile-email" className="text-text-primary mb-2 block font-medium">
+										Email Address
+									</label>
+									<input
+										id="profile-email"
+										type="email"
+										value={profileData.email}
+										onChange={e => setProfileData({ ...profileData, email: e.target.value })}
+										className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+									/>
+									{profileErrors.email && (
+										<span className="text-error mt-1 block text-sm">{profileErrors.email}</span>
+									)}
 								</div>
 
 								<div>
@@ -357,9 +372,16 @@ const ProfilePage: React.FC = () => {
 						) : (
 							<div className="grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-2 md:gap-8">
 								<div>
-									<div className="text-text-primary font-interface mb-1 block">Full Name</div>
+									<div className="text-text-primary font-interface mb-1 block">Display Name</div>
+									<div className="text-text-contrast">{displayName}</div>
+								</div>
+
+								<div>
+									<div className="text-text-primary font-interface mb-1 block">Legal Name</div>
 									<div className="text-text-contrast">
-										{user.first_name} {user.last_name}
+										{user.first_name && user.last_name
+											? `${user.first_name} ${user.last_name}`
+											: "Not provided"}
 									</div>
 								</div>
 

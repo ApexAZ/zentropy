@@ -22,8 +22,8 @@ export interface SignInCredentials {
 }
 
 export interface SignUpData {
-	first_name: string;
-	last_name: string;
+	first_name?: string;
+	last_name?: string;
 	email: string;
 	password: string;
 	terms_agreement: boolean;

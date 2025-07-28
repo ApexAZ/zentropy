@@ -279,32 +279,32 @@ describe("UserService", () => {
 			expect(result.errors).toEqual({});
 		});
 
-		it("should return error for empty first name", () => {
-			const invalidProfileData: ProfileUpdateData = {
+		it("should allow empty first name (optional field)", () => {
+			const validProfileData: ProfileUpdateData = {
 				first_name: "",
 				last_name: "Doe",
 				display_name: "Test User",
 				email: "john@example.com"
 			};
 
-			const result = UserService.validateProfile(invalidProfileData);
+			const result = UserService.validateProfile(validProfileData);
 
-			expect(result.isValid).toBe(false);
-			expect(result.errors.first_name).toBe("First name is required");
+			expect(result.isValid).toBe(true);
+			expect(result.errors.first_name).toBeUndefined();
 		});
 
-		it("should return error for whitespace-only first name", () => {
-			const invalidProfileData: ProfileUpdateData = {
+		it("should allow whitespace-only first name (optional field)", () => {
+			const validProfileData: ProfileUpdateData = {
 				first_name: "   ",
 				last_name: "Doe",
 				display_name: "Test User",
 				email: "john@example.com"
 			};
 
-			const result = UserService.validateProfile(invalidProfileData);
+			const result = UserService.validateProfile(validProfileData);
 
-			expect(result.isValid).toBe(false);
-			expect(result.errors.first_name).toBe("First name is required");
+			expect(result.isValid).toBe(true);
+			expect(result.errors.first_name).toBeUndefined();
 		});
 
 		it("should return error for first name too long", () => {
@@ -321,32 +321,32 @@ describe("UserService", () => {
 			expect(result.errors.first_name).toBe("First name must be less than 100 characters");
 		});
 
-		it("should return error for empty last name", () => {
-			const invalidProfileData: ProfileUpdateData = {
+		it("should allow empty last name (optional field)", () => {
+			const validProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "",
 				display_name: "Test User",
 				email: "john@example.com"
 			};
 
-			const result = UserService.validateProfile(invalidProfileData);
+			const result = UserService.validateProfile(validProfileData);
 
-			expect(result.isValid).toBe(false);
-			expect(result.errors.last_name).toBe("Last name is required");
+			expect(result.isValid).toBe(true);
+			expect(result.errors.last_name).toBeUndefined();
 		});
 
-		it("should return error for whitespace-only last name", () => {
-			const invalidProfileData: ProfileUpdateData = {
+		it("should allow whitespace-only last name (optional field)", () => {
+			const validProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "   ",
 				display_name: "Test User",
 				email: "john@example.com"
 			};
 
-			const result = UserService.validateProfile(invalidProfileData);
+			const result = UserService.validateProfile(validProfileData);
 
-			expect(result.isValid).toBe(false);
-			expect(result.errors.last_name).toBe("Last name is required");
+			expect(result.isValid).toBe(true);
+			expect(result.errors.last_name).toBeUndefined();
 		});
 
 		it("should return error for last name too long", () => {
@@ -452,7 +452,8 @@ describe("UserService", () => {
 			const result = UserService.validateProfile(invalidProfileData);
 
 			expect(result.isValid).toBe(false);
-			expect(result.errors.first_name).toBe("First name is required");
+			// First name is now optional, so no error expected
+			expect(result.errors.first_name).toBeUndefined();
 			expect(result.errors.last_name).toBe("Last name must be less than 100 characters");
 			expect(result.errors.email).toBe("Please enter a valid email address");
 		});

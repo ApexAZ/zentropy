@@ -33,6 +33,7 @@ describe("AuthService", () => {
 			user: {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "test@example.com",
 				has_projects_access: true,
 				email_verified: true
@@ -202,6 +203,7 @@ describe("AuthService", () => {
 			user: {
 				first_name: "OAuth",
 				last_name: "User",
+				display_name: "OAuth User",
 				email: "oauth@example.com",
 				has_projects_access: true,
 				email_verified: true

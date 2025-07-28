@@ -102,15 +102,13 @@ export class UserService {
 	static validateProfile(profileData: ProfileUpdateData): { isValid: boolean; errors: Record<string, string> } {
 		const errors: Record<string, string> = {};
 
-		if (!profileData.first_name.trim()) {
-			errors.first_name = "First name is required";
-		} else if (profileData.first_name.length > 100) {
+		// First name validation (optional field)
+		if (profileData.first_name.trim() && profileData.first_name.length > 100) {
 			errors.first_name = "First name must be less than 100 characters";
 		}
 
-		if (!profileData.last_name.trim()) {
-			errors.last_name = "Last name is required";
-		} else if (profileData.last_name.length > 100) {
+		// Last name validation (optional field)
+		if (profileData.last_name.trim() && profileData.last_name.length > 100) {
 			errors.last_name = "Last name must be less than 100 characters";
 		}
 
@@ -120,9 +118,8 @@ export class UserService {
 			errors.email = "Please enter a valid email address";
 		}
 
-		if (!profileData.display_name || !profileData.display_name.trim()) {
-			errors.display_name = "Display name is required";
-		} else if (profileData.display_name.length > 100) {
+		// Display name validation (auto-generated, but can be customized)
+		if (profileData.display_name.trim() && profileData.display_name.length > 100) {
 			errors.display_name = "Display name must be less than 100 characters";
 		}
 
