@@ -218,7 +218,9 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		expect(screen.getByText("Unable to Load Profile")).toBeInTheDocument();
-		expect(screen.getByText("Network error")).toBeInTheDocument();
+		expect(
+			screen.getByText("Connection problem. Please check your internet connection and try again.")
+		).toBeInTheDocument();
 		expect(screen.getByText("Retry")).toBeInTheDocument();
 	});
 
@@ -401,7 +403,7 @@ describe("ProfilePage", () => {
 
 		await fastStateSync();
 
-		expect(screen.getByText("Email already exists")).toBeInTheDocument();
+		expect(screen.getByText("This email address is already in use")).toBeInTheDocument();
 	});
 
 	it("cancels profile edit and restores original data", async () => {
@@ -637,14 +639,14 @@ describe("ProfilePage", () => {
 
 		await fastStateSync();
 
-		expect(screen.getByText("Update failed")).toBeInTheDocument();
+		expect(screen.getByText("Unable to load account security information.")).toBeInTheDocument();
 
 		// Find and click dismiss button (×)
 		const dismissButton = screen.getByRole("button", { name: /dismiss notification/i });
 		fastUserActions.click(dismissButton);
 
 		// Toast should be dismissed immediately
-		expect(screen.queryByText("Update failed")).not.toBeInTheDocument();
+		expect(screen.queryByText("Unable to load account security information.")).not.toBeInTheDocument();
 	});
 
 	it("retries loading profile when retry button is clicked", async () => {
@@ -668,7 +670,9 @@ describe("ProfilePage", () => {
 		await fastStateSync();
 
 		expect(screen.getByText("Unable to Load Profile")).toBeInTheDocument();
-		expect(screen.getByText("Network error")).toBeInTheDocument();
+		expect(
+			screen.getByText("Connection problem. Please check your internet connection and try again.")
+		).toBeInTheDocument();
 
 		// Click retry button
 		const retryButton = screen.getByText("Retry");

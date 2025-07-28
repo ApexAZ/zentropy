@@ -150,8 +150,8 @@ describe("useGoogleOAuth", () => {
 				credentialCallback?.(emptyCredentialResponse);
 			});
 
-			expect(result.current.error).toBe("Failed to process Google OAuth credential");
-			expect(mockOnError).toHaveBeenCalledWith("Failed to process Google OAuth credential");
+			expect(result.current.error).toBe("Authentication was incomplete");
+			expect(mockOnError).toHaveBeenCalledWith("Authentication was incomplete");
 			expect(mockOnSuccess).not.toHaveBeenCalled();
 		});
 
@@ -175,7 +175,7 @@ describe("useGoogleOAuth", () => {
 				result.current.triggerOAuth();
 			});
 
-			expect(result.current.error).toContain("not available");
+			expect(result.current.error).toContain("Sign-in service is not ready");
 			expect(result.current.isReady).toBe(false);
 		});
 
@@ -196,7 +196,7 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should have error after trigger attempt
-			expect(result.current.error).toContain("not available");
+			expect(result.current.error).toContain("Sign-in service is not ready");
 			expect(result.current.error).not.toBe(null);
 
 			// User can clear the error
@@ -226,8 +226,8 @@ describe("useGoogleOAuth", () => {
 			});
 
 			// Should provide user-friendly error
-			expect(result.current.error).toContain("not available");
-			expect(mockOnError).toHaveBeenCalledWith(expect.stringContaining("not available"));
+			expect(result.current.error).toContain("Sign-in service is not ready");
+			expect(mockOnError).toHaveBeenCalledWith(expect.stringContaining("Sign-in service is not ready"));
 		});
 
 		it("should handle OAuth popup dismissal", async () => {
@@ -274,9 +274,9 @@ describe("useGoogleOAuth", () => {
 			await act(async () => {
 				await Promise.resolve();
 			});
-			expect(result.current.error).toBe("Google Sign-In was dismissed or unavailable");
+			expect(result.current.error).toBe("Sign-in was cancelled");
 
-			expect(mockOnError).toHaveBeenCalledWith("Google Sign-In was dismissed or unavailable");
+			expect(mockOnError).toHaveBeenCalledWith("Sign-in was cancelled");
 			expect(result.current.isLoading).toBe(false);
 		});
 	});
@@ -360,7 +360,7 @@ describe("useGoogleOAuth", () => {
 			await act(async () => {
 				await Promise.resolve();
 			});
-			expect(result.current.error).toContain("not available");
+			expect(result.current.error).toContain("Sign-in service is not ready");
 			expect(result.current.isReady).toBe(false);
 			// Should not crash when onError callback is missing
 			act(() => {

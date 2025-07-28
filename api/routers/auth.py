@@ -31,9 +31,14 @@ from ..auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-from ..google_oauth import process_google_oauth
-from ..microsoft_oauth import process_microsoft_oauth
-from ..github_oauth import process_github_oauth
+
+# OAuth imports with migration support (Phase 2.1: OAuth Consolidation)
+# Using consolidated implementations by default via migration system
+from ..oauth_router_migration import (
+    process_google_oauth_safe as process_google_oauth,
+    process_microsoft_oauth_safe as process_microsoft_oauth,
+    process_github_oauth_safe as process_github_oauth,
+)
 from .. import database
 from ..database import User
 from ..email_verification import (

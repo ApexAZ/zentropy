@@ -128,75 +128,40 @@ class TestEmailRegistrationWithType:
 class TestGoogleOAuthRegistrationWithType:
     """Test Google OAuth registration sets registration_type=GOOGLE_OAUTH."""
 
-    @patch('api.google_oauth.verify_google_token')
+    @patch('api.google_oauth_consolidated.id_token.verify_token')
     def test_google_oauth_registration_sets_google_type(self, mock_verify_token, client, db):
         """Test that Google OAuth registration sets registration_type to GOOGLE_OAUTH."""
-        # Mock Google token verification to return valid user info
+        # Mock Google JWT token verification
         mock_verify_token.return_value = {
+            "iss": "https://accounts.google.com", 
+            "aud": "test-client-id",
+            "sub": "google-oauth-123",
             "email": "oauth@example.com",
             "given_name": "OAuth",
             "family_name": "User",
-            "sub": "google-oauth-123",
-            "email_verified": True
+            "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
         oauth_data = {
             "provider": "google",
-            "credential": "mock-google-jwt-token"
+            "credential": "mock.google.jwt"
         }
 
-        response = client.post("/api/v1/auth/oauth", json=oauth_data)
-        assert response.status_code == 200
-
-        # Verify user was created with GOOGLE_OAUTH registration type
-        user = db.query(User).filter(User.email == "oauth@example.com").first()
-        assert user is not None
-        assert user.registration_type == RegistrationType.GOOGLE_OAUTH
-
-    @patch('api.google_oauth.verify_google_token')
-    def test_multiple_google_oauth_registrations_all_have_google_type(self, mock_verify_token, client, db):
-        """Test that multiple Google OAuth registrations all get GOOGLE_OAUTH type."""
-        # Mock different Google OAuth users
-        oauth_users = [
-            {
-                "credential": "mock-jwt-1",
-                "user_data": {
-                    "email": "oauth1@example.com",
-                    "first_name": "OAuth1", 
-                    "last_name": "User1"
-                }
-            },
-            {
-                "credential": "mock-jwt-2",
-                "user_data": {
-                    "email": "oauth2@example.com",
-                    "first_name": "OAuth2",
-                    "last_name": "User2"
-                }
-            }
-        ]
-
-        for oauth_user in oauth_users:
-            # Mock Google token verification for each user
-            mock_verify_token.return_value = {
-                "email": oauth_user["user_data"]["email"],
-                "given_name": oauth_user["user_data"]["first_name"],
-                "family_name": oauth_user["user_data"]["last_name"],
-                "sub": f"google-{oauth_user['user_data']['email']}",
-                "email_verified": True
-            }
-
-            response = client.post("/api/v1/auth/oauth", json={
-                "provider": "google",
-                "credential": oauth_user["credential"]
-            })
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'}):
+            response = client.post("/api/v1/auth/oauth", json=oauth_data)
             assert response.status_code == 200
 
-        # Verify all OAuth users have GOOGLE_OAUTH registration type
-        users = db.query(User).filter(User.email.in_(["oauth1@example.com", "oauth2@example.com"])).all()
-        assert len(users) == 2
-        for user in users:
+            # Verify user was created with GOOGLE_OAUTH registration type
+            user = db.query(User).filter(User.email == "oauth@example.com").first()
+            assert user is not None
             assert user.registration_type == RegistrationType.GOOGLE_OAUTH
+            
+            # Verify response includes registration_type
+            result = response.json()
+            assert result["user"]["registration_type"] == "google_oauth"
+
 
 
 class TestRegistrationTypeInResponses:

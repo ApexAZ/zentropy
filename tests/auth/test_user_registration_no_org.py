@@ -125,56 +125,44 @@ class TestUserRegistrationWithoutOrganization:
 class TestGoogleOAuthRegistrationWithoutOrganization:
     """Test Google OAuth registration without organization assignment."""
     
-    @patch('api.google_oauth.verify_google_token')
+    @patch('api.google_oauth_consolidated.id_token.verify_token')
     def test_google_oauth_registration_without_organization(self, mock_verify_token, client, db, auto_clean_mailpit):
         """Test that Google OAuth users can register without organization."""
-        # Mock Google token verification to return valid user info
+        # Mock Google JWT token verification for individual user (no hosted domain)
         mock_verify_token.return_value = {
+            "iss": "https://accounts.google.com", 
+            "aud": "test-client-id",
+            "sub": "google-oauth-no-org-123",
             "email": "oauth-no-org@example.com",
             "given_name": "OAuthNoOrg",
             "family_name": "User",
-            "sub": "google-oauth-no-org-123",
-            "email_verified": True
+            "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
+            # No 'hd' field - personal account
         }
 
         oauth_data = {
             "provider": "google",
-            "credential": "mock-google-jwt-token"
+            "credential": "mock.google.jwt"
         }
 
-        response = client.post("/api/v1/auth/oauth", json=oauth_data)
-        assert response.status_code == 200
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id'}):
+            response = client.post("/api/v1/auth/oauth", json=oauth_data)
+            assert response.status_code == 200
 
-        # Verify user was created without organization
-        user = db.query(User).filter(User.email == "oauth-no-org@example.com").first()
-        assert user is not None
-        assert user.organization_id is None
-        assert user.registration_type == RegistrationType.GOOGLE_OAUTH
-        assert user.auth_provider == AuthProvider.GOOGLE
+            # Verify user was created without organization
+            user = db.query(User).filter(User.email == "oauth-no-org@example.com").first()
+            assert user is not None
+            assert user.organization_id is None
+            assert user.registration_type == RegistrationType.GOOGLE_OAUTH
+            assert user.auth_provider == AuthProvider.GOOGLE
+            
+            # Verify response shows no organization assignment
+            result = response.json()
+            assert result["user"]["organization_id"] is None
+            assert result["user"]["registration_type"] == "google_oauth"
     
-    @patch('api.google_oauth.verify_google_token')
-    def test_google_oauth_response_shows_null_organization(self, mock_verify_token, client):
-        """Test that Google OAuth response correctly shows null organization_id."""
-        mock_verify_token.return_value = {
-            "email": "oauth-response-null@example.com",
-            "given_name": "OAuthResponseNull",
-            "family_name": "User",
-            "sub": "google-oauth-response-null-123",
-            "email_verified": True
-        }
-
-        oauth_data = {
-            "provider": "google",
-            "credential": "mock-google-jwt-token"
-        }
-
-        response = client.post("/api/v1/auth/oauth", json=oauth_data)
-        assert response.status_code == 200
-        
-        login_response = response.json()
-        # The user object in the response should show null organization
-        user_data = login_response["user"]
-        assert user_data["organization_id"] is None
 
 
 class TestUserCreateSchemaValidation:

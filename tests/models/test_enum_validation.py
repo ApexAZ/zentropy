@@ -157,20 +157,25 @@ class TestEnumAPIResponseConsistency:
         assert isinstance(user_data_response["has_projects_access"], bool)
         assert isinstance(user_data_response["email_verified"], bool)
 
-    @patch('api.google_oauth.verify_google_token')
+    @patch('api.google_oauth_consolidated.id_token.verify_token')
     def test_google_oauth_response_contains_proper_enum_values(self, mock_verify_token, client):
         """Test Google OAuth responses contain proper enum values."""
         mock_verify_token.return_value = {
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id",
+            "sub": "google-oauth-enum-123",
             "email": "oauth-enum@example.com",
             "given_name": "OAuth",
             "family_name": "Test",
-            "sub": "google-oauth-enum-123",
-            "email_verified": True
+            "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
-        oauth_data = {"provider": "google", "credential": "mock-google-jwt-token"}
-        response = client.post("/api/v1/auth/oauth", json=oauth_data)
-        assert response.status_code == 200
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
+            oauth_data = {"provider": "google", "credential": "mock-google-jwt-token"}
+            response = client.post("/api/v1/auth/oauth", json=oauth_data)
+            assert response.status_code == 200
         
         oauth_response = response.json()
         

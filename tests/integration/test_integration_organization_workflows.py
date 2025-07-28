@@ -103,7 +103,7 @@ class TestRegistrationWithOrganizationDiscovery:
         assert org_data["domain_found"] is True
         assert org_data["organization"]["name"] == "Company 5"
 
-    @patch('api.google_oauth.verify_google_token')
+    @patch('api.google_oauth_consolidated.id_token.verify_token')
     def test_google_oauth_registration_with_organization_discovery(self, mock_verify_token, client: TestClient, db: Session):
         """Test Google OAuth registration with organization discovery."""
         # Create organization
@@ -118,19 +118,24 @@ class TestRegistrationWithOrganizationDiscovery:
         db.add(org)
         db.commit()
 
-        # Mock Google token verification
+        # Mock Google JWT token verification
         mock_verify_token.return_value = {
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id",
+            "sub": "google-oauth-123",
             "email": "user@google.com",
             "given_name": "Google",
             "family_name": "User",
-            "sub": "google-oauth-123",
-            "email_verified": True
+            "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
         # Test Google OAuth registration
-        oauth_data = {"provider": "google", "credential": "mock-google-jwt-token"}
-        response = client.post("/api/v1/auth/oauth", json=oauth_data)
-        assert response.status_code == 200
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
+            oauth_data = {"provider": "google", "credential": "mock-google-jwt-token"}
+            response = client.post("/api/v1/auth/oauth", json=oauth_data)
+            assert response.status_code == 200
 
         # Verify user was created without organization (just-in-time)
         user = db.query(User).filter(User.email == "user@google.com").first()

@@ -22,9 +22,12 @@ from ..auth import (
     validate_password_strength,
     validate_password_history,
 )
-from ..google_oauth import verify_google_token
-from ..microsoft_oauth import verify_microsoft_token, exchange_code_for_token
-from ..github_oauth import (
+from ..google_oauth_consolidated import verify_google_token
+from ..microsoft_oauth_consolidated import (
+    verify_microsoft_token,
+    exchange_code_for_token,
+)
+from ..github_oauth_consolidated import (
     verify_github_token,
     exchange_code_for_token as github_exchange_code_for_token,
 )

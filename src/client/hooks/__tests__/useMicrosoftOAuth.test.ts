@@ -205,12 +205,10 @@ describe("useMicrosoftOAuth", () => {
 			await act(async () => {
 				await Promise.resolve();
 			});
-			expect(result.current.error).toBe("VITE_MICROSOFT_CLIENT_ID is not configured in environment variables");
+			expect(result.current.error).toBe("OAuth configuration is missing");
 
 			expect(result.current.isReady).toBe(false);
-			expect(mockOnError).toHaveBeenCalledWith(
-				"VITE_MICROSOFT_CLIENT_ID is not configured in environment variables"
-			);
+			expect(mockOnError).toHaveBeenCalledWith("OAuth configuration is missing");
 		});
 
 		it("should handle OAuth trigger when not ready", async () => {
@@ -229,8 +227,8 @@ describe("useMicrosoftOAuth", () => {
 				result.current.triggerOAuth();
 			});
 
-			expect(mockOnError).toHaveBeenCalledWith("Microsoft Sign-In not available");
-			expect(result.current.error).toBe("Microsoft Sign-In not available");
+			expect(mockOnError).toHaveBeenCalledWith("Sign-in service is not ready");
+			expect(result.current.error).toBe("Sign-in service is not ready");
 		});
 
 		it("should clear errors when clearError is called", async () => {

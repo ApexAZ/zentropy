@@ -418,7 +418,7 @@ class TestAccountLinking:
 class TestGoogleOAuthSecurityFix:
     """Test the security fix for Google OAuth account takeover prevention."""
 
-    @patch("api.google_oauth.verify_google_token")
+    @patch("api.google_oauth_consolidated.id_token.verify_token")
     def test_oauth_login_auto_links_local_account(
         self, mock_verify_token, client: TestClient, db: Session
     ):
@@ -435,15 +435,21 @@ class TestGoogleOAuthSecurityFix:
         db.add(local_user)
         db.commit()
 
-        # Mock Google token with same email
+        # Mock Google JWT token with same email
         mock_verify_token.return_value = {
-            "email": "user@example.com",
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id",
             "sub": "google_id_123",
+            "email": "user@example.com",
+            "given_name": "Test",
+            "family_name": "User",
             "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
         # Attempt Google OAuth login (should auto-link and succeed)
-        with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
             response = client.post(
                 "/api/v1/auth/oauth",
                 json={"provider": "google", "credential": "valid_google_token"},
@@ -461,7 +467,7 @@ class TestGoogleOAuthSecurityFix:
         assert updated_user.google_id == "google_id_123"
         assert updated_user.password_hash is not None  # Original password preserved
 
-    @patch("api.google_oauth.verify_google_token")
+    @patch("api.google_oauth_consolidated.id_token.verify_token")
     def test_oauth_login_allows_google_account_login(
         self, mock_verify_token, client: TestClient, db: Session
     ):
@@ -478,15 +484,21 @@ class TestGoogleOAuthSecurityFix:
         db.add(google_user)
         db.commit()
 
-        # Mock Google token verification
+        # Mock Google JWT token verification
         mock_verify_token.return_value = {
-            "email": "google@example.com",
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id",
             "sub": "google123",
+            "email": "google@example.com",
+            "given_name": "Google",
+            "family_name": "User",
             "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
         # Google OAuth login should work
-        with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
             response = client.post(
                 "/api/v1/auth/oauth",
                 json={"provider": "google", "credential": "fake_google_token"},
@@ -495,7 +507,7 @@ class TestGoogleOAuthSecurityFix:
         assert response.status_code == 200
         assert "access_token" in response.json()
 
-    @patch("api.google_oauth.verify_google_token")
+    @patch("api.google_oauth_consolidated.id_token.verify_token")
     def test_oauth_login_allows_hybrid_account_login(
         self, mock_verify_token, client: TestClient, db: Session
     ):
@@ -513,15 +525,21 @@ class TestGoogleOAuthSecurityFix:
         db.add(hybrid_user)
         db.commit()
 
-        # Mock Google token verification
+        # Mock Google JWT token verification
         mock_verify_token.return_value = {
-            "email": "hybrid@example.com",
+            "iss": "https://accounts.google.com",
+            "aud": "test-client-id",
             "sub": "google456",
+            "email": "hybrid@example.com",
+            "given_name": "Hybrid",
+            "family_name": "User",
             "email_verified": True,
+            "exp": 9999999999,
+            "iat": 1234567890
         }
 
         # Google OAuth login should work for hybrid accounts
-        with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
             response = client.post(
                 "/api/v1/auth/oauth",
                 json={"provider": "google", "credential": "fake_google_token"},
