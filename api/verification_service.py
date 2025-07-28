@@ -23,6 +23,7 @@ from .database import Base, get_enum_values
 from sqlalchemy import String, Boolean, DateTime, Integer, ForeignKey, Enum, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
+from .config import get_security_config
 
 
 class VerificationType(PyEnum):
@@ -139,50 +140,103 @@ class VerificationCodeService:
             return dt.replace(tzinfo=timezone.utc)
         return dt
 
-    # Type-specific configuration
-    TYPE_CONFIG = {
-        VerificationType.EMAIL_VERIFICATION: {
-            "expiration_minutes": 15,
-            "max_attempts": 3,
-            "rate_limit_minutes": 1,  # Min time between code generation requests
-            "hourly_limit": 6,  # Max verification emails per hour per user
-        },
-        VerificationType.TWO_FACTOR_AUTH: {
-            "expiration_minutes": 5,
-            "max_attempts": 3,
-            "rate_limit_minutes": 1,
-        },
-        VerificationType.PASSWORD_RESET: {
-            "expiration_minutes": 30,
-            "max_attempts": 5,
-            "rate_limit_minutes": 2,
-        },
-        VerificationType.PASSWORD_CHANGE: {
-            "expiration_minutes": 15,
-            "max_attempts": 3,
-            "rate_limit_minutes": 1,
-        },
-        VerificationType.EMAIL_CHANGE: {
-            "expiration_minutes": 15,
-            "max_attempts": 3,
-            "rate_limit_minutes": 1,
-        },
-        VerificationType.ACCOUNT_RECOVERY: {
-            "expiration_minutes": 60,
-            "max_attempts": 3,
-            "rate_limit_minutes": 5,
-        },
-        VerificationType.SENSITIVE_ACTION: {
-            "expiration_minutes": 10,
-            "max_attempts": 2,
-            "rate_limit_minutes": 1,
-        },
-    }
+    @classmethod
+    def _get_type_config(cls, verification_type: VerificationType) -> Dict[str, Any]:
+        """Get configuration for a verification type from security config"""
+        try:
+            config = get_security_config()
+            verification_config = config.verification
+
+            # Map verification types to their configuration
+            type_config_map = {
+                VerificationType.EMAIL_VERIFICATION: (
+                    verification_config.email_verification
+                ),
+                VerificationType.TWO_FACTOR_AUTH: verification_config.two_factor_auth,
+                VerificationType.PASSWORD_RESET: verification_config.password_reset,
+                VerificationType.PASSWORD_CHANGE: verification_config.password_change,
+                VerificationType.EMAIL_CHANGE: verification_config.email_change,
+                VerificationType.ACCOUNT_RECOVERY: verification_config.account_recovery,
+                VerificationType.SENSITIVE_ACTION: verification_config.sensitive_action,
+            }
+
+            return type_config_map.get(verification_type, {})
+
+        except Exception as e:
+            print(f"⚠️  Failed to load security config for verification, fallback: {e}")
+            return cls._get_fallback_type_config(verification_type)
+
+    @classmethod
+    def _get_fallback_type_config(
+        cls, verification_type: VerificationType
+    ) -> Dict[str, Any]:
+        """Fallback configuration if security config fails"""
+        # Original hardcoded configuration for backward compatibility
+        fallback_config = {
+            VerificationType.EMAIL_VERIFICATION: {
+                "expiration_minutes": 15,
+                "max_attempts": 3,
+                "rate_limit_minutes": 1,
+                "hourly_limit": 6,
+            },
+            VerificationType.TWO_FACTOR_AUTH: {
+                "expiration_minutes": 5,
+                "max_attempts": 3,
+                "rate_limit_minutes": 1,
+            },
+            VerificationType.PASSWORD_RESET: {
+                "expiration_minutes": 30,
+                "max_attempts": 5,
+                "rate_limit_minutes": 2,
+            },
+            VerificationType.PASSWORD_CHANGE: {
+                "expiration_minutes": 15,
+                "max_attempts": 3,
+                "rate_limit_minutes": 1,
+            },
+            VerificationType.EMAIL_CHANGE: {
+                "expiration_minutes": 15,
+                "max_attempts": 3,
+                "rate_limit_minutes": 1,
+            },
+            VerificationType.ACCOUNT_RECOVERY: {
+                "expiration_minutes": 60,
+                "max_attempts": 3,
+                "rate_limit_minutes": 5,
+            },
+            VerificationType.SENSITIVE_ACTION: {
+                "expiration_minutes": 10,
+                "max_attempts": 2,
+                "rate_limit_minutes": 1,
+            },
+        }
+
+        return fallback_config.get(verification_type, {})
 
     @classmethod
     def generate_code(cls) -> str:
-        """Generate a secure 6-digit numeric verification code"""
-        return f"{secrets.randbelow(900000) + 100000:06d}"
+        """Generate a secure verification code using security configuration"""
+        try:
+            config = get_security_config()
+            code_length = config.verification.code_length
+            code_type = config.verification.code_type
+
+            if code_type == "alphanumeric":
+                # Generate alphanumeric code
+                chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                return "".join(secrets.choice(chars) for _ in range(code_length))
+            else:
+                # Generate numeric code (default)
+                min_val = 10 ** (code_length - 1)
+                max_val = (10**code_length) - 1
+                range_val = max_val - min_val + 1
+                code_num = secrets.randbelow(range_val) + min_val
+                return f"{code_num:0{code_length}d}"
+
+        except Exception as e:
+            print(f"⚠️  Failed to get code config, using 6-digit fallback: {e}")
+            # Fallback to original behavior
+            return f"{secrets.randbelow(900000) + 100000:06d}"
 
     @classmethod
     def create_verification_code(
@@ -197,7 +251,7 @@ class VerificationCodeService:
         Raises:
             ValueError: If rate limiting prevents code generation
         """
-        config = cls.TYPE_CONFIG[verification_type]
+        config = cls._get_type_config(verification_type)
         now = datetime.now(timezone.utc)
 
         # Check rate limiting - prevent too frequent code generation

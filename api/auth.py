@@ -12,6 +12,7 @@ import secrets
 from .database import get_db
 from .schemas import TokenData
 from . import database
+from .config import get_security_config
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -45,9 +46,43 @@ def get_secret_key() -> str:
 
 
 SECRET_KEY = get_secret_key()
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-EXTENDED_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days in minutes (43200)
+
+
+# Get security configuration values (loaded dynamically to avoid circular imports)
+def _get_jwt_config():
+    """Get JWT configuration values from security config"""
+    config = get_security_config()
+    return {
+        "algorithm": config.jwt.algorithm,
+        "access_token_expire_minutes": config.jwt.access_token_expire_minutes,
+        "extended_token_expire_minutes": config.jwt.extended_token_expire_minutes,
+    }
+
+
+# Note: JWT configuration values are now loaded dynamically from security config
+# All functions use _get_jwt_config() to get current configuration values
+
+
+# Backward compatibility functions for external imports
+def get_access_token_expire_minutes() -> int:
+    """Get current access token expiration in minutes (for backward compatibility)"""
+    return _get_jwt_config()["access_token_expire_minutes"]
+
+
+def get_extended_token_expire_minutes() -> int:
+    """Get current extended token expiration in minutes (for backward compatibility)"""
+    return _get_jwt_config()["extended_token_expire_minutes"]
+
+
+def get_algorithm() -> str:
+    """Get current JWT algorithm (for backward compatibility)"""
+    return _get_jwt_config()["algorithm"]
+
+
+# Legacy constant access for existing imports
+ACCESS_TOKEN_EXPIRE_MINUTES = get_access_token_expire_minutes()
+EXTENDED_TOKEN_EXPIRE_MINUTES = get_extended_token_expire_minutes()
+ALGORITHM = get_algorithm()
 
 # Security scheme
 security = HTTPBearer()
@@ -70,29 +105,31 @@ def create_access_token(
 ) -> str:
     """Create a JWT access token with optional extended expiration for remember_me"""
     to_encode = data.copy()
+    jwt_config = _get_jwt_config()
 
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     elif remember_me is True:
-        # Extended expiration for remember me (30 days)
+        # Extended expiration for remember me
         expire = datetime.now(timezone.utc) + timedelta(
-            minutes=EXTENDED_TOKEN_EXPIRE_MINUTES
+            minutes=jwt_config["extended_token_expire_minutes"]
         )
     else:
-        # Normal expiration (30 minutes)
+        # Normal expiration
         expire = datetime.now(timezone.utc) + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+            minutes=jwt_config["access_token_expire_minutes"]
         )
 
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=jwt_config["algorithm"])
     return str(encoded_jwt)
 
 
 def verify_token_string(token: str) -> Dict[str, Any]:
     """Verify JWT token string and return payload (for testing)"""
+    jwt_config = _get_jwt_config()
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[jwt_config["algorithm"]])
         return dict(payload)  # Ensure we return a proper Dict[str, Any]
     except JWTError:
         raise HTTPException(
@@ -105,6 +142,7 @@ def verify_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> TokenData:
     """Verify JWT token and return token data"""
+    jwt_config = _get_jwt_config()
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -113,7 +151,7 @@ def verify_token(
 
     try:
         payload = jwt.decode(
-            credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM]
+            credentials.credentials, SECRET_KEY, algorithms=[jwt_config["algorithm"]]
         )
         user_id = payload.get("sub")
         if user_id is None:
@@ -177,23 +215,61 @@ def authenticate_user(
 def validate_password_strength(
     password: str, user_info: Optional[Dict[str, Any]] = None
 ) -> bool:
-    """Basic password validation"""
+    """Password validation using security configuration"""
     _ = user_info  # Reserved for future enhanced validation
-    if len(password) < 8:
+    config = get_security_config()
+    password_config = config.password
+
+    # Check minimum length
+    if len(password) < password_config.min_length:
+        min_len = password_config.min_length
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must be at least 8 characters long",
+            detail=f"Password must be at least {min_len} characters long",
         )
 
-    # Add more validation rules as needed
-    has_upper = any(c.isupper() for c in password)
-    has_lower = any(c.islower() for c in password)
-    has_digit = any(c.isdigit() for c in password)
+    # Build validation requirements and error messages
+    validation_errors = []
 
-    if not (has_upper and has_lower and has_digit):
+    if password_config.require_uppercase and not any(c.isupper() for c in password):
+        validation_errors.append("uppercase")
+
+    if password_config.require_lowercase and not any(c.islower() for c in password):
+        validation_errors.append("lowercase")
+
+    if password_config.require_digits and not any(c.isdigit() for c in password):
+        validation_errors.append("numeric")
+
+    if password_config.require_special_chars:
+        special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
+        if not any(c in special_chars for c in password):
+            validation_errors.append("special")
+
+    if validation_errors:
+        # Create user-friendly error message
+        error_parts = []
+        if "uppercase" in validation_errors:
+            error_parts.append("uppercase")
+        if "lowercase" in validation_errors:
+            error_parts.append("lowercase")
+        if "numeric" in validation_errors:
+            error_parts.append("numeric")
+        if "special" in validation_errors:
+            error_parts.append("special")
+
+        if len(error_parts) == 1:
+            detail = f"Password must contain {error_parts[0]} characters"
+        elif len(error_parts) == 2:
+            part1, part2 = error_parts[0], error_parts[1]
+            detail = f"Password must contain {part1} and {part2} characters"
+        else:
+            parts_str = ", ".join(error_parts[:-1])
+            last_part = error_parts[-1]
+            detail = f"Password must contain {parts_str}, and {last_part} characters"
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Password must contain uppercase, lowercase, and numeric characters",
+            detail=detail,
         )
 
     return True
@@ -228,13 +304,18 @@ def validate_password_history(
             detail="Cannot reuse current password",
         )
 
-    # Check for reuse against the 4 most recent passwords in history.
-    # Combined with the current password, this prevents reuse of the last 5 passwords.
+    # Check for reuse against recent passwords in history.
+    # The history count is configurable via security config.
+    config = get_security_config()
+    history_limit = (
+        config.password.history_count - 1
+    )  # Subtract 1 because current password is checked separately
+
     password_history = (
         db.query(database.PasswordHistory)
         .filter(database.PasswordHistory.user_id == user_id)
         .order_by(database.PasswordHistory.created_at.desc())
-        .limit(4)
+        .limit(history_limit)
         .all()
     )
 

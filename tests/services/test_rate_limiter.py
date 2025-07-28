@@ -7,6 +7,7 @@ from fastapi import Request
 from fastapi.testclient import TestClient
 
 from api.rate_limiter import RateLimiter, RateLimitType, RateLimitError, get_client_ip
+from api.config import reload_security_config
 
 
 class TestRateLimiter:
@@ -28,12 +29,17 @@ class TestRateLimiter:
             "RATE_LIMIT_OAUTH_REQUESTS": "25",
             "RATE_LIMIT_OAUTH_WINDOW_MINUTES": "2"
         }):
+            # Reload security configuration to pick up environment changes
+            reload_security_config()
             rate_limiter = RateLimiter()
             assert rate_limiter.enabled is True
             assert rate_limiter.auth_requests == 10
             assert rate_limiter.auth_window_minutes == 5
             assert rate_limiter.oauth_requests == 25
             assert rate_limiter.oauth_window_minutes == 2
+        
+        # Cleanup: Reload configuration to restore defaults after test
+        reload_security_config()
 
     def test_get_rate_limit_config(self):
         """Test getting rate limit configuration for different types."""

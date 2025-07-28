@@ -101,9 +101,9 @@ def resend_verification_email(
 
             # Find the most recent verification code to calculate rate limit expiry
             now = datetime.now(timezone.utc)
-            config = VerificationCodeService.TYPE_CONFIG[
+            config = VerificationCodeService._get_type_config(
                 VerificationType.EMAIL_VERIFICATION
-            ]
+            )
             rate_limit_minutes = config["rate_limit_minutes"]
 
             # Query for the most recent code that's causing the rate limit

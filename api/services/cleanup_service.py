@@ -135,7 +135,47 @@ class CleanupService:
         except Exception as e:
             logger.error(f"❌ Error stopping cleanup scheduler: {e}")
 
-    async def _cleanup_verification_codes(self) -> None:
+    async def _perform_verification_codes_cleanup(
+        self, db: Any, retention_cutoff: datetime
+    ) -> int:
+        """Perform the actual verification codes cleanup logic"""
+        total_cleaned = 0
+        batch_size = self.config["verification_codes"]["batch_size"]
+
+        while True:
+            # Clean expired codes in batches to avoid long locks
+            # First, select IDs to delete
+            # (SQLAlchemy doesn't support LIMIT with DELETE)
+            ids_to_delete = (
+                db.query(VerificationCode.id)
+                .filter(
+                    (VerificationCode.expires_at <= retention_cutoff)
+                    | (VerificationCode.is_used.is_(True))
+                )
+                .limit(batch_size)
+                .all()
+            )
+
+            if not ids_to_delete:
+                break
+
+            # Extract IDs and delete by ID list
+            id_list = [row.id for row in ids_to_delete]
+            result = (
+                db.query(VerificationCode)
+                .filter(VerificationCode.id.in_(id_list))
+                .delete(synchronize_session=False)
+            )
+
+            total_cleaned += result
+            db.commit()
+
+            # Brief pause to avoid overwhelming the database
+            await asyncio.sleep(0.1)
+
+        return total_cleaned
+
+    async def _cleanup_verification_codes(self, db_session: Any = None) -> None:
         """Clean up expired verification codes in batches"""
         start_time = datetime.now(timezone.utc)
         total_cleaned = 0
@@ -148,39 +188,19 @@ class CleanupService:
                 hours=self.config["verification_codes"]["retention_hours"]
             )
 
-            with SessionLocal() as db:
-                batch_size = self.config["verification_codes"]["batch_size"]
-
-                while True:
-                    # Clean expired codes in batches to avoid long locks
-                    # First, select IDs to delete
-                    # (SQLAlchemy doesn't support LIMIT with DELETE)
-                    ids_to_delete = (
-                        db.query(VerificationCode.id)
-                        .filter(
-                            (VerificationCode.expires_at <= retention_cutoff)
-                            | (VerificationCode.is_used.is_(True))
-                        )
-                        .limit(batch_size)
-                        .all()
+            # Use provided session or create new one
+            if db_session is not None:
+                # Use provided session (for testing)
+                db = db_session
+                total_cleaned = await self._perform_verification_codes_cleanup(
+                    db, retention_cutoff
+                )
+            else:
+                # Use new session (for production)
+                with SessionLocal() as db:
+                    total_cleaned = await self._perform_verification_codes_cleanup(
+                        db, retention_cutoff
                     )
-
-                    if not ids_to_delete:
-                        break
-
-                    # Extract IDs and delete by ID list
-                    id_list = [row.id for row in ids_to_delete]
-                    result = (
-                        db.query(VerificationCode)
-                        .filter(VerificationCode.id.in_(id_list))
-                        .delete(synchronize_session=False)
-                    )
-
-                    total_cleaned += result
-                    db.commit()
-
-                    # Brief pause to avoid overwhelming the database
-                    await asyncio.sleep(0.1)
 
             duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -193,7 +213,44 @@ class CleanupService:
             logger.error(f"❌ Verification codes cleanup failed: {e}")
             raise
 
-    async def _cleanup_operation_tokens(self) -> None:
+    async def _perform_operation_tokens_cleanup(
+        self, db: Any, retention_cutoff: datetime
+    ) -> int:
+        """Perform the actual operation tokens cleanup logic"""
+        total_cleaned = 0
+        batch_size = self.config["operation_tokens"]["batch_size"]
+
+        while True:
+            # Clean expired tokens in batches
+            # First, select JTIs to delete
+            # (SQLAlchemy doesn't support LIMIT with DELETE)
+            jtis_to_delete = (
+                db.query(UsedOperationToken.jti)
+                .filter(UsedOperationToken.expires_at <= retention_cutoff)
+                .limit(batch_size)
+                .all()
+            )
+
+            if not jtis_to_delete:
+                break
+
+            # Extract JTIs and delete by JTI list
+            jti_list = [row.jti for row in jtis_to_delete]
+            result = (
+                db.query(UsedOperationToken)
+                .filter(UsedOperationToken.jti.in_(jti_list))
+                .delete(synchronize_session=False)
+            )
+
+            total_cleaned += result
+            db.commit()
+
+            # Brief pause to avoid overwhelming the database
+            await asyncio.sleep(0.1)
+
+        return total_cleaned
+
+    async def _cleanup_operation_tokens(self, db_session: Any = None) -> None:
         """Clean up expired operation tokens in batches"""
         start_time = datetime.now(timezone.utc)
         total_cleaned = 0
@@ -206,36 +263,19 @@ class CleanupService:
                 hours=self.config["operation_tokens"]["retention_hours"]
             )
 
-            with SessionLocal() as db:
-                batch_size = self.config["operation_tokens"]["batch_size"]
-
-                while True:
-                    # Clean expired tokens in batches
-                    # First, select JTIs to delete
-                    # (SQLAlchemy doesn't support LIMIT with DELETE)
-                    jtis_to_delete = (
-                        db.query(UsedOperationToken.jti)
-                        .filter(UsedOperationToken.expires_at <= retention_cutoff)
-                        .limit(batch_size)
-                        .all()
+            # Use provided session or create new one
+            if db_session is not None:
+                # Use provided session (for testing)
+                db = db_session
+                total_cleaned = await self._perform_operation_tokens_cleanup(
+                    db, retention_cutoff
+                )
+            else:
+                # Use new session (for production)
+                with SessionLocal() as db:
+                    total_cleaned = await self._perform_operation_tokens_cleanup(
+                        db, retention_cutoff
                     )
-
-                    if not jtis_to_delete:
-                        break
-
-                    # Extract JTIs and delete by JTI list
-                    jti_list = [row.jti for row in jtis_to_delete]
-                    result = (
-                        db.query(UsedOperationToken)
-                        .filter(UsedOperationToken.jti.in_(jti_list))
-                        .delete(synchronize_session=False)
-                    )
-
-                    total_cleaned += result
-                    db.commit()
-
-                    # Brief pause to avoid overwhelming the database
-                    await asyncio.sleep(0.1)
 
             duration = (datetime.now(timezone.utc) - start_time).total_seconds()
 
@@ -248,12 +288,15 @@ class CleanupService:
             logger.error(f"❌ Operation tokens cleanup failed: {e}")
             raise
 
-    async def manual_cleanup(self, cleanup_type: str = "all") -> Dict[str, Any]:
+    async def manual_cleanup(
+        self, cleanup_type: str = "all", db_session: Any = None
+    ) -> Dict[str, Any]:
         """
         Manually trigger cleanup operations (for testing/admin use)
 
         Args:
             cleanup_type: "all", "verification_codes", or "operation_tokens"
+            db_session: Optional database session (for testing)
 
         Returns:
             Dict with cleanup results
@@ -263,11 +306,11 @@ class CleanupService:
 
         try:
             if cleanup_type in ["all", "verification_codes"]:
-                await self._cleanup_verification_codes()
+                await self._cleanup_verification_codes(db_session)
                 results["verification_codes"] = "completed"
 
             if cleanup_type in ["all", "operation_tokens"]:
-                await self._cleanup_operation_tokens()
+                await self._cleanup_operation_tokens(db_session)
                 results["operation_tokens"] = "completed"
 
             duration = (datetime.now(timezone.utc) - start_time).total_seconds()

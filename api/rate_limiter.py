@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 
 from fastapi import HTTPException
+from .config import get_security_config
 
 
 class RateLimitType(Enum):
@@ -84,7 +85,42 @@ class RateLimiter:
             self.redis_client = None
 
     def _load_config(self) -> None:
-        """Load rate limiting configuration from environment variables."""
+        """Load rate limiting configuration from centralized security config."""
+        try:
+            config = get_security_config()
+            rate_config = config.rate_limiting
+
+            # Load all configuration from centralized security config
+            self.enabled = rate_config.enabled
+
+            # Authentication endpoints
+            self.auth_requests = rate_config.auth_requests
+            self.auth_window_minutes = rate_config.auth_window_minutes
+
+            # OAuth endpoints
+            self.oauth_requests = rate_config.oauth_requests
+            self.oauth_window_minutes = rate_config.oauth_window_minutes
+
+            # General API endpoints
+            self.api_requests = rate_config.api_requests
+            self.api_window_minutes = rate_config.api_window_minutes
+
+            # Email endpoints
+            self.email_requests = rate_config.email_requests
+            self.email_window_minutes = rate_config.email_window_minutes
+
+            # Exponential backoff configuration
+            self.exponential_backoff_enabled = rate_config.exponential_backoff_enabled
+            self.violation_window_hours = rate_config.violation_window_hours
+            self.max_backoff_seconds = rate_config.max_backoff_seconds
+
+        except Exception as e:
+            # Fallback to environment variables if security config fails
+            print(f"⚠️  Failed to load security config, fallback to env vars: {e}")
+            self._load_config_from_env()
+
+    def _load_config_from_env(self) -> None:
+        """Fallback method to load configuration from environment variables."""
         enabled_str = os.getenv("RATE_LIMIT_ENABLED", "true").lower()
         self.enabled = enabled_str == "true"
 
