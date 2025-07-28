@@ -45,7 +45,7 @@ class TestAuthenticationFlow:
             "first_name": "Test",
             "last_name": "User",
             "email": unique_email,
-            "password": "Password123",
+            "password": "MyS3cur3P@ssw0rd!",
             "terms_agreement": True,
             "has_projects_access": True
         }
@@ -84,7 +84,7 @@ class TestAuthenticationFlow:
             "first_name": "Test",
             "last_name": "User",
             "email": "not-an-email",
-            "password": "Password123",
+            "password": "MyS3cur3P@ssw0rd!",
             "terms_agreement": True
         }
         
@@ -101,7 +101,7 @@ class TestAuthenticationFlow:
             "first_name": "First",
             "last_name": "User",
             "email": unique_email,
-            "password": "Password123",
+            "password": "MyS3cur3P@ssw0rd!",
             "terms_agreement": True,
             "has_projects_access": True
         }

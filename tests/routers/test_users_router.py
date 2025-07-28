@@ -600,11 +600,11 @@ class TestPasswordManagement:
             assert response.status_code == 200
             current_password = new_password
 
-        # Assert: Verify that only 4 password history entries exist (plus current password)
+        # Assert: Verify password history entries (test changes password 7 times, all kept with 12-password limit)
         history_count = db.query(PasswordHistory).filter(
             PasswordHistory.user_id == user_with_known_password.id
         ).count()
-        assert history_count == 4
+        assert history_count == 7  # Changed password 7 times, all should be in history with 12-password limit
     
     def test_change_password_weak_password(self, client, user_with_known_password):
         """Test password change with weak password"""

@@ -55,9 +55,14 @@ class PasswordConfig:
     # Password history settings
     history_count: int  # Number of previous passwords to remember
 
-    # Password complexity scoring (future enhancement)
-    enable_complexity_scoring: bool = False
-    min_complexity_score: int = 0
+    # Advanced password complexity scoring
+    enable_complexity_scoring: bool = True
+    min_complexity_score: int = (
+        60  # Minimum score (0-100) required for password acceptance
+    )
+
+    # Password breach detection with HaveIBeenPwned
+    enable_breach_detection: bool = True
 
 
 @dataclass
@@ -207,11 +212,15 @@ class SecurityConfigLoader:
             default_min_length = 12
             default_history_count = 24
             default_require_special = True
+            default_enable_complexity = True
+            default_min_complexity = 70
         else:
-            # Development defaults - more lenient for testing
+            # Development defaults - security-aligned for consistent testing
             default_min_length = 8
-            default_history_count = 4
+            default_history_count = 12  # Increased from 4 to meet security standards
             default_require_special = False
+            default_enable_complexity = True  # Enable for consistent testing
+            default_min_complexity = 60
 
         return PasswordConfig(
             min_length=SecurityConfigLoader.get_int_env(
@@ -236,10 +245,19 @@ class SecurityConfigLoader:
                 max_value=50,
             ),
             enable_complexity_scoring=SecurityConfigLoader.get_bool_env(
-                "PASSWORD_ENABLE_COMPLEXITY_SCORING", False
+                "PASSWORD_ENABLE_COMPLEXITY_SCORING", default_enable_complexity
             ),
             min_complexity_score=SecurityConfigLoader.get_int_env(
-                "PASSWORD_MIN_COMPLEXITY_SCORE", 0, min_value=0, max_value=100
+                "PASSWORD_MIN_COMPLEXITY_SCORE",
+                default_min_complexity,
+                min_value=0,
+                max_value=100,
+            ),
+            enable_breach_detection=SecurityConfigLoader.get_bool_env(
+                "PASSWORD_ENABLE_BREACH_DETECTION",
+                (
+                    True if environment == Environment.PRODUCTION else False
+                ),  # Disable for dev/test
             ),
         )
 

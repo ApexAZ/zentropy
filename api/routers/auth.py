@@ -511,14 +511,20 @@ def reset_password(
             db.rollback()
             raise
 
-    # Clean up old password history, keeping the 4 most recent entries.
-    # The 5th password is the current one in the users table.
+    # Clean up old password history using configurable history limit
+    from ..config import get_security_config
+
+    config = get_security_config()
+    history_limit = (
+        config.password.history_count - 1
+    )  # Subtract 1 because current password isn't in history
+
     all_ids_query = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == user.id)
         .order_by(database.PasswordHistory.created_at.desc())
     )
-    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
+    ids_to_delete = [row[0] for row in all_ids_query.offset(history_limit).all()]
 
     if ids_to_delete:
         db.query(database.PasswordHistory).filter(
@@ -678,13 +684,20 @@ def reset_password_with_code(
             db.rollback()
             raise
 
-    # Clean up old password history, keeping the 4 most recent entries
+    # Clean up old password history using configurable history limit
+    from ..config import get_security_config
+
+    config = get_security_config()
+    history_limit = (
+        config.password.history_count - 1
+    )  # Subtract 1 because current password isn't in history
+
     all_ids_query = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == user.id)
         .order_by(database.PasswordHistory.created_at.desc())
     )
-    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
+    ids_to_delete = [row[0] for row in all_ids_query.offset(history_limit).all()]
 
     if ids_to_delete:
         db.query(database.PasswordHistory).filter(

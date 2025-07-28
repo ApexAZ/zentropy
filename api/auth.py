@@ -272,6 +272,32 @@ def validate_password_strength(
             detail=detail,
         )
 
+    # Check for password breaches if enabled
+    if password_config.enable_breach_detection:
+        from .password_breach_detection import check_password_breach_sync
+
+        check_password_breach_sync(password)
+
+    # Advanced complexity analysis if enabled
+    if password_config.enable_complexity_scoring:
+        from .password_strength_analyzer import analyze_password_strength
+
+        analysis = analyze_password_strength(password, user_info)
+
+        # Check if password meets minimum complexity score
+        if analysis.complexity_score < password_config.min_complexity_score:
+            # Create detailed error message with suggestions
+            suggestions_text = ". Consider: " + "; ".join(analysis.suggestions[:2])
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Password complexity score ({analysis.complexity_score}/100) "
+                    f"is below the required minimum "
+                    f"({password_config.min_complexity_score}){suggestions_text}"
+                ),
+            )
+
     return True
 
 
