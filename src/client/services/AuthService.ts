@@ -145,8 +145,18 @@ export class AuthService {
 	 */
 	static async signOut(): Promise<void> {
 		// Clear authentication tokens from both storage locations
+		// Use direct storage access for immediate effect (synchronous compatibility)
 		localStorage.removeItem("authToken");
 		sessionStorage.removeItem("authToken");
+
+		// Also clear via secure storage for consistency (async enhancement)
+		try {
+			const { clearAuthTokenAsync } = await import("../utils/auth");
+			await clearAuthTokenAsync();
+		} catch (error) {
+			// Don't fail logout if secure clearing fails
+			console.warn("Secure token clearing failed during logout:", error);
+		}
 	}
 
 	/**
@@ -241,11 +251,72 @@ export class AuthService {
 	}
 
 	/**
-	 * Reset password using user ID from email verification (simplified flow)
+	 * Reset password using verification code (secure flow)
+	 * Uses the centralized VerificationCodeService for security
+	 */
+	static async resetPasswordWithCode(
+		email: string,
+		verificationCode: string,
+		newPassword: string
+	): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/auth/reset-password-with-code", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				email,
+				verification_code: verificationCode,
+				new_password: newPassword
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.detail || "Failed to reset password");
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Password reset successfully" };
+	}
+
+	/**
+	 * Request a password reset verification code
+	 * Sends a secure verification code to the user's email
+	 */
+	static async requestPasswordResetCode(email: string): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/auth/request-password-reset", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({ email })
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			// Preserve HTTP response structure for rate limiting
+			const error = new Error(
+				errorData.detail?.message || errorData.detail || "Failed to send password reset code"
+			);
+			(error as any).response = {
+				status: response.status,
+				data: errorData
+			};
+			throw error;
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Password reset code sent! Please check your email." };
+	}
+
+	/**
+	 * Reset password using user ID from email verification (DEPRECATED - use resetPasswordWithCode)
+	 * @deprecated This method uses an insecure token pattern. Use resetPasswordWithCode instead.
 	 */
 	static async resetPasswordWithUserId(newPassword: string, userId: string): Promise<{ message: string }> {
-		// For now, create a simple token from user_id - this is temporary
-		// In a real system, we'd want a proper signed token, but for simplicity we'll use user_id
+		// SECURITY WARNING: This creates a predictable token pattern
+		// This is maintained for backward compatibility only - migrate to resetPasswordWithCode
 		const simpleToken = `verified_user_${userId}`;
 		return this.resetPassword(newPassword, simpleToken);
 	}

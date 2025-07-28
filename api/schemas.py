@@ -390,6 +390,42 @@ class ResetPasswordRequest(BaseModel):
     )
 
 
+class RequestPasswordResetRequest(BaseModel):
+    """Request a password reset verification code."""
+
+    email: EmailStr = Field(..., description="Email address to send reset code to")
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"email": "user@example.com"}}
+    )
+
+
+class ResetPasswordWithCodeRequest(BaseModel):
+    """Reset password using verification code."""
+
+    email: EmailStr = Field(..., description="Email address for password reset")
+    verification_code: str = Field(
+        ...,
+        min_length=6,
+        max_length=6,
+        pattern="^[0-9]{6}$",
+        description="6-digit verification code",
+    )
+    new_password: str = Field(
+        ..., min_length=8, max_length=128, description="New password"
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "user@example.com",
+                "verification_code": "123456",
+                "new_password": "NewSecurePassword123!",
+            }
+        }
+    )
+
+
 # Generic response schemas
 class MessageResponse(BaseModel):
     message: str

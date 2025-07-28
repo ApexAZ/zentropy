@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
 import { AuthService } from "../services/AuthService";
 import { UserService } from "../services/UserService";
+import { getAuthTokenAsync, setAuthTokenAsync } from "../utils/auth";
 import type { AuthUser, AuthState } from "../types";
 
 export const useAuth = () => {
@@ -21,9 +22,15 @@ export const useAuth = () => {
 		let isMounted = true;
 
 		const validateExistingToken = async () => {
-			// Check for token in localStorage (remember me) or sessionStorage (session only)
-			// Priority: sessionStorage first (current session), then localStorage (remember me)
-			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
+			// Get token using atomic operations when possible, fallback to direct access
+			let token: string | null = null;
+			try {
+				token = await getAuthTokenAsync();
+			} catch {
+				// Fallback to direct storage access for backward compatibility
+				token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
+			}
+
 			if (token) {
 				try {
 					// Validate token with API and get user info using service layer
@@ -45,7 +52,7 @@ export const useAuth = () => {
 					}
 				} catch (error) {
 					logger.warn("Failed to validate token", { error });
-					// Token is invalid, clear tokens using AuthService
+					// Token is invalid, clear tokens using AuthService (includes atomic operations)
 					await AuthService.signOut();
 
 					if (isMounted) {
@@ -68,7 +75,27 @@ export const useAuth = () => {
 	}, []);
 
 	const login = (token: string, user: AuthUser, rememberMe: boolean = false) => {
-		// Store token based on remember me preference
+		// Store token with improved atomic operations when possible, fallback to direct storage
+		const storeTokenSafely = async () => {
+			try {
+				const success = await setAuthTokenAsync(token, rememberMe);
+				if (!success) {
+					throw new Error("Atomic token storage failed");
+				}
+			} catch (error) {
+				// Fallback to direct storage for immediate compatibility
+				logger.warn("Using direct storage fallback for token", { error });
+				if (rememberMe) {
+					localStorage.setItem("authToken", token);
+					sessionStorage.removeItem("authToken");
+				} else {
+					sessionStorage.setItem("authToken", token);
+					localStorage.removeItem("authToken");
+				}
+			}
+		};
+
+		// Store token immediately for backward compatibility, then enhance with atomic operations
 		if (rememberMe) {
 			// Remember me: store in localStorage (persists across browser sessions)
 			localStorage.setItem("authToken", token);
@@ -81,6 +108,9 @@ export const useAuth = () => {
 			localStorage.removeItem("authToken");
 		}
 
+		// Enhance storage with atomic operations in background
+		storeTokenSafely();
+
 		setAuthState({
 			isAuthenticated: true,
 			user,
@@ -92,8 +122,16 @@ export const useAuth = () => {
 
 	const logout = async (): Promise<void> => {
 		try {
+			// Get token using atomic operations when possible
+			let token: string | null = null;
+			try {
+				token = await getAuthTokenAsync();
+			} catch {
+				// Fallback to direct storage access
+				token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
+			}
+
 			// Call logout endpoint with current token
-			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 			if (token) {
 				await fetch("/api/v1/auth/logout", {
 					method: "POST",
@@ -107,7 +145,7 @@ export const useAuth = () => {
 			// Log error but don't prevent logout
 			console.warn("Logout API call failed:", error);
 		} finally {
-			// Clear authentication tokens using AuthService
+			// Clear authentication tokens using AuthService (includes atomic operations)
 			await AuthService.signOut();
 
 			// Clear React state
@@ -129,8 +167,16 @@ export const useAuth = () => {
 	const logoutDueToInactivity = useCallback(async (): Promise<void> => {
 		console.warn("Session expired due to inactivity");
 		try {
+			// Get token using atomic operations when possible
+			let token: string | null = null;
+			try {
+				token = await getAuthTokenAsync();
+			} catch {
+				// Fallback to direct storage access
+				token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
+			}
+
 			// Call logout endpoint with current token
-			const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken");
 			if (token) {
 				await fetch("/api/v1/auth/logout", {
 					method: "POST",
@@ -144,7 +190,7 @@ export const useAuth = () => {
 			// Log error but don't prevent logout
 			console.warn("Logout API call failed:", error);
 		} finally {
-			// Clear authentication tokens using AuthService
+			// Clear authentication tokens using AuthService (includes atomic operations)
 			await AuthService.signOut();
 
 			// Clear React state

@@ -19,6 +19,8 @@ from ..schemas import (
     VerificationCodeRequest,
     VerificationCodeResponse,
     ResetPasswordRequest,
+    RequestPasswordResetRequest,
+    ResetPasswordWithCodeRequest,
 )
 from ..auth import (
     authenticate_user,
@@ -506,6 +508,172 @@ def reset_password(
 
     # Clean up old password history, keeping the 4 most recent entries.
     # The 5th password is the current one in the users table.
+    all_ids_query = (
+        db.query(database.PasswordHistory.id)
+        .filter(database.PasswordHistory.user_id == user.id)
+        .order_by(database.PasswordHistory.created_at.desc())
+    )
+    ids_to_delete = [row[0] for row in all_ids_query.offset(4).all()]
+
+    if ids_to_delete:
+        db.query(database.PasswordHistory).filter(
+            database.PasswordHistory.id.in_(ids_to_delete)
+        ).delete(synchronize_session=False)
+
+    # Update password
+    user.password_hash = get_password_hash(request.new_password)
+
+    # Update the user's updated_at timestamp to indicate password change
+    user.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+
+    return MessageResponse(message="Password reset successfully")
+
+
+@router.post("/request-password-reset", response_model=MessageResponse)
+def request_password_reset(
+    fastapi_request: Request,
+    request: RequestPasswordResetRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Request a password reset verification code.
+    Sends a secure verification code to the user's email using VerificationCodeService.
+    """
+    from ..verification_service import VerificationCodeService, VerificationType
+    from ..email_service import send_password_reset_code_email
+
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Find user by email
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        # Don't reveal if email exists - return success message anyway for security
+        return MessageResponse(
+            message=(
+                "If an account with that email exists, "
+                "you will receive a password reset code."
+            )
+        )
+
+    try:
+        # Generate secure verification code using central service
+        code, _ = VerificationCodeService.create_verification_code(
+            db=db, user_id=user.id, verification_type=VerificationType.PASSWORD_RESET
+        )
+
+        # Generate display name for email
+        from ..utils.display_name import generate_display_name_from_user
+
+        user_name = generate_display_name_from_user(user)
+
+        # Send password reset email with verification code
+        email_sent = send_password_reset_code_email(
+            email=str(user.email), code=code, user_name=user_name
+        )
+
+        if not email_sent:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send password reset email",
+            )
+
+    except ValueError as e:
+        # Handle rate limiting from VerificationCodeService
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(e)
+        )
+    except Exception as e:
+        # Log the error but don't reveal internal details
+        print(f"Password reset request failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process password reset request",
+        )
+
+    return MessageResponse(
+        message=(
+            "If an account with that email exists, "
+            "you will receive a password reset code."
+        )
+    )
+
+
+@router.post("/reset-password-with-code", response_model=MessageResponse)
+def reset_password_with_code(
+    fastapi_request: Request,
+    request: ResetPasswordWithCodeRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Reset user password using verification code.
+    Uses VerificationCodeService for secure code validation.
+    """
+    from ..verification_service import VerificationCodeService, VerificationType
+
+    # Apply rate limiting
+    client_ip = get_client_ip(fastapi_request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Find user by email
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or verification code",
+        )
+
+    try:
+        # Verify the code using central service
+        verification_result = VerificationCodeService.verify_code(
+            db=db,
+            user_id=user.id,
+            code=request.verification_code,
+            verification_type=VerificationType.PASSWORD_RESET,
+        )
+
+        if not verification_result["valid"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired verification code",
+            )
+
+    except ValueError as e:
+        # Handle verification errors (too many attempts, etc.)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Validate new password strength
+    try:
+        validate_password_strength(request.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    # Validate password history to prevent reuse of recent passwords
+    validate_password_history(request.new_password, user.id, user.password_hash, db)
+
+    # Add the OLD password to history before updating
+    if user.password_hash:  # Only add to history if user had a password before
+        # Store the old password hash before updating
+        old_password_hash = user.password_hash
+
+        # Create and add password history entry
+        password_history_entry = database.PasswordHistory(
+            user_id=user.id, password_hash=old_password_hash
+        )
+        db.add(password_history_entry)
+
+        # Flush to ensure the history entry is persisted for cleanup query
+        try:
+            db.flush()
+        except Exception:
+            # If flush fails, rollback and re-raise
+            db.rollback()
+            raise
+
+    # Clean up old password history, keeping the 4 most recent entries
     all_ids_query = (
         db.query(database.PasswordHistory.id)
         .filter(database.PasswordHistory.user_id == user.id)

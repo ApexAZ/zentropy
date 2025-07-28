@@ -9,6 +9,8 @@ vi.mock("../../services/AuthService", () => ({
 	AuthService: {
 		validateEmail: vi.fn(),
 		sendEmailVerification: vi.fn(),
+		requestPasswordResetCode: vi.fn(),
+		resetPasswordWithCode: vi.fn(),
 		verifyCode: vi.fn(),
 		resetPasswordWithUserId: vi.fn()
 	}
@@ -72,12 +74,12 @@ describe("ForgotPasswordFlow", () => {
 			await fastStateSync();
 
 			expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
-			expect(AuthService.sendEmailVerification).not.toHaveBeenCalled();
+			expect(AuthService.requestPasswordResetCode).not.toHaveBeenCalled();
 		});
 
-		it("calls AuthService.sendEmailVerification with email", async () => {
+		it("calls AuthService.requestPasswordResetCode with email", async () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
-			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
+			(AuthService.requestPasswordResetCode as any).mockResolvedValue({ message: "Reset code sent" });
 
 			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
@@ -89,12 +91,12 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			expect(AuthService.sendEmailVerification).toHaveBeenCalledWith("test@example.com");
+			expect(AuthService.requestPasswordResetCode).toHaveBeenCalledWith("test@example.com");
 		});
 
 		it("proceeds to verification step after successful email send", async () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
-			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
+			(AuthService.requestPasswordResetCode as any).mockResolvedValue({ message: "Reset code sent" });
 
 			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
@@ -106,16 +108,19 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			// Should show EmailVerificationModal
-			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
-			expect(screen.getByText("Check Your Email")).toBeInTheDocument();
-			expect(screen.getByText("Enter the reset code sent to your email address")).toBeInTheDocument();
-			expect(screen.getByTestId("operation-type")).toHaveTextContent("Operation: password_reset");
+			// Should show verification code input (secure flow doesn't use modal)
+			expect(screen.getByText("Enter Verification Code")).toBeInTheDocument();
+			expect(
+				screen.getByText(content => {
+					return content.includes("We've sent a 6-digit verification code to");
+				})
+			).toBeInTheDocument();
+			expect(screen.getByText("test@example.com")).toBeInTheDocument();
 		});
 
-		it("proceeds to verification even on email send error (security)", async () => {
+		it("shows error message on email send failure (secure flow)", async () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
-			(AuthService.sendEmailVerification as any).mockRejectedValue(new Error("Email not found"));
+			(AuthService.requestPasswordResetCode as any).mockRejectedValue(new Error("Rate limit exceeded"));
 
 			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
@@ -127,8 +132,9 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			// Should still proceed to verification step to prevent email enumeration
-			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
+			// Should show the actual error message (secure flow shows real errors)
+			expect(screen.getByText("Rate limit exceeded")).toBeInTheDocument();
+			expect(screen.queryByText("Enter Verification Code")).not.toBeInTheDocument();
 		});
 
 		it("calls onCancel when cancel button is clicked", async () => {
@@ -247,11 +253,15 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(resetButton);
 			await fastStateSync();
 
-			expect(AuthService.resetPasswordWithUserId).toHaveBeenCalledWith("NewPassword123!", "mock-user-id-123");
+			expect(AuthService.resetPasswordWithCode).toHaveBeenCalledWith(
+				"test@example.com",
+				"123456",
+				"NewPassword123!"
+			);
 		});
 
 		it("shows error message on password reset failure", async () => {
-			(AuthService.resetPasswordWithUserId as any).mockRejectedValue(new Error("Reset failed"));
+			(AuthService.resetPasswordWithCode as any).mockRejectedValue(new Error("Invalid verification code"));
 
 			await goToPasswordStep();
 
@@ -265,11 +275,11 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(resetButton);
 			await fastStateSync();
 
-			expect(screen.getByText("Reset failed")).toBeInTheDocument();
+			expect(screen.getByText("Invalid verification code")).toBeInTheDocument();
 		});
 
 		it("proceeds to completion step on successful password reset", async () => {
-			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
+			(AuthService.resetPasswordWithCode as any).mockResolvedValue({ message: "Password reset successfully" });
 
 			await goToPasswordStep();
 

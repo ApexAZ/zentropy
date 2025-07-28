@@ -9,15 +9,21 @@ import { setPendingPasswordReset, clearPendingPasswordReset } from "../utils/pen
 interface ForgotPasswordFlowProps {
 	onComplete?: () => void;
 	onCancel?: () => void;
+	useSecureFlow?: boolean; // New prop to enable secure verification code flow
 }
 
 type ForgotPasswordStep = "email" | "verification" | "password" | "complete";
 
-export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComplete, onCancel }) => {
+export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({
+	onComplete,
+	onCancel,
+	useSecureFlow = true // Default to secure flow
+}) => {
 	const [step, setStep] = useState<ForgotPasswordStep>("email");
 	const [email, setEmail] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [verificationCode, setVerificationCode] = useState("");
 	const [operationToken, setOperationToken] = useState<string>();
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -34,20 +40,35 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 				return;
 			}
 
-			// Send reset code using the SAME email verification system
-			await AuthService.sendEmailVerification(email);
+			if (useSecureFlow) {
+				// New secure flow: Request password reset verification code
+				await AuthService.requestPasswordResetCode(email);
 
-			// Set pending password reset state for header integration
-			setPendingPasswordReset(email);
+				// Set pending password reset state for header integration
+				setPendingPasswordReset(email);
 
-			setStep("verification");
-			setShowVerificationModal(true);
-		} catch {
-			// Don't reveal if email exists for security - always proceed to verification
-			// Set pending password reset state for header integration
-			setPendingPasswordReset(email);
-			setStep("verification");
-			setShowVerificationModal(true);
+				setStep("verification");
+				// For secure flow, we'll show a code input instead of the modal
+			} else {
+				// Legacy flow: Send reset code using email verification system
+				await AuthService.sendEmailVerification(email);
+
+				// Set pending password reset state for header integration
+				setPendingPasswordReset(email);
+
+				setStep("verification");
+				setShowVerificationModal(true);
+			}
+		} catch (error) {
+			if (useSecureFlow) {
+				// For secure flow, show the actual error (rate limiting, etc.)
+				setError(error instanceof Error ? error.message : "Failed to send reset code");
+			} else {
+				// Legacy flow: Don't reveal if email exists for security - always proceed
+				setPendingPasswordReset(email);
+				setStep("verification");
+				setShowVerificationModal(true);
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -70,7 +91,18 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 				return;
 			}
 
-			await AuthService.resetPasswordWithUserId(newPassword, operationToken!);
+			if (useSecureFlow) {
+				// New secure flow: Use verification code
+				if (!verificationCode.trim()) {
+					setError("Please enter the verification code");
+					return;
+				}
+
+				await AuthService.resetPasswordWithCode(email, verificationCode, newPassword);
+			} else {
+				// Legacy flow: Use deprecated method with operation token
+				await AuthService.resetPasswordWithUserId(newPassword, operationToken!);
+			}
 
 			// Clear pending password reset state - password reset is complete
 			clearPendingPasswordReset();
@@ -90,28 +122,86 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 	// Step 2: Code Verification
 	if (step === "verification") {
-		// If modal was closed, don't render anything (user can continue via header buttons)
-		if (!showVerificationModal) {
-			return null;
-		}
+		if (useSecureFlow) {
+			// Secure flow: Show verification code input directly
+			const handleVerificationSubmit = () => {
+				if (!verificationCode.trim() || isLoading) return;
+				setStep("password"); // Move to password reset step
+			};
 
-		return (
-			<EmailVerificationModal
-				isOpen={showVerificationModal}
-				onClose={() => {
-					// For password reset: close entire modal stack per universal modal rules
-					// User can continue via header buttons (Enter Code/Resend) on clean home page
-					// Pending password reset state remains active for header integration
-					setShowVerificationModal(false);
-					onCancel?.(); // Close entire AuthModal to return to clean home page
-				}}
-				onSuccess={handleCodeVerified}
-				initialEmail={email}
-				operationType="password_reset"
-				title="Check Your Email"
-				description="Enter the reset code sent to your email address"
-			/>
-		);
+			return (
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<div className="space-y-4">
+						<h3 className="font-heading-medium text-text-contrast">Enter Verification Code</h3>
+						<p className="font-body text-text-primary">
+							We've sent a 6-digit verification code to {email}. Enter it below to continue.
+						</p>
+
+						<Form
+							onSubmit={handleVerificationSubmit}
+							isSubmitting={isLoading}
+							error={error}
+							className="space-y-3"
+						>
+							<input
+								type="text"
+								placeholder="Enter 6-digit code"
+								value={verificationCode}
+								onChange={e => setVerificationCode(e.target.value)}
+								className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+								maxLength={6}
+								pattern="[0-9]{6}"
+								autoComplete="one-time-code"
+								disabled={isLoading}
+							/>
+
+							<div className="flex justify-end space-x-2">
+								<Button
+									type="button"
+									variant="secondary"
+									onClick={() => setStep("email")}
+									disabled={isLoading}
+								>
+									Back
+								</Button>
+								<Button
+									type="submit"
+									variant="primary"
+									disabled={!verificationCode.trim() || verificationCode.length !== 6 || isLoading}
+									isLoading={isLoading}
+									loadingText="Verifying..."
+								>
+									Continue
+								</Button>
+							</div>
+						</Form>
+					</div>
+				</div>
+			);
+		} else {
+			// Legacy flow: Use modal (only if modal is open)
+			if (!showVerificationModal) {
+				return null;
+			}
+
+			return (
+				<EmailVerificationModal
+					isOpen={showVerificationModal}
+					onClose={() => {
+						// For password reset: close entire modal stack per universal modal rules
+						// User can continue via header buttons (Enter Code/Resend) on clean home page
+						// Pending password reset state remains active for header integration
+						setShowVerificationModal(false);
+						onCancel?.(); // Close entire AuthModal to return to clean home page
+					}}
+					onSuccess={handleCodeVerified}
+					initialEmail={email}
+					operationType="password_reset"
+					title="Check Your Email"
+					description="Enter the reset code sent to your email address"
+				/>
+			);
+		}
 	}
 
 	// Step 3: Password Input
@@ -122,10 +212,10 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 		};
 
 		return (
-			<div className="bg-content-background rounded-lg p-6 shadow-lg">
+			<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 				<div className="space-y-4">
-					<h3 className="text-text-primary text-lg font-semibold">Set New Password</h3>
-					<p className="text-text-secondary text-sm">Enter your new password for {email}</p>
+					<h3 className="font-heading-medium text-text-contrast">Set New Password</h3>
+					<p className="font-body text-text-primary">Enter your new password for {email}</p>
 
 					<Form onSubmit={handlePasswordSubmit} isSubmitting={isLoading} error={error} className="space-y-3">
 						<input
@@ -160,7 +250,9 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 								variant="secondary"
 								onClick={() => {
 									setStep("verification");
-									setShowVerificationModal(true);
+									if (!useSecureFlow) {
+										setShowVerificationModal(true);
+									}
 								}}
 								disabled={isLoading}
 							>
@@ -185,11 +277,11 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 	// Step 4: Completion
 	if (step === "complete") {
 		return (
-			<div className="bg-content-background rounded-lg p-6 shadow-lg">
+			<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 				<div className="space-y-4 text-center">
 					<div className="text-success text-4xl">✓</div>
-					<h3 className="text-text-primary text-lg font-semibold">Password Reset Complete</h3>
-					<p className="text-text-secondary">
+					<h3 className="font-heading-medium text-text-contrast">Password Reset Complete</h3>
+					<p className="font-body text-text-primary">
 						Your password has been reset successfully. Redirecting to sign in...
 					</p>
 				</div>
@@ -199,10 +291,10 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({ onComple
 
 	// Step 1: Email Input
 	return (
-		<div className="bg-content-background rounded-lg p-6 shadow-lg">
+		<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 			<div className="space-y-4">
-				<h3 className="text-text-primary text-lg font-semibold">Reset Your Password</h3>
-				<p className="text-text-secondary text-sm">
+				<h3 className="font-heading-medium text-text-contrast">Reset Your Password</h3>
+				<p className="font-body text-text-primary">
 					Enter your email address and we'll send you a code to reset your password.
 				</p>
 

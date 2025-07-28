@@ -42,11 +42,16 @@ class RateLimiter:
     - Configurable rate limits via environment variables
     - Sliding window rate limiting algorithm
     - Different limits for different endpoint types
+    - Exponential backoff for repeated violations (NEW)
+    - Dual tracking: IP-based and user-based rate limiting (NEW)
     """
 
     def __init__(self) -> None:
         self.redis_client: Optional[redis.Redis[str]] = None
         self._memory_store: Dict[str, List[datetime]] = {}
+        self._violation_store: Dict[str, Dict[str, Any]] = (
+            {}
+        )  # For exponential backoff tracking
         self._setup_redis()
         self._load_config()
 
@@ -107,6 +112,18 @@ class RateLimiter:
         email_win = os.getenv("RATE_LIMIT_EMAIL_WINDOW_MINUTES", "5")
         self.email_window_minutes = int(email_win)
 
+        # Exponential backoff configuration
+        backoff_enabled = os.getenv("RATE_LIMIT_EXPONENTIAL_BACKOFF", "true").lower()
+        self.exponential_backoff_enabled = backoff_enabled == "true"
+
+        # Violation tracking window (how long to remember violations)
+        violation_window = os.getenv("RATE_LIMIT_VIOLATION_WINDOW_HOURS", "24")
+        self.violation_window_hours = int(violation_window)
+
+        # Maximum backoff delay (cap exponential growth)
+        max_backoff = os.getenv("RATE_LIMIT_MAX_BACKOFF_SECONDS", "300")  # 5 minutes
+        self.max_backoff_seconds = int(max_backoff)
+
     def _get_rate_limit_config(self, limit_type: RateLimitType) -> Tuple[int, int]:
         """Get max requests and window minutes for a rate limit type."""
         if limit_type == RateLimitType.AUTH:
@@ -117,6 +134,150 @@ class RateLimiter:
             return self.email_requests, self.email_window_minutes
         else:  # API
             return self.api_requests, self.api_window_minutes
+
+    def _get_violation_key(self, identifier: str, limit_type: RateLimitType) -> str:
+        """Get Redis key for violation tracking."""
+        return f"violations:{limit_type.value}:{identifier}"
+
+    def _calculate_exponential_backoff(self, violation_count: int) -> int:
+        """Calculate exponential backoff delay in seconds."""
+        if violation_count <= 0:
+            return 0
+
+        # Exponential backoff: 2^(violations-1) seconds, capped at max_backoff_seconds
+        delay = min(2 ** (violation_count - 1), self.max_backoff_seconds)
+        return int(delay)
+
+    def _redis_track_violation(self, violation_key: str) -> int:
+        """Track a violation in Redis and return current violation count."""
+        if not self.redis_client:
+            raise redis.RedisError("Redis client not available")
+
+        now = datetime.now(timezone.utc)
+        window_start = now - timedelta(hours=self.violation_window_hours)
+
+        pipe = self.redis_client.pipeline()
+
+        # Remove old violations outside the window
+        pipe.zremrangebyscore(violation_key, 0, window_start.timestamp())
+
+        # Add current violation
+        pipe.zadd(violation_key, {str(now.timestamp()): now.timestamp()})
+
+        # Get current violation count
+        pipe.zcard(violation_key)
+
+        # Set expiration for cleanup
+        pipe.expire(violation_key, self.violation_window_hours * 3600)
+
+        results = pipe.execute()
+        return int(results[2]) if len(results) > 2 else 1
+
+    def _memory_track_violation(self, violation_key: str) -> int:
+        """Track a violation in memory and return current violation count."""
+        now = datetime.now(timezone.utc)
+        window_start = now - timedelta(hours=self.violation_window_hours)
+
+        if violation_key not in self._violation_store:
+            self._violation_store[violation_key] = {
+                "violations": [],
+                "last_cleanup": now,
+            }
+
+        store = self._violation_store[violation_key]
+
+        # Clean up old violations if needed (every hour)
+        if now - store["last_cleanup"] > timedelta(hours=1):
+            store["violations"] = [
+                v_time for v_time in store["violations"] if v_time > window_start
+            ]
+            store["last_cleanup"] = now
+
+        # Add current violation
+        store["violations"].append(now)
+
+        return len(store["violations"])
+
+    def _redis_get_violation_count(self, violation_key: str) -> int:
+        """Get current violation count from Redis."""
+        if not self.redis_client:
+            return 0
+
+        try:
+            now = datetime.now(timezone.utc)
+            window_start = now - timedelta(hours=self.violation_window_hours)
+
+            # Clean up old violations and get count
+            pipe = self.redis_client.pipeline()
+            pipe.zremrangebyscore(violation_key, 0, window_start.timestamp())
+            pipe.zcard(violation_key)
+            results = pipe.execute()
+
+            return int(results[1]) if len(results) > 1 else 0
+        except redis.RedisError:
+            return 0
+
+    def _memory_get_violation_count(self, violation_key: str) -> int:
+        """Get current violation count from memory."""
+        if violation_key not in self._violation_store:
+            return 0
+
+        now = datetime.now(timezone.utc)
+        window_start = now - timedelta(hours=self.violation_window_hours)
+
+        store = self._violation_store[violation_key]
+
+        # Count recent violations
+        recent_violations = [
+            v_time for v_time in store["violations"] if v_time > window_start
+        ]
+
+        return len(recent_violations)
+
+    def _check_exponential_backoff(
+        self, identifier: str, limit_type: RateLimitType
+    ) -> None:
+        """Check if request should be delayed due to exponential backoff."""
+        if not self.exponential_backoff_enabled:
+            return
+
+        violation_key = self._get_violation_key(identifier, limit_type)
+
+        # Get current violation count with proper fallback handling
+        violation_count = 0
+        try:
+            if self.redis_client:
+                violation_count = self._redis_get_violation_count(violation_key)
+            else:
+                violation_count = self._memory_get_violation_count(violation_key)
+        except (redis.RedisError, Exception):
+            # Fall back to memory tracking for Redis errors
+            violation_count = self._memory_get_violation_count(violation_key)
+
+        if violation_count > 0:
+            delay_seconds = self._calculate_exponential_backoff(violation_count)
+            if delay_seconds > 0:
+                message = (
+                    f"Exponential backoff active due to {violation_count} violations. "
+                    f"Please wait {delay_seconds} seconds before trying again."
+                )
+                raise RateLimitError(message, retry_after=delay_seconds)
+
+    def _record_violation(self, identifier: str, limit_type: RateLimitType) -> None:
+        """Record a rate limit violation for exponential backoff tracking."""
+        if not self.exponential_backoff_enabled:
+            return
+
+        violation_key = self._get_violation_key(identifier, limit_type)
+
+        try:
+            if self.redis_client:
+                self._redis_track_violation(violation_key)
+            else:
+                self._memory_track_violation(violation_key)
+        except (redis.RedisError, Exception):
+            # Fall back to memory tracking for Redis errors
+            self._memory_track_violation(violation_key)
 
     def _redis_check_rate_limit(
         self, key: str, max_requests: int, window_seconds: int
@@ -201,17 +362,21 @@ class RateLimiter:
         self, identifier: str, limit_type: RateLimitType = RateLimitType.API
     ) -> None:
         """
-        Check if request is within rate limits.
+        Check if request is within rate limits with exponential backoff support.
 
         Args:
             identifier: Unique identifier (IP address, user ID, etc.)
             limit_type: Type of rate limit to apply
 
         Raises:
-            RateLimitError: If rate limit is exceeded
+            RateLimitError: If rate limit is exceeded or exponential backoff is active
         """
         if not self.enabled:
             return
+
+        # Step 1: Check exponential backoff first (if enabled)
+        # This prevents further requests if there have been recent violations
+        self._check_exponential_backoff(identifier, limit_type)
 
         max_requests, window_minutes = self._get_rate_limit_config(limit_type)
 
@@ -227,52 +392,93 @@ class RateLimiter:
                 # Use in-memory for development
                 self._memory_check_rate_limit(key, max_requests, window_minutes)
 
+        except RateLimitError as e:
+            # Step 2: Record violation for exponential backoff
+            self._record_violation(identifier, limit_type)
+            raise e  # Re-raise the original rate limit error
         except redis.RedisError:
             # Redis failed, fall back to in-memory
             print("⚠️  Redis error, falling back to in-memory rate limiting")
-            self._memory_check_rate_limit(key, max_requests, window_minutes)
+            try:
+                self._memory_check_rate_limit(key, max_requests, window_minutes)
+            except RateLimitError as e:
+                self._record_violation(identifier, limit_type)
+                raise e
         except Exception as e:
             # Any other Redis-related error, fall back to in-memory
             if self.redis_client:  # Only print if we were trying to use Redis
                 msg = f"⚠️  Redis error ({e}), falling back to in-memory"
                 print(msg)
-            self._memory_check_rate_limit(key, max_requests, window_minutes)
+            try:
+                self._memory_check_rate_limit(key, max_requests, window_minutes)
+            except RateLimitError as rate_e:
+                self._record_violation(identifier, limit_type)
+                raise rate_e
 
     def reset_rate_limit(self, identifier: str, limit_type: RateLimitType) -> None:
         """
         Reset rate limit for a specific identifier (for testing).
+        Also clears violation history for exponential backoff.
 
         Args:
             identifier: Unique identifier to reset
             limit_type: Type of rate limit to reset
         """
         key = f"rate_limit:{limit_type.value}:{identifier}"
+        violation_key = self._get_violation_key(identifier, limit_type)
 
         if self.redis_client:
             try:
-                self.redis_client.delete(key)
+                # Clear both rate limit and violation tracking
+                pipe = self.redis_client.pipeline()
+                pipe.delete(key)
+                pipe.delete(violation_key)
+                pipe.execute()
             except redis.RedisError:
                 pass
 
-        # Also clear from memory store
+        # Also clear from memory stores
         if key in self._memory_store:
             del self._memory_store[key]
 
+        if violation_key in self._violation_store:
+            del self._violation_store[violation_key]
+
     def get_rate_limit_status(
         self, identifier: str, limit_type: RateLimitType
-    ) -> Dict[str, int]:
+    ) -> Dict[str, Any]:
         """
-        Get current rate limit status for debugging.
+        Get current rate limit status for debugging, including exponential backoff info.
 
         Args:
             identifier: Unique identifier
             limit_type: Type of rate limit to check
 
         Returns:
-            Dict with current requests, max requests, and reset time
+            Dict with current requests, max requests, reset time, and backoff status
         """
         max_requests, window_minutes = self._get_rate_limit_config(limit_type)
         key = f"rate_limit:{limit_type.value}:{identifier}"
+
+        # Get violation count for exponential backoff info
+        violation_count = 0
+        backoff_delay = 0
+        if self.exponential_backoff_enabled:
+            try:
+                if self.redis_client:
+                    violation_key = self._get_violation_key(identifier, limit_type)
+                    violation_count = self._redis_get_violation_count(violation_key)
+                else:
+                    violation_count = self._memory_get_violation_count(
+                        self._get_violation_key(identifier, limit_type)
+                    )
+                backoff_delay = self._calculate_exponential_backoff(violation_count)
+            except (redis.RedisError, Exception):
+                # Fall back to memory tracking for any error
+                violation_count = self._memory_get_violation_count(
+                    self._get_violation_key(identifier, limit_type)
+                )
+                backoff_delay = self._calculate_exponential_backoff(violation_count)
 
         if self.redis_client:
             try:
@@ -283,6 +489,9 @@ class RateLimiter:
                     "max_requests": max_requests,
                     "reset_in_seconds": int(ttl) if ttl > 0 else 0,
                     "window_minutes": window_minutes,
+                    "exponential_backoff_enabled": self.exponential_backoff_enabled,
+                    "violation_count": violation_count,
+                    "backoff_delay_seconds": backoff_delay,
                 }
             except redis.RedisError:
                 pass
@@ -303,7 +512,81 @@ class RateLimiter:
             "max_requests": max_requests,
             "reset_in_seconds": window_minutes * 60,
             "window_minutes": window_minutes,
+            "exponential_backoff_enabled": self.exponential_backoff_enabled,
+            "violation_count": violation_count,
+            "backoff_delay_seconds": backoff_delay,
         }
+
+    def check_dual_rate_limit(
+        self,
+        ip_address: str,
+        user_id: Optional[str] = None,
+        limit_type: RateLimitType = RateLimitType.API,
+    ) -> None:
+        """
+        Check rate limits for both IP address and user ID (if provided).
+        This provides layered protection against both distributed and targeted attacks.
+
+        Args:
+            ip_address: Client IP address
+            user_id: User ID (optional, for authenticated requests)
+            limit_type: Type of rate limit to apply
+
+        Raises:
+            RateLimitError: If rate limit is exceeded for either IP or user
+        """
+        if not self.enabled:
+            return
+
+        # Always check IP-based rate limiting
+        try:
+            self.check_rate_limit(ip_address, limit_type)
+        except RateLimitError as e:
+            # Add context to error message to indicate this was IP-based
+            error_msg = f"IP rate limit exceeded: {e.detail}"
+            retry_after = 60
+            if e.headers and "Retry-After" in e.headers:
+                try:
+                    retry_after = int(e.headers["Retry-After"])
+                except (ValueError, TypeError):
+                    retry_after = 60
+            raise RateLimitError(error_msg, retry_after=retry_after)
+
+        # Also check user-based rate limiting if user is authenticated
+        if user_id:
+            try:
+                self.check_rate_limit(f"user:{user_id}", limit_type)
+            except RateLimitError as e:
+                # Add context to error message to indicate this was user-based
+                error_msg = f"User rate limit exceeded: {e.detail}"
+                retry_after = 60
+                if e.headers and "Retry-After" in e.headers:
+                    try:
+                        retry_after = int(e.headers["Retry-After"])
+                    except (ValueError, TypeError):
+                        retry_after = 60
+                raise RateLimitError(error_msg, retry_after=retry_after)
+
+    def reset_dual_rate_limit(
+        self,
+        ip_address: str,
+        user_id: Optional[str] = None,
+        limit_type: RateLimitType = RateLimitType.API,
+    ) -> None:
+        """
+        Reset rate limits for both IP address and user ID (for testing).
+
+        Args:
+            ip_address: Client IP address to reset
+            user_id: User ID to reset (optional)
+            limit_type: Type of rate limit to reset
+        """
+        # Reset IP-based rate limit
+        self.reset_rate_limit(ip_address, limit_type)
+
+        # Reset user-based rate limit if provided
+        if user_id:
+            self.reset_rate_limit(f"user:{user_id}", limit_type)
 
 
 # Global rate limiter instance
