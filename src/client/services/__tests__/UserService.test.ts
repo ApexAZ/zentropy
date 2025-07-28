@@ -816,7 +816,7 @@ describe("UserService", () => {
 
 		const backendResponse = {
 			message: "Google account linked successfully",
-			google_email: "john@gmail.com"
+			provider_identifier: "john@gmail.com"
 		};
 
 		const expectedResponse: LinkAccountResponse = {
@@ -831,13 +831,16 @@ describe("UserService", () => {
 			const result = await UserService.linkGoogleAccount(linkRequest);
 
 			expect(result).toEqual(expectedResponse);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/link-google", {
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/link-oauth", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: "Bearer mock-token"
 				},
-				body: JSON.stringify(linkRequest)
+				body: JSON.stringify({
+					provider: "google",
+					credential: linkRequest.google_credential
+				})
 			});
 			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
 		});
@@ -918,13 +921,16 @@ describe("UserService", () => {
 			const result = await UserService.unlinkGoogleAccount(unlinkRequest);
 
 			expect(result).toEqual(expectedResponse);
-			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/unlink-google", {
+			expect(fetch).toHaveBeenCalledWith("/api/v1/users/me/unlink-oauth", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: "Bearer mock-token"
 				},
-				body: JSON.stringify(unlinkRequest)
+				body: JSON.stringify({
+					provider: "google",
+					password: unlinkRequest.password
+				})
 			});
 			expect(authUtils.createAuthHeaders).toHaveBeenCalled();
 		});

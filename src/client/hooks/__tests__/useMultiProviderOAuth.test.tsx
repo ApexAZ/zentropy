@@ -40,16 +40,7 @@ vi.mock("../../services/OAuthProviderService", () => ({
 				brandColor: "#333"
 			}
 		]),
-		unlinkProvider: vi.fn(request => {
-			if (request.provider === "microsoft") {
-				throw new Error("Unlinking microsoft is not yet supported");
-			}
-			return Promise.resolve({
-				message: "Provider unlinked successfully",
-				success: true,
-				provider: request.provider
-			});
-		})
+		unlinkProvider: vi.fn()
 	}
 }));
 
@@ -127,8 +118,7 @@ function TestMultiProviderOAuthComponent({ securityStatus: customSecurityStatus 
 		onError: () => {
 			// Error callback for testing
 		},
-		securityStatus: customSecurityStatus || defaultSecurityStatus,
-		handleUnlinkGoogle: mockHandleUnlinkGoogle
+		securityStatus: customSecurityStatus || defaultSecurityStatus
 	});
 
 	return (
@@ -173,8 +163,21 @@ function renderWithToast(ui: React.ReactElement) {
 }
 
 describe("useMultiProviderOAuth", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.clearAllMocks();
+
+		// Get reference to the mocked service and set up implementation
+		const { OAuthProviderService } = await import("../../services/OAuthProviderService");
+		(OAuthProviderService.unlinkProvider as any).mockImplementation(request => {
+			if (request.provider === "microsoft") {
+				throw new Error("Unlinking microsoft is not yet supported");
+			}
+			return Promise.resolve({
+				message: "Provider unlinked successfully",
+				success: true,
+				provider: request.provider
+			});
+		});
 	});
 
 	afterEach(() => {
@@ -267,8 +270,12 @@ describe("useMultiProviderOAuth", () => {
 			const unlinkButton = screen.getByTestId("unlink-google");
 			await user.click(unlinkButton);
 
-			// User's action should trigger Google account unlinking
-			expect(mockHandleUnlinkGoogle).toHaveBeenCalledWith("testpassword");
+			// User's action should trigger unified OAuth unlinking
+			const { OAuthProviderService } = await import("../../services/OAuthProviderService");
+			expect(OAuthProviderService.unlinkProvider).toHaveBeenCalledWith({
+				provider: "google",
+				password: "testpassword"
+			});
 		});
 
 		it("should inform user that Microsoft unlinking is not yet supported", async () => {
@@ -279,7 +286,13 @@ describe("useMultiProviderOAuth", () => {
 			const TestComponentWithErrorHandling = () => {
 				const { providers, unlinkProvider } = useMultiProviderOAuth({
 					onSuccess: vi.fn(),
-					onError: mockOnError
+					onError: mockOnError,
+					securityStatus: {
+						email_auth_linked: true,
+						oauth_providers: [{ provider: "microsoft", linked: true, identifier: "test@outlook.com" }],
+						google_auth_linked: false,
+						google_email: undefined
+					}
 				});
 
 				// Mock Microsoft as linked for this test

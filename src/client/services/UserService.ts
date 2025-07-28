@@ -18,8 +18,8 @@ export class UserService {
 	 */
 	private static readonly SECURITY_ENDPOINTS = {
 		GET_STATUS: "/api/v1/users/me/security",
-		LINK_GOOGLE: "/api/v1/users/me/link-google",
-		UNLINK_GOOGLE: "/api/v1/users/me/unlink-google"
+		LINK_OAUTH: "/api/v1/users/me/link-oauth",
+		UNLINK_OAUTH: "/api/v1/users/me/unlink-oauth"
 	};
 	private static async handleResponse<T>(response: Response): Promise<T> {
 		if (!response.ok) {
@@ -214,15 +214,18 @@ export class UserService {
 	 */
 	static async linkGoogleAccount(linkData: LinkGoogleAccountRequest): Promise<LinkAccountResponse> {
 		try {
-			const response = await fetch(this.SECURITY_ENDPOINTS.LINK_GOOGLE, {
+			const response = await fetch(this.SECURITY_ENDPOINTS.LINK_OAUTH, {
 				method: "POST",
 				headers: createAuthHeaders(),
-				body: JSON.stringify(linkData)
+				body: JSON.stringify({
+					provider: "google",
+					credential: linkData.google_credential
+				})
 			});
-			const result = await this.handleResponse<{ message: string; google_email: string }>(response);
+			const result = await this.handleResponse<{ message: string; provider_identifier: string }>(response);
 			return {
 				message: result.message,
-				google_email: result.google_email,
+				google_email: result.provider_identifier, // For backward compatibility
 				success: true
 			};
 		} catch (error) {
@@ -235,10 +238,13 @@ export class UserService {
 	 */
 	static async unlinkGoogleAccount(unlinkData: UnlinkGoogleAccountRequest): Promise<UnlinkAccountResponse> {
 		try {
-			const response = await fetch(this.SECURITY_ENDPOINTS.UNLINK_GOOGLE, {
+			const response = await fetch(this.SECURITY_ENDPOINTS.UNLINK_OAUTH, {
 				method: "POST",
 				headers: createAuthHeaders(),
-				body: JSON.stringify(unlinkData)
+				body: JSON.stringify({
+					provider: "google",
+					password: unlinkData.password
+				})
 			});
 			const result = await this.handleResponse<{ message: string }>(response);
 			return {

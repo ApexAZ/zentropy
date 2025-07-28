@@ -74,6 +74,25 @@ describe("useGitHubOAuth", () => {
 			configurable: true
 		});
 
+		// Mock window.open for GitHub OAuth popup testing (jsdom doesn't support window.open)
+		const mockPopup = {
+			closed: false,
+			close: vi.fn(),
+			postMessage: vi.fn()
+		};
+
+		const mockWindowOpen = vi.fn().mockReturnValue(mockPopup);
+
+		Object.defineProperty(window, "open", {
+			value: mockWindowOpen,
+			writable: true,
+			configurable: true
+		});
+
+		// Store references for test access
+		(window as any).mockPopup = mockPopup;
+		(window as any).mockWindowOpen = mockWindowOpen;
+
 		// Mock global fetch for GitHub API calls
 		// eslint-disable-next-line no-restricted-syntax -- Hook tests require global.fetch mocking to test HTTP behavior
 		global.fetch = vi.fn().mockResolvedValue({
@@ -90,6 +109,11 @@ describe("useGitHubOAuth", () => {
 		vi.restoreAllMocks();
 		// Clean up window.github
 		delete (window as any).github;
+		// Clean up window.open mock
+		delete (window as any).open;
+		// Clean up mock references
+		delete (window as any).mockPopup;
+		delete (window as any).mockWindowOpen;
 		// Clean up global fetch mock
 		delete (global as any).fetch;
 		// Restore default environment variable
@@ -119,12 +143,24 @@ describe("useGitHubOAuth", () => {
 				result.current.triggerOAuth();
 			});
 
-			// Should complete immediately (no loading state for mock)
-			expect(result.current.isLoading).toBe(false);
+			// Should be in loading state after triggering OAuth
+			expect(result.current.isLoading).toBe(true);
 
-			// Should call onSuccess with mock credential
+			// Simulate successful OAuth popup message
+			act(() => {
+				const successEvent = new MessageEvent("message", {
+					data: {
+						type: "GITHUB_OAUTH_SUCCESS",
+						authorizationCode: "mock-auth-code-123"
+					},
+					origin: window.location.origin
+				});
+				window.dispatchEvent(successEvent);
+			});
+
+			// Should call onSuccess with auth code
 			expect(mockOnSuccess).toHaveBeenCalledTimes(1);
-			expect(mockOnSuccess).toHaveBeenCalledWith(expect.stringMatching(/^mock-github-credential-\d+$/));
+			expect(mockOnSuccess).toHaveBeenCalledWith("mock-auth-code-123");
 			expect(result.current.error).toBeNull();
 		});
 
@@ -247,14 +283,53 @@ describe("useGitHubOAuth", () => {
 
 			await waitForReady(result);
 
-			// Trigger OAuth multiple times
+			// Trigger OAuth multiple times and simulate success for each
 			act(() => {
-				result.current.triggerOAuth();
-				result.current.triggerOAuth();
 				result.current.triggerOAuth();
 			});
 
-			// Should only call onSuccess once per trigger
+			act(() => {
+				const successEvent1 = new MessageEvent("message", {
+					data: {
+						type: "GITHUB_OAUTH_SUCCESS",
+						authorizationCode: "mock-auth-code-1"
+					},
+					origin: window.location.origin
+				});
+				window.dispatchEvent(successEvent1);
+			});
+
+			act(() => {
+				result.current.triggerOAuth();
+			});
+
+			act(() => {
+				const successEvent2 = new MessageEvent("message", {
+					data: {
+						type: "GITHUB_OAUTH_SUCCESS",
+						authorizationCode: "mock-auth-code-2"
+					},
+					origin: window.location.origin
+				});
+				window.dispatchEvent(successEvent2);
+			});
+
+			act(() => {
+				result.current.triggerOAuth();
+			});
+
+			act(() => {
+				const successEvent3 = new MessageEvent("message", {
+					data: {
+						type: "GITHUB_OAUTH_SUCCESS",
+						authorizationCode: "mock-auth-code-3"
+					},
+					origin: window.location.origin
+				});
+				window.dispatchEvent(successEvent3);
+			});
+
+			// Should call onSuccess once per trigger
 			expect(mockOnSuccess).toHaveBeenCalledTimes(3);
 			expect(result.current.error).toBeNull();
 		});

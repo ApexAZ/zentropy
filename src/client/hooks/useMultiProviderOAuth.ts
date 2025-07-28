@@ -10,7 +10,6 @@ interface UseMultiProviderOAuthProps {
 	onSuccess: (credential: string, provider: string) => void;
 	onError: (error: string) => void;
 	securityStatus: AccountSecurityResponse | null;
-	handleUnlinkGoogle: (password: string) => Promise<void>;
 }
 
 interface UseMultiProviderOAuthReturn {
@@ -24,8 +23,7 @@ interface UseMultiProviderOAuthReturn {
 export const useMultiProviderOAuth = ({
 	onSuccess,
 	onError,
-	securityStatus,
-	handleUnlinkGoogle
+	securityStatus
 }: UseMultiProviderOAuthProps): UseMultiProviderOAuthReturn => {
 	// Get all available providers from the service
 	const providers = useMemo(() => {
@@ -145,24 +143,18 @@ export const useMultiProviderOAuth = ({
 			try {
 				logger.info(`Unlinking provider: ${providerName}`);
 
-				// Use centralized OAuthProviderService for all providers
-				if (providerName === "google") {
-					// Keep existing Google implementation for backward compatibility
-					await handleUnlinkGoogle(password);
-				} else {
-					// Use centralized service for Microsoft, GitHub, and future providers
-					await OAuthProviderService.unlinkProvider({
-						provider: providerName,
-						password: password
-					});
-				}
+				// Use centralized OAuthProviderService for all providers (unified architecture)
+				await OAuthProviderService.unlinkProvider({
+					provider: providerName,
+					password: password
+				});
 			} catch (error) {
 				const errorMessage = `Failed to unlink ${providerName}`;
 				logger.error(errorMessage, { error });
 				throw error;
 			}
 		},
-		[providerHooks, handleUnlinkGoogle]
+		[providerHooks]
 	);
 
 	return {

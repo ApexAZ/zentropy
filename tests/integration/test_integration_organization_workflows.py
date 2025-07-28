@@ -128,8 +128,8 @@ class TestRegistrationWithOrganizationDiscovery:
         }
 
         # Test Google OAuth registration
-        oauth_data = {"credential": "mock-google-jwt-token"}
-        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        oauth_data = {"provider": "google", "credential": "mock-google-jwt-token"}
+        response = client.post("/api/v1/auth/oauth", json=oauth_data)
         assert response.status_code == 200
 
         # Verify user was created without organization (just-in-time)

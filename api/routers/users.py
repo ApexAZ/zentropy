@@ -11,10 +11,8 @@ from ..schemas import (
     UserUpdate,
     PasswordUpdate,
     MessageResponse,
-    LinkGoogleAccountRequest,
-    UnlinkGoogleAccountRequest,
-    LinkMicrosoftAccountRequest,
-    UnlinkMicrosoftAccountRequest,
+    LinkOAuthAccountRequest,
+    UnlinkOAuthAccountRequest,
     AccountSecurityResponse,
 )
 from ..auth import (
@@ -24,13 +22,12 @@ from ..auth import (
     validate_password_strength,
     validate_password_history,
 )
-from ..google_oauth import (
-    verify_google_token,
-    GoogleOAuthError,
-    GoogleTokenInvalidError,
-    GoogleEmailUnverifiedError,
-)
+from ..google_oauth import verify_google_token
 from ..microsoft_oauth import verify_microsoft_token, exchange_code_for_token
+from ..github_oauth import (
+    verify_github_token,
+    exchange_code_for_token as github_exchange_code_for_token,
+)
 from .. import database
 
 router = APIRouter()
@@ -303,211 +300,269 @@ def get_account_security(
     )
 
 
-@router.post("/me/link-google", response_model=MessageResponse)
-def link_google_account(
-    request: LinkGoogleAccountRequest,
+@router.post("/me/link-oauth", response_model=MessageResponse)
+def link_oauth_account(
+    request: LinkOAuthAccountRequest,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
 ) -> MessageResponse:
-    """Link Google account to current user account"""
+    """
+    Unified OAuth account linking endpoint for all providers.
+
+    This endpoint provides a provider-agnostic interface that routes
+    internally to provider-specific implementations based on the provider field.
+    """
     try:
-        # Verify Google token and extract user info
-        google_info = verify_google_token(request.google_credential)
-        google_email = google_info.get("email")
-        google_id = google_info.get("sub")
+        # Provider-specific OAuth account linking implementation
+        if request.provider == "google":
+            if not request.credential:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Google OAuth linking requires credential field",
+                )
 
-        if not google_email or not google_id:
+            # Verify Google token and extract user info
+            google_info = verify_google_token(request.credential)
+            google_email = google_info.get("email")
+            google_id = google_info.get("sub")
+
+            if not google_email or not google_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid Google token - missing email or ID",
+                )
+
+            # Security: Verify email matches current user
+            if google_email.lower() != current_user.email.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Google email must match your account email",
+                )
+
+            # Check if Google ID is already linked to another account
+            existing_google_user = (
+                db.query(database.User)
+                .filter(
+                    database.User.google_id == google_id,
+                    database.User.id != current_user.id,
+                )
+                .first()
+            )
+
+            if existing_google_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This Google account is already linked to another user",
+                )
+
+            # Check if user already has Google linked
+            if current_user.google_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Google account is already linked to your account",
+                )
+
+            # Link Google account
+            current_user.google_id = google_id
+            current_user.auth_provider = AuthProvider.HYBRID
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(
+                message="Google account linked successfully",
+                provider_identifier=google_email,
+            )
+
+        elif request.provider == "microsoft":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Microsoft OAuth linking requires authorization_code field",
+                )
+
+            # Exchange code for access token and verify
+            access_token = exchange_code_for_token(request.authorization_code)
+            microsoft_info = verify_microsoft_token(access_token)
+
+            # Check if Microsoft account is already linked to another user
+            existing_user = (
+                db.query(database.User)
+                .filter(database.User.microsoft_id == microsoft_info.get("id"))
+                .first()
+            )
+
+            if existing_user and existing_user.id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This Microsoft account is already linked to another user",
+                )
+
+            # Link Microsoft account to current user
+            current_user.microsoft_id = microsoft_info.get("id")
+            current_user.auth_provider = AuthProvider.HYBRID
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(
+                message="Microsoft account linked successfully",
+                provider_identifier=microsoft_info.get("mail", ""),
+            )
+
+        elif request.provider == "github":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="GitHub OAuth linking requires authorization_code field",
+                )
+
+            # Exchange code for access token and verify
+            access_token = github_exchange_code_for_token(request.authorization_code)
+            github_info = verify_github_token(access_token)
+
+            # Check if GitHub account is already linked to another user
+            existing_user = (
+                db.query(database.User)
+                .filter(database.User.github_id == github_info.get("id"))
+                .first()
+            )
+
+            if existing_user and existing_user.id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This GitHub account is already linked to another user",
+                )
+
+            # Link GitHub account to current user
+            current_user.github_id = github_info.get("id")
+            current_user.auth_provider = AuthProvider.HYBRID
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(
+                message="GitHub account linked successfully",
+                provider_identifier=github_info.get("email", ""),
+            )
+
+        else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Google token - missing email or ID",
+                detail=f"Unsupported OAuth provider: {request.provider}",
             )
-
-        # Security: Verify email matches current user
-        if google_email.lower() != current_user.email.lower():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Google email must match your account email",
-            )
-
-        # Check if Google ID is already linked to another account
-        existing_google_user = (
-            db.query(database.User)
-            .filter(
-                database.User.google_id == google_id,
-                database.User.id != current_user.id,
-            )
-            .first()
-        )
-
-        if existing_google_user:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This Google account is already linked to another user",
-            )
-
-        # Check if user already has Google linked
-        if current_user.google_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Google account is already linked to your account",
-            )
-
-        # Link Google account
-        current_user.google_id = google_id
-        current_user.auth_provider = AuthProvider.HYBRID
-        current_user.updated_at = datetime.now(timezone.utc)
-
-        db.commit()
-
-        return MessageResponse(message="Google account linked successfully")
-
-    except (GoogleOAuthError, GoogleTokenInvalidError, GoogleEmailUnverifiedError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google OAuth error: {str(e)}",
-        )
-    except HTTPException:
-        raise
-    except Exception:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to link Google account",
-        )
-
-
-@router.post("/me/unlink-google", response_model=MessageResponse)
-def unlink_google_account(
-    request: UnlinkGoogleAccountRequest,
-    db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
-) -> MessageResponse:
-    """Unlink Google account from current user account"""
-    # Security: Verify user has Google account linked
-    if not current_user.google_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No Google account is linked to your account",
-        )
-
-    # Security: Require password verification to prevent lockout
-    if not current_user.password_hash:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot unlink Google account: no password set. "
-            "Set a password first.",
-        )
-
-    if not verify_password(request.password, current_user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password"
-        )
-
-    try:
-        # Unlink Google account
-        current_user.google_id = None
-        current_user.auth_provider = AuthProvider.LOCAL
-        current_user.updated_at = datetime.now(timezone.utc)
-
-        db.commit()
-
-        return MessageResponse(message="Google account unlinked successfully")
-
-    except Exception:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to unlink Google account",
-        )
-
-
-@router.post("/me/link-microsoft", response_model=MessageResponse)
-def link_microsoft_account(
-    request: LinkMicrosoftAccountRequest,
-    db: Session = Depends(get_db),
-    current_user: database.User = Depends(get_current_active_user),
-) -> MessageResponse:
-    """Link Microsoft account to existing user account."""
-    try:
-        # Get Microsoft authorization code from request
-        microsoft_authorization_code = request.microsoft_authorization_code
-        if not microsoft_authorization_code:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Microsoft authorization code is required",
-            )
-
-        # Exchange code for access token and verify
-        access_token = exchange_code_for_token(microsoft_authorization_code)
-        microsoft_info = verify_microsoft_token(access_token)
-
-        # Check if Microsoft account is already linked to another user
-        existing_user = (
-            db.query(database.User)
-            .filter(database.User.microsoft_id == microsoft_info.get("id"))
-            .first()
-        )
-
-        if existing_user and existing_user.id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="This Microsoft account is already linked to another user",
-            )
-
-        # Link Microsoft account to current user
-        current_user.microsoft_id = microsoft_info.get("id")
-        current_user.auth_provider = AuthProvider.HYBRID
-        current_user.updated_at = datetime.now(timezone.utc)
-
-        db.commit()
-
-        return MessageResponse(message="Microsoft account linked successfully")
 
     except HTTPException:
+        # Re-raise HTTPExceptions (like validation errors) as-is
         raise
-    except Exception:
+    except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to link Microsoft account",
+            detail=f"Failed to link {request.provider} account: {str(e)}",
         )
 
 
-@router.post("/me/unlink-microsoft", response_model=MessageResponse)
-def unlink_microsoft_account(
-    request: UnlinkMicrosoftAccountRequest,
+@router.post("/me/unlink-oauth", response_model=MessageResponse)
+def unlink_oauth_account(
+    request: UnlinkOAuthAccountRequest,
     db: Session = Depends(get_db),
     current_user: database.User = Depends(get_current_active_user),
 ) -> MessageResponse:
-    """Unlink Microsoft account from user account."""
-    try:
-        # Verify password for security
-        if not current_user.password_hash or not verify_password(
-            request.password, current_user.password_hash
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
-            )
+    """
+    Unified OAuth account unlinking endpoint for all providers.
 
-        # Check if Microsoft account is linked
-        if not current_user.microsoft_id:
+    This endpoint provides a provider-agnostic interface that routes
+    internally to provider-specific implementations based on the provider field.
+    """
+    try:
+        # Provider-specific OAuth account unlinking implementation
+        if request.provider == "google":
+            # Security: Verify user has Google account linked
+            if not current_user.google_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No Google account is linked to your account",
+                )
+
+            # Security: Require password verification to prevent lockout
+            if not current_user.password_hash:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot unlink Google account: no password set. "
+                    "Set a password first.",
+                )
+
+            if not verify_password(request.password, current_user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password"
+                )
+
+            # Unlink Google account
+            current_user.google_id = None
+            current_user.auth_provider = AuthProvider.LOCAL
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(message="Google account unlinked successfully")
+
+        elif request.provider == "microsoft":
+            # Verify password for security
+            if not current_user.password_hash or not verify_password(
+                request.password, current_user.password_hash
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
+                )
+
+            # Check if Microsoft account is linked
+            if not current_user.microsoft_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No Microsoft account is linked to this user",
+                )
+
+            # Unlink Microsoft account
+            current_user.microsoft_id = None
+            current_user.auth_provider = AuthProvider.LOCAL
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(message="Microsoft account unlinked successfully")
+
+        elif request.provider == "github":
+            # Verify password for security
+            if not current_user.password_hash or not verify_password(
+                request.password, current_user.password_hash
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password"
+                )
+
+            # Check if GitHub account is linked
+            if not current_user.github_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No GitHub account is linked to this user",
+                )
+
+            # Unlink GitHub account
+            current_user.github_id = None
+            current_user.auth_provider = AuthProvider.LOCAL
+            current_user.updated_at = datetime.now(timezone.utc)
+
+            db.commit()
+            return MessageResponse(message="GitHub account unlinked successfully")
+
+        else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No Microsoft account is linked to this user",
+                detail=f"Unsupported OAuth provider: {request.provider}",
             )
 
-        # Unlink Microsoft account
-        current_user.microsoft_id = None
-        current_user.auth_provider = AuthProvider.LOCAL
-        current_user.updated_at = datetime.now(timezone.utc)
-
-        db.commit()
-
-        return MessageResponse(message="Microsoft account unlinked successfully")
-
-    except Exception:
+    except HTTPException:
+        # Re-raise HTTPExceptions (like validation errors) as-is
+        raise
+    except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to unlink Microsoft account",
+            detail=f"Failed to unlink {request.provider} account: {str(e)}",
         )

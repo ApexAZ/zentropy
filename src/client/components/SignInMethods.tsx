@@ -5,7 +5,6 @@ import { PasswordConfirmationModal } from "./PasswordConfirmationModal";
 import Button from "./atoms/Button";
 import { useToast } from "../contexts/ToastContext";
 import { useMultiProviderOAuth } from "../hooks/useMultiProviderOAuth";
-import { useAccountSecurity } from "../hooks/useAccountSecurity";
 import { OAuthProviderService } from "../services/OAuthProviderService";
 
 interface SignInMethodsProps {
@@ -44,8 +43,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 	const [unlinkError, setUnlinkError] = useState<string | null>(null);
 	const { showSuccess } = useToast();
 
-	// Use account security hook for OAuth operations
-	const { handleUnlinkGoogle } = useAccountSecurity({ onSecurityUpdate, onError });
+	// OAuth operations now handled through unified useMultiProviderOAuth hook
 
 	// OAuth success handler that calls the API to link the account
 	const handleOAuthSuccess = useCallback(
@@ -72,8 +70,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 	const { providers, linkProvider, unlinkProvider, isProviderLinked } = useMultiProviderOAuth({
 		onSuccess: handleOAuthSuccess,
 		onError,
-		securityStatus,
-		handleUnlinkGoogle
+		securityStatus
 	});
 
 	const handlePasswordChangeSuccess = useCallback(() => {

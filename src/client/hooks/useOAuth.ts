@@ -40,7 +40,11 @@ function isTestEnvironment(): boolean {
 	return false;
 }
 
-function createTestMockResponse(config: OAuthConfig): UseOAuthReturn {
+function createTestMockResponse(
+	config: OAuthConfig,
+	onSuccess?: (credential: string) => void,
+	_onError?: (error: string) => void
+): UseOAuthReturn {
 	logger.debug(`use${config.displayName}OAuth: Test environment detected, returning mock implementation`);
 
 	return {
@@ -50,7 +54,11 @@ function createTestMockResponse(config: OAuthConfig): UseOAuthReturn {
 		triggerOAuth: () => {
 			logger.debug(`use${config.displayName}OAuth: Mock triggerOAuth called`);
 			// In test mode, immediately simulate successful OAuth
-			// Tests can override this behavior with vi.mock if needed
+			// Generate a mock credential based on provider
+			const mockCredential = `mock-${config.provider}-credential-${Date.now()}`;
+			if (onSuccess) {
+				onSuccess(mockCredential);
+			}
 		},
 		clearError: () => {
 			logger.debug(`use${config.displayName}OAuth: Mock clearError called`);
@@ -138,8 +146,21 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					setError(null);
 					initializedRef.current = true;
 					logger.info("Microsoft OAuth initialized successfully");
+				} else if (config.provider === "github") {
+					// GitHub OAuth initialization - no library needed, just validate config
+					logger.info("Initializing GitHub OAuth");
+
+					if (!clientId) {
+						throw new Error("GitHub Client ID not configured");
+					}
+
+					// GitHub OAuth is ready immediately (no library to load)
+					setIsReady(true);
+					setError(null);
+					initializedRef.current = true;
+					logger.info("GitHub OAuth initialized successfully");
 				} else {
-					// GitHub OAuth initialization (mock for now)
+					// Other OAuth providers initialization (mock for now)
 					logger.info(`Initializing ${config.displayName} OAuth (mock)`, {
 						clientId,
 						origin: window.location.origin
@@ -316,8 +337,85 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					onError?.(errorMessage);
 					setIsLoading(false);
 				}
+			} else if (config.provider === "github") {
+				// GitHub OAuth trigger using popup flow
+				logger.info("Starting GitHub OAuth flow");
+
+				try {
+					// GitHub OAuth popup-based flow
+					const redirectUri = `${window.location.origin}/oauth-redirect.html`;
+					const githubAuthUrl =
+						`https://github.com/login/oauth/authorize?` +
+						`client_id=${encodeURIComponent(clientId)}&` +
+						`redirect_uri=${encodeURIComponent(redirectUri)}&` +
+						`scope=${encodeURIComponent("user:email")}&` +
+						`state=${Date.now()}`;
+
+					// Open popup for GitHub OAuth
+					const popup = window.open(
+						githubAuthUrl,
+						"github-oauth",
+						"width=500,height=600,scrollbars=yes,resizable=yes"
+					);
+
+					if (!popup) {
+						throw new Error("Failed to open GitHub OAuth popup - popup blocked");
+					}
+
+					// Listen for popup completion
+					const checkClosed = setInterval(() => {
+						if (popup.closed) {
+							clearInterval(checkClosed);
+							setIsLoading(false);
+							setError("GitHub OAuth was cancelled");
+							onError?.("GitHub OAuth was cancelled");
+							cleanupRef.current = null;
+						}
+					}, 1000);
+
+					// Listen for message from popup
+					const messageHandler = (event: MessageEvent) => {
+						if (event.origin !== window.location.origin) return;
+
+						if (event.data.type === "GITHUB_OAUTH_SUCCESS") {
+							clearInterval(checkClosed);
+							popup.close();
+							window.removeEventListener("message", messageHandler);
+							// Pass the authorization code to the backend for token exchange
+							onSuccess(event.data.authorizationCode);
+							setIsLoading(false);
+							cleanupRef.current = null;
+						} else if (event.data.type === "GITHUB_OAUTH_ERROR") {
+							clearInterval(checkClosed);
+							popup.close();
+							window.removeEventListener("message", messageHandler);
+							setError(event.data.error);
+							onError?.(event.data.error);
+							setIsLoading(false);
+							cleanupRef.current = null;
+						}
+					};
+
+					window.addEventListener("message", messageHandler);
+
+					// Store cleanup function
+					cleanupRef.current = () => {
+						clearInterval(checkClosed);
+						window.removeEventListener("message", messageHandler);
+						if (!popup.closed) {
+							popup.close();
+						}
+						setIsLoading(false);
+					};
+				} catch (err) {
+					const errorMessage = `Failed to start GitHub OAuth`;
+					logger.error(errorMessage, { err });
+					setError(errorMessage);
+					onError?.(errorMessage);
+					setIsLoading(false);
+				}
 			} else {
-				// GitHub OAuth trigger (mock for now)
+				// Other OAuth providers trigger (mock for now)
 				logger.info(`Starting ${config.displayName} OAuth flow (mock)`);
 
 				try {
@@ -347,7 +445,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 	// 🚀 ENVIRONMENT-AWARE RESPONSE
 	// ✅ Return deterministic mocks in test environment
 	if (isTestEnvironment()) {
-		return createTestMockResponse(config);
+		return createTestMockResponse(config, onSuccess, onError);
 	}
 
 	return {

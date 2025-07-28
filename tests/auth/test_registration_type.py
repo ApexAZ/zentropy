@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 from api.main import app
 from api.database import User, RegistrationType
-from api.schemas import UserCreate, GoogleOAuthRequest
+from api.schemas import UserCreate
 
 class TestRegistrationTypeEnum:
     """Test RegistrationType enum values and database constraints."""
@@ -24,12 +24,13 @@ class TestRegistrationTypeEnum:
         assert RegistrationType.EMAIL.value == "email"
         assert RegistrationType.GOOGLE_OAUTH.value == "google_oauth"
         assert RegistrationType.MICROSOFT_OAUTH.value == "microsoft_oauth"
+        assert RegistrationType.GITHUB_OAUTH.value == "github_oauth"
 
     def test_registration_type_enum_count(self, client):
-        """Test that RegistrationType enum has exactly 3 values."""
-        expected_values = ["email", "google_oauth", "microsoft_oauth"]
+        """Test that RegistrationType enum has exactly 4 values."""
+        expected_values = ["email", "google_oauth", "microsoft_oauth", "github_oauth"]
         actual_values = [rt.value for rt in RegistrationType]
-        assert len(actual_values) == 3
+        assert len(actual_values) == 4
         assert set(actual_values) == set(expected_values)
 
 
@@ -140,10 +141,11 @@ class TestGoogleOAuthRegistrationWithType:
         }
 
         oauth_data = {
+            "provider": "google",
             "credential": "mock-google-jwt-token"
         }
 
-        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        response = client.post("/api/v1/auth/oauth", json=oauth_data)
         assert response.status_code == 200
 
         # Verify user was created with GOOGLE_OAUTH registration type
@@ -184,7 +186,8 @@ class TestGoogleOAuthRegistrationWithType:
                 "email_verified": True
             }
 
-            response = client.post("/api/v1/auth/google-oauth", json={
+            response = client.post("/api/v1/auth/oauth", json={
+                "provider": "google",
                 "credential": oauth_user["credential"]
             })
             assert response.status_code == 200
@@ -254,8 +257,8 @@ class TestRegistrationTypeInResponses:
             }
         }
 
-        oauth_data = {"credential": "mock-jwt-token"}
-        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        oauth_data = {"provider": "google", "credential": "mock-jwt-token"}
+        response = client.post("/api/v1/auth/oauth", json=oauth_data)
         assert response.status_code == 200
         
         # This should FAIL initially since response doesn't include registration_type

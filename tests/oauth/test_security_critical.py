@@ -57,7 +57,8 @@ class TestCriticalOAuthSecurity:
         # Step 5: Attempt OAuth login - MUST fail with security error
         print(f"🔥 Attempting OAuth hijack attack...")
         
-        response = client.post("/api/v1/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/oauth", json={
+            "provider": "google",
             "credential": "attacker_token"
         })
         
@@ -118,7 +119,8 @@ class TestCriticalOAuthSecurity:
         # Step 3: Create Google login request will be made via HTTP POST
         
         # Step 4: OAuth login should succeed (different email)
-        response = client.post("/api/v1/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/oauth", json={
+            "provider": "google",
             "credential": "valid_google_token"
         })
         
@@ -171,7 +173,8 @@ class TestCriticalOAuthSecurity:
         mock_verify_google_token.return_value = mock_google_user_info
         
         # Step 3: OAuth login should succeed (existing Google user)
-        response = client.post("/api/v1/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/oauth", json={
+            "provider": "google",
             "credential": "existing_user_token"
         })
         
@@ -205,7 +208,8 @@ class TestCriticalOAuthSecurity:
         mock_verify_google_token.return_value = mock_google_user_info
         
         # OAuth login without specifying organization
-        response = client.post("/api/v1/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/oauth", json={
+            "provider": "google",
             "credential": "workspace_token"
         })
         
@@ -240,7 +244,8 @@ class TestCriticalOAuthSecurity:
         mock_verify_google_token.return_value = mock_google_user_info
         
         # OAuth login without specifying organization
-        response = client.post("/api/v1/auth/google-oauth", json={
+        response = client.post("/api/v1/auth/oauth", json={
+            "provider": "google",
             "credential": "gmail_token"
         })
         

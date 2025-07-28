@@ -17,8 +17,6 @@ from api.schemas import (
     UserLogin, PasswordUpdate,
     # Organization schemas
     OrganizationResponse,
-    # Google OAuth schemas
-    GoogleOAuthRequest,
     # Team schemas
     TeamBase, TeamCreate, TeamUpdate, TeamResponse, TeamWithMembers,
     # Calendar entry schemas
@@ -484,18 +482,6 @@ class TestAuthenticationSchemas:
         token_data_empty = TokenData()
         assert token_data_empty.user_id is None
 
-
-class TestGoogleOAuthSchemas:
-    """Test Google OAuth schema validation and edge cases."""
-    
-    def test_google_oauth_request_valid_data(self):
-        """Test GoogleOAuthRequest with valid data."""
-        request_data = {
-            "credential": "google_credential_jwt_token"
-        }
-        
-        request = GoogleOAuthRequest(**request_data)
-        assert request.credential == "google_credential_jwt_token"
 
 
 class TestInvitationSchemas:

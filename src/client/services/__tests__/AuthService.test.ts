@@ -226,12 +226,13 @@ describe("AuthService", () => {
 				}
 			});
 
-			expect(fetch).toHaveBeenCalledWith("/api/v1/auth/google-oauth", {
+			expect(fetch).toHaveBeenCalledWith("/api/v1/auth/oauth", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json"
 				},
 				body: JSON.stringify({
+					provider: "google",
 					credential: mockCredential
 				})
 			});

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from unittest.mock import patch
 
 from api.database import User, RegistrationType, AuthProvider
-from api.schemas import UserCreate, GoogleOAuthRequest
+from api.schemas import UserCreate
 
 
 class TestUserRegistrationWithoutOrganization:
@@ -138,10 +138,11 @@ class TestGoogleOAuthRegistrationWithoutOrganization:
         }
 
         oauth_data = {
+            "provider": "google",
             "credential": "mock-google-jwt-token"
         }
 
-        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        response = client.post("/api/v1/auth/oauth", json=oauth_data)
         assert response.status_code == 200
 
         # Verify user was created without organization
@@ -163,10 +164,11 @@ class TestGoogleOAuthRegistrationWithoutOrganization:
         }
 
         oauth_data = {
+            "provider": "google",
             "credential": "mock-google-jwt-token"
         }
 
-        response = client.post("/api/v1/auth/google-oauth", json=oauth_data)
+        response = client.post("/api/v1/auth/oauth", json=oauth_data)
         assert response.status_code == 200
         
         login_response = response.json()

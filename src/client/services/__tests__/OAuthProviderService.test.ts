@@ -241,8 +241,7 @@ describe("OAuthProviderService", () => {
 		describe("Link Provider", () => {
 			it("should link provider successfully", async () => {
 				const mockResponse = {
-					message: "Google account linked successfully",
-					google_email: "test@gmail.com"
+					message: "Google account linked successfully"
 				};
 
 				(fetch as any).mockResolvedValueOnce({
@@ -257,11 +256,11 @@ describe("OAuthProviderService", () => {
 
 				const result = await OAuthProviderService.linkProvider(request);
 
-				// Test behavior: User should get success response with Google account info
+				// Test behavior: User should get success response with unified endpoint format
 				expect(result.success).toBe(true);
 				expect(result.provider).toBe("google");
 				expect(result.message).toBe("Google account linked successfully");
-				expect(result.provider_identifier).toBe("test@gmail.com");
+				expect(result.provider_identifier).toBe(""); // Unified endpoint doesn't return provider-specific email
 			});
 
 			it("should handle API errors during linking", async () => {
@@ -314,8 +313,7 @@ describe("OAuthProviderService", () => {
 
 			it("should successfully link Microsoft account and return success response", async () => {
 				const mockResponse = {
-					message: "Microsoft account linked successfully",
-					microsoft_email: "test@outlook.com"
+					message: "Microsoft account linked successfully"
 				};
 
 				(fetch as any).mockResolvedValueOnce({
@@ -330,17 +328,16 @@ describe("OAuthProviderService", () => {
 
 				const result = await OAuthProviderService.linkProvider(request);
 
-				// Test behavior: User should get success response with Microsoft account info
+				// Test behavior: User should get success response with unified endpoint format
 				expect(result.success).toBe(true);
 				expect(result.provider).toBe("microsoft");
 				expect(result.message).toBe("Microsoft account linked successfully");
-				expect(result.provider_identifier).toBe("test@outlook.com");
+				expect(result.provider_identifier).toBe(""); // Unified endpoint doesn't return provider-specific email
 			});
 
 			it("should successfully link GitHub account and return success response", async () => {
 				const mockResponse = {
-					message: "GitHub account linked successfully",
-					github_email: "test@github.com"
+					message: "GitHub account linked successfully"
 				};
 
 				(fetch as any).mockResolvedValueOnce({
@@ -355,11 +352,11 @@ describe("OAuthProviderService", () => {
 
 				const result = await OAuthProviderService.linkProvider(request);
 
-				// Test behavior: User should get success response with GitHub account info
+				// Test behavior: User should get success response with unified endpoint format
 				expect(result.success).toBe(true);
 				expect(result.provider).toBe("github");
 				expect(result.message).toBe("GitHub account linked successfully");
-				expect(result.provider_identifier).toBe("test@github.com");
+				expect(result.provider_identifier).toBe(""); // Unified endpoint doesn't return provider-specific email
 			});
 		});
 

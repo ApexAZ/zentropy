@@ -13,8 +13,7 @@ from ..schemas import (
     UserCreate,
     UserLoginResponse,
     MessageResponse,
-    GoogleOAuthRequest,
-    MicrosoftOAuthRequest,
+    OAuthRequest,
     EmailVerificationRequest,
     EmailVerificationResponse,
     VerificationCodeRequest,
@@ -30,22 +29,9 @@ from ..auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-from ..google_oauth import (
-    process_google_oauth,
-    GoogleOAuthError,
-    GoogleTokenInvalidError,
-    GoogleEmailUnverifiedError,
-    GoogleConfigurationError,
-    GoogleRateLimitError,
-)
-from ..microsoft_oauth import (
-    process_microsoft_oauth,
-    MicrosoftOAuthError,
-    MicrosoftTokenInvalidError,
-    MicrosoftEmailUnverifiedError,
-    MicrosoftConfigurationError,
-    MicrosoftRateLimitError,
-)
+from ..google_oauth import process_google_oauth
+from ..microsoft_oauth import process_microsoft_oauth
+from ..github_oauth import process_github_oauth
 from .. import database
 from ..database import User
 from ..email_verification import (
@@ -245,24 +231,54 @@ def logout(
     return MessageResponse(message="Successfully logged out")
 
 
-@router.post("/google-oauth", response_model=LoginResponse)
-def google_oauth_register(
-    request: GoogleOAuthRequest, http_request: Request, db: Session = Depends(get_db)
+@router.post("/oauth", response_model=LoginResponse)
+def unified_oauth_register(
+    request: OAuthRequest, http_request: Request, db: Session = Depends(get_db)
 ) -> LoginResponse:
     """
-    Register or login user using Google OAuth JWT credential.
+    Unified OAuth registration/login endpoint for all providers.
 
-    This endpoint:
-    1. Verifies the Google JWT credential
-    2. Creates a new user if they don't exist, or logs in existing user
-    3. Returns an access token and user information
+    This endpoint provides a provider-agnostic interface that routes
+    internally to provider-specific implementations based on the provider field.
     """
     try:
         # Get client IP for rate limiting
         client_ip = http_request.client.host if http_request.client else "unknown"
 
-        # Process Google OAuth authentication
-        auth_response = process_google_oauth(db, request.credential, client_ip)
+        # Route to provider-specific implementation based on provider field
+        if request.provider == "google":
+            if not request.credential:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Google OAuth requires credential field",
+                )
+            auth_response = process_google_oauth(db, request.credential, client_ip)
+
+        elif request.provider == "microsoft":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Microsoft OAuth requires authorization_code field",
+                )
+            auth_response = process_microsoft_oauth(
+                db, request.authorization_code, client_ip
+            )
+
+        elif request.provider == "github":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="GitHub OAuth requires authorization_code field",
+                )
+            auth_response = process_github_oauth(
+                db, request.authorization_code, client_ip
+            )
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported OAuth provider: {request.provider}",
+            )
 
         return LoginResponse(
             access_token=auth_response["access_token"],
@@ -270,100 +286,54 @@ def google_oauth_register(
             user=UserLoginResponse(**auth_response["user"]),
         )
 
-    except GoogleTokenInvalidError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google OAuth failed: {str(e)}",
-        )
-    except GoogleEmailUnverifiedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google OAuth failed: {str(e)}",
-        )
-    except GoogleConfigurationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google OAuth failed: {str(e)}",
-        )
-    except GoogleRateLimitError as e:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Google OAuth failed: {str(e)}",
-        )
-    except GoogleOAuthError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google OAuth failed: {str(e)}",
-        )
     except HTTPException:
-        # Re-raise HTTPExceptions (like our 409 security error) as-is
+        # Re-raise HTTPExceptions (like validation errors) as-is
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google OAuth registration failed: {str(e)}",
-        )
+        # Handle specific OAuth error types with appropriate HTTP status codes
+        error_name = type(e).__name__
 
+        # Token validation errors (401 Unauthorized)
+        if "TokenInvalidError" in error_name or "InvalidToken" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid OAuth token: {str(e)}",
+            )
 
-@router.post("/microsoft-oauth", response_model=LoginResponse)
-def microsoft_oauth_register(
-    request: MicrosoftOAuthRequest, http_request: Request, db: Session = Depends(get_db)
-) -> LoginResponse:
-    """
-    Register or login user using Microsoft OAuth access token.
+        # Email verification errors (400 Bad Request)
+        elif "EmailUnverifiedError" in error_name or "EmailUnverified" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email verification required: {str(e)}",
+            )
 
-    This endpoint:
-    1. Verifies the Microsoft access token with Microsoft Graph API
-    2. Creates a new user if they don't exist, or logs in existing user
-    3. Returns an access token and user information
-    """
-    try:
-        # Get client IP for rate limiting
-        client_ip = http_request.client.host if http_request.client else "unknown"
+        # Rate limiting errors (429 Too Many Requests)
+        elif "RateLimitError" in error_name or "RateLimit" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded: {str(e)}",
+            )
 
-        # Process Microsoft OAuth authentication
-        auth_response = process_microsoft_oauth(
-            db, request.authorization_code, client_ip
-        )
+        # Configuration errors (500 Internal Server Error)
+        elif "ConfigurationError" in error_name or "Configuration" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OAuth configuration error",
+            )
 
-        return LoginResponse(
-            access_token=auth_response["access_token"],
-            token_type=auth_response["token_type"],
-            user=UserLoginResponse(**auth_response["user"]),
-        )
-    except MicrosoftTokenInvalidError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Microsoft OAuth failed: {str(e)}",
-        )
-    except MicrosoftEmailUnverifiedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Microsoft OAuth failed: {str(e)}",
-        )
-    except MicrosoftConfigurationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Microsoft OAuth failed: {str(e)}",
-        )
-    except MicrosoftRateLimitError as e:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Microsoft OAuth failed: {str(e)}",
-        )
-    except MicrosoftOAuthError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Microsoft OAuth failed: {str(e)}",
-        )
-    except HTTPException:
-        # Re-raise HTTPExceptions (like our 409 security error) as-is
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Microsoft OAuth registration failed: {str(e)}",
-        )
+        # Generic OAuth errors (400 Bad Request)
+        elif "OAuthError" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"OAuth error: {str(e)}",
+            )
+
+        # All other exceptions (500 Internal Server Error)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OAuth registration failed: {str(e)}",
+            )
 
 
 @router.post("/send-verification", response_model=EmailVerificationResponse)

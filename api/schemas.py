@@ -1,4 +1,11 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
@@ -91,13 +98,97 @@ class PasswordUpdate(BaseModel):
     )
 
 
-# OAuth schemas
-class GoogleOAuthRequest(BaseModel):
-    credential: str
+# Generic OAuth Schemas (Provider-Agnostic)
+class OAuthRequest(BaseModel):
+    """Generic OAuth request supporting all providers with credential validation."""
+
+    provider: str
+    credential: Optional[str] = None  # For Google JWT tokens
+    authorization_code: Optional[str] = None  # For Microsoft/GitHub codes
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v):
+        if v not in ["google", "microsoft", "github"]:
+            raise ValueError("Provider must be one of: google, microsoft, github")
+        return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_credential_fields(cls, values):
+        provider = values.get("provider")
+        credential = values.get("credential")
+        auth_code = values.get("authorization_code")
+
+        if provider == "google":
+            if not credential:
+                raise ValueError("Google OAuth requires credential field")
+            if auth_code:
+                raise ValueError("Google OAuth should not include authorization_code")
+        elif provider in ["microsoft", "github"]:
+            if not auth_code:
+                raise ValueError(
+                    f"{provider.title()} OAuth requires authorization_code field"
+                )
+            if credential:
+                raise ValueError(
+                    f"{provider.title()} OAuth should not include credential"
+                )
+
+        return values
 
 
-class MicrosoftOAuthRequest(BaseModel):
-    authorization_code: str
+class LinkOAuthAccountRequest(BaseModel):
+    """Generic OAuth account linking request supporting all providers."""
+
+    provider: str
+    credential: Optional[str] = None  # For Google JWT tokens
+    authorization_code: Optional[str] = None  # For Microsoft/GitHub codes
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v):
+        if v not in ["google", "microsoft", "github"]:
+            raise ValueError("Provider must be one of: google, microsoft, github")
+        return v
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_credential_fields(cls, values):
+        provider = values.get("provider")
+        credential = values.get("credential")
+        auth_code = values.get("authorization_code")
+
+        if provider == "google":
+            if not credential:
+                raise ValueError("Google OAuth requires credential field")
+            if auth_code:
+                raise ValueError("Google OAuth should not include authorization_code")
+        elif provider in ["microsoft", "github"]:
+            if not auth_code:
+                raise ValueError(
+                    f"{provider.title()} OAuth requires authorization_code field"
+                )
+            if credential:
+                raise ValueError(
+                    f"{provider.title()} OAuth should not include credential"
+                )
+
+        return values
+
+
+class UnlinkOAuthAccountRequest(BaseModel):
+    """Generic OAuth account unlinking request supporting all providers."""
+
+    provider: str
+    password: str
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v):
+        if v not in ["google", "microsoft", "github"]:
+            raise ValueError("Provider must be one of: google, microsoft, github")
+        return v
 
 
 # Team schemas
@@ -299,6 +390,7 @@ class ResetPasswordRequest(BaseModel):
 # Generic response schemas
 class MessageResponse(BaseModel):
     message: str
+    provider_identifier: Optional[str] = None  # For OAuth linking responses
 
 
 class ErrorResponse(BaseModel):
@@ -308,23 +400,6 @@ class ErrorResponse(BaseModel):
 class DetailedErrorResponse(BaseModel):
     detail: str
     error_type: str
-
-
-# Account linking schemas
-class LinkGoogleAccountRequest(BaseModel):
-    google_credential: str
-
-
-class UnlinkGoogleAccountRequest(BaseModel):
-    password: str
-
-
-class LinkMicrosoftAccountRequest(BaseModel):
-    microsoft_authorization_code: str
-
-
-class UnlinkMicrosoftAccountRequest(BaseModel):
-    password: str
 
 
 class OAuthProviderStatus(BaseModel):

@@ -81,7 +81,7 @@ vi.mock("../components/AuthModal", () => ({
 								try {
 									setOauthError(""); // Clear previous errors
 									// Simulate Google OAuth flow
-									const mockResponse = await fetch("/api/v1/auth/google-oauth", {
+									const mockResponse = await fetch("/api/v1/auth/oauth", {
 										method: "POST",
 										headers: { "Content-Type": "application/json" },
 										body: JSON.stringify({ provider: "google", credential: "mock-credential" })
@@ -443,7 +443,7 @@ describe("App - Google OAuth Integration (TDD)", () => {
 			// Verify the credential was sent to backend
 			await fastStateSync();
 			expect(testEnv.mocks.fetch).toHaveBeenCalledWith(
-				"/api/v1/auth/google-oauth",
+				"/api/v1/auth/oauth",
 				expect.objectContaining({
 					method: "POST",
 					headers: { "Content-Type": "application/json" },

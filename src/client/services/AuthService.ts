@@ -81,26 +81,27 @@ export class AuthService {
 	 * Sign in with OAuth providers
 	 */
 	static async oauthSignIn(
-		provider: "google" | "microsoft",
+		provider: "google" | "microsoft" | "github",
 		credential: string
 	): Promise<{ token: string; user: AuthUser }> {
-		let endpoint: string;
+		// Use unified OAuth endpoint with provider-specific request format
 		let requestBody: object;
 
 		switch (provider) {
 			case "google":
-				endpoint = "/api/v1/auth/google-oauth";
-				requestBody = { credential };
+				requestBody = { provider: "google", credential };
 				break;
 			case "microsoft":
-				endpoint = "/api/v1/auth/microsoft-oauth";
-				requestBody = { authorization_code: credential };
+				requestBody = { provider: "microsoft", authorization_code: credential };
+				break;
+			case "github":
+				requestBody = { provider: "github", authorization_code: credential };
 				break;
 			default:
 				throw new Error(`OAuth provider "${provider}" is not supported`);
 		}
 
-		const response = await fetch(endpoint, {
+		const response = await fetch("/api/v1/auth/oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"

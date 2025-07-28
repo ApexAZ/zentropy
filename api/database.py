@@ -71,6 +71,7 @@ class AuthProvider(PyEnum):
     LOCAL = "local"
     GOOGLE = "google"
     MICROSOFT = "microsoft"
+    GITHUB = "github"
     HYBRID = "hybrid"  # Supports both email/password and OAuth providers
 
 
@@ -80,6 +81,7 @@ class RegistrationType(PyEnum):
     EMAIL = "email"
     GOOGLE_OAUTH = "google_oauth"
     MICROSOFT_OAUTH = "microsoft_oauth"
+    GITHUB_OAUTH = "github_oauth"
 
 
 class IndustryType(PyEnum):

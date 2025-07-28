@@ -144,77 +144,80 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * Link Google provider
+	 * Link Google provider using unified endpoint
 	 */
 	private static async linkGoogleProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/link-google", {
+		const response = await fetch("/api/v1/users/me/link-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
-				google_credential: request.credential
+				provider: request.provider,
+				credential: request.credential
 			})
 		});
 
-		const result = await this.handleResponse<{ message: string; google_email: string }>(response);
+		const result = await this.handleResponse<{ message: string }>(response);
 
 		return {
 			message: result.message,
 			success: true,
 			provider: request.provider,
-			provider_identifier: result.google_email
+			provider_identifier: "" // Unified endpoint doesn't return provider-specific email
 		};
 	}
 
 	/**
-	 * Link Microsoft provider
+	 * Link Microsoft provider using unified endpoint
 	 */
 	private static async linkMicrosoftProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/link-microsoft", {
+		const response = await fetch("/api/v1/users/me/link-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
-				microsoft_authorization_code: request.credential
+				provider: request.provider,
+				authorization_code: request.credential
 			})
 		});
 
-		const result = await this.handleResponse<{ message: string; microsoft_email?: string }>(response);
+		const result = await this.handleResponse<{ message: string }>(response);
 
 		return {
 			message: result.message,
 			success: true,
 			provider: request.provider,
-			provider_identifier: result.microsoft_email ?? ""
+			provider_identifier: "" // Unified endpoint doesn't return provider-specific email
 		};
 	}
 
 	/**
-	 * Link GitHub provider
+	 * Link GitHub provider using unified endpoint
 	 */
 	private static async linkGitHubProvider(request: LinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/link-github", {
+		const response = await fetch("/api/v1/users/me/link-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
-				github_credential: request.credential
+				provider: request.provider,
+				authorization_code: request.credential
 			})
 		});
 
-		const result = await this.handleResponse<{ message: string; github_email?: string }>(response);
+		const result = await this.handleResponse<{ message: string }>(response);
 
 		return {
 			message: result.message,
 			success: true,
 			provider: request.provider,
-			provider_identifier: result.github_email ?? ""
+			provider_identifier: "" // Unified endpoint doesn't return provider-specific email
 		};
 	}
 
@@ -243,16 +246,17 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * Unlink Google provider
+	 * Unlink Google provider using unified endpoint
 	 */
 	private static async unlinkGoogleProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/unlink-google", {
+		const response = await fetch("/api/v1/users/me/unlink-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
+				provider: request.provider,
 				password: request.password
 			})
 		});
@@ -267,16 +271,17 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * Unlink Microsoft provider
+	 * Unlink Microsoft provider using unified endpoint
 	 */
 	private static async unlinkMicrosoftProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/unlink-microsoft", {
+		const response = await fetch("/api/v1/users/me/unlink-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
+				provider: request.provider,
 				password: request.password
 			})
 		});
@@ -291,16 +296,17 @@ export class OAuthProviderService {
 	}
 
 	/**
-	 * Unlink GitHub provider
+	 * Unlink GitHub provider using unified endpoint
 	 */
 	private static async unlinkGitHubProvider(request: UnlinkOAuthProviderRequest): Promise<OAuthOperationResponse> {
-		const response = await fetch("/api/v1/users/me/unlink-github", {
+		const response = await fetch("/api/v1/users/me/unlink-oauth", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				...createAuthHeaders()
 			},
 			body: JSON.stringify({
+				provider: request.provider,
 				password: request.password
 			})
 		});

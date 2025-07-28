@@ -95,8 +95,8 @@ class TestAccountLinking:
         }
 
         response = client.post(
-            "/api/v1/users/me/link-google",
-            json={"google_credential": "fake_google_token"},
+            "/api/v1/users/me/link-oauth",
+            json={"provider": "google", "credential": "fake_google_token"},
             headers=auth_headers,
         )
         
@@ -117,8 +117,8 @@ class TestAccountLinking:
         }
 
         response = client.post(
-            "/api/v1/users/me/link-google",
-            json={"google_credential": "fake_google_token"},
+            "/api/v1/users/me/link-oauth",
+            json={"provider": "google", "credential": "fake_google_token"},
             headers=auth_headers,
         )
 
@@ -150,8 +150,8 @@ class TestAccountLinking:
         }
 
         response = client.post(
-            "/api/v1/users/me/link-google",
-            json={"google_credential": "fake_google_token"},
+            "/api/v1/users/me/link-oauth",
+            json={"provider": "google", "credential": "fake_google_token"},
             headers=auth_headers,
         )
 
@@ -175,8 +175,8 @@ class TestAccountLinking:
         }
 
         response = client.post(
-            "/api/v1/users/me/link-google",
-            json={"google_credential": "fake_google_token"},
+            "/api/v1/users/me/link-oauth",
+            json={"provider": "google", "credential": "fake_google_token"},
             headers=auth_headers,
         )
 
@@ -198,8 +198,8 @@ class TestAccountLinking:
         auth_headers = {"Authorization": f"Bearer {token}"}
 
         response = client.post(
-            "/api/v1/users/me/unlink-google",
-            json={"password": "OldPassword123!"},  # Known password from fixture
+            "/api/v1/users/me/unlink-oauth",
+            json={"provider": "google", "password": "OldPassword123!"},  # Known password from fixture
             headers=auth_headers,
         )
 
@@ -221,8 +221,8 @@ class TestAccountLinking:
         auth_headers = {"Authorization": f"Bearer {token}"}
 
         response = client.post(
-            "/api/v1/users/me/unlink-google",
-            json={"password": "OldPassword123!"},
+            "/api/v1/users/me/unlink-oauth",
+            json={"provider": "google", "password": "OldPassword123!"},
             headers=auth_headers,
         )
 
@@ -251,8 +251,8 @@ class TestAccountLinking:
         headers = {"Authorization": f"Bearer {token}"}
 
         response = client.post(
-            "/api/v1/users/me/unlink-google",
-            json={"password": "any_password"},
+            "/api/v1/users/me/unlink-oauth",
+            json={"provider": "google", "password": "any_password"},
             headers=headers,
         )
 
@@ -274,8 +274,8 @@ class TestAccountLinking:
         auth_headers = {"Authorization": f"Bearer {token}"}
 
         response = client.post(
-            "/api/v1/users/me/unlink-google",
-            json={"password": "WrongPassword123!"},
+            "/api/v1/users/me/unlink-oauth",
+            json={"provider": "google", "password": "WrongPassword123!"},
             headers=auth_headers,
         )
 
@@ -285,8 +285,8 @@ class TestAccountLinking:
     def test_link_google_account_requires_authentication(self, client: TestClient):
         """Test that linking requires authentication."""
         response = client.post(
-            "/api/v1/users/me/link-google",
-            json={"google_credential": "fake_google_token"},
+            "/api/v1/users/me/link-oauth",
+            json={"provider": "google", "credential": "fake_google_token"},
         )
 
         assert response.status_code == 403
@@ -294,8 +294,8 @@ class TestAccountLinking:
     def test_unlink_google_account_requires_authentication(self, client: TestClient):
         """Test that unlinking requires authentication."""
         response = client.post(
-            "/api/v1/users/me/unlink-google",
-            json={"password": "TestPassword123!"},
+            "/api/v1/users/me/unlink-oauth",
+            json={"provider": "google", "password": "TestPassword123!"},
         )
 
         assert response.status_code == 403
@@ -445,8 +445,8 @@ class TestGoogleOAuthSecurityFix:
         # Attempt Google OAuth login (should fail)
         with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
             response = client.post(
-                "/api/v1/auth/google-oauth",
-                json={"credential": "fake_google_token"},
+                "/api/v1/auth/oauth",
+                json={"provider": "google", "credential": "fake_google_token"},
             )
 
         assert response.status_code == 409
@@ -481,8 +481,8 @@ class TestGoogleOAuthSecurityFix:
         # Google OAuth login should work
         with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
             response = client.post(
-                "/api/v1/auth/google-oauth",
-                json={"credential": "fake_google_token"},
+                "/api/v1/auth/oauth",
+                json={"provider": "google", "credential": "fake_google_token"},
             )
 
         assert response.status_code == 200
@@ -516,8 +516,8 @@ class TestGoogleOAuthSecurityFix:
         # Google OAuth login should work for hybrid accounts
         with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
             response = client.post(
-                "/api/v1/auth/google-oauth",
-                json={"credential": "fake_google_token"},
+                "/api/v1/auth/oauth",
+                json={"provider": "google", "credential": "fake_google_token"},
             )
 
         assert response.status_code == 200
