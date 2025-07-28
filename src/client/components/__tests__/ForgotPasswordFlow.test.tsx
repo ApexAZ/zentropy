@@ -115,7 +115,8 @@ describe("ForgotPasswordFlow", () => {
 					return content.includes("We've sent a 6-digit verification code to");
 				})
 			).toBeInTheDocument();
-			expect(screen.getByText("test@example.com")).toBeInTheDocument();
+			// Email appears within a paragraph, check for text content instead of exact match
+			expect(screen.getByText(/test@example\.com/)).toBeInTheDocument();
 		});
 
 		it("shows error message on email send failure (secure flow)", async () => {
@@ -132,8 +133,8 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			// Should show the actual error message (secure flow shows real errors)
-			expect(screen.getByText("Rate limit exceeded")).toBeInTheDocument();
+			// Should show the user-friendly error message (processed through AccountSecurityErrorHandler)
+			expect(screen.getByText("Too many requests. Please wait before trying again.")).toBeInTheDocument();
 			expect(screen.queryByText("Enter Verification Code")).not.toBeInTheDocument();
 		});
 
@@ -153,7 +154,10 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
+			// Use legacy flow explicitly for this test
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} useSecureFlow={false} />
+			);
 
 			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -180,7 +184,10 @@ describe("ForgotPasswordFlow", () => {
 			(AuthService.validateEmail as any).mockReturnValue(true);
 			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
 
-			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
+			// Use legacy flow explicitly for this test
+			renderWithFullEnvironment(
+				<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} useSecureFlow={false} />
+			);
 
 			// Go to verification step
 			const emailInput = screen.getByPlaceholderText("Email Address");
@@ -205,8 +212,9 @@ describe("ForgotPasswordFlow", () => {
 	describe("Step 3: Password Input", () => {
 		async function goToPasswordStep() {
 			(AuthService.validateEmail as any).mockReturnValue(true);
-			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
+			(AuthService.requestPasswordResetCode as any).mockResolvedValue({ message: "Reset code sent" });
 
+			// Use secure flow (default)
 			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go through email and verification steps
@@ -216,8 +224,11 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			const verifyButton = screen.getByText("Verify Mock Code");
-			fastUserActions.click(verifyButton);
+			// In secure flow, we need to enter verification code directly
+			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
+			const continueButton = screen.getByText("Continue");
+			fastUserActions.type(codeInput, "123456");
+			fastUserActions.click(continueButton);
 			await fastStateSync();
 		}
 
@@ -235,11 +246,11 @@ describe("ForgotPasswordFlow", () => {
 			await fastStateSync();
 
 			expect(screen.getByText("Passwords don't match")).toBeInTheDocument();
-			expect(AuthService.resetPasswordWithUserId).not.toHaveBeenCalled();
+			expect(AuthService.resetPasswordWithCode).not.toHaveBeenCalled();
 		});
 
-		it("calls AuthService.resetPasswordWithUserId with correct parameters", async () => {
-			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
+		it("calls AuthService.resetPasswordWithCode with correct parameters", async () => {
+			(AuthService.resetPasswordWithCode as any).mockResolvedValue({ message: "Password reset successfully" });
 
 			await goToPasswordStep();
 
@@ -275,7 +286,7 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(resetButton);
 			await fastStateSync();
 
-			expect(screen.getByText("Invalid verification code")).toBeInTheDocument();
+			expect(screen.getByText("The verification code is invalid or has expired")).toBeInTheDocument();
 		});
 
 		it("proceeds to completion step on successful password reset", async () => {
@@ -305,8 +316,9 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(backButton);
 			await fastStateSync();
 
-			// Should return to verification step
-			expect(screen.getByTestId("email-verification-modal")).toBeInTheDocument();
+			// Should return to verification step (secure flow shows direct input, not modal)
+			expect(screen.getByText("Enter Verification Code")).toBeInTheDocument();
+			expect(screen.getByPlaceholderText("Enter 6-digit code")).toBeInTheDocument();
 		});
 
 		it("shows password requirements component", async () => {
@@ -327,9 +339,10 @@ describe("ForgotPasswordFlow", () => {
 
 		async function goToCompletionStep() {
 			(AuthService.validateEmail as any).mockReturnValue(true);
-			(AuthService.sendEmailVerification as any).mockResolvedValue({ message: "Email sent" });
-			(AuthService.resetPasswordWithUserId as any).mockResolvedValue({ message: "Password reset successfully" });
+			(AuthService.requestPasswordResetCode as any).mockResolvedValue({ message: "Reset code sent" });
+			(AuthService.resetPasswordWithCode as any).mockResolvedValue({ message: "Password reset successfully" });
 
+			// Use secure flow (default)
 			renderWithFullEnvironment(<ForgotPasswordFlow onComplete={mockOnComplete} onCancel={mockOnCancel} />);
 
 			// Go through all steps
@@ -339,8 +352,11 @@ describe("ForgotPasswordFlow", () => {
 			fastUserActions.click(submitButton);
 			await fastStateSync();
 
-			const verifyButton = screen.getByText("Verify Mock Code");
-			fastUserActions.click(verifyButton);
+			// In secure flow, we need to enter verification code directly
+			const codeInput = screen.getByPlaceholderText("Enter 6-digit code");
+			const continueButton = screen.getByText("Continue");
+			fastUserActions.type(codeInput, "123456");
+			fastUserActions.click(continueButton);
 			await fastStateSync();
 
 			const newPasswordInput = screen.getByPlaceholderText("New Password");

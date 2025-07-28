@@ -58,6 +58,312 @@ export function mapAccountSecurityError(
 		};
 	}
 
+	// OAuth Provider Support Errors
+	if (lowerMessage.includes("oauth provider") && lowerMessage.includes("is not supported")) {
+		return {
+			message: errorMessage, // Preserve the specific unsupported provider message
+			resolution: "Please use one of the supported OAuth providers.",
+			isRetryable: false,
+			severity: "error",
+			category: "validation"
+		};
+	}
+
+	// General OAuth Authentication Errors
+	if (lowerMessage.includes("oauth authentication failed")) {
+		return {
+			message: "OAuth authentication failed",
+			resolution: "Please try signing in again with your OAuth provider.",
+			isRetryable: true,
+			severity: "error",
+			category: "auth"
+		};
+	}
+
+	// Login Failed Errors
+	if (lowerMessage.includes("login failed")) {
+		return {
+			message: "Login failed",
+			resolution: "Please check your credentials and try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "auth"
+		};
+	}
+
+	// Invalid Credentials (preserve specific credential error messages)
+	if (lowerMessage.includes("invalid credentials")) {
+		return {
+			message: "Invalid credentials",
+			resolution: "Please check your email and password, then try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "auth"
+		};
+	}
+
+	// Password Change Specific Errors (but not for unlinking context)
+	if (
+		(lowerMessage.includes("incorrect password") || lowerMessage.includes("wrong password")) &&
+		context !== "unlinking"
+	) {
+		return {
+			message: "Current password is incorrect",
+			resolution: "Please enter your current password correctly and try again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("password too weak") || lowerMessage.includes("password strength")) {
+		return {
+			message: "Password does not meet security requirements",
+			resolution: "Please choose a stronger password that meets all the requirements shown.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("password recently used") || lowerMessage.includes("password history")) {
+		return {
+			message: "This password was recently used",
+			resolution: "Please choose a different password that you haven't used recently.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("failed to change password") && context === "loading") {
+		return {
+			message: "Failed to change password",
+			resolution: "Please check your current password and try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	// Profile Management Specific Errors
+	if (lowerMessage.includes("failed to load profile") || lowerMessage.includes("failed to get profile")) {
+		return {
+			message: "Unable to load your profile information",
+			resolution: "Please refresh the page or try again in a moment.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	if (lowerMessage.includes("failed to update profile") || lowerMessage.includes("profile update failed")) {
+		return {
+			message: "Failed to update profile",
+			resolution: "Please check your information and try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	if (lowerMessage.includes("email already in use") || lowerMessage.includes("email already exists")) {
+		return {
+			message: "This email address is already in use",
+			resolution: "Please use a different email address or sign in to the existing account.",
+			isRetryable: false,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (
+		lowerMessage.includes("please enter a valid email address") ||
+		lowerMessage.includes("invalid email format") ||
+		lowerMessage.includes("invalid email")
+	) {
+		return {
+			message: "Please enter a valid email address",
+			resolution: "Check the email format and make sure it includes @ and a domain.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("phone number") && lowerMessage.includes("invalid")) {
+		return {
+			message: "Please enter a valid phone number",
+			resolution: "Use the format +1 (555) 123-4567 or similar.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	// Password Reset Specific Errors
+	if (lowerMessage.includes("failed to send reset code") || lowerMessage.includes("failed to send password reset")) {
+		return {
+			message: "Unable to send password reset code",
+			resolution: "Please check your email address and try again in a moment.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	if (
+		lowerMessage.includes("invalid verification code") ||
+		(lowerMessage.includes("verification code") && lowerMessage.includes("invalid"))
+	) {
+		return {
+			message: "The verification code is invalid or has expired",
+			resolution: "Please check the code and try again, or request a new code.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("verification code expired") || lowerMessage.includes("code has expired")) {
+		return {
+			message: "The verification code has expired",
+			resolution: "Please request a new verification code and try again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("passwords don't match") || lowerMessage.includes("passwords do not match")) {
+		return {
+			message: "Passwords don't match",
+			resolution: "Please make sure both password fields contain the same password.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("please enter the verification code")) {
+		return {
+			message: "Verification code is required",
+			resolution: "Please enter the 6-digit code sent to your email.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("failed to reset password") && context === "loading") {
+		return {
+			message: "Unable to reset your password",
+			resolution: "Please check your verification code and try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	// OAuth Hook Specific Errors
+	if (lowerMessage.includes("not configured in environment variables")) {
+		return {
+			message: "OAuth configuration is missing",
+			resolution: "Please contact support - the OAuth service configuration is incomplete.",
+			isRetryable: false,
+			severity: "error",
+			category: "validation",
+			requiresSupport: true
+		};
+	}
+
+	if (lowerMessage.includes("identity services not available") || lowerMessage.includes("oauth not available")) {
+		return {
+			message: "OAuth service is temporarily unavailable",
+			resolution: "Please try again in a moment or use an alternative sign-in method.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	if (lowerMessage.includes("failed to initialize") && lowerMessage.includes("oauth")) {
+		return {
+			message: "Sign-in service failed to start",
+			resolution: "Please refresh the page and try again.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
+	if (lowerMessage.includes("sign-in not available") || lowerMessage.includes("oauth not ready")) {
+		return {
+			message: "Sign-in service is not ready",
+			resolution: "Please wait a moment for the service to load, then try again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "server"
+		};
+	}
+
+	if (lowerMessage.includes("oauth was cancelled") || lowerMessage.includes("oauth was dismissed")) {
+		return {
+			message: "Sign-in was cancelled",
+			resolution: "Click the sign-in button and complete the authentication process.",
+			isRetryable: true,
+			severity: "info",
+			category: "auth"
+		};
+	}
+
+	if (
+		lowerMessage.includes("popup blocked") ||
+		(lowerMessage.includes("failed to open") && lowerMessage.includes("popup"))
+	) {
+		return {
+			message: "Pop-up was blocked by your browser",
+			resolution: "Please allow pop-ups for this site and try again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "validation"
+		};
+	}
+
+	if (
+		lowerMessage.includes("no credential received") ||
+		(lowerMessage.includes("failed to process") && lowerMessage.includes("credential"))
+	) {
+		return {
+			message: "Authentication was incomplete",
+			resolution: "Please try the sign-in process again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "auth"
+		};
+	}
+
+	if (lowerMessage.includes("failed to load after") && lowerMessage.includes("seconds")) {
+		return {
+			message: "Sign-in service is taking too long to load",
+			resolution: "Please check your internet connection and refresh the page.",
+			isRetryable: true,
+			severity: "error",
+			category: "network"
+		};
+	}
+
+	// Invalid OAuth Credential (preserve for backward compatibility)
+	if (lowerMessage.includes("invalid oauth credential")) {
+		return {
+			message: "Invalid OAuth credential",
+			resolution: "Please try the OAuth sign-in process again.",
+			isRetryable: true,
+			severity: "warning",
+			category: "auth"
+		};
+	}
+
 	// Google Account Linking Specific Errors
 	if (context === "linking") {
 		if (
@@ -157,6 +463,27 @@ export function mapAccountSecurityError(
 		};
 	}
 
+	// Email Verification Specific Errors
+	if (lowerMessage.includes("email already verified")) {
+		return {
+			message: "Email already verified",
+			resolution: "Your email is already verified. You can proceed with using your account.",
+			isRetryable: false,
+			severity: "info",
+			category: "validation"
+		};
+	}
+
+	if (lowerMessage.includes("failed to send verification email") && context === "loading") {
+		return {
+			message: "Failed to send verification email",
+			resolution: "Please try again in a few moments or check your email address.",
+			isRetryable: true,
+			severity: "error",
+			category: "server"
+		};
+	}
+
 	// Validation Errors
 	if (lowerMessage.includes("validation") || lowerMessage.includes("invalid") || lowerMessage.includes("400")) {
 		return {
@@ -200,6 +527,19 @@ export function mapAccountSecurityError(
 		linking: "Unable to link Google account.",
 		unlinking: "Unable to unlink Google account."
 	};
+
+	// Handle specific empty error responses by context
+	if (!errorMessage || errorMessage.trim() === "") {
+		if (context === "loading") {
+			return {
+				message: "Failed to send verification email",
+				resolution: "Please try again in a few moments.",
+				isRetryable: true,
+				severity: "error",
+				category: "server"
+			};
+		}
+	}
 
 	// Unknown/Fallback Error
 	return {

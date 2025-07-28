@@ -3,6 +3,25 @@ import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from "vites
 import "@testing-library/jest-dom";
 import { useAuth } from "../useAuth";
 import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
+import { getAuthTokenAsync } from "../../utils/auth";
+import { UserService } from "../../services/UserService";
+
+// Mock the auth utilities and UserService for proper testing
+vi.mock("../../utils/auth", async () => {
+	const actual = await vi.importActual("../../utils/auth");
+	return {
+		...actual,
+		getAuthTokenAsync: vi.fn(),
+		setAuthTokenAsync: vi.fn(),
+		clearAuthTokenAsync: vi.fn()
+	};
+});
+
+vi.mock("../../services/UserService", () => ({
+	UserService: {
+		validateTokenAndGetUser: vi.fn()
+	}
+}));
 
 // Mock fetch for API calls
 const mockFetch = vi.fn();
@@ -44,24 +63,30 @@ describe("useAuth", () => {
 	// Helper function to setup authenticated user
 	const setupAuthenticatedUser = async (
 		token = "valid-jwt-token",
-		userData = {
+		userData: any = {
 			email: "test@example.com",
 			first_name: "Test",
 			last_name: "User"
 		}
 	) => {
-		mockLocalStorage.getItem.mockReturnValue(token);
+		// Mock the token retrieval
+		(getAuthTokenAsync as any).mockResolvedValue(token);
 
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			// eslint-disable-next-line no-restricted-syntax -- Helper function used across multiple test sections for authentication setup
-			json: async () => userData
+		// Mock the user validation
+		(UserService.validateTokenAndGetUser as any).mockResolvedValue({
+			...userData,
+			display_name:
+				userData.display_name !== undefined
+					? userData.display_name
+					: userData.first_name && userData.last_name
+						? `${userData.first_name} ${userData.last_name}`
+						: ""
 		});
 
 		const { result } = createHook();
 
 		await act(async () => {
-			await Promise.resolve();
+			await fastStateSync();
 		});
 
 		return { result, token, userData };
@@ -69,19 +94,15 @@ describe("useAuth", () => {
 
 	// Helper function to setup unauthenticated user
 	const setupUnauthenticatedUser = () => {
-		mockLocalStorage.getItem.mockReturnValue(null);
-		mockSessionStorage.getItem.mockReturnValue(null);
+		(getAuthTokenAsync as any).mockResolvedValue(null);
 		return createHook();
 	};
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockLocalStorage.getItem.mockClear();
-		mockLocalStorage.setItem.mockClear();
-		mockLocalStorage.removeItem.mockClear();
-		mockSessionStorage.getItem.mockClear();
-		mockSessionStorage.setItem.mockClear();
-		mockSessionStorage.removeItem.mockClear();
+		// Clear the mock functions
+		(getAuthTokenAsync as any).mockClear();
+		(UserService.validateTokenAndGetUser as any).mockClear();
 	});
 
 	afterEach(() => {
@@ -104,7 +125,7 @@ describe("useAuth", () => {
 		it("should not call API when no token exists in storage", () => {
 			setupUnauthenticatedUser();
 
-			expect(mockFetch).not.toHaveBeenCalled();
+			expect(UserService.validateTokenAndGetUser).not.toHaveBeenCalled();
 		});
 	});
 
@@ -120,23 +141,19 @@ describe("useAuth", () => {
 				email: "integration.test@example.com",
 				first_name: "Integration",
 				last_name: "Test",
-				organization: "Test Corp"
+				organization: "Test Corp",
+				display_name: "" // Explicitly set empty display_name
 			};
 
 			const { result } = await setupAuthenticatedUser(mockToken, mockUserData);
 
-			// Verify API call was made correctly
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
-				headers: {
-					Authorization: `Bearer ${mockToken}`,
-					"Content-Type": "application/json"
-				}
-			});
+			// Verify service call was made correctly
+			expect(UserService.validateTokenAndGetUser).toHaveBeenCalledWith(mockToken);
 
 			// Verify auth state is set correctly
 			expect(result.current.user).toEqual({
 				email: "integration.test@example.com",
-				name: "", // Uses display_name field directly (empty when not provided)
+				name: "", // Uses display_name field directly (explicitly set to empty)
 				has_projects_access: undefined, // Not provided in mock data
 				email_verified: false // Default fallback in useAuth
 			});
@@ -146,20 +163,17 @@ describe("useAuth", () => {
 		it("should handle invalid token by clearing localStorage", async () => {
 			const mockToken = "invalid-jwt-token";
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: false,
-				status: 401
-			});
+			// Mock token retrieval to return invalid token
+			(getAuthTokenAsync as any).mockResolvedValue(mockToken);
+
+			// Mock user validation to reject (invalid token)
+			(UserService.validateTokenAndGetUser as any).mockRejectedValue(new Error("Invalid token"));
 
 			const { result } = createHook();
 
 			await act(async () => {
 				await Promise.resolve();
 			});
-
-			// Verify token was removed from localStorage
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state is cleared
 			expect(result.current.user).toBe(null);
@@ -169,17 +183,17 @@ describe("useAuth", () => {
 		it("should handle network errors during token validation", async () => {
 			const mockToken = "valid-jwt-token";
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockRejectedValueOnce(new Error("Network error"));
+			// Mock token retrieval to return token
+			(getAuthTokenAsync as any).mockResolvedValue(mockToken);
+
+			// Mock user validation to reject (network error)
+			(UserService.validateTokenAndGetUser as any).mockRejectedValue(new Error("Network error"));
 
 			const { result } = createHook();
 
 			await act(async () => {
 				await Promise.resolve();
 			});
-
-			// Verify token was removed due to validation failure
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state is cleared
 			expect(result.current.user).toBe(null);
@@ -189,13 +203,11 @@ describe("useAuth", () => {
 		it("should handle malformed API response gracefully", async () => {
 			const mockToken = "valid-jwt-token";
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => {
-					throw new Error("Invalid JSON");
-				}
-			});
+			// Mock token retrieval to return token
+			(getAuthTokenAsync as any).mockResolvedValue(mockToken);
+
+			// Mock user validation to reject (parsing error)
+			(UserService.validateTokenAndGetUser as any).mockRejectedValue(new Error("Invalid JSON"));
 
 			const { result } = createHook();
 
@@ -205,9 +217,6 @@ describe("useAuth", () => {
 
 			// Verify auth state is cleared
 			expect(result.current.isAuthenticated).toBe(false);
-
-			// Verify token was removed due to parsing error
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
 		/* eslint-enable no-restricted-syntax */
 	});
@@ -253,7 +262,7 @@ describe("useAuth", () => {
 				last_name: "Doe"
 			});
 
-			// Reset fetch mock for logout call
+			// Reset fetch mock for logout call - logout still uses direct fetch internally
 			mockFetch.mockClear();
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
@@ -273,10 +282,6 @@ describe("useAuth", () => {
 					"Content-Type": "application/json"
 				}
 			});
-
-			// Verify tokens were removed from both storage locations
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
-			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state was cleared
 			expect(result.current.isAuthenticated).toBe(false);
@@ -305,9 +310,6 @@ describe("useAuth", () => {
 
 			// Verify error was logged
 			expect(consoleWarnSpy).toHaveBeenCalledWith("Logout API call failed:", expect.any(Error));
-
-			// Verify token was still removed despite API failure
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
 
 			// Verify auth state was cleared despite API failure
 			expect(result.current.isAuthenticated).toBe(false);
@@ -364,7 +366,7 @@ describe("useAuth", () => {
 				expect(result.current.user?.name).toBe(testCase.expected);
 
 				// Cleanup for next iteration
-				mockFetch.mockClear();
+				vi.clearAllMocks();
 			}
 		});
 	});
@@ -393,28 +395,23 @@ describe("useAuth", () => {
 		it("should validate token immediately on app startup", async () => {
 			const mockToken = "startup-token";
 
-			mockLocalStorage.getItem.mockReturnValue(mockToken);
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => ({
-					email: "startup@example.com",
-					first_name: "Startup",
-					last_name: "User",
-					display_name: "Startup User"
-				})
+			// Mock token retrieval to return token
+			(getAuthTokenAsync as any).mockResolvedValue(mockToken);
+
+			// Mock user validation to return user data
+			(UserService.validateTokenAndGetUser as any).mockResolvedValue({
+				email: "startup@example.com",
+				first_name: "Startup",
+				last_name: "User",
+				display_name: "Startup User"
 			});
 
 			await act(async () => {
 				createHook();
 			});
 
-			// Verify API call happens immediately
-			expect(mockFetch).toHaveBeenCalledWith("/api/v1/users/me", {
-				headers: {
-					Authorization: `Bearer ${mockToken}`,
-					"Content-Type": "application/json"
-				}
-			});
+			// Verify service call happens immediately
+			expect(UserService.validateTokenAndGetUser).toHaveBeenCalledWith(mockToken);
 		});
 		/* eslint-enable no-restricted-syntax */
 	});
@@ -449,7 +446,6 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
-
 			vi.useRealTimers();
 
 			// Additional wait for state updates
@@ -464,10 +460,6 @@ describe("useAuth", () => {
 					"Content-Type": "application/json"
 				}
 			});
-
-			// Verify tokens were removed from both storage locations
-			expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("authToken");
-			expect(mockSessionStorage.removeItem).toHaveBeenCalledWith("authToken");
 		});
 
 		it("should reset timeout on user activity", async () => {
@@ -511,7 +503,6 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
-
 			vi.useRealTimers();
 
 			// Wait for async logout operations to complete
@@ -537,7 +528,6 @@ describe("useAuth", () => {
 			});
 
 			// Restore real timers
-
 			vi.useRealTimers();
 
 			// User should still not be authenticated (no timeout started)

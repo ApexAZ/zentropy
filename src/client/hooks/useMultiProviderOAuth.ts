@@ -5,6 +5,7 @@ import { useMicrosoftOAuth } from "./useMicrosoftOAuth";
 import { useGitHubOAuth } from "./useGitHubOAuth";
 import type { OAuthProvider, OAuthProviderState, AccountSecurityResponse } from "../types";
 import { logger } from "../utils/logger";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 interface UseMultiProviderOAuthProps {
 	onSuccess: (credential: string, provider: string) => void;
@@ -111,9 +112,12 @@ export const useMultiProviderOAuth = ({
 			const hook = providerHooks[providerName as keyof typeof providerHooks];
 
 			if (!hook) {
-				const errorMessage = `Provider not found: ${providerName}`;
-				logger.error(errorMessage);
-				onError(errorMessage);
+				const rawError = `Provider not found: ${providerName}`;
+				logger.error(rawError);
+
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+				onError(errorDetails.message);
 				return;
 			}
 
@@ -121,9 +125,12 @@ export const useMultiProviderOAuth = ({
 				logger.info(`Initiating OAuth flow for provider: ${providerName}`);
 				hook.triggerOAuth();
 			} catch (error) {
-				const errorMessage = `Failed to initiate OAuth for ${providerName}`;
-				logger.error(errorMessage, { error });
-				onError(errorMessage);
+				const rawError = `Failed to initiate OAuth for ${providerName}`;
+				logger.error(rawError, { error });
+
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+				onError(errorDetails.message);
 			}
 		},
 		[providerHooks, onError]
@@ -135,9 +142,12 @@ export const useMultiProviderOAuth = ({
 			const hook = providerHooks[providerName as keyof typeof providerHooks];
 
 			if (!hook) {
-				const errorMessage = `Provider not found: ${providerName}`;
-				logger.error(errorMessage);
-				throw new Error(errorMessage);
+				const rawError = `Provider not found: ${providerName}`;
+				logger.error(rawError);
+
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(rawError, "unlinking");
+				throw new Error(errorDetails.message);
 			}
 
 			try {

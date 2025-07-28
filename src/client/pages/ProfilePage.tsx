@@ -8,6 +8,7 @@ import Form from "../components/atoms/Form";
 import Button from "../components/atoms/Button";
 import { useToast } from "../contexts/ToastContext";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 const ProfilePage: React.FC = () => {
 	// State management
@@ -62,7 +63,12 @@ const ProfilePage: React.FC = () => {
 				}
 			} catch (err) {
 				if (isMounted) {
-					setError(err instanceof Error ? err.message : "Failed to load profile");
+					// Use centralized error handling for consistent user experience
+					const errorDetails = AccountSecurityErrorHandler.processError(
+						err instanceof Error ? err.message : "Failed to load profile",
+						"loading"
+					);
+					setError(errorDetails.message);
 				}
 			} finally {
 				if (isMounted) {
@@ -95,7 +101,12 @@ const ProfilePage: React.FC = () => {
 				phone_number: userData.phone_number || ""
 			});
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to load profile");
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(
+				err instanceof Error ? err.message : "Failed to load profile",
+				"loading"
+			);
+			setError(errorDetails.message);
 		} finally {
 			setIsLoading(false);
 		}
@@ -147,7 +158,12 @@ const ProfilePage: React.FC = () => {
 			setIsEditingProfile(false);
 			showSuccess("Profile updated successfully!");
 		} catch (err) {
-			showError(err instanceof Error ? err.message : "Failed to update profile");
+			// Use centralized error handling for profile update errors
+			const errorDetails = AccountSecurityErrorHandler.processError(
+				err instanceof Error ? err.message : "Failed to update profile",
+				"loading"
+			);
+			showError(errorDetails.message);
 		}
 	};
 

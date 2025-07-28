@@ -9,6 +9,25 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useAuth } from "../../hooks/useAuth";
 import { fastStateSync } from "../../__tests__/utils/testRenderUtils";
+import { getAuthTokenAsync } from "../../utils/auth";
+import { UserService } from "../../services/UserService";
+
+// Mock the auth utilities and UserService for proper testing
+vi.mock("../../utils/auth", async () => {
+	const actual = await vi.importActual("../../utils/auth");
+	return {
+		...actual,
+		getAuthTokenAsync: vi.fn(),
+		setAuthTokenAsync: vi.fn(),
+		clearAuthTokenAsync: vi.fn()
+	};
+});
+
+vi.mock("../../services/UserService", () => ({
+	UserService: {
+		validateTokenAndGetUser: vi.fn()
+	}
+}));
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -48,6 +67,9 @@ describe("useAuth Hook Remember Me Integration", () => {
 		mockSessionStorage.getItem.mockReturnValue(null);
 		mockSessionStorage.setItem.mockClear();
 		mockSessionStorage.removeItem.mockClear();
+		// Clear the service mocks
+		(getAuthTokenAsync as any).mockClear();
+		(UserService.validateTokenAndGetUser as any).mockClear();
 	});
 
 	afterEach(() => {
@@ -182,18 +204,17 @@ describe("useAuth Hook Remember Me Integration", () => {
 			return null;
 		});
 
+		// Mock token retrieval to return stored token
+		(getAuthTokenAsync as any).mockResolvedValue("stored-token-123");
+
 		// Mock successful token validation - user should still be valid
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			// eslint-disable-next-line no-restricted-syntax -- OAuth token validation requires manual fetch response mocking to test localStorage auth persistence
-			json: async () => ({
-				email: "stored@example.com",
-				first_name: "Stored",
-				last_name: "User",
-				display_name: "Stored User",
-				has_projects_access: true,
-				email_verified: true
-			})
+		(UserService.validateTokenAndGetUser as any).mockResolvedValue({
+			email: "stored@example.com",
+			first_name: "Stored",
+			last_name: "User",
+			display_name: "Stored User",
+			has_projects_access: true,
+			email_verified: true
 		});
 
 		const { result } = renderHook(() => useAuth());
@@ -214,18 +235,17 @@ describe("useAuth Hook Remember Me Integration", () => {
 		// No localStorage token (user didn't check "remember me")
 		mockLocalStorage.getItem.mockReturnValue(null);
 
+		// Mock token retrieval to return session token
+		(getAuthTokenAsync as any).mockResolvedValue("session-token-123");
+
 		// Mock successful token validation
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			// eslint-disable-next-line no-restricted-syntax -- OAuth token validation requires manual fetch response mocking to test sessionStorage auth persistence
-			json: async () => ({
-				email: "session@example.com",
-				first_name: "Session",
-				last_name: "User",
-				display_name: "Session User",
-				has_projects_access: true,
-				email_verified: true
-			})
+		(UserService.validateTokenAndGetUser as any).mockResolvedValue({
+			email: "session@example.com",
+			first_name: "Session",
+			last_name: "User",
+			display_name: "Session User",
+			has_projects_access: true,
+			email_verified: true
 		});
 
 		const { result } = renderHook(() => useAuth());
@@ -241,6 +261,7 @@ describe("useAuth Hook Remember Me Integration", () => {
 		// Simulate fresh browser session - no saved tokens anywhere
 		mockSessionStorage.getItem.mockReturnValue(null);
 		mockLocalStorage.getItem.mockReturnValue(null);
+		(getAuthTokenAsync as any).mockResolvedValue(null);
 
 		const { result } = renderHook(() => useAuth());
 
@@ -250,6 +271,6 @@ describe("useAuth Hook Remember Me Integration", () => {
 		expect(result.current.token).toBe(null);
 
 		// No token validation calls should be made without a token
-		expect(mockFetch).not.toHaveBeenCalled();
+		expect(UserService.validateTokenAndGetUser).not.toHaveBeenCalled();
 	});
 });

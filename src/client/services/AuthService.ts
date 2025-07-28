@@ -7,42 +7,58 @@ import type {
 	APIError,
 	CustomError
 } from "../types";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 export class AuthService {
 	/**
 	 * Sign in with email and password
 	 */
 	static async signIn(credentials: SignInCredentials): Promise<{ token: string; user: AuthUser; action?: string }> {
-		const response = await fetch("/api/v1/auth/login-json", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(credentials)
-		});
+		try {
+			const response = await fetch("/api/v1/auth/login-json", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(credentials)
+			});
 
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(errorData.detail || "Login failed");
-		}
+			if (!response.ok) {
+				const errorData = await response.json();
+				const backendError = errorData.detail || "Login failed";
 
-		const data: AuthResponse = await response.json();
-
-		const result: { token: string; user: AuthUser; action?: string } = {
-			token: data.access_token,
-			user: {
-				email: data.user.email,
-				name: data.user.display_name || "",
-				has_projects_access: data.user.has_projects_access,
-				email_verified: data.user.email_verified
+				// Use centralized error handling for better user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(backendError, "loading");
+				throw new Error(errorDetails.message);
 			}
-		};
 
-		if (data.action) {
-			result.action = data.action;
+			const data: AuthResponse = await response.json();
+
+			const result: { token: string; user: AuthUser; action?: string } = {
+				token: data.access_token,
+				user: {
+					email: data.user.email,
+					name: data.user.display_name || "",
+					has_projects_access: data.user.has_projects_access,
+					email_verified: data.user.email_verified
+				}
+			};
+
+			if (data.action) {
+				result.action = data.action;
+			}
+
+			return result;
+		} catch (error) {
+			// If error is already processed, re-throw it
+			if (error instanceof Error) {
+				throw error;
+			}
+
+			// Fallback for unexpected errors
+			const errorDetails = AccountSecurityErrorHandler.processError(String(error), "loading");
+			throw new Error(errorDetails.message);
 		}
-
-		return result;
 	}
 
 	/**
@@ -90,54 +106,72 @@ export class AuthService {
 		provider: "google" | "microsoft" | "github",
 		credential: string
 	): Promise<{ token: string; user: AuthUser; action?: string }> {
-		// Use unified OAuth endpoint with provider-specific request format
-		let requestBody: object;
+		try {
+			// Use unified OAuth endpoint with provider-specific request format
+			let requestBody: object;
 
-		switch (provider) {
-			case "google":
-				requestBody = { provider: "google", credential };
-				break;
-			case "microsoft":
-				requestBody = { provider: "microsoft", authorization_code: credential };
-				break;
-			case "github":
-				requestBody = { provider: "github", authorization_code: credential };
-				break;
-			default:
-				throw new Error(`OAuth provider "${provider}" is not supported`);
-		}
-
-		const response = await fetch("/api/v1/auth/oauth", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(requestBody)
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			const errorMessage = errorData.detail?.error || errorData.detail || "OAuth authentication failed";
-			throw new Error(errorMessage);
-		}
-
-		const data: AuthResponse = await response.json();
-
-		const result: { token: string; user: AuthUser; action?: string } = {
-			token: data.access_token,
-			user: {
-				email: data.user.email,
-				name: data.user.display_name || "",
-				has_projects_access: data.user.has_projects_access,
-				email_verified: data.user.email_verified
+			switch (provider) {
+				case "google":
+					requestBody = { provider: "google", credential };
+					break;
+				case "microsoft":
+					requestBody = { provider: "microsoft", authorization_code: credential };
+					break;
+				case "github":
+					requestBody = { provider: "github", authorization_code: credential };
+					break;
+				default:
+					const errorDetails = AccountSecurityErrorHandler.processError(
+						`OAuth provider "${provider}" is not supported`,
+						"linking"
+					);
+					throw new Error(errorDetails.message);
 			}
-		};
 
-		if (data.action) {
-			result.action = data.action;
+			const response = await fetch("/api/v1/auth/oauth", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(requestBody)
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				const backendError = errorData.detail?.error || errorData.detail || "OAuth authentication failed";
+
+				// Use centralized error handling with linking context for OAuth operations
+				const errorDetails = AccountSecurityErrorHandler.processError(backendError, "linking");
+				throw new Error(errorDetails.message);
+			}
+
+			const data: AuthResponse = await response.json();
+
+			const result: { token: string; user: AuthUser; action?: string } = {
+				token: data.access_token,
+				user: {
+					email: data.user.email,
+					name: data.user.display_name || "",
+					has_projects_access: data.user.has_projects_access,
+					email_verified: data.user.email_verified
+				}
+			};
+
+			if (data.action) {
+				result.action = data.action;
+			}
+
+			return result;
+		} catch (error) {
+			// If error is already processed, re-throw it
+			if (error instanceof Error) {
+				throw error;
+			}
+
+			// Fallback for unexpected errors
+			const errorDetails = AccountSecurityErrorHandler.processError(String(error), "linking");
+			throw new Error(errorDetails.message);
 		}
-
-		return result;
 	}
 
 	/**
@@ -192,29 +226,48 @@ export class AuthService {
 	 * Send email verification
 	 */
 	static async sendEmailVerification(email: string): Promise<{ message: string }> {
-		const response = await fetch("/api/v1/auth/send-verification", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({ email })
-		});
+		try {
+			const response = await fetch("/api/v1/auth/send-verification", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ email })
+			});
 
-		if (!response.ok) {
-			const errorData = await response.json();
-			// Preserve HTTP response structure for rate limiting
-			const error = new Error(
-				errorData.detail?.message || errorData.detail || "Failed to send verification email"
-			);
-			(error as any).response = {
-				status: response.status,
-				data: errorData
-			};
-			throw error;
+			if (!response.ok) {
+				const errorData = await response.json();
+				const backendError =
+					errorData.detail?.message || errorData.detail || "Failed to send verification email";
+
+				// Use centralized error handling for security operations
+				const errorDetails = AccountSecurityErrorHandler.processError(backendError, "loading");
+				const error = new Error(errorDetails.message);
+
+				// Preserve HTTP response structure for rate limiting
+				(error as any).response = {
+					status: response.status,
+					data: errorData
+				};
+				throw error;
+			}
+
+			const data = await response.json();
+			return { message: data.message || "Verification email sent! Please check your inbox." };
+		} catch (error) {
+			// If error is already processed and has response data, re-throw it
+			if (error instanceof Error && (error as any).response) {
+				throw error;
+			}
+
+			// Process other errors through centralized handling
+			if (error instanceof Error) {
+				throw error;
+			}
+
+			const errorDetails = AccountSecurityErrorHandler.processError(String(error), "loading");
+			throw new Error(errorDetails.message);
 		}
-
-		const data = await response.json();
-		return { message: data.message || "Verification email sent! Please check your inbox." };
 	}
 
 	/**
@@ -285,29 +338,48 @@ export class AuthService {
 	 * Sends a secure verification code to the user's email
 	 */
 	static async requestPasswordResetCode(email: string): Promise<{ message: string }> {
-		const response = await fetch("/api/v1/auth/request-password-reset", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({ email })
-		});
+		try {
+			const response = await fetch("/api/v1/auth/request-password-reset", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ email })
+			});
 
-		if (!response.ok) {
-			const errorData = await response.json();
-			// Preserve HTTP response structure for rate limiting
-			const error = new Error(
-				errorData.detail?.message || errorData.detail || "Failed to send password reset code"
-			);
-			(error as any).response = {
-				status: response.status,
-				data: errorData
-			};
-			throw error;
+			if (!response.ok) {
+				const errorData = await response.json();
+				const backendError =
+					errorData.detail?.message || errorData.detail || "Failed to send password reset code";
+
+				// Use centralized error handling for security operations
+				const errorDetails = AccountSecurityErrorHandler.processError(backendError, "loading");
+				const error = new Error(errorDetails.message);
+
+				// Preserve HTTP response structure for rate limiting
+				(error as any).response = {
+					status: response.status,
+					data: errorData
+				};
+				throw error;
+			}
+
+			const data = await response.json();
+			return { message: data.message || "Password reset code sent! Please check your email." };
+		} catch (error) {
+			// If error is already processed and has response data, re-throw it
+			if (error instanceof Error && (error as any).response) {
+				throw error;
+			}
+
+			// Process other errors through centralized handling
+			if (error instanceof Error) {
+				throw error;
+			}
+
+			const errorDetails = AccountSecurityErrorHandler.processError(String(error), "loading");
+			throw new Error(errorDetails.message);
 		}
-
-		const data = await response.json();
-		return { message: data.message || "Password reset code sent! Please check your email." };
 	}
 
 	/**

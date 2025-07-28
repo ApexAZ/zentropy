@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logger } from "../utils/logger";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 import type { GoogleCredentialResponse, GoogleOAuthNotification } from "../types/global";
 
 export interface OAuthConfig {
@@ -85,10 +86,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 				}
 				onSuccess(response.credential);
 			} catch (err) {
-				const errorMessage = `Failed to process ${config.displayName} OAuth credential`;
-				logger.error(errorMessage, { err });
-				setError(errorMessage);
-				onError?.(errorMessage);
+				const rawError = `Failed to process ${config.displayName} OAuth credential`;
+				logger.error(rawError, { err });
+
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+				setError(errorDetails.message);
+				onError?.(errorDetails.message);
 			} finally {
 				setIsLoading(false);
 			}
@@ -99,10 +103,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 	// Validate required environment variables on mount
 	useEffect(() => {
 		if (!clientId) {
-			const errorMessage = `${config.clientIdEnvVar} is not configured in environment variables`;
-			logger.error(errorMessage);
-			setError(errorMessage);
-			onError?.(errorMessage);
+			const rawError = `${config.clientIdEnvVar} is not configured in environment variables`;
+			logger.error(rawError);
+
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+			setError(errorDetails.message);
+			onError?.(errorDetails.message);
 		}
 	}, [clientId, onError, config.clientIdEnvVar]);
 
@@ -169,10 +176,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					logger.info(`${config.displayName} OAuth initialized successfully (mock)`);
 				}
 			} catch (err) {
-				const errorMessage = `Failed to initialize ${config.displayName} OAuth`;
-				logger.error(errorMessage, { err });
-				setError(errorMessage);
-				onError?.(errorMessage);
+				const rawError = `Failed to initialize ${config.displayName} OAuth`;
+				logger.error(rawError, { err });
+
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+				setError(errorDetails.message);
+				onError?.(errorDetails.message);
 			}
 		};
 
@@ -197,10 +207,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 				setTimeout(() => {
 					clearInterval(checkGoogleLoaded);
 					if (!isReady && !initializedRef.current) {
-						const errorMessage = "Google Identity Services failed to load after 30 seconds";
-						logger.error(errorMessage);
-						setError(errorMessage);
-						onError?.(errorMessage);
+						const rawError = "Google Identity Services failed to load after 30 seconds";
+						logger.error(rawError);
+
+						// Use centralized error handling for consistent user experience
+						const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+						setError(errorDetails.message);
+						onError?.(errorDetails.message);
 					}
 				}, 30000);
 
@@ -223,10 +236,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 		cleanupRef.current = null;
 
 		if (!isReady) {
-			const errorMessage = `${config.displayName} Sign-In not available`;
-			logger.error(errorMessage);
-			setError(errorMessage);
-			onError?.(errorMessage);
+			const rawError = `${config.displayName} Sign-In not available`;
+			logger.error(rawError);
+
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+			setError(errorDetails.message);
+			onError?.(errorDetails.message);
 			return;
 		}
 
@@ -236,7 +252,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 			if (config.provider === "google") {
 				// Google OAuth trigger
 				if (!window.google?.accounts?.id) {
-					throw new Error("Google Sign-In is temporarily unavailable. Please try again in a moment.");
+					throw new Error("Google Identity Services not available");
 				}
 
 				logger.debug("Triggering Google OAuth popup");
@@ -248,10 +264,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
 						// User dismissed the popup or it wasn't shown
 						setIsLoading(false);
-						const errorMessage = "Google Sign-In was dismissed or unavailable";
-						logger.warn(errorMessage);
-						setError(errorMessage);
-						onError?.(errorMessage);
+						const rawError = "Google OAuth was dismissed";
+						logger.warn(rawError);
+
+						// Use centralized error handling for consistent user experience
+						const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+						setError(errorDetails.message);
+						onError?.(errorDetails.message);
 					}
 				});
 			} else if (config.provider === "microsoft") {
@@ -286,8 +305,12 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 						if (popup.closed) {
 							clearInterval(checkClosed);
 							setIsLoading(false);
-							setError("Microsoft OAuth was cancelled");
-							onError?.("Microsoft OAuth was cancelled");
+
+							const rawError = "Microsoft OAuth was cancelled";
+							// Use centralized error handling for consistent user experience
+							const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+							setError(errorDetails.message);
+							onError?.(errorDetails.message);
 							cleanupRef.current = null;
 						}
 					}, 1000);
@@ -327,8 +350,11 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
-							setError(event.data.error);
-							onError?.(event.data.error);
+
+							// Use centralized error handling for consistent user experience
+							const errorDetails = AccountSecurityErrorHandler.processError(event.data.error, "loading");
+							setError(errorDetails.message);
+							onError?.(errorDetails.message);
 							setIsLoading(false);
 							cleanupRef.current = null;
 						}
@@ -346,10 +372,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 						setIsLoading(false);
 					};
 				} catch (err) {
-					const errorMessage = `Failed to start Microsoft OAuth`;
-					logger.error(errorMessage, { err });
-					setError(errorMessage);
-					onError?.(errorMessage);
+					const rawError = `Failed to start Microsoft OAuth`;
+					logger.error(rawError, { err });
+
+					// Use centralized error handling for consistent user experience
+					const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+					setError(errorDetails.message);
+					onError?.(errorDetails.message);
 					setIsLoading(false);
 				}
 			} else if (config.provider === "github") {
@@ -382,8 +411,12 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 						if (popup.closed) {
 							clearInterval(checkClosed);
 							setIsLoading(false);
-							setError("GitHub OAuth was cancelled");
-							onError?.("GitHub OAuth was cancelled");
+
+							const rawError = "GitHub OAuth was cancelled";
+							// Use centralized error handling for consistent user experience
+							const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+							setError(errorDetails.message);
+							onError?.(errorDetails.message);
 							cleanupRef.current = null;
 						}
 					}, 1000);
@@ -419,8 +452,11 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
-							setError(event.data.error);
-							onError?.(event.data.error);
+
+							// Use centralized error handling for consistent user experience
+							const errorDetails = AccountSecurityErrorHandler.processError(event.data.error, "loading");
+							setError(errorDetails.message);
+							onError?.(errorDetails.message);
 							setIsLoading(false);
 							cleanupRef.current = null;
 						}
@@ -438,10 +474,13 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 						setIsLoading(false);
 					};
 				} catch (err) {
-					const errorMessage = `Failed to start GitHub OAuth`;
-					logger.error(errorMessage, { err });
-					setError(errorMessage);
-					onError?.(errorMessage);
+					const rawError = `Failed to start GitHub OAuth`;
+					logger.error(rawError, { err });
+
+					// Use centralized error handling for consistent user experience
+					const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+					setError(errorDetails.message);
+					onError?.(errorDetails.message);
 					setIsLoading(false);
 				}
 			} else {
@@ -455,20 +494,26 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					});
 					onSuccess(mockCredential);
 				} catch (err) {
-					const errorMessage = `${config.displayName} OAuth callback failed`;
-					logger.error(errorMessage, { err });
-					setError(errorMessage);
-					onError?.(errorMessage);
+					const rawError = `${config.displayName} OAuth callback failed`;
+					logger.error(rawError, { err });
+
+					// Use centralized error handling for consistent user experience
+					const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+					setError(errorDetails.message);
+					onError?.(errorDetails.message);
 				} finally {
 					setIsLoading(false);
 				}
 			}
 		} catch (err) {
-			const errorMessage = `Failed to start ${config.displayName} Sign-In`;
-			logger.error(errorMessage, { err });
+			const rawError = `Failed to start ${config.displayName} Sign-In`;
+			logger.error(rawError, { err });
 			setIsLoading(false);
-			setError(errorMessage);
-			onError?.(errorMessage);
+
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(rawError, "loading");
+			setError(errorDetails.message);
+			onError?.(errorDetails.message);
 		}
 	}, [isReady, onSuccess, onError, config.provider, config.displayName, clientId]);
 

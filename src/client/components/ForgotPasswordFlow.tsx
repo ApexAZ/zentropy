@@ -5,6 +5,7 @@ import PasswordRequirements from "./PasswordRequirements";
 import Form from "./atoms/Form";
 import Button from "./atoms/Button";
 import { setPendingPasswordReset, clearPendingPasswordReset } from "../utils/pendingVerification";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 interface ForgotPasswordFlowProps {
 	onComplete?: () => void;
@@ -36,7 +37,12 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({
 
 			// Validate email format
 			if (!AuthService.validateEmail(email)) {
-				setError("Please enter a valid email address");
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(
+					"Please enter a valid email address",
+					"loading"
+				);
+				setError(errorDetails.message);
 				return;
 			}
 
@@ -61,8 +67,12 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({
 			}
 		} catch (error) {
 			if (useSecureFlow) {
-				// For secure flow, show the actual error (rate limiting, etc.)
-				setError(error instanceof Error ? error.message : "Failed to send reset code");
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError(
+					error instanceof Error ? error.message : "Failed to send reset code",
+					"loading" // Email submission is a loading operation in password reset context
+				);
+				setError(errorDetails.message);
 			} else {
 				// Legacy flow: Don't reveal if email exists for security - always proceed
 				setPendingPasswordReset(email);
@@ -87,14 +97,21 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({
 
 			// Validate passwords match
 			if (newPassword !== confirmPassword) {
-				setError("Passwords don't match");
+				// Use centralized error handling for consistent user experience
+				const errorDetails = AccountSecurityErrorHandler.processError("Passwords don't match", "loading");
+				setError(errorDetails.message);
 				return;
 			}
 
 			if (useSecureFlow) {
 				// New secure flow: Use verification code
 				if (!verificationCode.trim()) {
-					setError("Please enter the verification code");
+					// Use centralized error handling for consistent user experience
+					const errorDetails = AccountSecurityErrorHandler.processError(
+						"Please enter the verification code",
+						"loading"
+					);
+					setError(errorDetails.message);
 					return;
 				}
 
@@ -114,7 +131,12 @@ export const ForgotPasswordFlow: React.FC<ForgotPasswordFlowProps> = ({
 
 			setStep("complete");
 		} catch (err: any) {
-			setError(err.message || "Failed to reset password");
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(
+				err.message || "Failed to reset password",
+				"loading" // Password reset is a loading operation
+			);
+			setError(errorDetails.message);
 		} finally {
 			setIsLoading(false);
 		}

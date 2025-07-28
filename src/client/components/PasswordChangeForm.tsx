@@ -5,6 +5,7 @@ import PasswordRequirements from "./PasswordRequirements";
 import Form from "./atoms/Form";
 import Button from "./atoms/Button";
 import { logger } from "../utils/logger";
+import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
 interface PasswordChangeFormProps {
 	onSuccess?: () => void;
@@ -38,7 +39,13 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ onSucces
 			onSuccess?.();
 		} catch (err: any) {
 			logger.error("Failed to change password", { error: err.message });
-			setError(err.message || "Failed to change password");
+
+			// Use centralized error handling for consistent user experience
+			const errorDetails = AccountSecurityErrorHandler.processError(
+				err.message || "Failed to change password",
+				"loading" // Password change is a loading operation in account security context
+			);
+			setError(errorDetails.message);
 		} finally {
 			setIsLoading(false);
 		}
