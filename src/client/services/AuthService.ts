@@ -7,6 +7,7 @@ import type {
 	APIError,
 	CustomError
 } from "../types";
+import { generateDisplayName } from "../utils/formatters";
 
 export class AuthService {
 	/**
@@ -32,10 +33,13 @@ export class AuthService {
 			token: data.access_token,
 			user: {
 				email: data.user.email,
-				name:
-					data.user.first_name && data.user.last_name
-						? `${data.user.first_name} ${data.user.last_name}`.trim()
-						: data.user.display_name || data.user.email,
+				name: generateDisplayName({
+					registration_type: "email", // signIn is always email registration
+					first_name: data.user.first_name,
+					last_name: data.user.last_name,
+					display_name: data.user.display_name || null,
+					email: data.user.email
+				}),
 				has_projects_access: data.user.has_projects_access,
 				email_verified: data.user.email_verified
 			}
@@ -126,14 +130,27 @@ export class AuthService {
 
 		const data: AuthResponse = await response.json();
 
+		// Map provider to registration_type for proper display name generation
+		const registrationType =
+			provider === "google"
+				? "google_oauth"
+				: provider === "github"
+					? "github_oauth"
+					: provider === "microsoft"
+						? "microsoft_oauth"
+						: "email";
+
 		const result: { token: string; user: AuthUser; action?: string } = {
 			token: data.access_token,
 			user: {
 				email: data.user.email,
-				name:
-					data.user.first_name && data.user.last_name
-						? `${data.user.first_name} ${data.user.last_name}`.trim()
-						: data.user.display_name || data.user.email,
+				name: generateDisplayName({
+					registration_type: registrationType,
+					first_name: data.user.first_name,
+					last_name: data.user.last_name,
+					display_name: data.user.display_name || null,
+					email: data.user.email
+				}),
 				has_projects_access: data.user.has_projects_access,
 				email_verified: data.user.email_verified
 			}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import type { User, ProfileUpdateData } from "../types";
-import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
+import { formatDate, getRoleLabel, getRoleBadgeColor, generateDisplayName } from "../utils/formatters";
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { SignInMethods } from "../components/SignInMethods";
@@ -23,6 +23,7 @@ const ProfilePage: React.FC = () => {
 	const [profileData, setProfileData] = useState<ProfileUpdateData>({
 		first_name: "",
 		last_name: "",
+		display_name: "",
 		email: "",
 		phone_number: ""
 	});
@@ -49,6 +50,7 @@ const ProfilePage: React.FC = () => {
 					setProfileData({
 						first_name: userData.first_name || "",
 						last_name: userData.last_name || "",
+						display_name: generateDisplayName(userData),
 						email: userData.email,
 						phone_number: userData.phone_number || ""
 					});
@@ -83,6 +85,7 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: userData.first_name || "",
 				last_name: userData.last_name || "",
+				display_name: generateDisplayName(userData),
 				email: userData.email,
 				phone_number: userData.phone_number || ""
 			});
@@ -114,6 +117,7 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: user.first_name || "",
 				last_name: user.last_name || "",
+				display_name: generateDisplayName(user),
 				email: user.email,
 				phone_number: user.phone_number || ""
 			});
@@ -295,6 +299,31 @@ const ProfilePage: React.FC = () => {
 									{profileErrors.email && (
 										<span className="text-error mt-1 block text-sm">{profileErrors.email}</span>
 									)}
+								</div>
+
+								<div>
+									<label
+										htmlFor="profile-display-name"
+										className="text-text-primary mb-2 block font-medium"
+									>
+										Display Name
+									</label>
+									<input
+										id="profile-display-name"
+										type="text"
+										value={profileData.display_name}
+										onChange={e => setProfileData({ ...profileData, display_name: e.target.value })}
+										className="border-layout-background focus:border-interactive focus:shadow-interactive w-full rounded-md border p-3 text-base leading-6 transition-all duration-200 focus:outline-none"
+									/>
+									{profileErrors.display_name && (
+										<span className="text-error mt-1 block text-sm">
+											{profileErrors.display_name}
+										</span>
+									)}
+									<p className="text-text-primary mt-2 text-sm">
+										This is how your name will appear to other users. Auto-generated based on your
+										registration method.
+									</p>
 								</div>
 
 								<div>

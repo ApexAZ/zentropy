@@ -121,6 +121,37 @@ export const generateMonthOptions = (rangeMonths: number = 6): { value: string; 
 };
 
 /**
+ * Generate display name based on user registration type and available data
+ * Business logic:
+ * - If registration = "github_oauth", then Display Name = GitHub username (from display_name field)
+ * - Else if First and Last name both exist, then Display Name = "First Last"
+ * - Else Display Name = email address
+ *
+ * @param user - User object with registration_type, first_name, last_name, display_name, email
+ * @returns Computed display name string
+ */
+export const generateDisplayName = (user: {
+	registration_type: string;
+	first_name: string | null;
+	last_name: string | null;
+	display_name?: string | null;
+	email: string;
+}): string => {
+	// For GitHub OAuth users, use their GitHub username (stored in display_name)
+	if (user.registration_type === "github_oauth" && user.display_name) {
+		return user.display_name;
+	}
+
+	// If both first and last names exist, combine them
+	if (user.first_name && user.last_name) {
+		return `${user.first_name} ${user.last_name}`.trim();
+	}
+
+	// Fallback to email address
+	return user.email;
+};
+
+/**
  * Format velocity for display
  * @param velocity - Velocity number
  * @returns Formatted velocity string

@@ -342,15 +342,15 @@ describe("useAuth", () => {
 			const testCases = [
 				{
 					input: { first_name: "", last_name: "Smith" },
-					expected: " Smith"
+					expected: "test@example.com" // Falls back to email when names are incomplete
 				},
 				{
 					input: { first_name: "Jane", last_name: "" },
-					expected: "Jane "
+					expected: "test@example.com" // Falls back to email when names are incomplete
 				},
 				{
 					input: { first_name: "Jean-Luc", last_name: "Picard" },
-					expected: "Jean-Luc Picard"
+					expected: "Jean-Luc Picard" // Both names exist, so combine them
 				}
 			];
 

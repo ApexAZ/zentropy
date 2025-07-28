@@ -126,6 +126,7 @@ describe("UserService", () => {
 		const profileData: ProfileUpdateData = {
 			first_name: "John",
 			last_name: "Updated",
+			display_name: "John Updated",
 			email: "john.updated@example.com",
 			phone_number: "+1 (555) 123-4567"
 		};
@@ -175,6 +176,7 @@ describe("UserService", () => {
 			const profileDataWithPhone: ProfileUpdateData = {
 				first_name: "Jane",
 				last_name: "Smith",
+				display_name: "Jane Smith",
 				email: "jane@example.com",
 				phone_number: "+1 (555) 987-6543"
 			};
@@ -199,6 +201,7 @@ describe("UserService", () => {
 			const profileDataNoPhone: ProfileUpdateData = {
 				first_name: "Jane",
 				last_name: "Smith",
+				display_name: "Jane Smith",
 				email: "jane@example.com"
 			};
 
@@ -266,6 +269,7 @@ describe("UserService", () => {
 			const validProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "john@example.com"
 			};
 
@@ -279,6 +283,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "",
 				last_name: "Doe",
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -292,6 +297,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "   ",
 				last_name: "Doe",
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -305,6 +311,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "A".repeat(101),
 				last_name: "Doe",
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -318,6 +325,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "",
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -331,6 +339,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "   ",
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -344,6 +353,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "A".repeat(101),
+				display_name: "Test User",
 				email: "john@example.com"
 			};
 
@@ -357,6 +367,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: ""
 			};
 
@@ -370,6 +381,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "   "
 			};
 
@@ -394,6 +406,7 @@ describe("UserService", () => {
 				const invalidProfileData: ProfileUpdateData = {
 					first_name: "John",
 					last_name: "Doe",
+					display_name: "John Doe",
 					email
 				};
 
@@ -417,6 +430,7 @@ describe("UserService", () => {
 				const validProfileData: ProfileUpdateData = {
 					first_name: "John",
 					last_name: "Doe",
+					display_name: "John Doe",
 					email
 				};
 
@@ -431,6 +445,7 @@ describe("UserService", () => {
 			const invalidProfileData: ProfileUpdateData = {
 				first_name: "",
 				last_name: "A".repeat(101),
+				display_name: "Test User",
 				email: "invalid-email"
 			};
 
@@ -457,6 +472,7 @@ describe("UserService", () => {
 				const profileData: ProfileUpdateData = {
 					first_name: "John",
 					last_name: "Doe",
+					display_name: "John Doe",
 					email: "john@example.com",
 					phone_number: phoneNumber
 				};
@@ -472,6 +488,7 @@ describe("UserService", () => {
 			const profileDataEmpty: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "john@example.com",
 				phone_number: ""
 			};
@@ -479,6 +496,7 @@ describe("UserService", () => {
 			const profileDataUndefined: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "john@example.com"
 			};
 
@@ -504,6 +522,7 @@ describe("UserService", () => {
 				const profileData: ProfileUpdateData = {
 					first_name: "John",
 					last_name: "Doe",
+					display_name: "John Doe",
 					email: "john@example.com",
 					phone_number: phoneNumber
 				};
@@ -521,6 +540,7 @@ describe("UserService", () => {
 			const profileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "john@example.com",
 				phone_number: "+1234567890123456789012"
 			};
@@ -535,6 +555,7 @@ describe("UserService", () => {
 			const profileData: ProfileUpdateData = {
 				first_name: "John",
 				last_name: "Doe",
+				display_name: "John Doe",
 				email: "john@example.com",
 				phone_number: "+1 (555) 123-4567"
 			};

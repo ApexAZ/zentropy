@@ -120,6 +120,12 @@ export class UserService {
 			errors.email = "Please enter a valid email address";
 		}
 
+		if (!profileData.display_name || !profileData.display_name.trim()) {
+			errors.display_name = "Display name is required";
+		} else if (profileData.display_name.length > 100) {
+			errors.display_name = "Display name must be less than 100 characters";
+		}
+
 		// Phone number validation (optional field)
 		if (profileData.phone_number && profileData.phone_number.trim()) {
 			const phoneNumber = profileData.phone_number.trim();

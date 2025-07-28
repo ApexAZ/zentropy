@@ -22,8 +22,9 @@ from .database import (
 # User schemas
 class UserBase(BaseModel):
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    display_name: Optional[str] = None
     phone_number: Optional[str] = None
     role: UserRole = UserRole.BASIC_USER
     has_projects_access: bool = True
@@ -38,6 +39,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    display_name: Optional[str] = None
     phone_number: Optional[str] = None
     organization_id: Optional[UUID] = None
     role: Optional[UserRole] = None

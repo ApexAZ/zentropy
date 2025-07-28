@@ -85,6 +85,7 @@ export interface User {
 	role: string;
 	has_projects_access: boolean;
 	email_verified: boolean;
+	registration_type: string;
 	organization_id?: string;
 	created_at?: string;
 	updated_at?: string;
@@ -93,6 +94,7 @@ export interface User {
 export interface ProfileUpdateData {
 	first_name: string;
 	last_name: string;
+	display_name: string;
 	email: string;
 	phone_number?: string;
 }
