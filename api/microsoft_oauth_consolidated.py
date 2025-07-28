@@ -124,7 +124,7 @@ class MicrosoftOAuthProvider(OAuthProvider):
                 "given_name": user_info.get("givenName", ""),
                 "family_name": user_info.get("surname", ""),
                 "name": user_info.get("displayName", ""),
-                "email_verified": True,  # Microsoft accounts are verified when accessible via Graph API
+                "email_verified": True,  # Microsoft accounts verified via Graph API
                 "hd": None,  # Microsoft doesn't have hosted domain concept like Google
                 # Additional Microsoft-specific fields for audit
                 "userPrincipalName": user_info.get("userPrincipalName"),

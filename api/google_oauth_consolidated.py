@@ -4,7 +4,7 @@ Google OAuth authentication module - Security-Hardened & Consolidated
 This module provides Google OAuth authentication using the unified OAuth base system
 while maintaining all Google-specific security requirements including:
 - JWT signature verification with Google's public keys
-- Issuer and audience validation  
+- Issuer and audience validation
 - Token expiration checks
 - Email verification enforcement
 - Google Workspace domain handling

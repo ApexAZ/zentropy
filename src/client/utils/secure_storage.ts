@@ -127,7 +127,7 @@ class SecureTokenStorage {
 			const existingMutex = localStorage.getItem(this.MUTEX_KEY);
 			if (existingMutex) {
 				const [timestamp] = existingMutex.split("_");
-				const mutexAge = Date.now() - parseInt(timestamp);
+				const mutexAge = Date.now() - parseInt(timestamp || "0");
 
 				// If mutex is too old, consider it stale and take over
 				if (mutexAge > this.MUTEX_TIMEOUT) {

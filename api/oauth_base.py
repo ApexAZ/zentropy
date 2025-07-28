@@ -1,20 +1,22 @@
 """
 Unified OAuth Base System for Zentropy
 
-This module consolidates common OAuth functionality across all providers (Google, Microsoft, GitHub)
+This module consolidates common OAuth functionality across all providers
+(Google, Microsoft, GitHub)
 to eliminate code duplication while maintaining full backward compatibility.
 
 Key Features:
 - Unified exception hierarchy
-- Shared rate limiting implementation  
+- Shared rate limiting implementation
 - Common user management patterns
 - Provider-specific configuration system
 - Full backward compatibility with existing APIs
 """
 
 import os
+import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Mapping, Optional, Tuple
+from typing import Dict, Any, Mapping, Optional, Tuple, Callable, Set
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from fastapi import HTTPException
@@ -202,7 +204,8 @@ def get_or_create_oauth_user(
         organization: Optional organization for workspace users
 
     Returns:
-        Tuple[User, str]: User object and action ('sign_in', 'account_linked', 'complete_profile')
+        Tuple[User, str]: User object and action ('sign_in', 'account_linked',
+                         'complete_profile')
 
     Raises:
         OAuthError: If user creation fails
@@ -382,8 +385,6 @@ def build_oauth_response(user: User, action: str) -> Dict[str, Any]:
 # SECURITY-FOCUSED OAUTH PROCESSING
 # =============================================================================
 
-import logging
-from typing import Set
 
 # Security logger for OAuth events
 oauth_security_logger = logging.getLogger("oauth_security")
@@ -417,7 +418,7 @@ def process_oauth_with_security(
     db: Session,
     credential_or_code: str,
     client_ip: str = "unknown",
-    verify_token_func: callable = None,
+    verify_token_func: Optional[Callable] = None,
 ) -> Dict[str, Any]:
     """
     Security-hardened OAuth processing with audit trail.
@@ -455,7 +456,7 @@ def process_oauth_with_security(
         security_ctx.log_event("Checking rate limits")
         try:
             check_oauth_rate_limit(client_ip)
-        except OAuthRateLimitError as e:
+        except OAuthRateLimitError:
             security_ctx.flag_security_concern("RATE_LIMIT_EXCEEDED")
             raise
 

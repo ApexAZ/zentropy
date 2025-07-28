@@ -149,7 +149,7 @@ class GitHubOAuthProvider(OAuthProvider):
                 "family_name": family_name,
                 "name": user_info.get("name") or user_info.get("login", ""),
                 "login": user_info.get("login"),  # GitHub username
-                "email_verified": True,  # GitHub emails are verified when accessible via API
+                "email_verified": True,  # GitHub emails verified via API
                 "hd": None,  # GitHub doesn't have hosted domain concept
                 # Additional GitHub-specific fields for audit
                 "avatar_url": user_info.get("avatar_url"),

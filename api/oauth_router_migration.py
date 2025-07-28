@@ -33,30 +33,37 @@ try:
 except ImportError as e:
     print(f"Warning: Consolidated OAuth modules not available: {e}")
 
-# Original imports (fallback implementations) - with graceful handling for removed files
+# Original imports (fallback implementations) - graceful handling for removed files
 try:
-    from .google_oauth import process_google_oauth as process_google_oauth_original
+    from .google_oauth import (  # type: ignore
+        process_google_oauth as process_google_oauth_original,
+    )
 except ImportError:
     print(
-        "Note: Original google_oauth.py has been removed - using consolidated implementation only"
+        "Note: Original google_oauth.py has been removed - "
+        "using consolidated implementation only"
     )
     process_google_oauth_original = None
 
 try:
-    from .microsoft_oauth import (
+    from .microsoft_oauth import (  # type: ignore
         process_microsoft_oauth as process_microsoft_oauth_original,
     )
 except ImportError:
     print(
-        "Note: Original microsoft_oauth.py has been removed - using consolidated implementation only"
+        "Note: Original microsoft_oauth.py has been removed - "
+        "using consolidated implementation only"
     )
     process_microsoft_oauth_original = None
 
 try:
-    from .github_oauth import process_github_oauth as process_github_oauth_original
+    from .github_oauth import (  # type: ignore
+        process_github_oauth as process_github_oauth_original,
+    )
 except ImportError:
     print(
-        "Note: Original github_oauth.py has been removed - using consolidated implementation only"
+        "Note: Original github_oauth.py has been removed - "
+        "using consolidated implementation only"
     )
     process_github_oauth_original = None
 
@@ -111,14 +118,16 @@ def process_microsoft_oauth_safe(
         except Exception as e:
             if process_microsoft_oauth_original is not None:
                 print(
-                    f"Consolidated Microsoft OAuth failed, falling back to original: {e}"
+                    f"Consolidated Microsoft OAuth failed, "
+                    f"falling back to original: {e}"
                 )
                 return process_microsoft_oauth_original(
                     db, authorization_code, client_ip
                 )
             else:
                 print(
-                    f"Consolidated Microsoft OAuth failed and no fallback available: {e}"
+                    f"Consolidated Microsoft OAuth failed "
+                    f"and no fallback available: {e}"
                 )
                 raise
     else:
@@ -126,7 +135,8 @@ def process_microsoft_oauth_safe(
             return process_microsoft_oauth_original(db, authorization_code, client_ip)
         else:
             print(
-                "Original Microsoft OAuth not available, using consolidated implementation"
+                "Original Microsoft OAuth not available, "
+                "using consolidated implementation"
             )
             return process_microsoft_oauth_consolidated(
                 db, authorization_code, client_ip

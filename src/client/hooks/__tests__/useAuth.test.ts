@@ -130,7 +130,6 @@ describe("useAuth", () => {
 	});
 
 	describe("User authentication validates on mount", () => {
-		/* eslint-disable no-restricted-syntax */
 		// Token validation tests require manual fetch response mocking to test:
 		// - API validation calls and responses
 		// - Network error scenarios
@@ -218,7 +217,6 @@ describe("useAuth", () => {
 			// Verify auth state is cleared
 			expect(result.current.isAuthenticated).toBe(false);
 		});
-		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User can login", () => {
@@ -372,7 +370,6 @@ describe("useAuth", () => {
 	});
 
 	describe("User data validation", () => {
-		/* eslint-disable no-restricted-syntax */
 		// Data validation tests require manual fetch response mocking to test:
 		// - API response validation and edge cases
 		it("should use display_name field directly from API data", async () => {
@@ -413,7 +410,6 @@ describe("useAuth", () => {
 			// Verify service call happens immediately
 			expect(UserService.validateTokenAndGetUser).toHaveBeenCalledWith(mockToken);
 		});
-		/* eslint-enable no-restricted-syntax */
 	});
 
 	describe("User session timeout", () => {
