@@ -46,6 +46,13 @@
         }
         
         console.log('Detected Provider:', provider);
+        console.log('Provider Detection Details:', {
+            referrer,
+            currentUrl,
+            microsoftInReferrer: referrer.includes('microsoftonline.com'),
+            sessionState: urlParams.get('session_state'),
+            scope: urlParams.get('scope')
+        });
         
         let messageData;
         if (code) {
@@ -68,20 +75,31 @@
             };
         }
         
-        console.log('Sending message to parent:', messageData);
+        console.log('Final messageData being sent:', JSON.stringify(messageData, null, 2));
+        
+        // Prevent multiple message sends
+        if (window.messageSent) {
+            console.log('Message already sent, skipping');
+            return;
+        }
+        window.messageSent = true;
         
         if (window.opener && !window.opener.closed) {
-            window.opener.postMessage(messageData, window.location.origin);
-            console.log('Message sent successfully');
+            try {
+                window.opener.postMessage(messageData, window.location.origin);
+                console.log('Message sent successfully to parent window');
+            } catch (err) {
+                console.error('Failed to send message to parent:', err);
+            }
         } else {
-            console.error('No valid window.opener found');
+            console.error('No valid window.opener found or opener is closed');
         }
         
         // Close the popup window
         setTimeout(() => {
             console.log('Closing popup window');
             window.close();
-        }, 100); // Small delay to ensure message is sent
+        }, 500); // Increased delay to ensure message is processed
     </script>
 </body>
 </html>
