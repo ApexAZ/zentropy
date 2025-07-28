@@ -5,101 +5,81 @@
 </head>
 <body>
     <script>
-        // Debug logging
-        console.log('OAuth Redirect Debug Info:');
-        console.log('URL:', window.location.href);
-        console.log('Referrer:', document.referrer);
+        // Prevent multiple executions
+        if (window.oauthHandled) {
+            // Exit silently if already handled
+        } else {
+            window.oauthHandled = true;
         
-        // Extract parameters from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        const error = urlParams.get('error');
-        const errorDescription = urlParams.get('error_description');
-        const state = urlParams.get('state');
-        
-        console.log('OAuth Parameters:', { code: code ? 'PRESENT' : 'MISSING', error, errorDescription, state });
-        
-        // Determine OAuth provider based on referrer URL and current URL
-        const referrer = document.referrer || '';
-        const currentUrl = window.location.href;
-        let provider = 'UNKNOWN';
-        
-        // Check referrer first
-        if (referrer.includes('github.com')) {
-            provider = 'GITHUB';
-        } else if (referrer.includes('microsoftonline.com') || referrer.includes('login.live.com') || referrer.includes('microsoft')) {
-            provider = 'MICROSOFT';
-        } else if (referrer.includes('google') || referrer.includes('accounts.google.com')) {
-            provider = 'GOOGLE';
-        }
-        
-        // Fallback: Check URL parameters for provider-specific patterns
-        if (provider === 'UNKNOWN') {
-            const sessionState = urlParams.get('session_state'); // Microsoft-specific parameter
+            // Extract parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+            const errorDescription = urlParams.get('error_description');
+            const sessionState = urlParams.get('session_state');
             
-            if (sessionState || currentUrl.includes('login.microsoftonline.com')) {
+            // Determine OAuth provider
+            const referrer = document.referrer || '';
+            let provider = 'UNKNOWN';
+            
+            // Primary detection: Check referrer domain
+            if (referrer.includes('login.microsoftonline.com') || 
+                referrer.includes('login.live.com') || 
+                referrer.includes('microsoft')) {
                 provider = 'MICROSOFT';
-            } else if (urlParams.get('scope') && urlParams.get('scope').includes('openid')) {
-                // Generic OAuth with openid scope - likely Microsoft
+            } else if (referrer.includes('github.com')) {
+                provider = 'GITHUB';
+            } else if (referrer.includes('accounts.google.com') || 
+                       referrer.includes('google')) {
+                provider = 'GOOGLE';
+            }
+            
+            // Fallback: Microsoft-specific parameter detection
+            if (provider === 'UNKNOWN' && sessionState) {
                 provider = 'MICROSOFT';
             }
-        }
-        
-        console.log('Detected Provider:', provider);
-        console.log('Provider Detection Details:', {
-            referrer,
-            currentUrl,
-            microsoftInReferrer: referrer.includes('microsoftonline.com'),
-            sessionState: urlParams.get('session_state'),
-            scope: urlParams.get('scope')
-        });
-        
-        let messageData;
-        if (code) {
-            // Send success message to parent window with authorization code
-            messageData = {
-                type: `${provider}_OAUTH_SUCCESS`,
-                authorizationCode: code
-            };
-        } else if (error) {
-            // Send error message to parent window
-            messageData = {
-                type: `${provider}_OAUTH_ERROR`,
-                error: errorDescription || error
-            };
-        } else {
-            // No code and no error - something went wrong
-            messageData = {
-                type: `${provider}_OAUTH_ERROR`,
-                error: `No authorization code received from ${provider.toLowerCase()} OAuth`
-            };
-        }
-        
-        console.log('Final messageData being sent:', JSON.stringify(messageData, null, 2));
-        
-        // Prevent multiple message sends
-        if (window.messageSent) {
-            console.log('Message already sent, skipping');
-            return;
-        }
-        window.messageSent = true;
-        
-        if (window.opener && !window.opener.closed) {
-            try {
-                window.opener.postMessage(messageData, window.location.origin);
-                console.log('Message sent successfully to parent window');
-            } catch (err) {
-                console.error('Failed to send message to parent:', err);
+            
+            // Final fallback: Check scope for openid (Microsoft pattern)
+            if (provider === 'UNKNOWN') {
+                const scope = urlParams.get('scope');
+                if (scope && scope.includes('openid')) {
+                    provider = 'MICROSOFT';
+                }
             }
-        } else {
-            console.error('No valid window.opener found or opener is closed');
+            
+            // Construct message
+            let messageData;
+            if (code) {
+                messageData = {
+                    type: `${provider}_OAUTH_SUCCESS`,
+                    authorizationCode: code
+                };
+            } else if (error) {
+                messageData = {
+                    type: `${provider}_OAUTH_ERROR`,
+                    error: errorDescription || error
+                };
+            } else {
+                messageData = {
+                    type: `${provider}_OAUTH_ERROR`,
+                    error: `No authorization code received from ${provider.toLowerCase()} OAuth`
+                };
+            }
+            
+            // Send message to parent window
+            if (window.opener && !window.opener.closed) {
+                try {
+                    window.opener.postMessage(messageData, window.location.origin);
+                    
+                    // Close popup after successful message send
+                    setTimeout(() => {
+                        window.close();
+                    }, 500);
+                } catch (err) {
+                    console.error('Failed to send message to parent:', err);
+                }
+            }
         }
-        
-        // Close the popup window
-        setTimeout(() => {
-            console.log('Closing popup window');
-            window.close();
-        }, 500); // Increased delay to ensure message is processed
     </script>
 </body>
 </html>

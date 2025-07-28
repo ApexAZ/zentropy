@@ -7,6 +7,7 @@ import AuthModal from "../AuthModal";
 import { AuthService } from "../../services/AuthService";
 import { useGoogleOAuth } from "../../hooks/useGoogleOAuth";
 import { useMicrosoftOAuth } from "../../hooks/useMicrosoftOAuth";
+import { useGitHubOAuth } from "../../hooks/useGitHubOAuth";
 
 // Mock AuthService
 vi.mock("../../services/AuthService", () => ({
@@ -26,6 +27,10 @@ vi.mock("../../hooks/useGoogleOAuth", () => ({
 
 vi.mock("../../hooks/useMicrosoftOAuth", () => ({
 	useMicrosoftOAuth: vi.fn()
+}));
+
+vi.mock("../../hooks/useGitHubOAuth", () => ({
+	useGitHubOAuth: vi.fn()
 }));
 
 // Mock ForgotPasswordFlow component
@@ -71,6 +76,14 @@ describe("AuthModal", () => {
 		clearError: vi.fn()
 	};
 
+	const mockGitHubOAuth = {
+		isReady: true,
+		triggerOAuth: vi.fn(),
+		isLoading: false,
+		error: null,
+		clearError: vi.fn()
+	};
+
 	beforeEach(() => {
 		vi.useFakeTimers();
 		vi.clearAllMocks();
@@ -78,6 +91,7 @@ describe("AuthModal", () => {
 		vi.stubEnv("VITE_OAUTH_MOCK_MODE", "true");
 		(useGoogleOAuth as any).mockReturnValue(mockGoogleOAuth);
 		(useMicrosoftOAuth as any).mockReturnValue(mockMicrosoftOAuth);
+		(useGitHubOAuth as any).mockReturnValue(mockGitHubOAuth);
 		(AuthService.validateEmail as any).mockReturnValue(true);
 		(AuthService.validatePassword as any).mockReturnValue({ isValid: true, requirements: {} });
 	});

@@ -243,7 +243,9 @@ def verify_github_token(access_token: str) -> Mapping[str, Any]:
         raise GitHubTokenInvalidError(f"Token verification failed: {str(e)}")
 
 
-def get_or_create_github_user(db: Session, github_info: Mapping[str, Any]) -> User:
+def get_or_create_github_user(
+    db: Session, github_info: Mapping[str, Any]
+) -> tuple[User, str]:
     """
     Get existing user or create new user from GitHub OAuth information.
 
@@ -252,7 +254,8 @@ def get_or_create_github_user(db: Session, github_info: Mapping[str, Any]) -> Us
         github_info: User information from verified GitHub token
 
     Returns:
-        User: The existing or newly created user
+        tuple[User, str]: The user and action context
+            ("sign_in", "account_linked", or "complete_profile")
 
     Raises:
         GitHubOAuthError: If user creation fails
@@ -275,21 +278,26 @@ def get_or_create_github_user(db: Session, github_info: Mapping[str, Any]) -> Us
                 if not existing_user.github_id:
                     existing_user.github_id = github_info.get("id")
                 db.commit()
-                return existing_user
+                # Existing GitHub user - check if profile is complete
+                if existing_user.first_name and existing_user.last_name:
+                    return existing_user, "sign_in"
+                else:
+                    return existing_user, "complete_profile"
             else:
-                # Security: Prevent account takeover - email registered with
-                # LOCAL provider only
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "error": (
-                            "This email is already registered with email/password. "
-                            "Please sign in normally and use the account linking "
-                            "feature in your profile to connect GitHub OAuth."
-                        ),
-                        "error_type": "email_different_provider",
-                    },
-                )
+                # Auto-link GitHub OAuth to existing LOCAL account (industry standard)
+                # This provides seamless user experience while maintaining security
+                # since GitHub has already verified email ownership via OAuth
+                existing_user.last_login_at = datetime.now(timezone.utc)
+                existing_user.github_id = github_info.get("id")
+                existing_user.auth_provider = (
+                    AuthProvider.HYBRID
+                )  # Support both email/password and OAuth
+                db.commit()
+                # Auto-linked account - check if profile is complete
+                if existing_user.first_name and existing_user.last_name:
+                    return existing_user, "account_linked"
+                else:
+                    return existing_user, "complete_profile"
 
         # GitHub doesn't have hosted domain concept like Google Workspace
         # All GitHub users get personal organizations
@@ -299,8 +307,11 @@ def get_or_create_github_user(db: Session, github_info: Mapping[str, Any]) -> Us
         now = datetime.now(timezone.utc)
         new_user = User(
             email=email,
-            first_name=github_info.get("given_name", ""),
-            last_name=github_info.get("family_name", ""),
+            first_name=None,  # No real names from GitHub - user must complete profile
+            last_name=None,  # No real names from GitHub - user must complete profile
+            display_name=github_info.get(
+                "login"
+            ),  # Store GitHub username as display name
             organization_id=organization_id,  # Use proper foreign key
             password_hash=None,  # No password for OAuth users
             role=UserRole.BASIC_USER,  # Use enum object
@@ -318,7 +329,8 @@ def get_or_create_github_user(db: Session, github_info: Mapping[str, Any]) -> Us
         db.commit()
         db.refresh(new_user)
 
-        return new_user
+        # New GitHub user always needs profile completion
+        return new_user, "complete_profile"
 
     except HTTPException:
         # Re-raise HTTPExceptions (like our 409 security error) as-is
@@ -355,14 +367,14 @@ def process_github_oauth(
     # Verify GitHub token and get user info
     github_info = verify_github_token(access_token)
 
-    # Get or create user
-    user = get_or_create_github_user(db, github_info)
+    # Get or create user with action context
+    user, action = get_or_create_github_user(db, github_info)
 
     # Create access token with extended expiry for OAuth (30 days like "remember me")
     # OAuth is inherently secure since GitHub handles authentication
     access_token = create_access_token(data={"sub": str(user.id)}, remember_me=True)
 
-    # Return authentication response
+    # Return authentication response with action context
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -371,10 +383,12 @@ def process_github_oauth(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "display_name": user.display_name,
             "organization_id": user.organization_id,  # Use organization_id instead
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,  # Registration type
             "role": user.role.value if user.role else None,
         },
+        "action": action,
     }

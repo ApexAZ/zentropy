@@ -127,6 +127,7 @@ def login_json(
             email=user.email,
             first_name=user.first_name,
             last_name=user.last_name,
+            display_name=getattr(user, "display_name", None),
             organization_id=user.organization_id,
             has_projects_access=user.has_projects_access,
             email_verified=user.email_verified,

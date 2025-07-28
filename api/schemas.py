@@ -289,8 +289,9 @@ class Token(BaseModel):
 class UserLoginResponse(BaseModel):
     id: UUID
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    display_name: Optional[str] = None
     organization_id: Optional[UUID] = None
     has_projects_access: bool
     email_verified: bool

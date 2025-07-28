@@ -643,8 +643,9 @@ class User(Base):
     password_hash: Mapped[Optional[str]] = mapped_column(
         String, nullable=True
     )  # Nullable for OAuth users
-    first_name: Mapped[str] = mapped_column(String, nullable=False)
-    last_name: Mapped[str] = mapped_column(String, nullable=False)
+    first_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    last_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    display_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     phone_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Organization relationship - supports just-in-time organization assignment

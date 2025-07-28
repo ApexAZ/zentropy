@@ -248,19 +248,16 @@ def get_or_create_microsoft_user(
                 db.commit()
                 return existing_user
             else:
-                # Security: Prevent account takeover - email registered with
-                # LOCAL provider only
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "error": (
-                            "This email is already registered with email/password. "
-                            "Please sign in normally and use the account linking "
-                            "feature in your profile to connect Microsoft OAuth."
-                        ),
-                        "error_type": "email_different_provider",
-                    },
-                )
+                # Auto-link Microsoft OAuth to existing LOCAL account
+                # This provides seamless user experience while maintaining security
+                # since Microsoft has already verified email ownership via OAuth
+                existing_user.last_login_at = datetime.now(timezone.utc)
+                existing_user.microsoft_id = microsoft_info.get("id")
+                existing_user.auth_provider = (
+                    AuthProvider.HYBRID
+                )  # Support both email/password and OAuth
+                db.commit()
+                return existing_user
 
         # Microsoft doesn't have hosted domain concept like Google Workspace
         # All Microsoft users get personal organizations
@@ -342,10 +339,14 @@ def process_microsoft_oauth(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "display_name": getattr(
+                user, "display_name", None
+            ),  # Include display_name for consistency
             "organization_id": user.organization_id,  # Use organization_id instead
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,  # Registration type
             "role": user.role.value if user.role else None,
         },
+        "action": "sign_in",  # Microsoft provides names, no profile completion
     }

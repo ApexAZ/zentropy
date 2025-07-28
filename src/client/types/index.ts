@@ -34,12 +34,14 @@ export interface AuthResponse {
 	access_token: string;
 	token_type: string;
 	user: {
-		first_name: string;
-		last_name: string;
+		first_name: string | null;
+		last_name: string | null;
+		display_name?: string | null;
 		email: string;
 		has_projects_access: boolean;
 		email_verified: boolean;
 	};
+	action?: "sign_in" | "account_linked" | "complete_profile";
 }
 
 // Team types
@@ -76,8 +78,9 @@ export interface TeamValidationResult {
 export interface User {
 	id: string;
 	email: string;
-	first_name: string;
-	last_name: string;
+	first_name: string | null;
+	last_name: string | null;
+	display_name?: string | null;
 	phone_number?: string;
 	role: string;
 	has_projects_access: boolean;

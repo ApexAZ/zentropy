@@ -47,8 +47,8 @@ const ProfilePage: React.FC = () => {
 				if (isMounted) {
 					setUser(userData);
 					setProfileData({
-						first_name: userData.first_name,
-						last_name: userData.last_name,
+						first_name: userData.first_name || "",
+						last_name: userData.last_name || "",
 						email: userData.email,
 						phone_number: userData.phone_number || ""
 					});
@@ -81,8 +81,8 @@ const ProfilePage: React.FC = () => {
 			const userData = await UserService.getCurrentUser();
 			setUser(userData);
 			setProfileData({
-				first_name: userData.first_name,
-				last_name: userData.last_name,
+				first_name: userData.first_name || "",
+				last_name: userData.last_name || "",
 				email: userData.email,
 				phone_number: userData.phone_number || ""
 			});
@@ -112,8 +112,8 @@ const ProfilePage: React.FC = () => {
 		setIsEditingProfile(false);
 		if (user) {
 			setProfileData({
-				first_name: user.first_name,
-				last_name: user.last_name,
+				first_name: user.first_name || "",
+				last_name: user.last_name || "",
 				email: user.email,
 				phone_number: user.phone_number || ""
 			});

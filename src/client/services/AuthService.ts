@@ -12,7 +12,7 @@ export class AuthService {
 	/**
 	 * Sign in with email and password
 	 */
-	static async signIn(credentials: SignInCredentials): Promise<{ token: string; user: AuthUser }> {
+	static async signIn(credentials: SignInCredentials): Promise<{ token: string; user: AuthUser; action?: string }> {
 		const response = await fetch("/api/v1/auth/login-json", {
 			method: "POST",
 			headers: {
@@ -28,15 +28,24 @@ export class AuthService {
 
 		const data: AuthResponse = await response.json();
 
-		return {
+		const result: { token: string; user: AuthUser; action?: string } = {
 			token: data.access_token,
 			user: {
 				email: data.user.email,
-				name: `${data.user.first_name} ${data.user.last_name}`,
+				name:
+					data.user.first_name && data.user.last_name
+						? `${data.user.first_name} ${data.user.last_name}`.trim()
+						: data.user.display_name || data.user.email,
 				has_projects_access: data.user.has_projects_access,
 				email_verified: data.user.email_verified
 			}
 		};
+
+		if (data.action) {
+			result.action = data.action;
+		}
+
+		return result;
 	}
 
 	/**
@@ -83,7 +92,7 @@ export class AuthService {
 	static async oauthSignIn(
 		provider: "google" | "microsoft" | "github",
 		credential: string
-	): Promise<{ token: string; user: AuthUser }> {
+	): Promise<{ token: string; user: AuthUser; action?: string }> {
 		// Use unified OAuth endpoint with provider-specific request format
 		let requestBody: object;
 
@@ -117,15 +126,24 @@ export class AuthService {
 
 		const data: AuthResponse = await response.json();
 
-		return {
+		const result: { token: string; user: AuthUser; action?: string } = {
 			token: data.access_token,
 			user: {
 				email: data.user.email,
-				name: `${data.user.first_name} ${data.user.last_name}`,
+				name:
+					data.user.first_name && data.user.last_name
+						? `${data.user.first_name} ${data.user.last_name}`.trim()
+						: data.user.display_name || data.user.email,
 				has_projects_access: data.user.has_projects_access,
 				email_verified: data.user.email_verified
 			}
 		};
+
+		if (data.action) {
+			result.action = data.action;
+		}
+
+		return result;
 	}
 
 	/**

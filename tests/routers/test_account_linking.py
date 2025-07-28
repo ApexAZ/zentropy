@@ -419,14 +419,14 @@ class TestGoogleOAuthSecurityFix:
     """Test the security fix for Google OAuth account takeover prevention."""
 
     @patch("api.google_oauth.verify_google_token")
-    def test_oauth_login_prevents_local_account_takeover(
+    def test_oauth_login_auto_links_local_account(
         self, mock_verify_token, client: TestClient, db: Session
     ):
-        """Test that Google OAuth login cannot takeover LOCAL accounts."""
+        """Test that Google OAuth login automatically links to existing LOCAL accounts."""
         # Create a LOCAL user
         local_user = User(
-            email="victim@example.com",
-            first_name="Victim",
+            email="user@example.com",
+            first_name="Test",
             last_name="User",
             auth_provider=AuthProvider.LOCAL,
             password_hash=get_password_hash("secret123"),
@@ -437,22 +437,29 @@ class TestGoogleOAuthSecurityFix:
 
         # Mock Google token with same email
         mock_verify_token.return_value = {
-            "email": "victim@example.com",
-            "sub": "attacker_google_id",
+            "email": "user@example.com",
+            "sub": "google_id_123",
             "email_verified": True,
         }
 
-        # Attempt Google OAuth login (should fail)
+        # Attempt Google OAuth login (should auto-link and succeed)
         with patch("api.google_oauth.check_rate_limit"):  # Skip rate limiting
             response = client.post(
                 "/api/v1/auth/oauth",
-                json={"provider": "google", "credential": "fake_google_token"},
+                json={"provider": "google", "credential": "valid_google_token"},
             )
 
-        assert response.status_code == 409
-        error_detail = response.json()["detail"]
-        assert "already registered with email/password" in error_detail["error"]
-        assert error_detail["error_type"] == "email_different_provider"
+        assert response.status_code == 200
+        result = response.json()
+        assert result["user"]["email"] == "user@example.com"
+        
+        # Verify account was properly linked
+        # Refresh the session to see changes made by the OAuth process
+        db.expunge_all()  # Clear the session cache
+        updated_user = db.query(User).filter(User.email == "user@example.com").first()
+        assert updated_user.auth_provider == AuthProvider.HYBRID
+        assert updated_user.google_id == "google_id_123"
+        assert updated_user.password_hash is not None  # Original password preserved
 
     @patch("api.google_oauth.verify_google_token")
     def test_oauth_login_allows_google_account_login(

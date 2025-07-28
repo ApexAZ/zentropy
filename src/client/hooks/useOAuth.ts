@@ -40,11 +40,7 @@ function isTestEnvironment(): boolean {
 	return false;
 }
 
-function createTestMockResponse(
-	config: OAuthConfig,
-	onSuccess?: (credential: string) => void,
-	_onError?: (error: string) => void
-): UseOAuthReturn {
+function createTestMockResponse(config: OAuthConfig, onSuccess?: (credential: string) => void): UseOAuthReturn {
 	logger.debug(`use${config.displayName}OAuth: Test environment detected, returning mock implementation`);
 
 	return {
@@ -298,32 +294,36 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 
 					// Listen for message from popup
 					const messageHandler = (event: MessageEvent) => {
-						logger.debug("Microsoft OAuth: Received message", {
-							origin: event.origin,
-							expectedOrigin: window.location.origin,
-							messageType: event.data?.type,
-							hasAuthCode: !!event.data?.authorizationCode
-						});
-
 						if (event.origin !== window.location.origin) {
-							logger.warn("Microsoft OAuth: Message origin mismatch", {
-								received: event.origin,
-								expected: window.location.origin
-							});
 							return;
 						}
 
-						if (event.data.type === "MICROSOFT_OAUTH_SUCCESS") {
-							logger.debug("Microsoft OAuth: Success message received");
+						// Ignore non-OAuth messages (browser extensions, etc.)
+						if (
+							!event.data ||
+							typeof event.data !== "object" ||
+							!event.data.type ||
+							typeof event.data.type !== "string" ||
+							!event.data.type.includes("OAUTH")
+						) {
+							return;
+						}
+
+						// Handle both MICROSOFT_OAUTH_SUCCESS and UNKNOWN_OAUTH_SUCCESS (provider detection fallback)
+						if (
+							event.data.type === "MICROSOFT_OAUTH_SUCCESS" ||
+							event.data.type === "UNKNOWN_OAUTH_SUCCESS"
+						) {
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
-							// Pass the authorization code to the backend for token exchange
 							onSuccess(event.data.authorizationCode);
 							setIsLoading(false);
 							cleanupRef.current = null;
-						} else if (event.data.type === "MICROSOFT_OAUTH_ERROR") {
-							logger.debug("Microsoft OAuth: Error message received", { error: event.data.error });
+						} else if (
+							event.data.type === "MICROSOFT_OAUTH_ERROR" ||
+							event.data.type === "UNKNOWN_OAUTH_ERROR"
+						) {
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
@@ -331,11 +331,6 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 							onError?.(event.data.error);
 							setIsLoading(false);
 							cleanupRef.current = null;
-						} else {
-							logger.debug("Microsoft OAuth: Unhandled message type", {
-								type: event.data?.type,
-								data: event.data
-							});
 						}
 					};
 
@@ -397,7 +392,19 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 					const messageHandler = (event: MessageEvent) => {
 						if (event.origin !== window.location.origin) return;
 
-						if (event.data.type === "GITHUB_OAUTH_SUCCESS") {
+						// Ignore non-OAuth messages (browser extensions, etc.)
+						if (
+							!event.data ||
+							typeof event.data !== "object" ||
+							!event.data.type ||
+							typeof event.data.type !== "string" ||
+							!event.data.type.includes("OAUTH")
+						) {
+							return;
+						}
+
+						// Handle both GITHUB_OAUTH_SUCCESS and UNKNOWN_OAUTH_SUCCESS (provider detection fallback)
+						if (event.data.type === "GITHUB_OAUTH_SUCCESS" || event.data.type === "UNKNOWN_OAUTH_SUCCESS") {
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
@@ -405,7 +412,10 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 							onSuccess(event.data.authorizationCode);
 							setIsLoading(false);
 							cleanupRef.current = null;
-						} else if (event.data.type === "GITHUB_OAUTH_ERROR") {
+						} else if (
+							event.data.type === "GITHUB_OAUTH_ERROR" ||
+							event.data.type === "UNKNOWN_OAUTH_ERROR"
+						) {
 							clearInterval(checkClosed);
 							popup.close();
 							window.removeEventListener("message", messageHandler);
@@ -465,7 +475,7 @@ export const useOAuth = ({ config, onSuccess, onError }: UseOAuthProps): UseOAut
 	// 🚀 ENVIRONMENT-AWARE RESPONSE
 	// ✅ Return deterministic mocks in test environment
 	if (isTestEnvironment()) {
-		return createTestMockResponse(config, onSuccess, onError);
+		return createTestMockResponse(config, onSuccess);
 	}
 
 	return {

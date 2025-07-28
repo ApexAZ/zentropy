@@ -16,15 +16,14 @@ class TestCriticalOAuthSecurity:
     """CRITICAL security tests for OAuth implementation."""
     
     @patch('api.google_oauth.verify_google_token')
-    def test_email_hijacking_prevention_real_database(self, mock_verify_google_token, db, client):
-        """🚨 CRITICAL: Test that Google OAuth cannot hijack existing local accounts (real DB test)."""
+    def test_oauth_auto_linking_with_existing_local_account(self, mock_verify_google_token, db, client):
+        """✅ Test that Google OAuth automatically links to existing local accounts with same email."""
         
         # Step 1: Create existing local user
         local_user = User(
-            email="victim@example.com",
-            first_name="Victim",
+            email="user@example.com",
+            first_name="Test",
             last_name="User",
-            
             auth_provider=AuthProvider.LOCAL,
             password_hash="$2b$12$secure_hashed_password",
             google_id=None
@@ -36,58 +35,47 @@ class TestCriticalOAuthSecurity:
         print(f"✅ Created local user: {local_user.email} with auth_provider: {local_user.auth_provider}")
         
         # Step 2: Verify local user exists
-        existing_user_check = db.query(User).filter(User.email == "victim@example.com").first()
+        existing_user_check = db.query(User).filter(User.email == "user@example.com").first()
         assert existing_user_check is not None
         assert existing_user_check.auth_provider == AuthProvider.LOCAL
         assert existing_user_check.google_id is None
         print(f"✅ Verified local user exists in database")
         
-        # Step 3: Mock attacker's Google token (same email, different Google ID)
+        # Step 3: Mock legitimate Google OAuth for same user
         mock_google_user_info = {
-            "sub": "attacker_google_id_12345",  # Different Google ID
-            "email": "victim@example.com",      # Same email as victim
-            "given_name": "Attacker",
-            "family_name": "Hacker",
+            "sub": "google_id_12345",
+            "email": "user@example.com",
+            "given_name": "Test",
+            "family_name": "User",
             "email_verified": True
         }
         mock_verify_google_token.return_value = mock_google_user_info
         
-        # Step 4: Create Google login request will be made via HTTP POST
-        
-        # Step 5: Attempt OAuth login - MUST fail with security error
-        print(f"🔥 Attempting OAuth hijack attack...")
+        # Step 4: Attempt OAuth login - should automatically link and succeed
+        print(f"🔗 Attempting OAuth auto-linking...")
         
         response = client.post("/api/v1/auth/oauth", json={
             "provider": "google",
-            "credential": "attacker_token"
+            "credential": "valid_google_token"
         })
         
-        # Should fail with security error
-        if response.status_code == 409:
-            error_data = response.json()["detail"]
-            if ("already registered with email/password" in error_data.get("error", "") and 
-                error_data.get("error_type") == "email_different_provider"):
-                print(f"✅ SECURITY PASSED: OAuth hijacking correctly blocked")
-                print(f"✅ Security error: {error_data['error']}")
-                assert True
-            else:
-                pytest.fail(f"🚨 UNEXPECTED ERROR: {error_data}")
-        else:
-            # If we get here, the security check FAILED - this is a critical vulnerability
-            if response.status_code == 200:
-                result = response.json()
-                pytest.fail(
-                    f"🚨 CRITICAL SECURITY VULNERABILITY: OAuth hijacking succeeded! "
-                    f"Attacker was able to login as {result['user']['email']} using Google OAuth. "
-                    f"This should have been blocked by email collision detection."
-                )
-            else:
-                pytest.fail(f"🚨 UNEXPECTED ERROR: Status {response.status_code}, Response: {response.json()}")
+        # Should succeed with auto-linking
+        assert response.status_code == 200, f"Expected successful auto-linking, got {response.status_code}: {response.json()}"
         
-        # Step 6: Security verification complete
-        # The critical security check passed - OAuth hijacking was blocked
-        # Database isolation in tests may affect final state, but security is preserved
-        print(f"✅ CRITICAL SECURITY TEST PASSED: Account hijacking successfully prevented")
+        result = response.json()
+        assert result["user"]["email"] == "user@example.com"
+        print(f"✅ Auto-linking successful: {result['user']['email']}")
+        
+        # Step 5: Verify account was properly linked
+        # Refresh the session to see changes made by the OAuth process
+        db.expunge_all()  # Clear the session cache
+        updated_user = db.query(User).filter(User.email == "user@example.com").first()
+        assert updated_user is not None
+        assert updated_user.auth_provider == AuthProvider.HYBRID  # Now supports both email/password and OAuth
+        assert updated_user.google_id == "google_id_12345"  # Google ID was set
+        assert updated_user.password_hash is not None  # Original password preserved
+        
+        print(f"✅ AUTO-LINKING TEST PASSED: OAuth provider successfully linked to existing account")
     
     @patch('api.google_oauth.verify_google_token')
     def test_google_user_can_login_with_different_email(self, mock_verify_google_token, db, client):

@@ -189,19 +189,16 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
                 db.commit()
                 return existing_user
             else:
-                # Security: Prevent account takeover - email registered with
-                # LOCAL provider only
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "error": (
-                            "This email is already registered with email/password. "
-                            "Please sign in normally and use the account linking "
-                            "feature in your profile to connect Google OAuth."
-                        ),
-                        "error_type": "email_different_provider",
-                    },
-                )
+                # Auto-link Google OAuth to existing LOCAL account (industry standard)
+                # This provides seamless user experience while maintaining security
+                # since Google has already verified email ownership via OAuth
+                existing_user.last_login_at = datetime.now(timezone.utc)
+                existing_user.google_id = google_info.get("sub")
+                existing_user.auth_provider = (
+                    AuthProvider.HYBRID
+                )  # Support both email/password and OAuth
+                db.commit()
+                return existing_user
 
         # Handle organization assignment for Google Workspace users
         organization_id = None
@@ -286,10 +283,14 @@ def process_google_oauth(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "display_name": getattr(
+                user, "display_name", None
+            ),  # Include display_name for consistency
             "organization_id": user.organization_id,  # Use organization_id instead
             "has_projects_access": user.has_projects_access,
             "email_verified": user.email_verified,
             "registration_type": user.registration_type.value,  # Registration type
             "role": user.role.value if user.role else None,
         },
+        "action": "sign_in",  # Google provides names, so no profile completion needed
     }
