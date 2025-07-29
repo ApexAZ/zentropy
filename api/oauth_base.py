@@ -193,7 +193,8 @@ def get_or_create_oauth_user(
     provider: str,
     user_info: Mapping[str, Any],
     organization: Optional[Organization] = None,
-) -> Tuple[User, str]:
+    consent_given: Optional[bool] = None,
+):
     """
     Unified user creation/retrieval logic for all OAuth providers.
 
@@ -226,7 +227,7 @@ def get_or_create_oauth_user(
 
         if existing_user:
             return _handle_existing_user(
-                db, existing_user, config, provider_user_id, user_info
+                db, existing_user, config, provider_user_id, user_info, consent_given
             )
 
         # Create new user
@@ -247,7 +248,8 @@ def _handle_existing_user(
     config: OAuthProviderConfig,
     provider_user_id: str,
     user_info: Mapping[str, Any],
-) -> Tuple[User, str]:
+    consent_given: Optional[bool] = None,
+):
     """Handle existing user OAuth login/linking."""
 
     # Allow login for same provider and HYBRID users
@@ -272,22 +274,57 @@ def _handle_existing_user(
         return existing_user, "sign_in"
 
     else:
-        # Auto-link OAuth to existing LOCAL account (industry standard)
-        # This provides seamless UX while maintaining security since OAuth
-        # provider has already verified email ownership
-        existing_user.last_login_at = datetime.now(timezone.utc)
-        setattr(existing_user, config.user_id_field, provider_user_id)
-        existing_user.auth_provider = AuthProvider.HYBRID  # Support both methods
-        db.commit()
+        # Handle OAuth account linking with explicit consent
+        from .oauth_consent_service import ConsentRequiredResponse, OAuthConsentService
 
-        # Check if profile completion needed (GitHub specific)
-        if config.name == "github":
-            if existing_user.first_name and existing_user.last_name:
-                return existing_user, "account_linked"
+        # Check if consent has been given
+        if consent_given is None:
+            # Check for existing consent decision
+            existing_consent = OAuthConsentService.check_existing_consent(
+                db, existing_user.email, config.name
+            )
+
+            if existing_consent is None:
+                # Auto-approve consent for same verified email (secure OAuth behavior)
+                # OAuth providers verify email ownership, making this linking secure
+                email_verified = user_info.get("email_verified", True)
+                if email_verified and existing_user.email == user_info.get("email"):
+                    # Automatically grant consent for verified same-email linking
+                    consent_given = True
+                else:
+                    # Require explicit consent for unverified emails or different emails
+                    return ConsentRequiredResponse(
+                        provider=config.name,
+                        existing_email=existing_user.email,
+                        provider_display_name=config.display_name,
+                        security_context={
+                            "existing_auth_method": existing_user.auth_provider.value,
+                            "provider_email_verified": email_verified,
+                        },
+                    )
             else:
-                return existing_user, "complete_profile"
+                # Use existing consent decision
+                consent_given = existing_consent
 
-        return existing_user, "account_linked"
+        if consent_given:
+            # User has consented to account linking
+            existing_user.last_login_at = datetime.now(timezone.utc)
+            setattr(existing_user, config.user_id_field, provider_user_id)
+            existing_user.auth_provider = AuthProvider.HYBRID  # Support both methods
+            db.commit()
+
+            # Check if profile completion needed (GitHub specific)
+            if config.name == "github":
+                if existing_user.first_name and existing_user.last_name:
+                    return existing_user, "account_linked"
+                else:
+                    return existing_user, "complete_profile"
+
+            return existing_user, "account_linked"
+        else:
+            # User denied consent - this should be handled by creating separate account
+            # This case should be handled by the API layer, not here
+            raise OAuthError("Account linking requires user consent")
 
 
 def _create_new_oauth_user(
@@ -419,7 +456,8 @@ def process_oauth_with_security(
     credential_or_code: str,
     client_ip: str = "unknown",
     verify_token_func: Optional[Callable] = None,
-) -> Dict[str, Any]:
+    consent_given: Optional[bool] = None,
+):
     """
     Security-hardened OAuth processing with audit trail.
 
@@ -487,7 +525,23 @@ def process_oauth_with_security(
 
         # Step 6: User creation/linking with security checks
         security_ctx.log_event("Processing user creation/linking")
-        user, action = get_or_create_oauth_user(db, provider, user_info, organization)
+        result = get_or_create_oauth_user(
+            db, provider, user_info, organization, consent_given
+        )
+
+        # Handle consent required response
+        from .oauth_consent_service import ConsentRequiredResponse
+
+        if isinstance(result, ConsentRequiredResponse):
+            return {
+                "action": result.action,
+                "provider": result.provider,
+                "existing_email": result.existing_email,
+                "provider_display_name": result.provider_display_name,
+                "security_context": result.security_context,
+            }
+
+        user, action = result
 
         # Step 7: Generate response with security context
         response = build_oauth_response(user, action)
@@ -616,7 +670,11 @@ class OAuthProvider(ABC):
         self.config = get_provider_config(provider_name)
 
     def process_oauth(
-        self, db: Session, credential_or_code: str, client_ip: str = "unknown"
+        self,
+        db: Session,
+        credential_or_code: str,
+        client_ip: str = "unknown",
+        consent_given: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """
         Process OAuth authentication with security hardening.
@@ -630,6 +688,7 @@ class OAuthProvider(ABC):
             credential_or_code=credential_or_code,
             client_ip=client_ip,
             verify_token_func=self.verify_token_and_get_user_info,
+            consent_given=consent_given,
         )
 
     @abstractmethod

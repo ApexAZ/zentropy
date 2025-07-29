@@ -482,6 +482,9 @@ def unlink_oauth_account(
     internally to provider-specific implementations based on the provider field.
     """
     try:
+        # Import OAuth consent service for consent revocation
+        from ..oauth_consent_service import OAuthConsentService
+
         # Provider-specific OAuth account unlinking implementation
         if request.provider == "google":
             # Security: Verify user has Google account linked
@@ -509,6 +512,9 @@ def unlink_oauth_account(
             current_user.auth_provider = AuthProvider.LOCAL
             current_user.updated_at = datetime.now(timezone.utc)
 
+            # Revoke OAuth consent so user must re-consent when linking again
+            OAuthConsentService.revoke_oauth_consent(db, current_user, "google")
+
             db.commit()
             return MessageResponse(message="Google account unlinked successfully")
 
@@ -533,6 +539,9 @@ def unlink_oauth_account(
             current_user.auth_provider = AuthProvider.LOCAL
             current_user.updated_at = datetime.now(timezone.utc)
 
+            # Revoke OAuth consent so user must re-consent when linking again
+            OAuthConsentService.revoke_oauth_consent(db, current_user, "microsoft")
+
             db.commit()
             return MessageResponse(message="Microsoft account unlinked successfully")
 
@@ -556,6 +565,9 @@ def unlink_oauth_account(
             current_user.github_id = None
             current_user.auth_provider = AuthProvider.LOCAL
             current_user.updated_at = datetime.now(timezone.utc)
+
+            # Revoke OAuth consent so user must re-consent when linking again
+            OAuthConsentService.revoke_oauth_consent(db, current_user, "github")
 
             db.commit()
             return MessageResponse(message="GitHub account unlinked successfully")

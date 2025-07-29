@@ -2,7 +2,12 @@ import type {
 	OAuthProvider,
 	LinkOAuthProviderRequest,
 	UnlinkOAuthProviderRequest,
-	OAuthOperationResponse
+	OAuthOperationResponse,
+	OAuthConsentCheckRequest,
+	OAuthConsentCheckResponse,
+	OAuthConsentResponse,
+	OAuthConsentRequest,
+	AuthResponse
 } from "../types";
 import { createAuthHeaders } from "../utils/auth";
 
@@ -318,6 +323,112 @@ export class OAuthProviderService {
 			success: true,
 			provider: request.provider
 		};
+	}
+
+	/**
+	 * Check if OAuth consent is required before starting OAuth flow
+	 *
+	 * This method allows the frontend to determine consent requirements
+	 * before initiating the OAuth process, enabling consent-first architecture.
+	 */
+	static async checkConsentRequired(request: OAuthConsentCheckRequest): Promise<OAuthConsentCheckResponse> {
+		const response = await fetch("/api/v1/auth/oauth/check-consent", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(request)
+		});
+
+		const result = await this.handleResponse<OAuthConsentCheckResponse>(response);
+		return result;
+	}
+
+	/**
+	 * Process OAuth authentication with consent flow support
+	 *
+	 * This method calls the OAuth endpoint and handles both regular auth responses
+	 * and consent requirement responses.
+	 */
+	static async processOAuth(request: {
+		provider: string;
+		credential?: string;
+		authorization_code?: string;
+	}): Promise<AuthResponse | OAuthConsentResponse> {
+		const body: any = {
+			provider: request.provider
+		};
+
+		// Add credential based on provider type
+		if (request.provider === "google" && request.credential) {
+			body.credential = request.credential;
+		} else if ((request.provider === "microsoft" || request.provider === "github") && request.authorization_code) {
+			body.authorization_code = request.authorization_code;
+		} else {
+			throw new Error(`Invalid OAuth request for provider: ${request.provider}`);
+		}
+
+		const response = await fetch("/api/v1/auth/oauth", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(body)
+		});
+
+		const result = await response.json();
+
+		if (!response.ok) {
+			const errorMessage = result.detail || result.message || `HTTP ${response.status}: ${response.statusText}`;
+			throw new Error(errorMessage);
+		}
+
+		// Check if this is a consent response
+		if (result.action === "consent_required") {
+			return result as OAuthConsentResponse;
+		}
+
+		// Regular auth response
+		return result as AuthResponse;
+	}
+
+	/**
+	 * Process OAuth consent decision
+	 *
+	 * Sends the user's consent decision to the backend and returns the auth response.
+	 */
+	static async processOAuthConsent(request: OAuthConsentRequest): Promise<AuthResponse> {
+		const body: any = {
+			provider: request.provider,
+			consent_given: request.consent_given
+		};
+
+		// Add credential based on provider type
+		if (request.provider === "google" && request.credential) {
+			body.credential = request.credential;
+		} else if ((request.provider === "microsoft" || request.provider === "github") && request.authorization_code) {
+			body.authorization_code = request.authorization_code;
+		} else {
+			throw new Error(`Invalid OAuth consent request for provider: ${request.provider}`);
+		}
+
+		const response = await fetch("/api/v1/auth/oauth/consent", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(body)
+		});
+
+		const result = await this.handleResponse<AuthResponse>(response);
+		return result;
+	}
+
+	/**
+	 * Check if a response is a consent requirement
+	 */
+	static isConsentRequired(response: AuthResponse | OAuthConsentResponse): response is OAuthConsentResponse {
+		return (response as OAuthConsentResponse).action === "consent_required";
 	}
 
 	/**

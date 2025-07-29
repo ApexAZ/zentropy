@@ -254,6 +254,47 @@ api/
 - [x] Secure storage patterns verified (bcrypt with automatic salting, transaction-safe history management)
 - [x] Password security tests comprehensive (654 total tests passing, including 29 new security tests)
 
+#### **3.2.1 Profile Display Name Bug Fix** ✅ COMPLETED
+**Issue Discovered:** During Phase 3.2 testing, discovered that Profile page Display Name updates were not reflecting in the UI after save
+
+**Root Cause Analysis:**
+The `generateDisplayName` function was only respecting the `display_name` field for GitHub OAuth users, but ignoring it for all other registration types (email, Google OAuth, Microsoft OAuth). This caused user-set display names to be overridden by the fallback logic.
+
+**Implemented Solution:**
+- ✅ Fixed display name priority logic to respect user-set `display_name` field for ALL registration types
+- ✅ Updated priority order: `display_name` (highest) → `"${first_name} ${last_name}"` → `email` (fallback)
+- ✅ Added proper whitespace trimming for combined first/last names
+- ✅ Comprehensive test coverage with 12 new test cases
+
+**Files Modified:**
+- ✅ `src/client/utils/formatters.ts` - Fixed `generateDisplayName()` priority logic
+- ✅ `src/client/utils/__tests__/formatters.test.ts` - Added 12 comprehensive test cases covering all edge cases
+
+**Technical Details:**
+```typescript
+// OLD logic (broken)
+if (user.registration_type === "github_oauth" && user.display_name) {
+    return user.display_name; // Only for GitHub users!
+}
+
+// NEW logic (fixed)  
+if (user.display_name && user.display_name.trim()) {
+    return user.display_name.trim(); // For ALL users!
+}
+```
+
+**Testing Results:**
+- ✅ 12 new display name tests added and passing
+- ✅ Total frontend tests increased from 1,194 → 1,206
+- ✅ Zero regressions in existing Profile page functionality
+- ✅ Display Name field now updates immediately after save
+
+**User Impact:**
+- Users can now successfully update their Display Name in Profile settings
+- Display Name changes are immediately visible in the UI after save  
+- Consistent behavior across all registration types (email, OAuth providers)
+- Proper whitespace handling and edge case management
+
 #### **3.3 OAuth Consent & Security**
 **Current Issue:** Automatic account linking without explicit consent
 
@@ -562,7 +603,7 @@ Environment-based configuration system fully implemented:
 ### **📊 IMPACT METRICS ACHIEVED:**
 - **Security:** Zero critical vulnerabilities (target achieved)
 - **Code Quality:** Code duplication eliminated (exceeded <10% target)  
-- **Test Coverage:** 625 backend + 1166 frontend tests passing (100% pass rate, 0 skips)
+- **Test Coverage:** 654 backend + 1206 frontend tests passing (100% pass rate, 0 skips)
 - **Authentication Response Time:** <500ms maintained (target met)
 - **Configuration:** All hardcoded security values moved to validated environment configuration
 
@@ -579,5 +620,6 @@ All Phase 1, Phase 2, and Phase 3.1 implementations are production-ready with co
 5. ✅ ~~Phase 3.1 environment-based configuration~~ - COMPLETED
 6. ✅ ~~Technical debt resolution (skipped tests)~~ - COMPLETED
 7. ✅ ~~Phase 3.2 Enhanced Password Security~~ - COMPLETED
-8. 📋 **Next:** Phase 3.3 OAuth Consent & Security (explicit consent flows)
-9. 📋 **Next:** Phase 3.4 Comprehensive Security Testing Framework (automated security scanning)
+8. ✅ ~~Phase 3.2.1 Profile Display Name Bug Fix~~ - COMPLETED  
+9. 📋 **Next:** Phase 3.3 OAuth Consent & Security (explicit consent flows)
+10. 📋 **Next:** Phase 3.4 Comprehensive Security Testing Framework (automated security scanning)

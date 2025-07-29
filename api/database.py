@@ -11,6 +11,7 @@ from sqlalchemy import (
     CheckConstraint,
     Index,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import (
     DeclarativeBase,
     Session,
@@ -702,6 +703,14 @@ class User(Base):
         DateTime, nullable=True
     )
 
+    # OAuth consent tracking fields
+    oauth_consent_given: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, default=dict
+    )
+    oauth_consent_timestamps: Mapped[Optional[dict]] = mapped_column(
+        JSON, nullable=True, default=dict
+    )
+
     # User preferences
     # Note: remember_me functionality handled via JWT token expiration
 
@@ -933,6 +942,50 @@ class PasswordHistory(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="password_history")
+
+
+# OAuth consent tracking for audit trail and compliance
+class OAuthConsentLog(Base):
+    """
+    Track OAuth consent decisions with full audit trail.
+
+    Records all user decisions about linking OAuth providers to existing accounts,
+    providing compliance data and security audit trails.
+    """
+
+    __tablename__ = "oauth_consent_log"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    provider_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    consent_given: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    consent_timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    client_ip: Mapped[Optional[str]] = mapped_column(
+        String(45), nullable=True
+    )  # Max length for IPv6
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User")
+
+    # Table-level indexes for performance
+    __table_args__ = (
+        Index("idx_oauth_consent_user_provider", "user_id", "provider"),
+        Index("idx_oauth_consent_email", "email"),
+        Index("idx_oauth_consent_timestamp", "consent_timestamp"),
+        Index("idx_oauth_consent_provider", "provider"),
+    )
 
 
 # Operation token tracking for single-use enforcement

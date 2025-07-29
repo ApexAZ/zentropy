@@ -18,7 +18,7 @@ SECURITY FEATURES:
 
 import os
 import requests
-from typing import Dict, Any, Mapping
+from typing import Dict, Any, Mapping, Optional, Union, Tuple
 from sqlalchemy.orm import Session
 
 from .oauth_base import (
@@ -31,6 +31,7 @@ from .oauth_base import (
     clear_oauth_rate_limit_store,
     check_oauth_rate_limit,
 )
+from .oauth_consent_service import ConsentRequiredResponse
 from .database import User
 
 
@@ -336,7 +337,7 @@ def verify_github_token(access_token: str) -> Mapping[str, Any]:
 
 def get_or_create_github_user(
     db: Session, github_info: Mapping[str, Any]
-) -> tuple[User, str]:
+) -> Union[Tuple[User, str], ConsentRequiredResponse]:
     """
     Backward-compatible user creation function.
 
@@ -346,12 +347,21 @@ def get_or_create_github_user(
     from .oauth_base import get_or_create_oauth_user
 
     # Use unified user creation logic
-    user, action = get_or_create_oauth_user(db, "github", github_info, None)
+    result = get_or_create_oauth_user(db, "github", github_info, None)
+
+    # Check if consent is required
+    if isinstance(result, ConsentRequiredResponse):
+        return result
+
+    user, action = result
     return user, action
 
 
 def process_github_oauth(
-    db: Session, authorization_code: str, client_ip: str = "unknown"
+    db: Session,
+    authorization_code: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Backward-compatible GitHub OAuth processing function.
@@ -372,7 +382,9 @@ def process_github_oauth(
         access_token = _github_provider.exchange_code_for_token(authorization_code)
 
         # Step 2: Process OAuth using unified system with access token
-        return _github_provider.process_oauth(db, access_token, client_ip)
+        return _github_provider.process_oauth(
+            db, access_token, client_ip, consent_given
+        )
 
     except OAuthTokenInvalidError as e:
         raise GitHubTokenInvalidError(str(e))

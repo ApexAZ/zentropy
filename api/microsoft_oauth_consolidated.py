@@ -18,7 +18,7 @@ SECURITY FEATURES:
 
 import os
 import requests
-from typing import Dict, Any, Mapping
+from typing import Dict, Any, Mapping, Optional, Union
 from sqlalchemy.orm import Session
 
 from .oauth_base import (
@@ -31,6 +31,7 @@ from .oauth_base import (
     clear_oauth_rate_limit_store,
     check_oauth_rate_limit,
 )
+from .oauth_consent_service import ConsentRequiredResponse
 from .database import User
 
 
@@ -310,7 +311,7 @@ def verify_microsoft_token(access_token: str) -> Mapping[str, Any]:
 
 def get_or_create_microsoft_user(
     db: Session, microsoft_info: Mapping[str, Any]
-) -> User:
+) -> Union[User, ConsentRequiredResponse]:
     """
     Backward-compatible user creation function.
 
@@ -320,12 +321,21 @@ def get_or_create_microsoft_user(
     from .oauth_base import get_or_create_oauth_user
 
     # Use unified user creation logic
-    user, _ = get_or_create_oauth_user(db, "microsoft", microsoft_info, None)
+    result = get_or_create_oauth_user(db, "microsoft", microsoft_info, None)
+
+    # Check if consent is required
+    if isinstance(result, ConsentRequiredResponse):
+        return result
+
+    user, _ = result
     return user
 
 
 def process_microsoft_oauth(
-    db: Session, authorization_code: str, client_ip: str = "unknown"
+    db: Session,
+    authorization_code: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Backward-compatible Microsoft OAuth processing function.
@@ -346,7 +356,9 @@ def process_microsoft_oauth(
         access_token = _microsoft_provider.exchange_code_for_token(authorization_code)
 
         # Step 2: Process OAuth using unified system with access token
-        return _microsoft_provider.process_oauth(db, access_token, client_ip)
+        return _microsoft_provider.process_oauth(
+            db, access_token, client_ip, consent_given
+        )
 
     except OAuthTokenInvalidError as e:
         raise MicrosoftTokenInvalidError(str(e))

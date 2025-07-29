@@ -18,7 +18,8 @@ import {
 	generateMonthOptions,
 	formatVelocity,
 	formatSprintLength,
-	formatWorkingDays
+	formatWorkingDays,
+	generateDisplayName
 } from "../formatters";
 
 describe("formatters", () => {
@@ -508,6 +509,143 @@ describe("formatters", () => {
 			expect(getVelocityStatus(zeroVelocity)).toEqual({ label: "Not Set", color: "text-text-primary" });
 			expect(formatVelocity(zeroVelocity)).toBe("Not set");
 			expect(getDayName(invalidDay)).toBe("Unknown");
+		});
+	});
+
+	describe("generateDisplayName", () => {
+		const baseUser = {
+			registration_type: "email",
+			first_name: null,
+			last_name: null,
+			display_name: null,
+			email: "user@example.com"
+		};
+
+		it("should use explicit display_name when provided (highest priority)", () => {
+			const user = {
+				...baseUser,
+				display_name: "Custom Name",
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("Custom Name");
+		});
+
+		it("should trim whitespace from display_name", () => {
+			const user = {
+				...baseUser,
+				display_name: "  Custom Name  "
+			};
+			expect(generateDisplayName(user)).toBe("Custom Name");
+		});
+
+		it("should ignore empty display_name and fall back to next priority", () => {
+			const user = {
+				...baseUser,
+				display_name: "",
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("John Doe");
+		});
+
+		it("should ignore whitespace-only display_name", () => {
+			const user = {
+				...baseUser,
+				display_name: "   ",
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("John Doe");
+		});
+
+		it("should combine first and last name when both exist", () => {
+			const user = {
+				...baseUser,
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("John Doe");
+		});
+
+		it("should trim whitespace from combined first/last name", () => {
+			const user = {
+				...baseUser,
+				first_name: " John ",
+				last_name: " Doe "
+			};
+			expect(generateDisplayName(user)).toBe("John Doe");
+		});
+
+		it("should fall back to email when only first name exists", () => {
+			const user = {
+				...baseUser,
+				first_name: "John"
+			};
+			expect(generateDisplayName(user)).toBe("user@example.com");
+		});
+
+		it("should fall back to email when only last name exists", () => {
+			const user = {
+				...baseUser,
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("user@example.com");
+		});
+
+		it("should fall back to email for all registration types when no other data", () => {
+			const emailUser = { ...baseUser, registration_type: "email" };
+			const githubUser = { ...baseUser, registration_type: "github_oauth" };
+			const googleUser = { ...baseUser, registration_type: "google_oauth" };
+
+			expect(generateDisplayName(emailUser)).toBe("user@example.com");
+			expect(generateDisplayName(githubUser)).toBe("user@example.com");
+			expect(generateDisplayName(googleUser)).toBe("user@example.com");
+		});
+
+		it("should prioritize display_name over GitHub OAuth registration type", () => {
+			// This tests the fix - previously GitHub OAuth had special handling
+			const user = {
+				...baseUser,
+				registration_type: "github_oauth",
+				display_name: "Custom GitHub Name",
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(user)).toBe("Custom GitHub Name");
+		});
+
+		it("should handle null values gracefully", () => {
+			const user = {
+				...baseUser,
+				display_name: null,
+				first_name: null,
+				last_name: null
+			};
+			expect(generateDisplayName(user)).toBe("user@example.com");
+		});
+
+		it("should respect priority order: display_name > first+last > email", () => {
+			// Test 1: display_name wins over first+last
+			const userWithDisplayName = {
+				...baseUser,
+				display_name: "Priority Name",
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(userWithDisplayName)).toBe("Priority Name");
+
+			// Test 2: first+last wins over email
+			const userWithNames = {
+				...baseUser,
+				first_name: "John",
+				last_name: "Doe"
+			};
+			expect(generateDisplayName(userWithNames)).toBe("John Doe");
+
+			// Test 3: email as final fallback
+			const userWithEmail = { ...baseUser };
+			expect(generateDisplayName(userWithEmail)).toBe("user@example.com");
 		});
 	});
 });

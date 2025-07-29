@@ -9,7 +9,7 @@ adding security enhancements. Any failures should result in immediate rollback.
 """
 
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
 # Migration flag - consolidated implementations enabled by default for production use
@@ -69,7 +69,10 @@ except ImportError:
 
 
 def process_google_oauth_safe(
-    db: Session, credential: str, client_ip: str = "unknown"
+    db: Session,
+    credential: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Safe Google OAuth processing with migration support.
@@ -79,7 +82,9 @@ def process_google_oauth_safe(
     """
     if USE_CONSOLIDATED_OAUTH and consolidated_available:
         try:
-            return process_google_oauth_consolidated(db, credential, client_ip)
+            return process_google_oauth_consolidated(
+                db, credential, client_ip, consent_given
+            )
         except Exception as e:
             if process_google_oauth_original is not None:
                 print(
@@ -98,11 +103,16 @@ def process_google_oauth_safe(
             print(
                 "Original Google OAuth not available, using consolidated implementation"
             )
-            return process_google_oauth_consolidated(db, credential, client_ip)
+            return process_google_oauth_consolidated(
+                db, credential, client_ip, consent_given
+            )
 
 
 def process_microsoft_oauth_safe(
-    db: Session, authorization_code: str, client_ip: str = "unknown"
+    db: Session,
+    authorization_code: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Safe Microsoft OAuth processing with migration support.
@@ -113,7 +123,7 @@ def process_microsoft_oauth_safe(
     if USE_CONSOLIDATED_OAUTH and consolidated_available:
         try:
             return process_microsoft_oauth_consolidated(
-                db, authorization_code, client_ip
+                db, authorization_code, client_ip, consent_given
             )
         except Exception as e:
             if process_microsoft_oauth_original is not None:
@@ -139,12 +149,15 @@ def process_microsoft_oauth_safe(
                 "using consolidated implementation"
             )
             return process_microsoft_oauth_consolidated(
-                db, authorization_code, client_ip
+                db, authorization_code, client_ip, consent_given
             )
 
 
 def process_github_oauth_safe(
-    db: Session, authorization_code: str, client_ip: str = "unknown"
+    db: Session,
+    authorization_code: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Safe GitHub OAuth processing with migration support.
@@ -154,7 +167,9 @@ def process_github_oauth_safe(
     """
     if USE_CONSOLIDATED_OAUTH and consolidated_available:
         try:
-            return process_github_oauth_consolidated(db, authorization_code, client_ip)
+            return process_github_oauth_consolidated(
+                db, authorization_code, client_ip, consent_given
+            )
         except Exception as e:
             if process_github_oauth_original is not None:
                 print(
@@ -173,7 +188,9 @@ def process_github_oauth_safe(
             print(
                 "Original GitHub OAuth not available, using consolidated implementation"
             )
-            return process_github_oauth_consolidated(db, authorization_code, client_ip)
+            return process_github_oauth_consolidated(
+                db, authorization_code, client_ip, consent_given
+            )
 
 
 def get_migration_status() -> Dict[str, Any]:

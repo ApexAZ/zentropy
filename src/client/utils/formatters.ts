@@ -16,6 +16,27 @@ export const formatDate = (dateString: string, monthFormat: "short" | "long" = "
 };
 
 /**
+ * Format authentication method for display
+ * @param authMethod - Raw auth method string (e.g., "email_password", "local")
+ * @returns Human-readable auth method label
+ */
+export const formatAuthMethod = (authMethod: string): string => {
+	const authMethodLabels = {
+		email_password: "Email Password",
+		local: "Email Password",
+		google: "Google",
+		microsoft: "Microsoft",
+		github: "GitHub",
+		hybrid: "Multiple Methods"
+	};
+
+	return (
+		authMethodLabels[authMethod as keyof typeof authMethodLabels] ??
+		authMethod.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+	);
+};
+
+/**
  * Get display label for calendar entry types
  * @param type - Entry type identifier
  * @returns Human-readable label
@@ -123,7 +144,7 @@ export const generateMonthOptions = (rangeMonths: number = 6): { value: string; 
 /**
  * Generate display name based on user registration type and available data
  * Business logic:
- * - If registration = "github_oauth", then Display Name = GitHub username (from display_name field)
+ * - If user has explicitly set a display_name, use it (highest priority)
  * - Else if First and Last name both exist, then Display Name = "First Last"
  * - Else Display Name = email address
  *
@@ -137,14 +158,14 @@ export const generateDisplayName = (user: {
 	display_name?: string | null;
 	email: string;
 }): string => {
-	// For GitHub OAuth users, use their GitHub username (stored in display_name)
-	if (user.registration_type === "github_oauth" && user.display_name) {
-		return user.display_name;
+	// If user has explicitly set a display name, use it (highest priority)
+	if (user.display_name && user.display_name.trim()) {
+		return user.display_name.trim();
 	}
 
 	// If both first and last names exist, combine them
 	if (user.first_name && user.last_name) {
-		return `${user.first_name} ${user.last_name}`.trim();
+		return `${user.first_name.trim()} ${user.last_name.trim()}`;
 	}
 
 	// Fallback to email address

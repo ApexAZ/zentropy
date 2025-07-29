@@ -18,7 +18,7 @@ SECURITY FEATURES:
 """
 
 import os
-from typing import Dict, Any, Mapping
+from typing import Dict, Any, Mapping, Optional, Union
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from sqlalchemy.orm import Session
@@ -33,6 +33,7 @@ from .oauth_base import (
     clear_oauth_rate_limit_store,
     check_oauth_rate_limit,
 )
+from .oauth_consent_service import ConsentRequiredResponse
 from .database import User
 
 
@@ -242,7 +243,9 @@ def get_or_create_organization_from_google_domain(
     return new_org
 
 
-def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> User:
+def get_or_create_google_user(
+    db: Session, google_info: Mapping[str, Any]
+) -> Union[User, ConsentRequiredResponse]:
     """
     Backward-compatible user creation function.
 
@@ -258,12 +261,21 @@ def get_or_create_google_user(db: Session, google_info: Mapping[str, Any]) -> Us
         organization = get_or_create_organization_from_google_domain(db, google_domain)
 
     # Use unified user creation logic
-    user, _ = get_or_create_oauth_user(db, "google", google_info, organization)
+    result = get_or_create_oauth_user(db, "google", google_info, organization)
+
+    # Check if consent is required
+    if isinstance(result, ConsentRequiredResponse):
+        return result
+
+    user, _ = result
     return user
 
 
 def process_google_oauth(
-    db: Session, credential: str, client_ip: str = "unknown"
+    db: Session,
+    credential: str,
+    client_ip: str = "unknown",
+    consent_given: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
     Backward-compatible Google OAuth processing function.
@@ -280,7 +292,7 @@ def process_google_oauth(
     - Backward-compatible exception handling
     """
     try:
-        return _google_provider.process_oauth(db, credential, client_ip)
+        return _google_provider.process_oauth(db, credential, client_ip, consent_given)
     except OAuthTokenInvalidError as e:
         raise GoogleTokenInvalidError(str(e))
     except OAuthEmailUnverifiedError as e:

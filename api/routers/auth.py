@@ -14,6 +14,10 @@ from ..schemas import (
     UserLoginResponse,
     MessageResponse,
     OAuthRequest,
+    OAuthConsentCheckRequest,
+    OAuthConsentCheckResponse,
+    OAuthConsentRequest,
+    OAuthConsentResponse,
     EmailVerificationRequest,
     EmailVerificationResponse,
     VerificationCodeRequest,
@@ -241,10 +245,71 @@ def logout(
     return MessageResponse(message="Successfully logged out")
 
 
-@router.post("/oauth", response_model=LoginResponse)
+@router.post("/oauth/check-consent", response_model=OAuthConsentCheckResponse)
+def check_oauth_consent_required(
+    request: OAuthConsentCheckRequest, db: Session = Depends(get_db)
+) -> OAuthConsentCheckResponse:
+    """
+    Check if OAuth consent is required before starting OAuth flow.
+
+    This endpoint determines whether the user will be prompted for consent
+    when they attempt OAuth authentication, allowing the frontend to show
+    the consent modal before starting the OAuth process.
+    """
+    try:
+        from ..oauth_base import get_provider_config
+        from .. import database
+
+        # Get provider configuration
+        config = get_provider_config(request.provider)
+
+        # Check if user already exists with this email
+        existing_user = (
+            db.query(database.User).filter(database.User.email == request.email).first()
+        )
+
+        if not existing_user:
+            # New user - no consent required
+            return OAuthConsentCheckResponse(
+                consent_required=False, provider_display_name=config.display_name
+            )
+
+        # Check if user can sign in with this provider without consent
+        if existing_user.auth_provider in [
+            config.auth_provider_enum,
+            database.AuthProvider.HYBRID,
+        ]:
+            # User can already use this provider - no consent required
+            return OAuthConsentCheckResponse(
+                consent_required=False,
+                existing_auth_method=existing_user.auth_provider.value,
+                provider_display_name=config.display_name,
+            )
+
+        # Different auth provider - consent required for account linking
+        return OAuthConsentCheckResponse(
+            consent_required=True,
+            existing_auth_method=existing_user.auth_provider.value,
+            provider_display_name=config.display_name,
+            existing_email=existing_user.email,
+            security_context={
+                "existing_auth_method": existing_user.auth_provider.value,
+                "provider_email_verified": True,  # OAuth providers verify emails
+                "scenario": "account_linking",
+            },
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check consent requirements: {str(e)}",
+        )
+
+
+@router.post("/oauth")
 def unified_oauth_register(
     request: OAuthRequest, http_request: Request, db: Session = Depends(get_db)
-) -> LoginResponse:
+):
     """
     Unified OAuth registration/login endpoint for all providers.
 
@@ -290,6 +355,17 @@ def unified_oauth_register(
                 detail=f"Unsupported OAuth provider: {request.provider}",
             )
 
+        # Check if consent is required
+        if auth_response.get("action") == "consent_required":
+            return OAuthConsentResponse(
+                action=auth_response["action"],
+                provider=auth_response["provider"],
+                existing_email=auth_response["existing_email"],
+                provider_display_name=auth_response["provider_display_name"],
+                security_context=auth_response["security_context"],
+            )
+
+        # Standard login response
         return LoginResponse(
             access_token=auth_response["access_token"],
             token_type=auth_response["token_type"],
@@ -343,6 +419,127 @@ def unified_oauth_register(
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"OAuth registration failed: {str(e)}",
+            )
+
+
+@router.post("/oauth/consent", response_model=LoginResponse)
+def process_oauth_consent(
+    request: OAuthConsentRequest, http_request: Request, db: Session = Depends(get_db)
+) -> LoginResponse:
+    """
+    Process OAuth consent decision for account linking.
+
+    This endpoint handles user's explicit consent for linking OAuth providers
+    to existing accounts or creating separate accounts.
+    """
+    try:
+        # Get client IP for audit trail
+        client_ip = http_request.client.host if http_request.client else "unknown"
+        user_agent = http_request.headers.get("user-agent", "unknown")
+
+        # Route to provider-specific implementation based on provider field
+        if request.provider == "google":
+            if not request.credential:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Google OAuth requires credential field",
+                )
+            auth_response = process_google_oauth(
+                db, request.credential, client_ip, consent_given=request.consent_given
+            )
+        elif request.provider == "microsoft":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Microsoft OAuth requires authorization_code field",
+                )
+            auth_response = process_microsoft_oauth(
+                db,
+                request.authorization_code,
+                client_ip,
+                consent_given=request.consent_given,
+            )
+        elif request.provider == "github":
+            if not request.authorization_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="GitHub OAuth requires authorization_code field",
+                )
+            auth_response = process_github_oauth(
+                db,
+                request.authorization_code,
+                client_ip,
+                consent_given=request.consent_given,
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported OAuth provider: {request.provider}",
+            )
+
+        # Record consent decision for audit trail
+        if "user" in auth_response:
+            from ..oauth_consent_service import OAuthConsentService
+
+            # Get user from response to record consent
+            user_data = auth_response["user"]
+            user = (
+                db.query(database.User)
+                .filter(database.User.email == user_data["email"])
+                .first()
+            )
+
+            if user:
+                # Determine provider user ID based on provider
+                provider_user_id = getattr(user, f"{request.provider}_id", "unknown")
+
+                OAuthConsentService.record_consent_decision(
+                    db=db,
+                    user=user,
+                    provider=request.provider,
+                    provider_user_id=provider_user_id,
+                    consent_given=request.consent_given,
+                    client_ip=client_ip,
+                    user_agent=user_agent,
+                )
+
+        return LoginResponse(
+            access_token=auth_response["access_token"],
+            token_type=auth_response["token_type"],
+            user=UserLoginResponse(**auth_response["user"]),
+        )
+
+    except HTTPException:
+        # Re-raise HTTPExceptions (like validation errors) as-is
+        raise
+    except Exception as e:
+        # Handle OAuth consent errors with same error mapping as main OAuth endpoint
+        error_name = type(e).__name__
+
+        if "TokenInvalidError" in error_name or "InvalidToken" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid OAuth token: {str(e)}",
+            )
+        elif "EmailUnverifiedError" in error_name or "EmailUnverified" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Email verification required: {str(e)}",
+            )
+        elif "RateLimitError" in error_name or "RateLimit" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit exceeded: {str(e)}",
+            )
+        elif "OAuthError" in error_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"OAuth consent error: {str(e)}",
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"OAuth consent processing failed: {str(e)}",
             )
 
 

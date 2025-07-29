@@ -436,6 +436,83 @@ export interface OAuthOperationResponse {
 	provider_identifier?: string;
 }
 
+// OAuth Consent Check types
+export interface OAuthConsentCheckRequest {
+	/** OAuth provider name */
+	provider: string;
+	/** User email to check */
+	email: string;
+}
+
+export interface OAuthConsentCheckResponse {
+	/** Whether consent will be required */
+	consent_required: boolean;
+	/** Existing authentication method (if any) */
+	existing_auth_method?: string;
+	/** Display name of the OAuth provider */
+	provider_display_name?: string;
+	/** Email of existing account (if consent required) */
+	existing_email?: string;
+	/** Security context for consent (if consent required) */
+	security_context?: {
+		existing_auth_method: string;
+		provider_email_verified: boolean;
+		scenario: string;
+	};
+}
+
+// OAuth Consent Flow types
+export interface OAuthConsentResponse {
+	/** Response action - always "consent_required" */
+	action: "consent_required";
+	/** OAuth provider name */
+	provider: string;
+	/** Email address of existing account */
+	existing_email: string;
+	/** Display name of the provider */
+	provider_display_name: string;
+	/** Security context information */
+	security_context: {
+		/** Current authentication method of existing account */
+		existing_auth_method: string;
+		/** Whether provider email is verified */
+		provider_email_verified: boolean;
+	};
+}
+
+export interface OAuthConsentRequest {
+	/** OAuth provider name */
+	provider: string;
+	/** OAuth credential from provider (for Google) */
+	credential?: string;
+	/** Authorization code from provider (for Microsoft/GitHub) */
+	authorization_code?: string;
+	/** User's consent decision - true to link accounts, false to create separate */
+	consent_given: boolean;
+}
+
+export interface OAuthConsentDecision {
+	/** Whether user consented to link accounts */
+	consent_given: boolean;
+	/** OAuth provider name */
+	provider: string;
+	/** Context data from consent response */
+	context: OAuthConsentResponse["security_context"];
+}
+
+export interface OAuthConsentHistoryEntry {
+	/** OAuth provider name */
+	provider: string;
+	/** Whether consent was given */
+	consent_given: boolean;
+	/** ISO timestamp when consent was given/denied  */
+	timestamp: string;
+	/** ISO timestamp when consent was revoked (if applicable) */
+	revoked_at?: string;
+	/** Client IP address when consent was given */
+	client_ip?: string;
+}
+
 export interface OperationTokenResponse {
 	operation_token: string;
 	expires_in: number;

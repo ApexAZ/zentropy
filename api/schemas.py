@@ -6,7 +6,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from uuid import UUID
 from .database import (
@@ -191,6 +191,66 @@ class UnlinkOAuthAccountRequest(BaseModel):
         if v not in ["google", "microsoft", "github"]:
             raise ValueError("Provider must be one of: google, microsoft, github")
         return v
+
+
+class OAuthConsentCheckRequest(BaseModel):
+    """Request to check if OAuth consent is required before starting OAuth flow"""
+
+    provider: str
+    email: str
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v):
+        if v not in ["google", "microsoft", "github"]:
+            raise ValueError("Provider must be one of: google, microsoft, github")
+        return v
+
+
+class OAuthConsentCheckResponse(BaseModel):
+    """Response indicating whether OAuth consent is required"""
+
+    consent_required: bool
+    existing_auth_method: Optional[str] = None
+    provider_display_name: Optional[str] = None
+    existing_email: Optional[str] = None
+    security_context: Optional[Dict[str, Any]] = None
+
+
+class OAuthConsentRequest(BaseModel):
+    """Request for OAuth consent decision"""
+
+    provider: str
+    credential: Optional[str] = None  # For Google JWT tokens
+    authorization_code: Optional[str] = None  # For Microsoft/GitHub codes
+    consent_given: bool  # True to link accounts, False to create separate
+
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, v):
+        if v not in ["google", "microsoft", "github"]:
+            raise ValueError("Provider must be one of: google, microsoft, github")
+        return v
+
+
+class OAuthConsentResponse(BaseModel):
+    """Response when OAuth consent is required"""
+
+    action: str  # "consent_required"
+    provider: str
+    existing_email: str
+    provider_display_name: str
+    security_context: Dict[str, Any]
+
+
+class OAuthConsentHistoryResponse(BaseModel):
+    """Response for OAuth consent history"""
+
+    provider: str
+    consent_given: bool
+    timestamp: str  # ISO format
+    revoked_at: Optional[str] = None  # ISO format if revoked
+    client_ip: Optional[str] = None
 
 
 # Team schemas
