@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { AuthService } from "../services/AuthService";
 import { OAuthProviderService } from "../services/OAuthProviderService";
+import { UserService } from "../services/UserService";
 import type { AuthUser, CustomError, OAuthConsentResponse, OAuthConsentDecision } from "../types";
 import { useGoogleOAuth } from "../hooks/useGoogleOAuth";
 import { useMicrosoftOAuth } from "../hooks/useMicrosoftOAuth";
@@ -156,7 +157,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
 					// Check if consent is required during OAuth flow
 					if (OAuthProviderService.isConsentRequired(response)) {
-						// Show consent modal (don't store credential yet - will be handled by consent decision)
+						// Store the credential for the consent flow
+						setPendingOAuthCredential({
+							provider: "google",
+							credential
+							// consent_given will be set when user makes decision
+						});
+
+						// Show consent modal
 						setConsentResponse(response);
 						setConsentModalOpen(true);
 						setIsLoading(false);
@@ -164,16 +172,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					}
 				}
 
-				// Process successful auth response
+				// Process successful auth response - fetch fresh user data from server
+				const freshUserData = await UserService.validateTokenAndGetUser(response.access_token);
 				auth.login(
 					response.access_token,
 					{
-						email: response.user.email,
-						name:
-							response.user.display_name ||
-							`${response.user.first_name} ${response.user.last_name}`.trim(),
-						has_projects_access: response.user.has_projects_access,
-						email_verified: response.user.email_verified
+						email: freshUserData.email,
+						name: freshUserData.display_name || freshUserData.first_name || "",
+						has_projects_access: freshUserData.has_projects_access,
+						email_verified: freshUserData.email_verified
 					},
 					true
 				); // Google OAuth defaults to persistent login
@@ -263,16 +270,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					}
 				}
 
-				// Process successful auth response
+				// Process successful auth response - fetch fresh user data from server
+				const freshUserData = await UserService.validateTokenAndGetUser(response.access_token);
 				auth.login(
 					response.access_token,
 					{
-						email: response.user.email,
-						name:
-							response.user.display_name ||
-							`${response.user.first_name} ${response.user.last_name}`.trim(),
-						has_projects_access: response.user.has_projects_access,
-						email_verified: response.user.email_verified
+						email: freshUserData.email,
+						name: freshUserData.display_name || freshUserData.first_name || "",
+						has_projects_access: freshUserData.has_projects_access,
+						email_verified: freshUserData.email_verified
 					},
 					true
 				); // Microsoft OAuth defaults to persistent login
@@ -358,16 +364,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
 					}
 				}
 
-				// Process successful auth response
+				// Process successful auth response - fetch fresh user data from server
+				const freshUserData = await UserService.validateTokenAndGetUser(response.access_token);
 				auth.login(
 					response.access_token,
 					{
-						email: response.user.email,
-						name:
-							response.user.display_name ||
-							`${response.user.first_name} ${response.user.last_name}`.trim(),
-						has_projects_access: response.user.has_projects_access,
-						email_verified: response.user.email_verified
+						email: freshUserData.email,
+						name: freshUserData.display_name || freshUserData.first_name || "",
+						has_projects_access: freshUserData.has_projects_access,
+						email_verified: freshUserData.email_verified
 					},
 					true
 				); // GitHub OAuth defaults to persistent login
@@ -548,37 +553,84 @@ const AuthModal: React.FC<AuthModalProps> = ({
 				return;
 			}
 
-			// Store the consent decision for when OAuth completes
-			setPendingOAuthCredential({
-				provider: decision.provider,
-				consent_given: decision.consent_given
-			} as any);
-
-			// Also store in ref for immediate access
-			consentDecisionRef.current = {
-				provider: decision.provider,
-				consent_given: decision.consent_given
-			};
-
-			// Now trigger OAuth flow with fresh credential
+			// Handle consent decision
 			setIsLoading(true);
 			try {
-				if (decision.provider === "google") {
-					triggerOAuth();
-				} else if (decision.provider === "microsoft") {
-					triggerMicrosoftOAuth();
-				} else if (decision.provider === "github") {
-					triggerGitHubOAuth();
+				if (decision.provider === "google" && pendingOAuthCredential?.credential) {
+					// For Google, use the stored credential directly
+					const response = await OAuthProviderService.processOAuthConsent({
+						provider: "google",
+						credential: pendingOAuthCredential.credential,
+						consent_given: decision.consent_given
+					});
+
+					// Process successful auth response - fetch fresh user data from server
+					const freshUserData = await UserService.validateTokenAndGetUser(response.access_token);
+					auth.login(
+						response.access_token,
+						{
+							email: freshUserData.email,
+							name: freshUserData.display_name || freshUserData.first_name || "",
+							has_projects_access: freshUserData.has_projects_access,
+							email_verified: freshUserData.email_verified
+						},
+						true
+					);
+
+					// Show success message
+					if (decision.consent_given) {
+						showSuccess(`Successfully linked your Google account!`);
+					} else {
+						showSuccess("Successfully signed in with Google!");
+					}
+
+					// Clean up consent state
+					setConsentModalOpen(false);
+					setConsentResponse(null);
+					setPendingOAuthCredential(null);
+					consentDecisionRef.current = null;
+
+					onSuccess();
+					setTimeout(() => onClose(), import.meta.env.NODE_ENV === "test" ? 0 : 1000);
 				} else {
-					throw new Error(`Unsupported provider: ${decision.provider}`);
+					// For Microsoft/GitHub, trigger new OAuth flow as before
+					// Store the consent decision for when OAuth completes
+					setPendingOAuthCredential({
+						provider: decision.provider,
+						consent_given: decision.consent_given
+					} as any);
+
+					// Also store in ref for immediate access
+					consentDecisionRef.current = {
+						provider: decision.provider,
+						consent_given: decision.consent_given
+					};
+
+					if (decision.provider === "microsoft") {
+						triggerMicrosoftOAuth();
+					} else if (decision.provider === "github") {
+						triggerGitHubOAuth();
+					} else {
+						throw new Error(`Unsupported provider: ${decision.provider}`);
+					}
 				}
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : "Failed to start OAuth flow";
+				const errorMessage = error instanceof Error ? error.message : "Failed to process consent decision";
 				showError(errorMessage);
 				setIsLoading(false);
 			}
 		},
-		[consentResponse, showError, triggerOAuth, triggerMicrosoftOAuth, triggerGitHubOAuth]
+		[
+			consentResponse,
+			pendingOAuthCredential,
+			showError,
+			auth,
+			showSuccess,
+			onSuccess,
+			onClose,
+			triggerMicrosoftOAuth,
+			triggerGitHubOAuth
+		]
 	);
 
 	const handleConsentModalClose = useCallback(() => {

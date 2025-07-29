@@ -455,12 +455,26 @@ class TestGoogleOAuthSecurityFix:
                 json={"provider": "google", "credential": "valid_google_token"},
             )
 
+        # Should now require consent instead of auto-linking
         assert response.status_code == 200
         result = response.json()
-        assert result["user"]["email"] == "user@example.com"
+        assert result["action"] == "consent_required"
+        assert result["existing_email"] == "user@example.com"
+        assert result["provider"] == "google"
         
-        # Verify account was properly linked
-        # Refresh the session to see changes made by the OAuth process
+        # Test explicit consent flow
+        with patch.dict('os.environ', {'GOOGLE_CLIENT_ID': 'test-client-id', 'USE_CONSOLIDATED_OAUTH': 'true'}):
+            consent_response = client.post("/api/v1/auth/oauth/consent", json={
+                "provider": "google",
+                "credential": "valid_google_token",
+                "consent_given": True
+            })
+        
+        assert consent_response.status_code == 200
+        consent_result = consent_response.json()
+        assert consent_result["user"]["email"] == "user@example.com"
+        
+        # Verify account was properly linked after consent
         db.expunge_all()  # Clear the session cache
         updated_user = db.query(User).filter(User.email == "user@example.com").first()
         assert updated_user.auth_provider == AuthProvider.HYBRID

@@ -64,15 +64,27 @@ class TestCriticalOAuthSecurity:
                 "credential": "valid.google.jwt"
             })
         
-            # Should succeed with auto-linking
-            assert response.status_code == 200, f"Expected successful auto-linking, got {response.status_code}: {response.json()}"
+            # Should now require consent instead of auto-linking
+            assert response.status_code == 200, f"Expected consent response, got {response.status_code}: {response.json()}"
             
             result = response.json()
-            assert result["user"]["email"] == "user@example.com"
-            print(f"✅ Auto-linking successful: {result['user']['email']}")
+            assert result["action"] == "consent_required"
+            assert result["existing_email"] == "user@example.com"
+            assert result["provider"] == "google"
+            print(f"✅ Consent required as expected: {result['existing_email']}")
             
-            # Step 5: Verify account was properly linked
-            # Refresh the session to see changes made by the OAuth process
+            # Step 5: Test explicit consent flow
+            consent_response = client.post("/api/v1/auth/oauth/consent", json={
+                "provider": "google",
+                "credential": "valid.google.jwt",
+                "consent_given": True
+            })
+            
+            assert consent_response.status_code == 200
+            consent_result = consent_response.json()
+            assert consent_result["user"]["email"] == "user@example.com"
+            
+            # Verify account was properly linked after consent
             db.expunge_all()  # Clear the session cache
             updated_user = db.query(User).filter(User.email == "user@example.com").first()
             assert updated_user is not None
@@ -80,7 +92,7 @@ class TestCriticalOAuthSecurity:
             assert updated_user.google_id == "google_id_12345"  # Google ID was set
             assert updated_user.password_hash is not None  # Original password preserved
             
-            print(f"✅ AUTO-LINKING TEST PASSED: OAuth provider successfully linked to existing account")
+            print(f"✅ CONSENT-BASED LINKING TEST PASSED: OAuth provider linked after explicit consent")
     
     
     

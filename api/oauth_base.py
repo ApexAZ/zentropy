@@ -252,16 +252,13 @@ def _handle_existing_user(
 ):
     """Handle existing user OAuth login/linking."""
 
-    # Allow login for same provider and HYBRID users
-    if existing_user.auth_provider in [config.auth_provider_enum, AuthProvider.HYBRID]:
-        # Update last login and ensure provider ID is set
+    # Allow login only if this specific provider is already linked
+    current_provider_id = getattr(existing_user, config.user_id_field, None)
+    if existing_user.auth_provider == config.auth_provider_enum or (
+        existing_user.auth_provider == AuthProvider.HYBRID and current_provider_id
+    ):
+        # User can already use this specific provider
         existing_user.last_login_at = datetime.now(timezone.utc)
-
-        # Set provider-specific ID if not already set
-        current_provider_id = getattr(existing_user, config.user_id_field, None)
-        if not current_provider_id:
-            setattr(existing_user, config.user_id_field, provider_user_id)
-
         db.commit()
 
         # Check if profile completion needed (GitHub specific)
@@ -285,23 +282,18 @@ def _handle_existing_user(
             )
 
             if existing_consent is None:
-                # Auto-approve consent for same verified email (secure OAuth behavior)
-                # OAuth providers verify email ownership, making this linking secure
+                # Always require explicit consent for account linking
+                # This ensures users are informed when linking different providers
                 email_verified = user_info.get("email_verified", True)
-                if email_verified and existing_user.email == user_info.get("email"):
-                    # Automatically grant consent for verified same-email linking
-                    consent_given = True
-                else:
-                    # Require explicit consent for unverified emails or different emails
-                    return ConsentRequiredResponse(
-                        provider=config.name,
-                        existing_email=existing_user.email,
-                        provider_display_name=config.display_name,
-                        security_context={
-                            "existing_auth_method": existing_user.auth_provider.value,
-                            "provider_email_verified": email_verified,
-                        },
-                    )
+                return ConsentRequiredResponse(
+                    provider=config.name,
+                    existing_email=existing_user.email,
+                    provider_display_name=config.display_name,
+                    security_context={
+                        "existing_auth_method": existing_user.auth_provider.value,
+                        "provider_email_verified": email_verified,
+                    },
+                )
             else:
                 # Use existing consent decision
                 consent_given = existing_consent
