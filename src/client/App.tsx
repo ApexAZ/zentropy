@@ -126,7 +126,7 @@ function App(): React.JSX.Element {
 			case "profile":
 				return (
 					<ErrorBoundary>
-						<ProfilePage />
+						<ProfilePage auth={auth} />
 					</ErrorBoundary>
 				);
 			case "dashboard":

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import type { User, ProfileUpdateData } from "../types";
-import { formatDate, getRoleLabel, getRoleBadgeColor, generateDisplayName } from "../utils/formatters";
+import type { User, ProfileUpdateData, AuthUser } from "../types";
+import { formatDate, getRoleLabel, getRoleBadgeColor } from "../utils/formatters";
 import { UserService } from "../services/UserService";
 import { TabList, Tab, TabPanel } from "../components/atoms/Tab";
 import { SignInMethods } from "../components/SignInMethods";
@@ -10,7 +10,18 @@ import { useToast } from "../contexts/ToastContext";
 import { useAccountSecurity } from "../hooks/useAccountSecurity";
 import { AccountSecurityErrorHandler } from "../utils/errorHandling";
 
-const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+	auth: {
+		isAuthenticated: boolean;
+		user: AuthUser | null;
+		token: string | null;
+		login: (token: string, user: AuthUser, rememberMe?: boolean) => void;
+		logout: () => Promise<void>;
+		refreshUser: () => Promise<void>;
+	};
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({ auth }) => {
 	// State management
 	const [user, setUser] = useState<User | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +47,7 @@ const ProfilePage: React.FC = () => {
 
 	// Memoized display name to prevent unnecessary recalculations
 	const displayName = useMemo(() => {
-		return user ? generateDisplayName(user) : "";
+		return user ? user.display_name || "" : "";
 	}, [user]);
 
 	// Load user data on component mount
@@ -56,7 +67,7 @@ const ProfilePage: React.FC = () => {
 					setProfileData({
 						first_name: userData.first_name || "",
 						last_name: userData.last_name || "",
-						display_name: generateDisplayName(userData),
+						display_name: userData.display_name || "",
 						email: userData.email,
 						phone_number: userData.phone_number || ""
 					});
@@ -96,7 +107,7 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: userData.first_name || "",
 				last_name: userData.last_name || "",
-				display_name: generateDisplayName(userData),
+				display_name: userData.display_name || "",
 				email: userData.email,
 				phone_number: userData.phone_number || ""
 			});
@@ -133,7 +144,7 @@ const ProfilePage: React.FC = () => {
 			setProfileData({
 				first_name: user.first_name || "",
 				last_name: user.last_name || "",
-				display_name: user.display_name || generateDisplayName(user),
+				display_name: user.display_name || "",
 				email: user.email,
 				phone_number: user.phone_number || ""
 			});
@@ -157,6 +168,8 @@ const ProfilePage: React.FC = () => {
 			setUser(updatedUser);
 			setIsEditingProfile(false);
 			showSuccess("Profile updated successfully!");
+			// Refresh auth user data to sync navigation display
+			await auth.refreshUser();
 		} catch (err) {
 			// Use centralized error handling for profile update errors
 			const errorDetails = AccountSecurityErrorHandler.processError(

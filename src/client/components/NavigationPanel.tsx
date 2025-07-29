@@ -15,6 +15,8 @@ interface Auth {
 	login: (token: string, user: AuthUser) => void;
 	/** Function to log out current user */
 	logout: () => Promise<void>;
+	/** Function to refresh current user data */
+	refreshUser: () => Promise<void>;
 }
 
 interface NavigationPanelProps {

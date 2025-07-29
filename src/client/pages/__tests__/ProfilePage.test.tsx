@@ -9,6 +9,17 @@ import {
 	OAuthProviderServiceScenarios
 } from "../../__tests__/mocks/serviceMocks";
 import { UserService } from "../../services/UserService";
+import type { AuthUser } from "../../types";
+
+// Helper function to create mock auth object
+const createMockAuth = () => ({
+	isAuthenticated: true,
+	user: { email: "test@example.com", name: "Test User", has_projects_access: true, email_verified: true } as AuthUser,
+	token: "mock-token",
+	login: vi.fn(),
+	logout: vi.fn(),
+	refreshUser: vi.fn()
+});
 
 // Clean module-level mock with sensible defaults
 vi.mock("../../services/UserService", () => ({
@@ -91,6 +102,7 @@ const profileUser = {
 	email: "test@example.com",
 	first_name: "Test",
 	last_name: "User",
+	display_name: "Test User",
 	role: "team_member",
 	organization_id: "org-456",
 	has_projects_access: true,
@@ -133,7 +145,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("renders profile page with main elements", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -153,7 +165,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockReturnValue(profilePromise);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -171,7 +183,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -196,7 +208,7 @@ describe("ProfilePage", () => {
 		};
 		(UserService.getCurrentUser as any).mockResolvedValue(individualUser);
 
-		const testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		const testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -211,7 +223,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockRejectedValue(new Error("Network error"));
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -230,7 +242,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockResolvedValue(adminUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -243,7 +255,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -270,7 +282,7 @@ describe("ProfilePage", () => {
 			return { isValid: Object.keys(errors).length === 0, errors };
 		});
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -317,7 +329,7 @@ describe("ProfilePage", () => {
 			return { isValid: Object.keys(errors).length === 0, errors };
 		});
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -342,14 +354,14 @@ describe("ProfilePage", () => {
 	});
 
 	it("successfully updates profile with valid data", async () => {
-		const updatedUser = { ...profileUser, first_name: "Updated", last_name: "Name" };
+		const updatedUser = { ...profileUser, first_name: "Updated", last_name: "Name", display_name: "Updated Name" };
 
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 		(UserService.updateProfile as any).mockResolvedValue(updatedUser);
 		(UserService.validateProfile as any).mockReturnValue({ isValid: true, errors: {} });
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -389,7 +401,7 @@ describe("ProfilePage", () => {
 		(UserService.updateProfile as any).mockRejectedValue(new Error("Email already exists"));
 		(UserService.validateProfile as any).mockReturnValue({ isValid: true, errors: {} });
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -410,7 +422,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		(UserService.getCurrentUser as any).mockResolvedValue(profileUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -441,7 +453,7 @@ describe("ProfilePage", () => {
 		// Configure the module mock directly
 		setupStandardUserMocks();
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -459,7 +471,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("validates password change form", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true },
 			mocks: {
 				userService: UserServiceScenarios.standardUser(),
@@ -475,7 +487,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("validates new password requirements", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true },
 			mocks: {
 				userService: UserServiceScenarios.standardUser(),
@@ -489,7 +501,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("validates password confirmation match", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true },
 			mocks: {
 				userService: UserServiceScenarios.passwordUpdateFailed(),
@@ -505,7 +517,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("shows password change functionality in Security tab", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true },
 			mocks: {
 				userService: createUserServiceMocks({
@@ -537,7 +549,7 @@ describe("ProfilePage", () => {
 	});
 
 	it("displays security status and account information", async () => {
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true },
 			mocks: {
 				userService: createUserServiceMocks({
@@ -580,7 +592,7 @@ describe("ProfilePage", () => {
 		// Override the getCurrentUser mock for this specific test
 		(UserService.getCurrentUser as any).mockResolvedValue(userWithDates);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -597,7 +609,7 @@ describe("ProfilePage", () => {
 		// Override updateProfile to return successful response
 		(UserService.updateProfile as any).mockResolvedValue(profileUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -625,7 +637,7 @@ describe("ProfilePage", () => {
 		// Override updateProfile to return error
 		(UserService.updateProfile as any).mockRejectedValue(new Error("Update failed"));
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -663,7 +675,7 @@ describe("ProfilePage", () => {
 		// Override getCurrentUser with our retry logic
 		(UserService.getCurrentUser as any).mockImplementation(mockGetCurrentUser);
 
-		testEnv = renderWithFullEnvironment(<ProfilePage />, {
+		testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 			providers: { toast: true }
 		});
 
@@ -688,7 +700,7 @@ describe("ProfilePage", () => {
 	// Tab Interface Tests
 	describe("Tabbed Interface", () => {
 		it("should render tab navigation with Profile and Security tabs", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -704,7 +716,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile tab as active by default", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -719,7 +731,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should switch to Security tab when clicked", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -742,7 +754,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Profile content in Profile tab", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -757,7 +769,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should show Security content in Security tab", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -783,7 +795,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should hide Profile content when Security tab is active", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -808,7 +820,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should support keyboard navigation between tabs", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),
@@ -829,7 +841,7 @@ describe("ProfilePage", () => {
 		});
 
 		it("should maintain correct tabIndex for accessibility", async () => {
-			testEnv = renderWithFullEnvironment(<ProfilePage />, {
+			testEnv = renderWithFullEnvironment(<ProfilePage auth={createMockAuth()} />, {
 				providers: { toast: true },
 				mocks: {
 					userService: UserServiceScenarios.standardUser(),

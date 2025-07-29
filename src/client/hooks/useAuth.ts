@@ -261,9 +261,29 @@ export const useAuth = () => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [authState.isAuthenticated, logoutDueToInactivity]); // Intentionally omitting TIMEOUT_DURATION as it's a constant
 
+	const refreshUser = useCallback(async (): Promise<void> => {
+		if (!authState.token) return;
+
+		try {
+			const userData = await UserService.validateTokenAndGetUser(authState.token);
+			setAuthState(prevState => ({
+				...prevState,
+				user: {
+					email: userData.email,
+					name: userData.display_name || "",
+					has_projects_access: userData.has_projects_access,
+					email_verified: userData.email_verified || false
+				}
+			}));
+		} catch (error) {
+			logger.warn("Failed to refresh user data", { error });
+		}
+	}, [authState.token]);
+
 	return {
 		...authState,
 		login,
-		logout
+		logout,
+		refreshUser
 	};
 };
