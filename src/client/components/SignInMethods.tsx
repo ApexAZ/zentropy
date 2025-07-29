@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import type { AccountSecurityResponse } from "../types";
 import PasswordChangeForm from "./PasswordChangeForm";
+import PasswordSetupForm from "./PasswordSetupForm";
 import { PasswordConfirmationModal } from "./PasswordConfirmationModal";
 import Button from "./atoms/Button";
 import { useToast } from "../contexts/ToastContext";
@@ -37,6 +38,7 @@ interface SignInMethod {
  */
 export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: SignInMethodsProps) {
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
+	const [isSettingUpPassword, setIsSettingUpPassword] = useState(false);
 	const [showUnlinkModal, setShowUnlinkModal] = useState(false);
 	const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 	const [unlinkLoading, setUnlinkLoading] = useState(false);
@@ -83,6 +85,16 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 		setIsChangingPassword(false);
 	}, []);
 
+	const handlePasswordSetupSuccess = useCallback(() => {
+		setIsSettingUpPassword(false);
+		showSuccess("Password set up successfully!");
+		onSecurityUpdate();
+	}, [showSuccess, onSecurityUpdate]);
+
+	const handlePasswordSetupCancel = useCallback(() => {
+		setIsSettingUpPassword(false);
+	}, []);
+
 	// OAuth unlinking functions
 	const handleStartUnlink = useCallback(
 		(providerName: string) => {
@@ -119,6 +131,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				showSuccess(
 					`${providers.find(p => p.name === unlinkingProvider)?.displayName || unlinkingProvider} account unlinked successfully!`
 				);
+				onSecurityUpdate(); // Refresh security status to show unlinked state
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : `Failed to unlink ${unlinkingProvider}`;
 				setUnlinkError(errorMessage);
@@ -193,8 +206,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				if (method.isActive) {
 					setIsChangingPassword(true);
 				} else {
-					// Could navigate to email setup flow
-					onError("Email setup not yet implemented");
+					setIsSettingUpPassword(true);
 				}
 			} else {
 				// OAuth provider
@@ -205,7 +217,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				}
 			}
 		},
-		[linkProvider, handleStartUnlink, onError]
+		[linkProvider, handleStartUnlink]
 	);
 
 	return (
@@ -220,6 +232,13 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 			{isChangingPassword && (
 				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
 					<PasswordChangeForm onSuccess={handlePasswordChangeSuccess} onCancel={handlePasswordChangeCancel} />
+				</div>
+			)}
+
+			{/* Password Setup Form (shown when setting up password for OAuth-only users) */}
+			{isSettingUpPassword && (
+				<div className="border-layout-background bg-content-background rounded-lg border p-6 shadow-sm">
+					<PasswordSetupForm onSuccess={handlePasswordSetupSuccess} onCancel={handlePasswordSetupCancel} />
 				</div>
 			)}
 
@@ -238,7 +257,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 								key={method.id}
 								method={method}
 								onAction={() => handleMethodAction(method)}
-								disabled={isChangingPassword}
+								disabled={isChangingPassword || isSettingUpPassword}
 							/>
 						))}
 					</div>
@@ -257,7 +276,7 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 								key={method.id}
 								method={method}
 								onAction={() => handleMethodAction(method)}
-								disabled={isChangingPassword}
+								disabled={isChangingPassword || isSettingUpPassword}
 							/>
 						))}
 					</div>

@@ -87,6 +87,27 @@ export class UserService {
 	}
 
 	/**
+	 * Set up initial password for OAuth-only users
+	 */
+	static async setupPassword(newPassword: string): Promise<{ message: string }> {
+		const response = await fetch("/api/v1/users/me/setup-password", {
+			method: "POST",
+			headers: createAuthHeaders(),
+			body: JSON.stringify({
+				new_password: newPassword
+			})
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+			throw new Error(errorData.detail || errorData.message || "Failed to set up password");
+		}
+
+		const data = await response.json();
+		return { message: data.message || "Password set up successfully!" };
+	}
+
+	/**
 	 * Get all users (for dropdown selections)
 	 */
 	static async getAllUsers(): Promise<User[]> {

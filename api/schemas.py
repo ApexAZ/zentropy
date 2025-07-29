@@ -100,6 +100,20 @@ class PasswordUpdate(BaseModel):
     )
 
 
+class PasswordSetup(BaseModel):
+    """Schema for setting up initial password for OAuth-only users."""
+
+    new_password: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "new_password": "NewSecurePassword456!",
+            }
+        }
+    )
+
+
 # Generic OAuth Schemas (Provider-Agnostic)
 class OAuthRequest(BaseModel):
     """Generic OAuth request supporting all providers with credential validation."""

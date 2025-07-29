@@ -10,6 +10,7 @@ from ..schemas import (
     UserResponse,
     UserUpdate,
     PasswordUpdate,
+    PasswordSetup,
     MessageResponse,
     LinkOAuthAccountRequest,
     UnlinkOAuthAccountRequest,
@@ -229,6 +230,68 @@ def change_password(
     db.commit()
 
     return MessageResponse(message="Password changed successfully")
+
+
+@router.post("/me/setup-password", response_model=MessageResponse)
+def setup_password(
+    request: Request,
+    password_setup: PasswordSetup,
+    db: Session = Depends(get_db),
+    current_user: database.User = Depends(get_current_active_user),
+) -> MessageResponse:
+    """Set up initial password for OAuth-only users"""
+    # Apply rate limiting for security-sensitive operations
+    client_ip = get_client_ip(request)
+    rate_limiter.check_rate_limit(client_ip, RateLimitType.AUTH)
+
+    # Security check: Only allow if user doesn't already have a password
+    if current_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is already set up. Use change password instead.",
+        )
+
+    # Security check: User must have at least one OAuth provider linked
+    has_oauth_linked = (
+        current_user.google_id or current_user.microsoft_id or current_user.github_id
+    )
+
+    if not has_oauth_linked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Password setup requires at least one linked OAuth provider "
+                "for account security."
+            ),
+        )
+
+    # Validate new password strength
+    user_info = {
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+    }
+    validate_password_strength(password_setup.new_password, user_info)
+
+    # No need to validate password history since this is the first password
+
+    # Set up the password
+    new_password_hash = get_password_hash(password_setup.new_password)
+    current_user.password_hash = new_password_hash
+    current_user.updated_at = datetime.now(timezone.utc)
+
+    # Update auth provider to HYBRID since user now has both OAuth and password
+    current_user.auth_provider = AuthProvider.HYBRID
+
+    # Add the password to history (empty history for new password setup)
+    password_history_entry = database.PasswordHistory(
+        user_id=current_user.id, password_hash=new_password_hash
+    )
+    db.add(password_history_entry)
+
+    db.commit()
+
+    return MessageResponse(message="Password set up successfully")
 
 
 @router.delete("/{user_id}", response_model=MessageResponse)
