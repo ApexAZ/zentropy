@@ -3,7 +3,7 @@ import { renderWithFullEnvironment } from "../../__tests__/utils/testRenderUtils
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import "@testing-library/jest-dom";
 import { OAuthConsentModal } from "../OAuthConsentModal";
-import type { OAuthConsentResponse, OAuthConsentDecision } from "../../types";
+import type { OAuthConsentResponse } from "../../types";
 
 describe("OAuthConsentModal", () => {
 	const mockConsentResponse: OAuthConsentResponse = {
