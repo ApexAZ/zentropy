@@ -110,6 +110,16 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				return;
 			}
 
+			// Check if user has a password set up for security verification
+			if (!hasEmailAuth) {
+				// User doesn't have email/password auth set up - prompt them to create one
+				onError(
+					"To unlink OAuth providers, you need to set up email & password authentication first for security. Please set up a password in the Available Methods section below."
+				);
+				return;
+			}
+
+			// User has password auth - proceed with password confirmation modal
 			setUnlinkingProvider(providerName);
 			setShowUnlinkModal(true);
 			setUnlinkError(null);
