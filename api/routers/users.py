@@ -396,7 +396,7 @@ def link_oauth_account(
             # Verify Google token and extract user info
             google_info = verify_google_token(request.credential)
             google_email = google_info.get("email")
-            google_id = google_info.get("sub")
+            google_id = google_info.get("id")  # verify_google_token returns id, not sub
 
             if not google_email or not google_id:
                 raise HTTPException(

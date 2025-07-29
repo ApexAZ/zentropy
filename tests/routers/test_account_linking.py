@@ -90,7 +90,7 @@ class TestAccountLinking:
         # Mock Google token verification
         mock_verify_token.return_value = {
             "email": "current@user.com",  # Matches current user
-            "sub": "google_id_123",
+            "id": "google_id_123",
             "email_verified": True,
         }
 
@@ -112,7 +112,7 @@ class TestAccountLinking:
         # Mock Google token with different email
         mock_verify_token.return_value = {
             "email": "different@email.com",
-            "sub": "google_id_123",
+            "id": "google_id_123",
             "email_verified": True,
         }
 
@@ -145,7 +145,7 @@ class TestAccountLinking:
         # Mock Google token verification
         mock_verify_token.return_value = {
             "email": "current@user.com",
-            "sub": "google_id_123",  # Same Google ID as other user
+            "id": "google_id_123",  # Same Google ID as other user
             "email_verified": True,
         }
 
@@ -170,7 +170,7 @@ class TestAccountLinking:
         # Mock Google token verification
         mock_verify_token.return_value = {
             "email": "current@user.com",
-            "sub": "google_id_123",
+            "id": "google_id_123",
             "email_verified": True,
         }
 

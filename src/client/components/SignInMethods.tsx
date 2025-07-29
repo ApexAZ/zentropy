@@ -43,19 +43,23 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 	const [unlinkingProvider, setUnlinkingProvider] = useState<string | null>(null);
 	const [unlinkLoading, setUnlinkLoading] = useState(false);
 	const [unlinkError, setUnlinkError] = useState<string | null>(null);
-	const { showSuccess } = useToast();
+	const { showSuccess, showWarning } = useToast();
 
 	// OAuth operations now handled through unified useMultiProviderOAuth hook
 
-	// OAuth success handler that calls the API to link the account
-	const handleOAuthSuccess = useCallback(
-		async (credential: string, provider: string) => {
+	// Multi-provider OAuth hook
+	const { providers, linkProvider, unlinkProvider, isProviderLinked } = useMultiProviderOAuth({
+		onSuccess: async (credential: string, provider: string) => {
 			try {
 				// Call the API to link the account using the OAuth credential
 				await OAuthProviderService.linkProvider({
 					credential,
 					provider
 				});
+
+				// Show success toast
+				const providerDisplayName = providers.find(p => p.name === provider)?.displayName || provider;
+				showSuccess(`${providerDisplayName} account linked successfully!`);
 
 				// On successful linking, refresh the security status
 				onSecurityUpdate();
@@ -65,12 +69,6 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 				onError(errorMessage);
 			}
 		},
-		[onSecurityUpdate, onError]
-	);
-
-	// Multi-provider OAuth hook
-	const { providers, linkProvider, unlinkProvider, isProviderLinked } = useMultiProviderOAuth({
-		onSuccess: handleOAuthSuccess,
 		onError,
 		securityStatus
 	});
@@ -112,10 +110,11 @@ export function SignInMethods({ securityStatus, onSecurityUpdate, onError }: Sig
 
 			// Check if user has a password set up for security verification
 			if (!hasEmailAuth) {
-				// User doesn't have email/password auth set up - prompt them to create one
-				onError(
-					"To unlink OAuth providers, you need to set up email & password authentication first for security. Please set up a password in the Available Methods section below."
+				// User doesn't have email/password auth set up - show warning and launch password setup
+				showWarning(
+					"To unlink OAuth providers, you must set up email & password authentication first. Please set up a password below."
 				);
+				setIsSettingUpPassword(true);
 				return;
 			}
 

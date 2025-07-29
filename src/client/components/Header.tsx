@@ -174,6 +174,7 @@ interface Auth {
 	token: string | null;
 	login: (token: string, user: AuthUser) => void;
 	logout: () => Promise<void>;
+	refreshUser: () => Promise<void>;
 }
 
 interface HeaderProps {

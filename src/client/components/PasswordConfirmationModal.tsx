@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import Button from "./atoms/Button";
 import Input from "./atoms/Input";
 import Form from "./atoms/Form";
@@ -26,6 +26,7 @@ export function PasswordConfirmationModal({
 }: PasswordConfirmationModalProps) {
 	const [password, setPassword] = useState("");
 	const [validationError, setValidationError] = useState("");
+	const dialogRef = useRef<HTMLDivElement>(null);
 
 	const handleSubmit = useCallback(
 		(e: React.FormEvent) => {
@@ -48,14 +49,30 @@ export function PasswordConfirmationModal({
 		onClose();
 	}, [onClose]);
 
+	// Handle Escape key globally when modal is open
+	useEffect(() => {
+		if (!isOpen) return;
+
+		const handleEscapeKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				handleClose();
+			}
+		};
+
+		document.addEventListener("keydown", handleEscapeKey);
+		return () => document.removeEventListener("keydown", handleEscapeKey);
+	}, [isOpen, handleClose]);
+
 	if (!isOpen) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 			<div
+				ref={dialogRef}
 				role="dialog"
 				aria-labelledby="password-confirmation-title"
 				className="bg-content-background mx-4 w-full max-w-md rounded-lg p-6"
+				tabIndex={-1}
 			>
 				<h3 id="password-confirmation-title" className="text-text-contrast font-heading-small mb-4">
 					Confirm Password
