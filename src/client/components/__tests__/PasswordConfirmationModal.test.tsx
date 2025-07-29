@@ -139,9 +139,8 @@ describe("PasswordConfirmationModal", () => {
 		const passwordInput = getPasswordInput();
 		fireEvent.change(passwordInput, { target: { value: "mypassword" } });
 
-		// Find the form and submit it (Enter key triggers form submission)
-		const form = passwordInput.closest("form") as HTMLFormElement;
-		fireEvent.submit(form);
+		// Press Enter key to trigger submission
+		fireEvent.keyDown(passwordInput, { key: "Enter" });
 
 		expect(mockOnConfirm).toHaveBeenCalledWith("mypassword");
 	});

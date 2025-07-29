@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import Button from "./atoms/Button";
 import Input from "./atoms/Input";
-import Form from "./atoms/Form";
 
 interface PasswordConfirmationModalProps {
 	isOpen: boolean;
@@ -26,7 +25,6 @@ export function PasswordConfirmationModal({
 }: PasswordConfirmationModalProps) {
 	const [password, setPassword] = useState("");
 	const [validationError, setValidationError] = useState("");
-	const dialogRef = useRef<HTMLDivElement>(null);
 
 	const handleSubmit = useCallback(
 		(e: React.FormEvent) => {
@@ -49,30 +47,14 @@ export function PasswordConfirmationModal({
 		onClose();
 	}, [onClose]);
 
-	// Handle Escape key globally when modal is open
-	useEffect(() => {
-		if (!isOpen) return;
-
-		const handleEscapeKey = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				handleClose();
-			}
-		};
-
-		document.addEventListener("keydown", handleEscapeKey);
-		return () => document.removeEventListener("keydown", handleEscapeKey);
-	}, [isOpen, handleClose]);
-
 	if (!isOpen) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 			<div
-				ref={dialogRef}
 				role="dialog"
 				aria-labelledby="password-confirmation-title"
 				className="bg-content-background mx-4 w-full max-w-md rounded-lg p-6"
-				tabIndex={-1}
 			>
 				<h3 id="password-confirmation-title" className="text-text-contrast font-heading-small mb-4">
 					Confirm Password
@@ -81,31 +63,44 @@ export function PasswordConfirmationModal({
 					Please enter your password to unlink your Google account.
 				</p>
 
-				<Form onSubmit={handleSubmit} isSubmitting={loading} error={validationError || error || null}>
+				<div className="space-y-4">
 					<Input
 						label="Password"
 						type="password"
 						value={password}
 						onChange={e => setPassword(e.target.value)}
+						onKeyDown={e => {
+							if (e.key === "Enter" && !loading) {
+								e.preventDefault();
+								handleSubmit(e as any);
+							}
+						}}
 						required
 						autoFocus
 					/>
+
+					{/* Error display */}
+					{(validationError || error) && (
+						<div className="text-error text-sm font-medium" role="alert">
+							{validationError || error}
+						</div>
+					)}
 
 					<div className="flex justify-end gap-2">
 						<Button variant="secondary" onClick={handleClose} disabled={loading}>
 							Cancel
 						</Button>
 						<Button
-							type="submit"
 							variant="danger"
 							isLoading={loading}
 							loadingText="Unlinking..."
 							disabled={loading}
+							onClick={e => handleSubmit(e as any)}
 						>
 							Unlink Account
 						</Button>
 					</div>
-				</Form>
+				</div>
 			</div>
 		</div>
 	);
