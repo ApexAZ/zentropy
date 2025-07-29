@@ -259,6 +259,21 @@ def _handle_existing_user(
     ):
         # User can already use this specific provider
         existing_user.last_login_at = datetime.now(timezone.utc)
+
+        # Update missing fields for Google/Microsoft users
+        if config.name in ["google", "microsoft"]:
+            # Populate first_name if missing
+            if not existing_user.first_name and user_info.get("given_name"):
+                existing_user.first_name = user_info.get("given_name", "")
+
+            # Populate last_name if missing
+            if not existing_user.last_name and user_info.get("family_name"):
+                existing_user.last_name = user_info.get("family_name", "")
+
+            # Populate display_name with first_name if missing
+            if not existing_user.display_name and existing_user.first_name:
+                existing_user.display_name = existing_user.first_name
+
         db.commit()
 
         # Check if profile completion needed (GitHub specific)
@@ -303,6 +318,21 @@ def _handle_existing_user(
             existing_user.last_login_at = datetime.now(timezone.utc)
             setattr(existing_user, config.user_id_field, provider_user_id)
             existing_user.auth_provider = AuthProvider.HYBRID  # Support both methods
+
+            # Update missing fields for Google/Microsoft users during linking
+            if config.name in ["google", "microsoft"]:
+                # Populate first_name if missing
+                if not existing_user.first_name and user_info.get("given_name"):
+                    existing_user.first_name = user_info.get("given_name", "")
+
+                # Populate last_name if missing
+                if not existing_user.last_name and user_info.get("family_name"):
+                    existing_user.last_name = user_info.get("family_name", "")
+
+                # Populate display_name with first_name if missing
+                if not existing_user.display_name and existing_user.first_name:
+                    existing_user.display_name = existing_user.first_name
+
             db.commit()
 
             # Check if profile completion needed (GitHub specific)
@@ -340,7 +370,8 @@ def _create_new_oauth_user(
         # Google/Microsoft provide real names
         first_name = user_info.get("given_name", "")
         last_name = user_info.get("family_name", "")
-        display_name = None
+        # Set display_name to first_name for new Google/Microsoft users
+        display_name = first_name if first_name else None
         action = "sign_in"
 
     # Create user with provider-specific attributes
