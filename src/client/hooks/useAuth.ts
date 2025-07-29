@@ -41,7 +41,7 @@ export const useAuth = () => {
 							isAuthenticated: true,
 							user: {
 								email: userData.email,
-								name: userData.display_name || "",
+								name: userData.display_name || userData.first_name || "",
 								has_projects_access: userData.has_projects_access,
 								email_verified: userData.email_verified || false
 							},

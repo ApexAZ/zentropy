@@ -152,7 +152,7 @@ describe("useAuth", () => {
 			// Verify auth state is set correctly
 			expect(result.current.user).toEqual({
 				email: "integration.test@example.com",
-				name: "", // Uses display_name field directly (explicitly set to empty)
+				name: "Integration", // Falls back to first_name when display_name is empty
 				has_projects_access: undefined, // Not provided in mock data
 				email_verified: false // Default fallback in useAuth
 			});
